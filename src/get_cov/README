@@ -1,0 +1,50 @@
+1. Compile the example program 
+gcc ex_motiv.c -o prog.exe  
+
+2. Test that the example run_script works
+
+$ ./run_script "v1 0, v2 1, v3 1, v4 1, v5 0, v6 1, v7 3"
+L3
+L4
+L9
+
+^^^ So this testscript is something you make,  notice the formats of the input and of the output
+
+Now to make sure your testscript works with my program, I've provided a small get_cov.py that takes in a domain_file and the run_script
+
+domain_file simply tells me how many variables in the configurations and their values. For boolean v1-v6 and for v7 taking 4 values 0 1 2 3 then the dom_file looks like
+v1 0 1
+...
+v6 0 1
+v7 0 1 2 3
+
+
+My get_cov.py script simply generate some random configuration from this dom file and call the testscript on that configuration.  You don't need to look at this get_cov.py, just make sure that it works well with your run_script. 
+
+
+3. You run get_cov.py as follow
+
+$ ./get_cov.py --dom_file ex_motiv.dom --run_script run_script
+
+You get a bunch of outputs with the last line looks something like this
+
+results (gen 40 configs, seed 1.0, tmpdir '/var/tmp/vub8_NU3', 1.99847602844s)
+
+
+***IMPORTANT: each time the script is run, it creates a temporary dir and save all results there (e.g., the dir /var/tmp/vub8_NU3 above). SAVE this entire directory for future analysis.
+Of course if the run is not successfull, then you should delete the bad directory.
+
+
+4. if you use this specific seed 1
+$ ./get_cov.py --dom_file ex_motiv.dom --run_script run_script --seed 1
+
+Then you get similar results as below, in particular, you should get something like this at the end (notice gen 40 configs)
+
+results (gen 40 configs, seed 1.0, tmpdir '/var/tmp/vub8_NU3', 1.99847602844s)
+
+
+In short, try to run this script on your program with some specific seed and make sure you get the same gen N configs at the end 
+
+5. if your output is a file containing the coverage then use the flag --from_file
+
+$ ./get_cov.py --dom_file ex_motiv.dom --run_script run_script --from_file --seed 1
