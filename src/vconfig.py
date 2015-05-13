@@ -13,12 +13,12 @@ logger = CM.VLog('config')
 logger.level = CM.VLog.INFO
 CM.VLog.PRINT_TIME = True
 
-vdebug = False
+vdebug = True
 print_cov = False
 
 ### DATA STRUCTURES ###
 is_valset = lambda s: (isinstance(s,frozenset) and s and
-                      all(isinstance(e,str) for e in s))
+                       all(isinstance(e,str) for e in s))
 is_dom = lambda d: (isinstance(d,dict) and 
                     all(isinstance(x,str) and
                         is_valset(ys) for x,ys in d.iteritems()))
@@ -52,14 +52,34 @@ is_covs = lambda cs: (isinstance(cs,list) and
                       all_is_cov(c) for c in cs)
 
 ### PRETTY PRINT ###
+def str_of_valset(s):
+    """
+    >>> str_of_valset(frozenset(['1','2','3']))
+    '1,2,3'
+    """
+    if vdebug:
+        assert is_valset(s),s
+        
+    return ','.join(sorted(s))
+
 def str_of_dom(dom):
+    """
+    >>> print str_of_dom({'x':frozenset(['1','2']),'y':frozenset(['1'])})
+    x: 1,2
+    y: 1
+    """
     if vdebug:
         assert is_dom(dom)
 
-    return '\n'.join('{}: {}'.format(
-        k,','.join(vs)) for k,vs in dom.iteritems())
-        
+    return '\n'.join("{}: {}".format(k,str_of_valset(vs))
+                     for k,vs in sorted(dom.iteritems()))
+
+                     
 def str_of_setting(s):
+    """
+    >>> print str_of_setting(('x','1'))
+    x=1
+    """
     if vdebug:
         assert is_setting(s),s
 
@@ -67,11 +87,17 @@ def str_of_setting(s):
     return '{}={}'.format(x,y)
     
 def str_of_csetting(s):
+    """
+    >>> print str_of_csetting(('x',frozenset(['1'])))
+    x=1
+    >>> print str_of_csetting(('x',frozenset(['3','1'])))
+    x=1,3
+    """
     if vdebug:
         assert is_csetting(s), s
 
     (x,ys) = s
-    return '{}={}'.format(x,','.join(sorted(ys)))
+    return '{}={}'.format(x,str_of_valset(ys))
 
 def str_of_config(c):
     if vdebug:
@@ -84,9 +110,9 @@ def str_of_core(c):
         assert is_core(c), c
 
     if c is None:
-        return "false"  #never reached
+        return "false" #never reached
     if not c:
-        return "true" #no constraint
+        return "true"  #no constraint
 
     return ' '.join(map(str_of_csetting,c.iteritems()))
 
@@ -123,6 +149,7 @@ def str_of_configs(configs,covs=None):
         return '\n'.join("{}. {}"
                          .format(i,str_of_config(c))
                          for i,c in enumerate(configs))
+
 
 ## PRETTY PRINT RESULTS
 def str_of_cores_d(cores_d):
@@ -1101,3 +1128,8 @@ mine 305 '(0,1,748),(1,3,11),(2,9,994),(3,16,829),(4,9,443),(5,3,63),(6,1,2)'
 core me p(tunable_anonymous_enable=1 tunable_local_enable=0 tunable_ssl_enable=0)
 core gt p(tunable_anonymous_enable=1 tunable_local_enable=0 tunable_ssl_enable=0 tunable_tilde_user_enable=0 )
 """
+
+
+def doctestme():
+    import doctest
+    doctest.testmod()
