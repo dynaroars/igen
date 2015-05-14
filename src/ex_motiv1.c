@@ -20,21 +20,21 @@ int main(int argc, char **argv){
   printf("L4\n");
   if (one_process_mode)
     if (local || ssl){
-	printf("L9\n");
+      printf("L5\n");
 	return 0;
     }
   
-  printf("L5\n");
+  printf("L6\n");
   if (local==0 && anon==0)
     return 0;
   
-  printf("L6\n");
+  printf("L7\n");
 
   if (chunk == 1 || chunk == 2){
     if (log)
-      printf("L7\n");
-    else
       printf("L8\n");
+    else
+      printf("L9\n");
   }
 
   return 0;

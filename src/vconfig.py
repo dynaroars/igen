@@ -10,11 +10,11 @@ from vconfig_miscs import HDict
 import vu_common as CM
 
 logger = CM.VLog('config')
-logger.level = CM.VLog.INFO
+logger.level = CM.VLog.DEBUG
 CM.VLog.PRINT_TIME = True
 
 vdebug = True
-print_cov = False
+print_cov = True
 
 ### DATA STRUCTURES ###
 is_valset = lambda s: (isinstance(s,frozenset) and s and
@@ -69,12 +69,11 @@ def str_of_dom(dom):
     y: 1
     """
     if vdebug:
-        assert is_dom(dom)
+        assert is_dom(dom),dom
 
     return '\n'.join("{}: {}".format(k,str_of_valset(vs))
                      for k,vs in sorted(dom.iteritems()))
 
-                     
 def str_of_setting(s):
     """
     >>> print str_of_setting(('x','1'))
@@ -215,6 +214,7 @@ def str_of_mcores_d_lens(mlens):
 ### MISCS UTILS ###
 len_core = lambda c: len(c) if c else 0
 len_cores_pn = lambda (x,y): len_core(x) + len_core(y)
+
 def get_dom_lines(lines):
     dom = OrderedDict()
     for line in lines:
@@ -252,7 +252,9 @@ def load_dir(dirname):
 def print_iter_stat(robj):
     (citer,etime,ctime,samples,covs,new_covs,new_cores,rcore,cores_d) = robj
 
-    logger.info("iter {} ({}s, {}s eval) ".format(citer,etime,ctime) +
+    logger.info("iter {}, ".format(citer) +
+                "{0:.2f}s, ".format(etime) +
+                "{0:.2f}s eval, ".format(ctime) +
                 "{} new samples, {} new covs, {} updated cores, "
                 .format(len(samples),len(new_covs),len(new_cores)) +
                 "{}".format("** progress **" if new_covs or new_cores else ""))
@@ -270,7 +272,6 @@ def str_of_summary(seed,iters,ntime,ctime,nsamples,ncovs,tmpdir):
          .format(seed,iters,ntime,ctime,nsamples,ncovs,tmpdir))
     return s
     
-
 def replay(dirname):
     iobj,robjs = load_dir(dirname)
     seed,dom = iobj
@@ -641,7 +642,7 @@ def gen_configs_core(n,core,dom):
 def gen_configs_cores(cores_pn,dom):
     if vdebug:
         assert is_cores_pn(cores_pn), cores_pn
-        assert is_dom, dom
+        assert is_dom(dom), dom
 
     core_p,core_n = cores_pn
     configs_p = gen_configs_core(len_core(core_p),core_p,dom)
@@ -659,17 +660,17 @@ def select_core(cores,ignore_sizs,ignore_cores):
         assert isinstance(ignore_sizs,set),ignore_sizs
         assert isinstance(ignore_cores,set),ignore_cores        
 
+
     cores = [core for core in cores if core not in ignore_cores]
-    
     core_lens = [len_cores_pn(cores_pn) for cores_pn in cores]
     sizs = set(core_lens) - ignore_sizs
-
+    
     if sizs:
         siz = max(sizs)
         cores_siz = [core for core,core_len in zip(cores,core_lens)
                      if core_len==siz]
 
-        core= random.choice(cores_siz)
+        core = max(cores_siz,key=lambda (cp,cn):(len_core(cp),len_core(cn)))
         return core  #tuple (core_l,core_n)
     else:
         return None
@@ -691,7 +692,10 @@ def eval_samples(samples,get_cov,cache):
 
     return samples,covs,time() - st
 
-def iterative_refine(dom,get_cov,seed=None,tmpdir=None,pure_random_n=None,cover_siz=None,config_default=None,prefix='vu'):
+def risce(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,config_default=None,prefix='vu'):
+    """
+    cover_siz=(0,n):  generates n random configs
+    """
     if vdebug:
         assert is_dom(dom),dom
         assert callable(get_cov),get_cov
@@ -728,28 +732,27 @@ def iterative_refine(dom,get_cov,seed=None,tmpdir=None,pure_random_n=None,cover_
     cov_time = 0.0
     
     #initial samples
-    if pure_random_n:
-        if pure_random_n < 0:
-            samples = gen_configs_full(dom)
-            logger.info("Gen all {} configs".format(len(samples)))
+    if cover_siz:
+        cstrength,max_confs = cover_siz
+        if cstrength == 0:
+            if max_confs < 0:
+                samples = gen_configs_full(dom)
+                logger.info("Gen all {} configs".format(len(samples)))
+            else:
+                samples = gen_configs_rand(max_confs,dom)
+                logger.info("Gen {} rand configs".format(len(samples)))
         else:
-            samples = gen_configs_rand(pure_random_n,dom)
-            logger.info("Gen {} rand configs".format(len(samples)))
-    elif cover_siz:
-        csiz,max_confs = cover_siz
-        samples_tcover = gen_configs_tcover(csiz,dom,seed,tmpdir)
-        samples_rand_n = max_confs - len(samples_tcover)
+            samples = gen_configs_tcover(cstrength,dom,seed,tmpdir)
+            samples_rand_n = max_confs - len(samples)
 
-        if samples_rand_n:
-            samples_rand = gen_configs_rand(samples_rand_n,dom)
-        else:
-            samples_rand = []
-            
-        samples = list(set(samples_tcover + samples_rand))
-        logger.info("Gen {} configs ({} {}-cover, {} rand)"
-                    .format(len(samples),
-                            len(samples_tcover),csiz,
-                            len(samples_rand)))
+            if samples_rand_n:
+                samples_ = gen_configs_rand(samples_rand_n,dom)
+                samples.extend(samples_)
+
+            samples = list(set(samples))
+            logger.info("Gen {} {}-cover configs"
+                        .format(len(samples),cstrength))
+                                
     else:
         samples = gen_configs_tcover1(dom)
 
@@ -772,22 +775,23 @@ def iterative_refine(dom,get_cov,seed=None,tmpdir=None,pure_random_n=None,cover_
         rfile = os.path.join(tmpdir,"{}.tvn".format(cur_iter))        
         CM.vsave(rfile,robj)
         print_iter_stat(robj)
+        CM.pause()
         
-        if pure_random_n or cover_siz:
+        if cover_siz:
             break
         
 
         cur_iter += 1
-        rcore = select_core(set(cores_d.values()),
-                            ignore_sizs,ignore_cores)
+        sel_core = select_core(set(cores_d.values()),
+                               ignore_sizs,ignore_cores)
         if rcore:
-            ignore_cores.add(rcore)
+            ignore_cores.add(sel_core)
         else:
             logger.info('select no core for refinement,'
                         'done at iter {}'.format(cur_iter))
             break
 
-        samples = gen_configs_cores(rcore,dom)
+        samples = gen_configs_cores(sel_core,dom)
         samples,covs,ctime = eval_samples(samples,get_cov,configs_cache)
         cov_time += ctime
         new_covs,new_cores = infer_cov(samples,covs,cores_d,dom)
@@ -980,7 +984,7 @@ def prepare_motiv():
     import ex_motiv_run
     dom,_ = get_dom('ex_motiv.dom')
     args = {'varnames':dom.keys(),
-            'prog': '/Users/tnguyen/Dropbox/git/config/new/ex_motiv.exe'}
+            'prog': '/Users/tnguyen/Dropbox/git/config/src/ex_motiv.exe'}
     get_cov = lambda config: ex_motiv_run.get_cov(config,args)
     return dom,get_cov
 
@@ -1133,3 +1137,8 @@ core gt p(tunable_anonymous_enable=1 tunable_local_enable=0 tunable_ssl_enable=0
 def doctestme():
     import doctest
     doctest.testmod()
+
+
+
+if __name__ == "__main__":
+    print 'loaded'
