@@ -17,18 +17,18 @@ vdebug = True
 print_cov = True
 
 ### DATA STRUCTURES ###
-is_valset = lambda s: (isinstance(s,frozenset) and s and
-                       all(isinstance(e,str) for e in s))
+is_cov = lambda cov: (isinstance(cov,frozenset) and
+                    all(isinstance(sid,str) for sid in cov))
+is_valset = lambda vs: (isinstance(vs,frozenset) and vs and
+                        all(isinstance(v,str) for v in vs))
 is_dom = lambda d: (isinstance(d,dict) and 
-                    all(isinstance(x,str) and
-                        is_valset(ys) for x,ys in d.iteritems()))
+                    all(isinstance(vn,str) and
+                        is_valset(vs) for vn,vs in d.iteritems()))
 
-is_setting = lambda s: (isinstance(s,tuple) and len(s)==2 and
-                        isinstance(s[0],str) and isinstance(s[1],str))
-is_csetting = lambda s: (isinstance(s,tuple) and len(s)==2 and
-                        isinstance(s[0],str) and is_valset(s[1]))
+is_setting = lambda (vn,vv): isinstance(vn,str) and isinstance(vv,str)
+is_csetting = lambda (vn,vs): isinstance(vn,str) and is_valset(vs)
 
-is_config = lambda c: (isinstance(c,HDict) and
+is_config = lambda c: (isinstance(c,HDict) and 
                        all(is_setting(s) for s in c.iteritems()))
 is_core = lambda c: (c is None or
                      (isinstance(c,HDict) and
@@ -36,27 +36,25 @@ is_core = lambda c: (c is None or
 is_configs = lambda cs: (isinstance(cs,list) and
                          all(is_config(c) for c in cs))
 
-is_cores_pn = lambda (cl,cnl): is_core(cl) and is_core(cnl)
-is_cores_pns = lambda cs: (isinstance(cs,list) and
-                            all(is_cores_pn(c) for c in cs))
+is_pncore = lambda (pc,nc): is_core(pc) and is_core(nc)
+is_pncores = lambda cs: (isinstance(cs,list) and
+                            all(is_pncore(c) for c in cs))
+
 is_cores_d = lambda d: (isinstance(d,dict) and
-                        (all(isinstance(l,str) and is_cores_pn(c)
-                             for l,c in d.iteritems())))
+                        (all(isinstance(sid,str) and is_pncore(c)
+                             for sid,c in d.iteritems())))
 is_mcores_d = lambda d: (isinstance(d,dict) and
-                        all(is_cores_pn(c) and is_cov(cov)
+                        all(is_pncore(c) and is_cov(cov)
                             for c,cov in d.iteritems()))
 
-is_cov = lambda c: (isinstance(c,frozenset) and
-                    all(isinstance(s,str) for s in c))
-is_covs = lambda cs: (isinstance(cs,list) and
-                      all_is_cov(c) for c in cs)
-
 ### PRETTY PRINT ###
+def str_of_cov(cov):
+    if vdebug:
+        assert is_cov(cov),cov
+    
+    return ','.join(sorted(cov)) if print_cov else str(len(cov))
+
 def str_of_valset(s):
-    """
-    >>> str_of_valset(frozenset(['1','2','3']))
-    '1,2,3'
-    """
     if vdebug:
         assert is_valset(s),s
         
@@ -74,29 +72,17 @@ def str_of_dom(dom):
     return '\n'.join("{}: {}".format(k,str_of_valset(vs))
                      for k,vs in sorted(dom.iteritems()))
 
-def str_of_setting(s):
-    """
-    >>> print str_of_setting(('x','1'))
-    x=1
-    """
+def str_of_setting((vn,vv)):
     if vdebug:
-        assert is_setting(s),s
+        assert is_setting((vn,vv)),(vn,vv)
 
-    (x,y) = s
-    return '{}={}'.format(x,y)
+    return '{}={}'.format(vn,vv)
     
-def str_of_csetting(s):
-    """
-    >>> print str_of_csetting(('x',frozenset(['1'])))
-    x=1
-    >>> print str_of_csetting(('x',frozenset(['3','1'])))
-    x=1,3
-    """
+def str_of_csetting((vn,vs)):
     if vdebug:
-        assert is_csetting(s), s
+        assert is_csetting((vn,vs)), (vn,vs)
 
-    (x,ys) = s
-    return '{}={}'.format(x,str_of_valset(ys))
+    return '{}={}'.format(vn,str_of_valset(vs))
 
 def str_of_config(c):
     if vdebug:
@@ -115,49 +101,46 @@ def str_of_core(c):
 
     return ' '.join(map(str_of_csetting,c.iteritems()))
 
-def str_of_cores_pn(cores_pn):
+def str_of_pncore((pcore,ncore)):
     if vdebug:
-        assert is_cores_pn(cores_pn), cores_pn
+        assert is_pncore((pcore,ncore)), (pcore,ncore)
         
-    (core_p,core_n) = cores_pn
-    s = []
-    core_p_s = lambda : "p({})".format(str_of_core(core_p))
-    core_n_s = lambda: "n({})".format(str_of_core(core_n))
+    pcore_s = lambda: "p({})".format(str_of_core(pcore))
+    ncore_s = lambda: "n({})".format(str_of_core(ncore))
 
-    if core_p and core_n:
-        return '{}, {}'.format(core_p_s(),core_n_s())
-    elif not core_n:
-        return core_p_s()
-    elif not core_p:
-        return core_n_s()
+    if pcore and ncore:
+        return '{}, {}'.format(pcore_s(),ncore_s())
+    elif not ncore:
+        return pcore_s()
+    elif not pcore:
+        return ncore_s()
     else:
-        raise AssertionError('unexpected cores {}, {}'.format(core_p,core_n))
+        raise AssertionError('unexpected cores {}, {}'.format(pcore,ncore))
         
 
 def str_of_configs(configs,covs=None):
     if vdebug:
         assert is_configs(configs), configs
-        assert (covs is None or is_covs(covs) and
-                len(covs) == len(configs)), covs
+        assert (covs is None or 
+                (len(covs) == len(configs) and
+                 all(is_cov(cov) for cov in covs))), covs
         
-    if covs and print_cov:
-        return '\n'.join("{}. {} : {}".format(
-            i,str_of_config(c),' '.join(cov))
+    if  covs:
+        return '\n'.join("{}. {}: {}"
+                         .format(i,str_of_config(c),str_of_cov(cov))
                          for i,(c,cov) in enumerate(zip(configs,covs)))
     else:
-        return '\n'.join("{}. {}"
-                         .format(i,str_of_config(c))
+        return '\n'.join("{}. {}".format(i,str_of_config(c))
                          for i,c in enumerate(configs))
 
 
-## PRETTY PRINT RESULTS
 def str_of_cores_d(cores_d):
     if vdebug:
         assert is_cores_d(cores_d),cores_d
         
     return '\n'.join("{}. {}: {}"
-                     .format(i+1,sid,str_of_cores_pn(cores_d[sid]))
-                     for i,line in enumerate(sorted(cores_d))
+                     .format(i+1,sid,str_of_pncore(cores_d[sid]))
+                     for i,sid in enumerate(sorted(cores_d)))
 
 def str_of_mcores_d(mcores_d):
     if vdebug:
@@ -165,13 +148,13 @@ def str_of_mcores_d(mcores_d):
 
     ss = []
     mcores_d_ = sorted(mcores_d.iteritems(),
-                       key=lambda (c,cov):(len_cores_pn(c),len(cov)))
+                       key=lambda (c,cov):(len_pncore(c),len(cov)))
                        
 
-    for i,(cores_pn,covs) in enumerate(mcores_d_):
+    for i,(pncore,covs) in enumerate(mcores_d_):
         s = ("{}. ({}) {}: {}"
-             .format(i+1,len_cores_pn(cores_pn),
-                     str_of_cores_pn(cores_pn),
+             .format(i+1,len_pncore(pncore),
+                     str_of_pncore(pncore),
                      ','.join(covs) if print_cov else len(covs)))
         ss.append(s)
     return '\n'.join(ss)
@@ -182,10 +165,10 @@ def mcores_d_lens(mcores_d):
         assert is_mcores_d(mcores_d),mcores_d
     
     res = []
-    sizs = [len_cores_pn(c) for c in mcores_d]
+    sizs = [len_pncore(c) for c in mcores_d]
 
     for siz in sorted(set(sizs)):
-        siz_conds = [c for c in mcores_d if len_cores_pn(c) == siz]
+        siz_conds = [c for c in mcores_d if len_pncore(c) == siz]
         cov = set()
         for c in siz_conds:
             for sid in mcores_d[c]:
@@ -207,7 +190,7 @@ def str_of_mcores_d_lens(mlens):
 
 ### MISCS UTILS ###
 len_core = lambda c: len(c) if c else 0
-len_cores_pn = lambda (x,y): len_core(x) + len_core(y)
+len_pncore = lambda (x,y): len_core(x) + len_core(y)
 
 def get_dom_lines(lines):
     dom = OrderedDict()
@@ -244,7 +227,7 @@ def load_dir(dirname):
     return iobj, robjs
 
 def print_iter_stat(robj):
-    (citer,etime,ctime,samples,covs,new_covs,new_cores,rcore,cores_d) = robj
+    (citer,etime,ctime,samples,covs,new_covs,new_cores,sel_core,cores_d) = robj
 
     logger.info("iter {}, ".format(citer) +
                 "{0:.2f}s, ".format(etime) +
@@ -253,7 +236,7 @@ def print_iter_stat(robj):
                 .format(len(samples),len(new_covs),len(new_cores)) +
                 "{}".format("** progress **" if new_covs or new_cores else ""))
                 
-    logger.debug('rcore\n{}'.format(str_of_cores_pn(rcore)))
+    logger.debug('sel_core\n{}'.format(str_of_pncore(sel_core)))
     logger.debug('samples\n'+str_of_configs(samples,covs))
     mcores_d = merge_cores_d(cores_d)
     logger.debug('mcores\n{}'.format(str_of_mcores_d(mcores_d)))
@@ -279,13 +262,13 @@ def replay(dirname):
     for robj in robjs:
         if len(robj) == 9:
             (citer,etime,ctime,samples,covs,
-             new_covs,new_cores,rcore,cores_d) = robj
+             new_covs,new_cores,sel_core,cores_d) = robj
         else: #old format
             (citer,etime,samples,covs,
-             new_covs,new_cores,rcore,cores_d) = robj
+             new_covs,new_cores,sel_core,cores_d) = robj
             ctime = 0.0
             robj = (citer,etime,ctime,samples,covs,
-                    new_covs,new_cores,rcore,cores_d)
+                    new_covs,new_cores,sel_core,cores_d)
 
         mcores_d,mlens = print_iter_stat(robj)
         ntime+=etime
@@ -441,7 +424,7 @@ def infer(configs,existing_core,dom):
 
 def infer_cov(configs,covs,existing_cores_d,dom):
     """
-    existing_cores_d = {l:core_pn}
+    existing_cores_d = {l:pcoren}
     """
     
     if vdebug:
@@ -455,28 +438,28 @@ def infer_cov(configs,covs,existing_cores_d,dom):
     if not configs:
         return new_covs,new_cores
 
-    lines = set(existing_cores_d.keys())
+    sids = set(existing_cores_d.keys())
     for cov in covs:
-        for line in cov:
-            lines.add(line)
+        for sid in cov:
+            sids.add(sid)
 
     cached = {}
-    for li,line in enumerate(sorted(lines)):
-        # if line != 'str.c:499':
+    for li,sid in enumerate(sorted(sids)):
+        # if sid != 'str.c:499':
         #     continue
         
-        if line in existing_cores_d:
-            existing_core_p,existing_core_n = existing_cores_d[line]
+        if sid in existing_cores_d:
+            existing_pcore,existing_ncore = existing_cores_d[sid]
         else:
             #don't have existing cores yet (use None, not emptyset)
-            existing_core_p,existing_core_n = None, None
-            new_covs.add(line)
+            existing_pcore,existing_ncore = None, None
+            new_covs.add(sid)
         
         configs_p,configs_n = [],[]
 
         #L,nL=[],[]
         for ci,(config,cov) in enumerate(zip(configs,covs)):
-            if line in cov:
+            if sid in cov:
                 configs_p.append(config)
                 #L.append(ci+1)
             else:
@@ -485,42 +468,42 @@ def infer_cov(configs,covs,existing_cores_d,dom):
 
 
         configs_p = frozenset(configs_p)
-        key_p = (configs_p,existing_core_p) 
+        key_p = (configs_p,existing_pcore) 
         if key_p in cached:
-            core_p  = cached[key_p]
+            pcore  = cached[key_p]
         else:
             configs_p = list(configs_p)
-            core_p = infer(configs_p,existing_core_p,dom)
-            cached[key_p] = core_p
+            pcore = infer(configs_p,existing_pcore,dom)
+            cached[key_p] = pcore
 
         configs_n = frozenset(configs_n)
-        key_n = (configs_n,existing_core_n)
+        key_n = (configs_n,existing_ncore)
         if key_n in cached:
-            core_n = cached[key_n]
+            ncore = cached[key_n]
         else:
             configs_n = list(configs_n)
-            core_n = infer(configs_n,existing_core_n,dom)
-            cached[key_n] = core_n
+            ncore = infer(configs_n,existing_ncore,dom)
+            cached[key_n] = ncore
 
-        if core_p != existing_core_p or core_n != existing_core_n:
-            existing_cores_d[line] = (core_p,core_n)            
-            new_cores.add(line)
+        if pcore != existing_pcore or ncore != existing_ncore:
+            existing_cores_d[sid] = (pcore,ncore)            
+            new_cores.add(sid)
 
-        # if line == 'str.c:499':
+        # if sid == 'str.c:499':
         #     print '*******************************'            
-        #     print '\nline {}/{}'.format(li,len(lines))
+        #     print '\nsid {}/{}'.format(li,len(sids))
         #     print str_of_configs(configs_p)
         #     save_file('/var/tmp/vuha0',configs_p)
-        #     print str_of_core(core_p)
+        #     print str_of_core(pcore)
         #print 'pos'
         #print 'L', L
         #print str_of_configs(configs_p)
-        #print 'core', str_of_core(core_p)
+        #print 'core', str_of_core(pcore)
 
         #print 'neg'
         #print nL
         # print str_of_configs([configs_n)
-        # print 'core', str_of_core(core_n)
+        # print 'core', str_of_core(ncore)
 
     return new_covs,new_cores
 
@@ -633,14 +616,14 @@ def gen_configs_core(n,core,dom):
     return configs 
     
 
-def gen_configs_cores(cores_pn,dom):
+def gen_configs_cores(pncore,dom):
     if vdebug:
-        assert is_cores_pn(cores_pn), cores_pn
+        assert is_pncore(pncore), pncore
         assert is_dom(dom), dom
 
-    core_p,core_n = cores_pn
-    configs_p = gen_configs_core(len_core(core_p),core_p,dom)
-    configs_n = gen_configs_core(len_core(core_n),core_n,dom)
+    pcore,ncore = pncore
+    configs_p = gen_configs_core(len_core(pcore),pcore,dom)
+    configs_n = gen_configs_core(len_core(ncore),ncore,dom)
     configs = list(set(configs_p + configs_n))
     
     if vdebug:
@@ -656,7 +639,7 @@ def select_core(cores,ignore_sizs,ignore_cores):
 
 
     cores = [core for core in cores if core not in ignore_cores]
-    core_lens = [len_cores_pn(cores_pn) for cores_pn in cores]
+    core_lens = [len_pncore(pncore) for pncore in cores]
     sizs = set(core_lens) - ignore_sizs
     
     if sizs:
@@ -665,7 +648,7 @@ def select_core(cores,ignore_sizs,ignore_cores):
                      if core_len==siz]
 
         core = max(cores_siz,key=lambda (cp,cn):(len_core(cp),len_core(cn)))
-        return core  #tuple (core_l,core_n)
+        return core  #tuple (core_l,ncore)
     else:
         return None
 
@@ -678,7 +661,8 @@ def eval_samples(samples,get_cov,cache):
     samples_ = []
     for config in samples:
         if config not in cache:
-            cache[config]=get_cov(config)
+            cov = get_cov(config)
+            cache[config]=frozenset(cov)
             samples_.append(config)
 
     samples = samples_
@@ -711,14 +695,14 @@ def risce(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,config_default=None,p
     CM.vsave(ifile,iobj)
     
     #some settings
-    cores_d = OrderedDict()  #results {line: (core_l,core_n)}
+    cores_d = OrderedDict()  #results {sid: (core_l,ncore)}
     cur_iter = 0
     max_stuck = 2
     cur_stuck = 0
     ignore_sizs = set([0,1]) #ignore sizes
     ignore_cores = set()
     configs_cache = OrderedDict()
-    rcore = (None,None)
+    sel_core = (None,None)
   
     #begin
     st = time()
@@ -764,21 +748,18 @@ def risce(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,config_default=None,p
         robj = (cur_iter,etime,cov_time,
                 samples,covs,
                 new_covs,new_cores,
-                rcore,
+                sel_core,
                 cores_d)
         rfile = os.path.join(tmpdir,"{}.tvn".format(cur_iter))        
         CM.vsave(rfile,robj)
         print_iter_stat(robj)
-        CM.pause()
-        
         if cover_siz:
             break
         
-
         cur_iter += 1
         sel_core = select_core(set(cores_d.values()),
                                ignore_sizs,ignore_cores)
-        if rcore:
+        if sel_core:
             ignore_cores.add(sel_core)
         else:
             logger.info('select no core for refinement,'
@@ -798,7 +779,7 @@ def risce(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,config_default=None,p
         else: #no progress
             cur_stuck += 1
             if cur_stuck >= max_stuck:
-                ignore_sizs.add(len_cores_pn(rcore))
+                ignore_sizs.add(len_pncore(sel_core))
                 cur_stuck = 0
 
     logger.info(str_of_summary(seed,cur_iter,time()-st,cov_time,
@@ -812,15 +793,15 @@ def merge_cores_d(cores_d):
         assert is_cores_d(cores_d), cores_d
         
     mcores_d = OrderedDict()
-    for line,core_pn in cores_d.iteritems():
+    for sid,pncore in cores_d.iteritems():
         
-        if core_pn in mcores_d:
-            mcores_d[core_pn].add(line)
+        if pncore in mcores_d:
+            mcores_d[pncore].add(sid)
         else:
-            mcores_d[core_pn] = set([line])
+            mcores_d[pncore] = set([sid])
 
-    for line in mcores_d:
-        mcores_d[line]=frozenset(mcores_d[line])
+    for sid in mcores_d:
+        mcores_d[sid]=frozenset(mcores_d[sid])
         
     if vdebug:
         assert is_mcores_d(mcores_d), mcores_d
@@ -838,14 +819,14 @@ def implies(x,y):
 
 def igraph(mcores_d):
     g = {}
-    for core_pn in mcores_d:
-        g[core_pn]=[]
-        for core_pn_ in mcores_d:
-            if core_pn != core_pn_:
-                core_p,core_n = core_pn
-                core_p_,core_n_ = core_pn_
-                x = implies(core_p,core_p_)
-                y = implies(core_n,core_n_)
+    for pncore in mcores_d:
+        g[pncore]=[]
+        for pncore_ in mcores_d:
+            if pncore != pncore_:
+                pcore,ncore = pncore
+                pcore_,ncore_ = pncore_
+                x = implies(pcore,pcore_)
+                y = implies(ncore,ncore_)
                 if x is None and y is None:
                     r = False
                 elif x is None:
@@ -855,23 +836,23 @@ def igraph(mcores_d):
                 else:
                     r = x and y
                 if r:
-                    print "1. {} => {}".format(str_of_cores_pn(core_pn),str_of_cores_pn(core_pn_))
-                    print core_p, core_p_
-                    print "2. {} => {}".format(str_of_core(core_p), str_of_core(core_p_))
-                    print core_n,core_n_
-                    print "3. {} => {}".format(str_of_core(core_n), str_of_core(core_n_))
+                    print "1. {} => {}".format(str_of_pncore(pncore),str_of_pncore(pncore_))
+                    print pcore, pcore_
+                    print "2. {} => {}".format(str_of_core(pcore), str_of_core(pcore_))
+                    print ncore,ncore_
+                    print "3. {} => {}".format(str_of_core(ncore), str_of_core(ncore_))
                     print ""
                     CM.pause()
-                    g[core_pn].append(core_pn_)
+                    g[pncore].append(pncore_)
     return g
     
 def str_of_igraph(g):
     ss = []
-    for core_pn,core_pns in g.iteritems():
+    for pncore,pncores in g.iteritems():
         ss.append("{}: ({}) {}"
-                  .format(str_of_cores_pn(core_pn),
-                          len(core_pns),
-                          ', '.join(str_of_cores_pn(c) for c in core_pns)))
+                  .format(str_of_pncore(pncore),
+                          len(pncores),
+                          ', '.join(str_of_pncore(c) for c in pncores)))
     return '\n'.join(ss)
 
 ### Experiments ###
@@ -883,39 +864,39 @@ def check_core_l(core_l,cov):
     """
     pass
 
-def check_core_n(core_n,cov):
+def check_ncore(ncore,cov):
     """
-    core_n is a likely cov cond for cov, i.e., core_n => cov,  so we want to see if not(cov) => not core_n
+    ncore is a likely cov cond for cov, i.e., ncore => cov,  so we want to see if not(cov) => not ncore
     So generate random configs (or reuse existing ones from check_core_l) and check that each config whose cov not in cov 
-    doesn't satisfy core_n
+    doesn't satisfy ncore
     """
     pass
 
 def compare_cores(cores_d_gt,cores_d):
     """
     Compare results with the ground truths
-    (citer,etime,samples,covs,new_covs,new_cores,rcore,cores_d) = vload('/var/tmp/vupak_Gg/36.tvn')
+    (citer,etime,samples,covs,new_covs,new_cores,sel_core,cores_d) = vload('/var/tmp/vupak_Gg/36.tvn')
     cores_d_gt = vload('vsftpd_full.cores.tvn')
     
     """
     
     missCovs = set()
-    for i,(line,cores_gt) in enumerate(cores_d_gt.iteritems()):
-        if line not in cores_d:
-            logger.error("{}. line '{}' not covered".format(i+1,line))
+    for i,(sid,cores_gt) in enumerate(cores_d_gt.iteritems()):
+        if sid not in cores_d:
+            logger.error("{}. sid '{}' not covered".format(i+1,sid))
             missCovs.add(line)
             continue
 
-        core_p_gt,core_n_gt = cores_gt
+        pcore_gt,ncore_gt = cores_gt
 
         cores_me = cores_d[line]
-        core_p_me,core_n_me = cores_me
+        pcore_me,ncore_me = cores_me
         
-        if hash(core_p_me) != hash(core_p_gt) or hash(core_n_me) != hash(core_n_gt):
+        if hash(pcore_me) != hash(pcore_gt) or hash(ncore_me) != hash(ncore_gt):
             print("{}. line '{}'\ncore me {}\ncore gt {}"
                   .format(i+1,line,
-                          str_of_cores_pn(cores_me),
-                          str_of_cores_pn(cores_gt)))
+                          str_of_pncore(cores_me),
+                          str_of_pncore(cores_gt)))
 
     logger.warn("{} covs missing".format(len(missCovs)))
     logger.warn("{} cores diff".format("1"))
