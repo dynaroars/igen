@@ -6,6 +6,7 @@ import itertools
 from collections import OrderedDict
 from time import time
 
+from vconfig_miscs import HDict
 import vu_common as CM
 
 logger = CM.VLog('config')
@@ -16,288 +17,225 @@ vdebug = True
 print_cov = True
 
 ### DATA STRUCTURES ###
-class BSetting(tuple):
-    def __str__(self):
-        """
-        >>> print Setting(('x','1'))
-        x=1
-        >>> print CSetting(('x',ValSet(['1','2'])))
-        x=1,2
-        """
-        (x,y) = self
-        return '{}={}'.format(x,y)
-    
-class Setting(BSetting):
-    def __init__(self,(vn,vv)):
-        if vdebug:
-            assert vn and isinstance(vn,str), vn
-            assert vv and isinstance(vv,str), vv
-        super(Setting,self).__init__((vn,vv))        
-    
-class CSetting(BSetting):
-    def __init__(self,(vn,vs)):
-        if vdebug:
-            assert vn and isinstance(vn,str), vn
-            assert vs and isinstance(vs,ValSet), vs
-            
-        super(CSetting,self).__init__((vn,vs))
+is_valset = lambda s: (isinstance(s,frozenset) and s and
+                       all(isinstance(e,str) for e in s))
+is_dom = lambda d: (isinstance(d,dict) and 
+                    all(isinstance(x,str) and
+                        is_valset(ys) for x,ys in d.iteritems()))
 
+is_setting = lambda s: (isinstance(s,tuple) and len(s)==2 and
+                        isinstance(s[0],str) and isinstance(s[1],str))
+is_csetting = lambda s: (isinstance(s,tuple) and len(s)==2 and
+                        isinstance(s[0],str) and is_valset(s[1]))
 
-class Miscs(object):
-    @staticmethod
-    def is_valset(vs): 
-        return (isinstance(vs,tuple) and 
-                vs and all(isinstance(v,str) for v in vs))
+is_config = lambda c: (isinstance(c,HDict) and
+                       all(is_setting(s) for s in c.iteritems()))
+is_core = lambda c: (c is None or
+                     (isinstance(c,HDict) and
+                      all(is_csetting(s) for s in c.iteritems())))
+is_configs = lambda cs: (isinstance(cs,list) and
+                         all(is_config(c) for c in cs))
 
-    @staticmethod
-    def str_of_valset(vs):
-        if vdebug:
-            assert is_valset(vs), vs
-        return ','.join(sorted(self))
+is_cores_pn = lambda (cl,cnl): is_core(cl) and is_core(cnl)
+is_cores_pns = lambda cs: (isinstance(cs,list) and
+                            all(is_cores_pn(c) for c in cs))
+is_cores_d = lambda d: (isinstance(d,dict) and
+                        (all(isinstance(l,str) and is_cores_pn(c)
+                             for l,c in d.iteritems())))
+is_mcores_d = lambda d: (isinstance(d,dict) and
+                        all(is_cores_pn(c) and is_cov(cov)
+                            for c,cov in d.iteritems()))
 
-    @staticmethod
-    def is_setting((vn,vv)):
-        return assert vn and isinstance(vn,str), vn
-            assert vv and isinstance(vv,str), vv
+is_cov = lambda c: (isinstance(c,frozenset) and
+                    all(isinstance(s,str) for s in c))
+is_covs = lambda cs: (isinstance(cs,list) and
+                      all_is_cov(c) for c in cs)
 
-    def str_of_setting((vn,vv)):
-        if vdebug:
-class Dom(OrderedDict):
-    def __init__(self,dom):
-        if vdebug:
-            assert all(isinstance(vn,str) and
-                       Miscs.is_valset(vs)
-                       for vn,vs in dom.iteritems()), dom
-            
-        OrderedDict.__init__(self,dom)
-
-    def __str__(self):
-        return '\n'.join("{}: {}".format(vn,vs)
-                         for vn,vs in sorted(self.iteritems()))
-    @classmethod
-    def get_dom_lines(cls,lines):
-        dom = OrderedDict()
-        for line in lines:
-            parts = line.split()
-            varname = parts[0]
-            varvals = parts[1:]
-            dom[varname] = ValSet(varvals)
-        return cls(dom)
-
-    @classmethod
-    def get_dom(cls,dom_file):
-        dom_file = os.path.realpath(dom_file)
-        dom = cls.get_dom_lines(CM.iread_strip(dom_file))
-
-        config_default = None
-        config_file_default = os.path.realpath(dom_file+'.default')
-        if os.path.isfile(config_file_default):
-            lines = CM.iread_strip(config_file_default)
-            config_default = cls.get_dom_lines(lines)
-            config_default = Config((k,list(v)[0])
-                                   for k,v in config_default.iteritems())
-
-        if vdebug:
-            assert (config_default is None or
-                    isinstance(config_default,Config)),config_default
-
-        return dom,config_default
-
-class Cov(frozenset):
-    def __init__(self,cov):
-        if vdebug:
-            assert all(isinstance(sid,str) for sid in cov), cov
-
-        frozenset.__init__(self,cov)
-
-class Covs(list):
-    def __init__(self,covs):
-        if vdebug:
-            assert all(isinstance(cov,Cov) for cov in covs), covs
-        list.__init__(self,covs)
+### PRETTY PRINT ###
+def str_of_valset(s):
+    """
+    >>> str_of_valset(frozenset(['1','2','3']))
+    '1,2,3'
+    """
+    if vdebug:
+        assert is_valset(s),s
         
-    def __str__(self):
-        if print_cov:
-            return ' '.join(cov)
-        else:
-            return str(len(cov))
-            
+    return ','.join(sorted(s))
 
+def str_of_dom(dom):
+    """
+    >>> print str_of_dom({'x':frozenset(['1','2']),'y':frozenset(['1'])})
+    x: 1,2
+    y: 1
+    """
+    if vdebug:
+        assert is_dom(dom),dom
+
+    return '\n'.join("{}: {}".format(k,str_of_valset(vs))
+                     for k,vs in sorted(dom.iteritems()))
+
+def str_of_setting(s):
+    """
+    >>> print str_of_setting(('x','1'))
+    x=1
+    """
+    if vdebug:
+        assert is_setting(s),s
+
+    (x,y) = s
+    return '{}={}'.format(x,y)
     
-class Config(OrderedDict):
-    def __init__(self,settings):
-        if vdebug:
-            assert all(isinstance(s,Setting)
-                       for s in settings), settings
+def str_of_csetting(s):
+    """
+    >>> print str_of_csetting(('x',frozenset(['1'])))
+    x=1
+    >>> print str_of_csetting(('x',frozenset(['3','1'])))
+    x=1,3
+    """
+    if vdebug:
+        assert is_csetting(s), s
+
+    (x,ys) = s
+    return '{}={}'.format(x,str_of_valset(ys))
+
+def str_of_config(c):
+    if vdebug:
+        assert is_config(c), c
+
+    return ' '.join(map(str_of_setting,c.iteritems()))
+
+def str_of_core(c):
+    if vdebug:
+        assert is_core(c), c
+
+    if c is None:
+        return "false" #never reached
+    if not c:
+        return "true"  #no constraint
+
+    return ' '.join(map(str_of_csetting,c.iteritems()))
+
+def str_of_cores_pn(cores_pn):
+    if vdebug:
+        assert is_cores_pn(cores_pn), cores_pn
+        
+    (core_p,core_n) = cores_pn
+    s = []
+    core_p_s = lambda : "p({})".format(str_of_core(core_p))
+    core_n_s = lambda: "n({})".format(str_of_core(core_n))
+
+    if core_p and core_n:
+        return '{}, {}'.format(core_p_s(),core_n_s())
+    elif not core_n:
+        return core_p_s()
+    elif not core_p:
+        return core_n_s()
+    else:
+        raise AssertionError('unexpected cores {}, {}'.format(core_p,core_n))
+        
+
+def str_of_configs(configs,covs=None):
+    if vdebug:
+        assert is_configs(configs), configs
+        assert (covs is None or is_covs(covs) and
+                len(covs) == len(configs)), covs
+        
+    if covs and print_cov:
+        return '\n'.join("{}. {} : {}".format(
+            i,str_of_config(c),' '.join(cov))
+                         for i,(c,cov) in enumerate(zip(configs,covs)))
+    else:
+        return '\n'.join("{}. {}"
+                         .format(i,str_of_config(c))
+                         for i,c in enumerate(configs))
+
+
+## PRETTY PRINT RESULTS
+def str_of_cores_d(cores_d):
+    if vdebug:
+        assert is_cores_d(cores_d),cores_d
+        
+    return '\n'.join("{}. {}: {}"
+                     .format(i+1,sid,str_of_cores_pn(cores_d[sid]))
+                     for i,line in enumerate(sorted(cores_d))
+
+def str_of_mcores_d(mcores_d):
+    if vdebug:
+        assert is_mcores_d(mcores_d),mcores_d
+
+    ss = []
+    mcores_d_ = sorted(mcores_d.iteritems(),
+                       key=lambda (c,cov):(len_cores_pn(c),len(cov)))
                        
-        OrderedDict.__init__(self,settings)
 
-    def __str__(self):
-        return ' '.join(map(str,self.iteritems()))
+    for i,(cores_pn,covs) in enumerate(mcores_d_):
+        s = ("{}. ({}) {}: {}"
+             .format(i+1,len_cores_pn(cores_pn),
+                     str_of_cores_pn(cores_pn),
+                     ','.join(covs) if print_cov else len(covs)))
+        ss.append(s)
+    return '\n'.join(ss)
+
+
+def mcores_d_lens(mcores_d):
+    if vdebug:
+        assert is_mcores_d(mcores_d),mcores_d
     
-    @property
-    def hcontent(self):
-        try:
-            return self._hcontent
-        except AttributeError:
-            self._hcontent = frozenset(self.iteritems())
-            return self._hcontent
+    res = []
+    sizs = [len_cores_pn(c) for c in mcores_d]
+
+    for siz in sorted(set(sizs)):
+        siz_conds = [c for c in mcores_d if len_cores_pn(c) == siz]
+        cov = set()
+        for c in siz_conds:
+            for sid in mcores_d[c]:
+                cov.add(sid)
+        res.append((siz,len(siz_conds),len(cov)))
+                  
+    return res
+
+def str_of_mcores_d_lens(mlens):
+    if isinstance(mlens,dict):
+        mlens = mcores_d_lens(mlens)
     
-    def __hash__(self):
-        try:
-            return self._hash
-        except AttributeError:
-            self._hash = hash(self.hcontent)
-            return self._hash
-
-    def __eq__(self,o):return hash(self) == hash(o)
-    def __ne__(self,o):return not self.__eq__(o)
-
-class Configs(list):
-    def __init__(self,configs):
-        if vdebug:
-            assert all(isinstance(c,Config) for c in configs), configs
-        list.__init__(self,configs)
-
-    def __str__(self,covs=None):
-        if vdebug:
-            assert (covs is None or isinstance(covs,Covs) and
-                    len(covs) == len(self)), covs
+    ss = []
+    for siz,ninters,ncovs in mlens:
+        ss.append("({},{},{})".
+                  format(siz,ninters,ncovs))
+    return ','.join(ss)
         
-        if covs:
-            return '\n'.join("{}. {} : {}".format(i,c,cov)
-                             for i,(c,cov) in enumerate(zip(self,covs)))
-        else:
-            return '\n'.join("{}. {}".format(i,c)
-                             for i,c in enumerate(self))
-        
-class Core(object):
-    def __init__(self,core):
-        if vdebug:
-            assert (core is None or isinstance(core,Config)), core
-
-            self.core = core
-    def __str__(self):
-        if self.core is None:
-            return "false" #never reached
-        if not self.core:
-            return "true"  #no constraint
-
-        return str(self.core) #settings
-
-    def __len__(self):
-        return len(self.core) if self.core else 0
-
-    def __hash__(self):
-        try:
-            return self._hash
-        except AttributeError:
-            self._hash = hash(self.core)
-            return self._hash        
-
-    def __eq__(self,o):return hash(self) == hash(o)
-    def __ne__(self,o):return not self.__eq__(o)
-    
-                    
-class PNCore(tuple):
-    def __init__(self,(corep,coren)):
-        if vdebug:
-            assert isinstance(corep,Core), corep
-            assert isinstance(coren,Core), coren
-        tuple.__init__((corep,coren))
-
-    def __str__(self):
-        (corep,coren) = self
-        corep_s = lambda: "p({})".format(corep)
-        coren_s = lambda: "n({})".format(coren)
-
-        if corep and coren:
-            return '{}, {}'.format(corep_s(),coren_s())
-        elif not coren:
-            return corep_s()
-        elif not corep:
-            return coren_s()
-        else:
-            raise AssertionError(
-                'unexpected corepn {}, {}'.format(corep,coren))
-        
-    def __len__(self):
-        (corep,coren) = self        
-        return len(corep) + len(coren)
-    
-class PNCores(list):
-    def __init__(self,pncores):
-        if vdebug:
-            assert all(isinstance(c,PNCore) for c in pncores), pncores
-
-        list.__init__(self,pncores)
-        
-class CORES(dict):
-    def __init__(self,cores_d):
-        if vdebug:
-            assert (all(isinstance(sid,str) and
-                        isinstance(pncore,PNCore)
-                        for sid,pncore in cores_d.iteritems()))
-        dict.__init__(self,cores_d)
-
-    def __str__(self):
-        return '\n'.join("{}. {}: {}".format(i+1,sid,pncore)
-                         for i,(sid,pncore) in enumerate(self))
-
-    def merge(self):
-        mcores_d = OrderedDict()
-        for line,core_pn in cores_d.iteritems():
-            if core_pn in mcores_d:
-                mcores_d[core_pn].add(line)
-            else:
-                mcores_d[core_pn] = set([line])
-
-        for line in mcores_d:
-            mcores_d[line]=Covs(mcores_d[line])
-
-        return MCORES(mcores_d)
-                        
-class MCORES(OrderedDict):
-    def __init__(self,mcores_d):
-        if vdebug:
-            assert all(isinstance(pncore,PNCore) and
-                       isinstance(cov,Covs) for
-                       pncore,covs in mcores_d.iteritems()), mcores_d
-        OrderedDict.__init__(self,mcores_d)
-
-    def __str__(self):
-        ss = []
-        mcores_ = sorted(self.iteritems(),
-                         key=lambda (c,cov):(len(c),len(cov)))
-
-        return '\n'.join("{}. ({}) {}: {}"
-                         .format(i+1,len(pncore),pncore,covs)
-                         for i,(pncore,covs) in enumerate(mcores_))
-    @property
-    def mlen(self):
-        try:
-            return self._mlen
-        except AttributeError:
-            mlen = []
-            sizs = set(len(c) for c in self)
-
-            for siz in sorted(sizs):
-                siz_conds = [c for c in mcores_d if len(c) == siz]
-                cov = set()
-                for c in siz_conds:
-                    for sid in self[c]:
-                        cov.add(sid)
-                mlen.append((siz,len(siz_conds),len(cov)))
-
-            self._mlen = mlen
-            return self._mlen
-
-    @property
-    def mlens_str(self):
-        return ','.join("({},{},{})".format(siz,nconds,ncovs)
-                        for siz,nconds,ncovs in self.mlens)
 
 ### MISCS UTILS ###
+len_core = lambda c: len(c) if c else 0
+len_cores_pn = lambda (x,y): len_core(x) + len_core(y)
+
+def get_dom_lines(lines):
+    dom = OrderedDict()
+    for line in lines:
+        parts = line.split()
+        varname = parts[0]
+        varvals = parts[1:]
+        dom[varname] = frozenset(varvals)
+    return dom
+    
+def get_dom(dom_file):
+    dom_file = os.path.realpath(dom_file)
+    dom = get_dom_lines(CM.iread_strip(dom_file))
+    
+    config_default = None
+    dom_file_default = os.path.realpath(dom_file+'.default')
+    if os.path.isfile(dom_file_default):
+        config_default = get_dom_lines(CM.iread_strip(dom_file_default))
+        config_default = HDict((k,list(v)[0])
+                               for k,v in config_default.iteritems())
+
+    if vdebug:
+        assert is_dom(dom),dom
+        assert config_default is None or is_config(config_default),config_default
+
+    return dom,config_default
+
+
 def load_dir(dirname):
     iobj = CM.vload(os.path.join(dirname,'info'))
     rfiles = [os.path.join(dirname,f) for f in os.listdir(dirname)
@@ -436,7 +374,7 @@ def read_ugur_file(filename):
         assert config.startswith("config")
         vals = list(config[6:])
         assert len(vals) == len(options), (vals,options)
-        config = Config(zip(options,vals))
+        config = HDict(zip(options,vals))
         configs.append(config)
 
     logger.info("{}: read {} configs, skip {}"
@@ -465,16 +403,16 @@ def read_ugur_dir(dirname):
 ### inference ###
 def infer(configs,existing_core,dom):
     if vdebug:
-        assert isinstance(existing_core,Core), existing_core
-        assert isinstance(configs,Configs), configs
-        assert isinstance(dom,Dom), dom
+        assert is_core(existing_core),existing_core
+        assert is_configs(configs),configs
+        assert is_dom(dom),dom
 
     if not configs:
         return existing_core
 
     if existing_core is None:  #not yet set
         existing_core = min(configs,key=lambda c:len(c))
-        existing_core = Config([(x,ValSet([y]))
+        existing_core = HDict([(x,frozenset([y]))
                                for x,y in existing_core.iteritems()])
 
 
@@ -493,20 +431,24 @@ def infer(configs,existing_core,dom):
     for x,ys in existing_core.iteritems():
         ys_ = f(x,ys,len(dom[x]))
         if ys_:
-            settings.append((x,ValSet(ys_)))
+            settings.append((x,frozenset(ys_)))
             
-    core = Core(Config(settings))
+    core = HDict(settings)
+    if vdebug:
+        assert is_core(core), core
+
     return core    
 
 def infer_cov(configs,covs,existing_cores_d,dom):
     """
     existing_cores_d = {l:core_pn}
     """
+    
     if vdebug:
-        assert isinstance(configs,Configs), configs
-        assert isinstance(covs,Covs), covs        
-        assert isinstance(existing_cores_d,CORES), existing_cores_d
-        assert isinstance(dom,Dom), dom
+        assert is_configs(configs), configs
+        assert is_covs(covs), covs        
+        assert isinstance(existing_cores_d,dict), existing_cores_d
+        assert is_dom(dom), dom
         
     new_covs,new_cores = set(),set()  #updated stuff
     
@@ -520,6 +462,9 @@ def infer_cov(configs,covs,existing_cores_d,dom):
 
     cached = {}
     for li,line in enumerate(sorted(lines)):
+        # if line != 'str.c:499':
+        #     continue
+        
         if line in existing_cores_d:
             existing_core_p,existing_core_n = existing_cores_d[line]
         else:
@@ -561,6 +506,7 @@ def infer_cov(configs,covs,existing_cores_d,dom):
             existing_cores_d[line] = (core_p,core_n)            
             new_cores.add(line)
 
+        # if line == 'str.c:499':
         #     print '*******************************'            
         #     print '\nline {}/{}'.format(li,len(lines))
         #     print str_of_configs(configs_p)
@@ -584,34 +530,40 @@ def infer_cov(configs,covs,existing_cores_d,dom):
 
 def gen_configs_full(dom):
     if vdebug:
-        assert isinstance(dom,Dom), dom
+        assert is_dom(dom), dom
         
     ns,vs = itertools.izip(*dom.iteritems())
-    configs = [Config(map(Setting,zip(ns,c))) for c in itertools.product(*vs)]
+    configs = [HDict(zip(ns,c)) for c in itertools.product(*vs)]
 
-    return Configs(configs)
+    if vdebug:
+        assert is_configs(configs),configs
+        
+    return configs
 
 def gen_configs_rand(n,dom):
     if vdebug:
         assert n>=0,n
-        assert isinstance(dom,Dom),dom
+        assert is_dom(dom),dom
 
-    rgen = lambda: [(k,random.choice(list(vs))) for k,vs in dom.iteritems()]
-    configs =  list(set(Config(map(Setting,rgen())) for _ in range(n)))
+    rgen = lambda : [(k,random.choice(list(vs))) for k,vs in dom.iteritems()]
+    configs =  list(set(HDict(rgen()) for _ in range(n)))
     
-    return Configs(configs)
+    if vdebug:
+        assert is_configs(configs),configs
+        
+    return configs
 
 def gen_configs_tcover1(dom):
     """
     Return a set of tcover array of strength 1
     """
     if vdebug:
-        assert isinstance(dom,Dom), dom
+        assert is_dom(dom), dom
         
     dom_used = dict((k,set(vs)) for k,vs in dom.iteritems())
 
     def mk():
-        settings = []
+        config = []
         for k in dom:
             if k in dom_used:
                 v = random.choice(list(dom_used[k]))
@@ -621,21 +573,27 @@ def gen_configs_tcover1(dom):
             else:
                 v = random.choice(list(dom[k]))
                 
-            settings.append(Setting((k,v)))
-        return Config(settings)
+            config.append((k,v))
+        return HDict(config)
 
     configs = []
     while dom_used:
         configs.append(mk())
 
-    return Configs(configs)
+    if vdebug:
+        assert is_configs(configs),configs
+        
+    return configs
 
 def gen_configs_tcover(cover_siz,dom,tseed,tmpdir):
     vals = map(list,dom.values())
     vs = mk_tcover(vals,cover_siz,tseed,tmpdir)
-    configs = [Config(zip(dom.keys(),vs_)) for vs_ in vs]
+    configs = [HDict(zip(dom.keys(),vs_)) for vs_ in vs]
 
-    return Configs(configs)
+    if vdebug:
+        assert is_configs(configs),configs
+        
+    return configs
         
 def gen_configs_core(n,core,dom):
     """
@@ -643,8 +601,8 @@ def gen_configs_core(n,core,dom):
     """
     if vdebug:
         assert n >= 0, n
-        assert isinstance(core,Core), core
-        assert isinstance(dom,Dom),dom
+        assert is_core(core), core
+        assert is_dom(dom),dom
 
     if n == 0 or not core:
         return gen_configs_rand(n,dom)
@@ -670,23 +628,25 @@ def gen_configs_core(n,core,dom):
                     v = random.choice(list(dom[k]))
             settings.append((k,v))
 
-        config = Config(settings)
+        config = HDict(settings)
         configs.append(config)
-
-    return Configs(configs )
+    return configs 
     
 
 def gen_configs_cores(cores_pn,dom):
     if vdebug:
-        assert isinstance(cores_pn,PNCORE), cores_pn
-        assert isinstance(dom,Dom), dom
+        assert is_cores_pn(cores_pn), cores_pn
+        assert is_dom(dom), dom
 
     core_p,core_n = cores_pn
-    configs_p = gen_configs_core(len(core_p),core_p,dom)
-    configs_n = gen_configs_core(len(core_n),core_n,dom)
+    configs_p = gen_configs_core(len_core(core_p),core_p,dom)
+    configs_n = gen_configs_core(len_core(core_n),core_n,dom)
     configs = list(set(configs_p + configs_n))
     
-    return Configs(configs)
+    if vdebug:
+        assert is_configs(configs),configs
+        
+    return configs
 
 ### iterative refinement alg
 def select_core(cores,ignore_sizs,ignore_cores):
@@ -694,8 +654,9 @@ def select_core(cores,ignore_sizs,ignore_cores):
         assert isinstance(ignore_sizs,set),ignore_sizs
         assert isinstance(ignore_cores,set),ignore_cores        
 
+
     cores = [core for core in cores if core not in ignore_cores]
-    core_lens = [len(cores_pn) for cores_pn in cores]
+    core_lens = [len_cores_pn(cores_pn) for cores_pn in cores]
     sizs = set(core_lens) - ignore_sizs
     
     if sizs:
@@ -710,18 +671,18 @@ def select_core(cores,ignore_sizs,ignore_cores):
 
 def eval_samples(samples,get_cov,cache):
     if vdebug:
-        assert isinstance(samples,Configs),samples
+        assert is_configs(samples),samples
         assert isinstance(cache,dict),cache
 
     st = time()
     samples_ = []
     for config in samples:
         if config not in cache:
-            cache[config]=Cov(get_cov(config))
+            cache[config]=get_cov(config)
             samples_.append(config)
 
-    samples = Configs(samples_)
-    covs = Covs([cache[config] for config in samples])
+    samples = samples_
+    covs = [cache[config] for config in samples]
 
     return samples,covs,time() - st
 
@@ -730,10 +691,10 @@ def risce(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,config_default=None,p
     cover_siz=(0,n):  generates n random configs
     """
     if vdebug:
-        assert isinstance(dom,Dom),dom
+        assert is_dom(dom),dom
         assert callable(get_cov),get_cov
         assert (config_default is None or
-                isinstance(config_default,Config)), config_default
+                is_config(config_default)), config_default
 
     seed = round(time(),2) if seed is None else float(seed)
     random.seed(seed)
@@ -750,14 +711,14 @@ def risce(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,config_default=None,p
     CM.vsave(ifile,iobj)
     
     #some settings
-    cores_d = CORES(OrderedDict())  #results {line: (core_l,core_n)}
+    cores_d = OrderedDict()  #results {line: (core_l,core_n)}
     cur_iter = 0
     max_stuck = 2
     cur_stuck = 0
     ignore_sizs = set([0,1]) #ignore sizes
     ignore_cores = set()
     configs_cache = OrderedDict()
-    rcore = PNCore((Core(None),Core(None)))
+    rcore = (None,None)
   
     #begin
     st = time()
@@ -789,7 +750,7 @@ def risce(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,config_default=None,p
     else:
         samples = gen_configs_tcover1(dom)
 
-    if isinstance(config_default,Config):
+    if is_config(config_default):
         samples.append(config_default)
         
     samples,covs,ctime = eval_samples(samples,get_cov,configs_cache)
@@ -846,7 +807,25 @@ def risce(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,config_default=None,p
     return cores_d
 
 ### Post processing ###
+def merge_cores_d(cores_d):
+    if vdebug:
+        assert is_cores_d(cores_d), cores_d
+        
+    mcores_d = OrderedDict()
+    for line,core_pn in cores_d.iteritems():
+        
+        if core_pn in mcores_d:
+            mcores_d[core_pn].add(line)
+        else:
+            mcores_d[core_pn] = set([line])
 
+    for line in mcores_d:
+        mcores_d[line]=frozenset(mcores_d[line])
+        
+    if vdebug:
+        assert is_mcores_d(mcores_d), mcores_d
+        
+    return mcores_d
 
 def implies(x,y):
     """
@@ -896,6 +875,21 @@ def str_of_igraph(g):
     return '\n'.join(ss)
 
 ### Experiments ###
+
+def check_core_l(core_l,cov):
+    """
+    core_l is a likely inv for cov, i.e., cov => core_l. So check it, we want to see if not(core_l) => not(cov).
+    So generate rand configs by changing core_l,  and verify that those don't cover anything in cov
+    """
+    pass
+
+def check_core_n(core_n,cov):
+    """
+    core_n is a likely cov cond for cov, i.e., core_n => cov,  so we want to see if not(cov) => not core_n
+    So generate random configs (or reuse existing ones from check_core_l) and check that each config whose cov not in cov 
+    doesn't satisfy core_n
+    """
+    pass
 
 def compare_cores(cores_d_gt,cores_d):
     """
@@ -982,7 +976,7 @@ def benchmark_stats(results_dir,strength_thres=100000000):
 
 def prepare_motiv():
     import ex_motiv_run
-    dom,_ = Dom.get_dom('ex_motiv.dom')
+    dom,_ = get_dom('ex_motiv.dom')
     args = {'varnames':dom.keys(),
             'prog': '/Users/tnguyen/Dropbox/git/config/src/ex_motiv.exe'}
     get_cov = lambda config: ex_motiv_run.get_cov(config,args)
@@ -996,7 +990,7 @@ def prepare_otter(prog):
 
     import ex_otter
     
-    dom,_ = Dom.get_dom(dom_file)
+    dom,_ = get_dom(dom_file)
     if os.path.isfile(pathconds_d_file):
         logger.info("read from '{}'".format(pathconds_d_file))
         pathconds_d = CM.vload(pathconds_d_file)
@@ -1019,7 +1013,7 @@ def run_gt(dom,pathconds_d):
     allcovs = []
     for covs,samples in pathconds_d.itervalues():
         for sample in samples:
-            allsamples.append(Config(sample))
+            allsamples.append(HDict(sample))
             allcovs.append(covs)
 
     logger.info("infer conds using {} samples".format(len(allsamples)))
@@ -1035,10 +1029,10 @@ def test_motiv(dom,get_cov):
     #listen time ssl local anon log chunks
     #0 1 0 0 1 1 2
     existing_cores_d = {}        
-    c1 = Config(zip(dom,'1 0 1 1 1 0 2'.split()))
-    c2 = Config(zip(dom,'1 0 0 0 0 1 4'.split()))
-    c3 = Config(zip(dom,'0 1 0 1 0 1 3'.split()))
-    c4 = Config(zip(dom,'1 0 1 1 0 0 1'.split()))
+    c1 = HDict(zip(dom,'1 0 1 1 1 0 2'.split()))
+    c2 = HDict(zip(dom,'1 0 0 0 0 1 4'.split()))
+    c3 = HDict(zip(dom,'0 1 0 1 0 1 3'.split()))
+    c4 = HDict(zip(dom,'1 0 1 1 0 0 1'.split()))
     configs = [c1,c2,c3,c4]
     covs = [get_cov(config) for config in configs]
     print(str_of_configs(configs,covs))    
@@ -1048,10 +1042,10 @@ def test_motiv(dom,get_cov):
     print(str_of_mcores_d(mcores_d))
     CM.pause()
     
-    c5 = Config(zip(dom,'0 0 0 0 1 1 3'.split()))
-    c6 = Config(zip(dom,'0 1 1 1 0 1 4'.split()))
-    c7 = Config(zip(dom,'0 1 0 0 1 1 2'.split()))
-    c8 = Config(zip(dom,'1 0 1 1 1 0 3'.split()))
+    c5 = HDict(zip(dom,'0 0 0 0 1 1 3'.split()))
+    c6 = HDict(zip(dom,'0 1 1 1 0 1 4'.split()))
+    c7 = HDict(zip(dom,'0 1 0 0 1 1 2'.split()))
+    c8 = HDict(zip(dom,'1 0 1 1 1 0 3'.split()))
 
     configs = [c5,c6,c7,c8]
     covs = [get_cov(config) for config in configs]
@@ -1142,5 +1136,3 @@ def doctestme():
 
 if __name__ == "__main__":
     print 'loaded'
-    doctestme()
-
