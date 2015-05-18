@@ -6,7 +6,7 @@ def get_cov(config,args):
     prog = args['prog']
     #tmpdir = args['tmpdir']
     tmpdir = '/var/tmp/'
-    prog = os.path.realpath(prog)
+    prog = os.path.realpath(os.path.expanduser(prog))
     assert os.path.isfile(prog), prog
     
     config_d = dict(config)

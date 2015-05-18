@@ -1,7 +1,1 @@
-listen 0 1
-timeout 0 1
-ssl 0 1
-local 0 1
-anon 0 1
-log 0 1
-chunks 1 2 3 4
+ex_motiv1.dom

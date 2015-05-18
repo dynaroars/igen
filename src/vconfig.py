@@ -21,9 +21,47 @@ is_cov = lambda cov: (isinstance(cov,frozenset) and
                     all(isinstance(sid,str) for sid in cov))
 is_valset = lambda vs: (isinstance(vs,frozenset) and vs and
                         all(isinstance(v,str) for v in vs))
-is_dom = lambda d: (isinstance(d,dict) and 
-                    all(isinstance(vn,str) and
-                        is_valset(vs) for vn,vs in d.iteritems()))
+
+class Dom(OrderedDict):
+
+    def __init__(self,d):
+        if vdebug:
+            assert all(isinstance(vn,str) and
+                       is_valset(vs) for vn,vs in d.iteritems())
+
+        OrderedDict.__init__(self,d)
+    def __str__(self):
+        return '\n'.join("{}: {}".format(k,str_of_valset(vs))
+                         for k,vs in sorted(self.iteritems()))
+
+
+    @staticmethod
+    def get_dom(dom_file):
+        
+        def from_lines(lines):
+            dom = OrderedDict()
+            for line in lines:
+                parts = line.split()
+                varname = parts[0]
+                varvals = parts[1:]
+                dom[varname] = frozenset(varvals)
+            return dom
+        
+        dom_file = os.path.realpath(dom_file)
+        dom = Dom(from_lines(CM.iread_strip(dom_file)))
+
+        default_config = None
+        default_file = os.path.realpath(dom_file+'.default')
+        if os.path.isfile(default_file):
+            default_config = from_lines(CM.iread_strip(default_file))
+            default_config = HDict((k,list(v)[0]) for k,v
+                                   in default_config.iteritems())
+                                   
+        if vdebug:
+            assert (defaul_configt is None or 
+                    is_config(default_config)),default_config
+
+        return dom,default_config
 
 is_setting = lambda (vn,vv): isinstance(vn,str) and isinstance(vv,str)
 is_csetting = lambda (vn,vs): isinstance(vn,str) and is_valset(vs)
@@ -136,17 +174,6 @@ def str_of_valset(s):
         
     return ','.join(sorted(s))
 
-def str_of_dom(dom):
-    """
-    >>> print str_of_dom({'x':frozenset(['1','2']),'y':frozenset(['1'])})
-    x: 1,2
-    y: 1
-    """
-    if vdebug:
-        assert is_dom(dom),dom
-
-    return '\n'.join("{}: {}".format(k,str_of_valset(vs))
-                     for k,vs in sorted(dom.iteritems()))
 
 def str_of_setting((vn,vv)):
     if vdebug:
@@ -198,31 +225,7 @@ def str_of_configs(configs,covs=None):
 ### MISCS UTILS ###
 len_core = lambda c: len(c) if c else 0
 
-def get_dom_lines(lines):
-    dom = OrderedDict()
-    for line in lines:
-        parts = line.split()
-        varname = parts[0]
-        varvals = parts[1:]
-        dom[varname] = frozenset(varvals)
-    return dom
-    
-def get_dom(dom_file):
-    dom_file = os.path.realpath(dom_file)
-    dom = get_dom_lines(CM.iread_strip(dom_file))
-    
-    config_default = None
-    dom_file_default = os.path.realpath(dom_file+'.default')
-    if os.path.isfile(dom_file_default):
-        config_default = get_dom_lines(CM.iread_strip(dom_file_default))
-        config_default = HDict((k,list(v)[0])
-                               for k,v in config_default.iteritems())
-    if vdebug:
-        assert is_dom(dom),dom
-        assert (config_default is None or 
-                is_config(config_default)),config_default
 
-    return dom,config_default
 
 
 def load_dir(dirname):
@@ -390,7 +393,7 @@ def infer(configs,existing_core,dom):
     if vdebug:
         assert is_core(existing_core),existing_core
         assert is_configs(configs),configs
-        assert is_dom(dom),dom
+        assert isinstance(dom,Dom),dom
 
     if not configs:
         return existing_core
@@ -433,7 +436,7 @@ def infer_cov(configs,covs,existing_cores_d,dom):
         assert is_configs(configs), configs
         assert is_covs(covs), covs        
         assert isinstance(existing_cores_d,CORES_D), existing_cores_d
-        assert is_dom(dom), dom
+        assert isinstance(dom,Dom), dom
         
     new_covs,new_cores = set(),set()  #updated stuff
     
@@ -496,7 +499,7 @@ def infer_cov(configs,covs,existing_cores_d,dom):
 
 def gen_configs_full(dom):
     if vdebug:
-        assert is_dom(dom), dom
+        assert isinstance(dom,Dom), dom
         
     ns,vs = itertools.izip(*dom.iteritems())
     configs = [HDict(zip(ns,c)) for c in itertools.product(*vs)]
@@ -509,7 +512,7 @@ def gen_configs_full(dom):
 def gen_configs_rand(n,dom):
     if vdebug:
         assert n>=0,n
-        assert is_dom(dom),dom
+        assert isinstance(dom,Dom),dom
 
     rgen = lambda : [(k,random.choice(list(vs))) for k,vs in dom.iteritems()]
     configs =  list(set(HDict(rgen()) for _ in range(n)))
@@ -524,7 +527,7 @@ def gen_configs_tcover1(dom):
     Return a set of tcover array of strength 1
     """
     if vdebug:
-        assert is_dom(dom), dom
+        assert isinstance(dom,Dom), dom
         
     dom_used = dict((k,set(vs)) for k,vs in dom.iteritems())
 
@@ -568,7 +571,7 @@ def gen_configs_core(n,core,dom):
     if vdebug:
         assert n >= 0, n
         assert is_core(core), core
-        assert is_dom(dom),dom
+        assert isinstance(dom,Dom),dom
 
     if n == 0 or not core:
         return gen_configs_rand(n,dom)
@@ -602,7 +605,7 @@ def gen_configs_core(n,core,dom):
 def gen_configs_cores(pncore,dom):
     if vdebug:
         assert isinstance(pncore,PNCORE), pncore
-        assert is_dom(dom), dom
+        assert isinstance(dom,Dom), dom
 
     pcore,ncore = pncore
     configs_p = gen_configs_core(len_core(pcore),pcore,dom)
@@ -659,7 +662,7 @@ def risce(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,config_default=None,p
     cover_siz=(0,n):  generates n random configs
     """
     if vdebug:
-        assert is_dom(dom),dom
+        assert isinstance(dom,Dom),dom
         assert callable(get_cov),get_cov
         assert (config_default is None or
                 is_config(config_default)), config_default
@@ -918,21 +921,21 @@ def benchmark_stats(results_dir,strength_thres=100000000):
 
 def prepare_motiv():
     import ex_motiv_run
-    dom,_ = get_dom('ex_motiv.dom')
+    dom,_ = Dom.get_dom('ex_motiv.dom')
     args = {'varnames':dom.keys(),
-            'prog': '/Users/tnguyen/Dropbox/git/config/src/ex_motiv.exe'}
+            'prog': '~/Dropbox/git/config/src/ex_motiv.exe'}
     get_cov = lambda config: ex_motiv_run.get_cov(config,args)
     return dom,get_cov
 
 def prepare_otter(prog):
-    dir_ = '/Users/tnguyen/Src/Devel/iTree_stuff/expData/{}'.format(prog)
+    dir_ = '~/Src/Devel/iTree_stuff/expData/{}'.format(prog)
     dom_file = dir_ + '/possibleValues.txt'
     exp_dir = dir_ + '/rawExecutionPaths'.format(prog)
     pathconds_d_file = dir_ + '/pathconds_d.tvn'.format(prog)
 
     import ex_otter
     
-    dom,_ = get_dom(dom_file)
+    dom,_ = Dom.get_dom(dom_file)
     if os.path.isfile(pathconds_d_file):
         logger.info("read from '{}'".format(pathconds_d_file))
         pathconds_d = CM.vload(pathconds_d_file)

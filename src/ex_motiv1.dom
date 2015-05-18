@@ -4,4 +4,4 @@ ssl 0 1
 local 0 1
 anon 0 1
 log 0 1
-chunks 1 2 3 4
+chunks 0 2048 4096 65536
