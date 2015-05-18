@@ -1,3 +1,4 @@
+#include <stdio.h>
 int main(int argc, char **argv){
   int listen = atoi(argv[1]);
   int timeout = atoi(argv[2]);
@@ -30,7 +31,7 @@ int main(int argc, char **argv){
   
   printf("L7\n");
 
-  if (chunk == 1 || chunk == 2){
+  if (chunk == 2048 || chunk == 4096){
     if (log)
       printf("L8\n");
     else
