@@ -17,3 +17,5 @@ class HDict(OrderedDict):
 
     def __eq__(self,o):return hash(self) == hash(o)
     def __ne__(self,o):return not self.__eq__(o)
+
+
