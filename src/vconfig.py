@@ -18,7 +18,7 @@ print_cov = True
 
 ### DATA STRUCTURES ###
 is_cov = lambda cov: (isinstance(cov,frozenset) and
-                    all(isinstance(sid,str) for sid in cov))
+                      all(isinstance(sid,str) for sid in cov))
 
 def str_of_cov(cov):
     if vdebug:
@@ -49,12 +49,8 @@ def str_of_dom(dom):
 
 def get_dom(dom_file):
     def get_lines(lines):
-        rs = []
-        for line in lines:
-            parts = line.split()
-            varname = parts[0]
-            varvals = parts[1:]
-            rs.append((varname,frozenset(varvals)))
+        rs = (line.split() for line in lines)
+        rs = ((parts[0],frozenset(parts[1:])) for parts in rs)
         return rs
                       
     dom_file = os.path.realpath(dom_file)
@@ -152,7 +148,6 @@ def str_of_csetting((vn,vs)):
 is_core = lambda c: (c is None or
                      (isinstance(c,HDict) and
                       all(is_csetting(s) for s in c.iteritems())))
-
 is_pncore = lambda (pc,nc): is_core(pc) and is_core(nc)
 is_pncores = lambda cs: (isinstance(cs,list) and
                             all(is_pncore(c) for c in cs))
@@ -178,8 +173,6 @@ def str_of_pncore((pcore,ncore)):
     return '{}, {}'.format(pcore_s(),ncore_s())
 
 ## RESULTS ##
-
-
 is_cores_d = lambda d: (isinstance(d,dict) and
                         (all(isinstance(sid,str) and is_pncore(c)
                              for sid,c in d.iteritems())))
@@ -399,7 +392,6 @@ def infer(configs,existing_core,dom):
         existing_core = HDict([(x,frozenset([y]))
                                for x,y in existing_core.iteritems()])
 
-
     def f(x,s,ldx):
         s_ = set(s)
         for config in configs:
@@ -424,7 +416,13 @@ def infer(configs,existing_core,dom):
     return core    
 
 
-def infer_cov(existing_pcore,configs_p,existing_ncore,configs_n,dom,cached):
+def is_sat(config,core):
+    return all(config[k] in vs for k,vs in core.iteritems())
+               
+def infer_cov(existing_pcore,configs_p,
+              existing_ncore,configs_n,
+              dom,cached,do_partition=False):
+    
     configs_p = frozenset(configs_p)
     key_p = (configs_p,existing_pcore) 
     if key_p in cached:
@@ -434,6 +432,9 @@ def infer_cov(existing_pcore,configs_p,existing_ncore,configs_n,dom,cached):
         pcore = infer(configs_p,existing_pcore,dom)
         cached[key_p] = pcore
 
+    if pcore and do_partition:
+        configs_n = [c for c in configs_n if is_sat(c,pcore)]
+        
     configs_n = frozenset(configs_n)
     key_n = (configs_n,existing_ncore)
     if key_n in cached:
@@ -496,12 +497,12 @@ def infer_covs(configs,covs,existing_cores_d,dom):
             existing_cores_d[sid] = (pcore,ncore)            
             new_cores.add(sid)
 
-    print "pos"
-    print str_of_configs(configs_p)
-    print pcore
-    print "neg"
-    print str_of_configs(configs_n)
-    print ncore
+    # print "pos"
+    # print str_of_configs(configs_p)
+    # print pcore
+    # print "neg"
+    # print str_of_configs(configs_n)
+    # print ncore
     
     return new_covs,new_cores
 
@@ -951,37 +952,37 @@ def run_gt(dom,pathconds_d):
     return cores_d
 
 
-def test_motiv(dom,get_cov):
-    #listen time ssl local anon log chunks
-    #0 1 0 0 1 1 2
-    existing_cores_d = {}        
-    c1 = HDict(zip(dom,'1 0 1 1 1 0 2'.split()))
-    c2 = HDict(zip(dom,'1 0 0 0 0 1 4'.split()))
-    c3 = HDict(zip(dom,'0 1 0 1 0 1 3'.split()))
-    c4 = HDict(zip(dom,'1 0 1 1 0 0 1'.split()))
-    configs = [c1,c2,c3,c4]
-    covs = [get_cov(config) for config in configs]
-    print(str_of_configs(configs,covs))    
-    new_covs,new_cores = infer_cov(configs,covs,existing_cores_d,dom)
-    print(str_of_cores_d(existing_cores_d))    
-    mcores_d = merge_cores_d(existing_cores_d)
-    print(str_of_mcores_d(mcores_d))
-    CM.pause()
+# def test_motiv(dom,get_cov):
+#     #listen time ssl local anon log chunks
+#     #0 1 0 0 1 1 2
+#     existing_cores_d = {}        
+#     c1 = HDict(zip(dom,'1 0 1 1 1 0 2'.split()))
+#     c2 = HDict(zip(dom,'1 0 0 0 0 1 4'.split()))
+#     c3 = HDict(zip(dom,'0 1 0 1 0 1 3'.split()))
+#     c4 = HDict(zip(dom,'1 0 1 1 0 0 1'.split()))
+#     configs = [c1,c2,c3,c4]
+#     covs = [get_cov(config) for config in configs]
+#     print(str_of_configs(configs,covs))    
+#     new_covs,new_cores = infer_cov(configs,covs,existing_cores_d,dom)
+#     print(str_of_cores_d(existing_cores_d))    
+#     mcores_d = merge_cores_d(existing_cores_d)
+#     print(str_of_mcores_d(mcores_d))
+#     CM.pause()
     
-    c5 = HDict(zip(dom,'0 0 0 0 1 1 3'.split()))
-    c6 = HDict(zip(dom,'0 1 1 1 0 1 4'.split()))
-    c7 = HDict(zip(dom,'0 1 0 0 1 1 2'.split()))
-    c8 = HDict(zip(dom,'1 0 1 1 1 0 3'.split()))
+#     c5 = HDict(zip(dom,'0 0 0 0 1 1 3'.split()))
+#     c6 = HDict(zip(dom,'0 1 1 1 0 1 4'.split()))
+#     c7 = HDict(zip(dom,'0 1 0 0 1 1 2'.split()))
+#     c8 = HDict(zip(dom,'1 0 1 1 1 0 3'.split()))
 
-    configs = [c5,c6,c7,c8]
-    covs = [get_cov(config) for config in configs]
-    print(str_of_configs(configs,covs))
-    new_covs,new_cores = infer_cov(configs,covs,existing_cores_d,dom)
-    print(str_of_cores_d(existing_cores_d))
-    mcores_d = merge_cores_d(existing_cores_d)
-    print(str_of_mcores_d(mcores_d))
+#     configs = [c5,c6,c7,c8]
+#     covs = [get_cov(config) for config in configs]
+#     print(str_of_configs(configs,covs))
+#     new_covs,new_cores = infer_cov(configs,covs,existing_cores_d,dom)
+#     print(str_of_cores_d(existing_cores_d))
+#     mcores_d = merge_cores_d(existing_cores_d)
+#     print(str_of_mcores_d(mcores_d))
 
-    return existing_cores_d
+#     return existing_cores_d
 
 """
 Evaluate results:
