@@ -28,7 +28,8 @@ int main(int argc, char **argv){
   printf("L6\n");
   if (local==0 && anon==0)
     return 0;
-  
+
+  //local || anon  
   printf("L7\n");
 
   if (chunk == 2048 || chunk == 4096){
