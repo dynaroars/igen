@@ -17,8 +17,6 @@ def read_config_from_line(l):
 
     return frozenset([tuple(setting.split("=")) for setting in l.strip()])
 
-
-
 def format_pc(lines):
     """
     (Re)format path constraint string
