@@ -18,6 +18,7 @@ vdebug = True
 print_cov = True
 
 ### DATA STRUCTURES ###
+
 is_cov = lambda cov: (isinstance(cov,frozenset) and
                       all(isinstance(sid,str) for sid in cov))
 
@@ -69,11 +70,11 @@ def get_dom(dom_file):
 
     return dom,config_default
 
-def z3_dom(dom):
+def z3_of_dom(dom):
     if vdebug:
         assert is_dom(dom),dom
 
-    z3db = {}  #{'x':(x,{'true':True})}
+    z3dom = {}  #{'x':(x,{'true':True})}
     for k,vs in dom.iteritems():
         vs = sorted(list(vs))
         ttyp,tvals=z3.EnumSort(k,vs)
@@ -82,9 +83,11 @@ def z3_dom(dom):
             rs.append((v,v_))
         rs.append(('typ',ttyp))
 
-        z3db[k]=(z3.Const(k,ttyp),dict(rs))
+        z3dom[k]=(z3.Const(k,ttyp),dict(rs))
         
-    return z3db
+    return z3dom
+
+
 
 ## CONFIG ##
 is_setting = lambda (vn,vv): isinstance(vn,str) and isinstance(vv,str)
@@ -105,21 +108,6 @@ def str_of_config(c):
 
     return ' '.join(map(str_of_setting,c.iteritems()))
 
-def z3_of_config(c,z3db):
-    """
-    return a z3 formula
-    >>> z3_of_config(HDict(),{})
-    """
-    if vdebug:
-        assert is_config(c),c
-
-    f = []
-    for vn,vv in c.iteritems():
-        vn_,vs_ = z3db[vn]
-        f.append(vn_==vs_[vv])
-
-    return z3util.myAnd(f)
-    
 
 is_configs = lambda cs: (isinstance(cs,list) and
                          all(is_config(c) for c in cs))
@@ -139,8 +127,10 @@ def str_of_configs(configs,covs=None):
         return '\n'.join("{}. {}".format(i,str_of_config(c))
                          for i,c in enumerate(configs))
 
-def z3_of_configs(configs,z3db):
-    return z3.myOr([z3_of_config(c,z3db) for c in configs])
+
+def z3_of_configs(configs,z3dom):
+    return z3util.myOr([z3_of_config(c,z3dom) for c in configs])
+    
 
 ## CORE ##
 is_csetting = lambda (vn,vs): isinstance(vn,str) and is_valset(vs)
@@ -150,6 +140,7 @@ def str_of_csetting((vn,vs)):
         assert is_csetting((vn,vs)), (vn,vs)
 
     return '{}={}'.format(vn,str_of_valset(vs))
+
 
 is_core = lambda c: (c is None or
                      (isinstance(c,HDict) and
@@ -165,56 +156,129 @@ def str_of_core(c):
         return "true"  #no constraint
     return ' '.join(map(str_of_csetting,c.iteritems()))
 
-def z3_of_core(c,z3db):
+
+def z3_of_core(c,z3dom):
     if vdebug:
         assert is_core(c) and c,c
 
     f = []
     for vn,vs in c.iteritems():
-        vn_,vs_ = z3db[vn]
-        f.append(z3.myOr([vn_ == vs_[v] for v in vs]))
+        vn_,vs_ = z3dom[vn]
+        f.append(z3util.myOr([vn_ == vs_[v] for v in vs]))
 
-    return z3.myAnd(f)
-    
-        
-is_cdcore = lambda (cc,dc): is_core(cc) and is_core(dc)
+    return z3util.myAnd(f)
 
-def str_of_cdcore((ccore,dcore)):
+
+is_cdcore = lambda(cc,dc): is_core(cc) and is_core(dc)
+
+def str_of_cdcore((cc,dc)):
+    return "c({}), d({})".format(str_of_core(cc),str_of_core(dc))
+
+def z3_of_cdcore((cc,dc),z3dom):
+    """
+    >>> z3dom = z3_of_dom(OrderedDict([('listen', frozenset(['1', '0'])), ('timeout', frozenset(['1', '0'])), ('ssl', frozenset(['1', '0'])), ('local', frozenset(['1', '0'])), ('anon', frozenset(['1', '0'])), ('log', frozenset(['1', '0'])), ('chunks', frozenset(['0', '65536', '4096', '2048']))]))
+
+    >>> cdc = (None,None)
+    >>> assert z3_of_cdcore(cdc,z3dom) is None
+
+    >>> cdc = (HDict([('listen', frozenset(['1'])), ('timeout', frozenset(['1']))]), None)
+    >>> z3_of_cdcore(cdc,z3dom)
+    And(listen == 1, timeout == 1)
+
+    """
     if vdebug:
-        assert is_cdcore((ccore,dcore)), (ccore,dcore)
+        assert is_cdcore((cc,dc)), (cc,dc)
 
-    return 'p({}), n({})'.format(str_of_core(ccore),str_of_core(dcore))
+    conj = lambda: z3_of_core(cc,z3dom)
+    disj = lambda: z3.Not(z3_of_core(dc,z3dom))
 
-def z3_of_cdcore((ccore,dcore)):
-    if vdebug:
-        assert is_cdcore((ccore,dcore)), (ccore,dcore)
 
-    conj = lambda: z3_of_core(ccore)
-    disj = lambda: z3.Not(z3_of_core(dcore))
-
-    if ccore is None and dcore is None:
+    if cc is None: # no data
         return None
-    elif ccore is None and dcore is not None:
-        return disj() if dcore else z3util.TRUE
-    elif ccore is not None and dcore is None:
-        return conj() if ccore else z3util.TRUE
-    else:  #ccore is not None and dcore is not None:
-        if ccore and dcore:
-            return z3.myAnd(conj(),disj())
-        elif ccore and not dcore:
+    elif cc:
+        if dc:
+            return z3util.myAnd(conj(),disj())
+        else:
             return conj()
-        elif not ccore and dcore:
+    else:
+        if dc:
             return disj()
         else:
             return z3util.TRUE
-    
+            
 
-is_cdcores = lambda cs: (isinstance(cs,list) and
-                         all(is_cdcore(c) for c in cs))
+def z3_of_pncore((pc,nc),z3dom):
+    z3_pc = z3_of_cdcore(pc,z3dom)
+    if z3_pc:
+        z3_pc = z3.simplify(z3_pc)
+        
+    z3_nc = z3_of_cdcore(nc,z3dom)
+    if z3_nc:
+        z3_nc = z3.Not(z3_nc)
+        z3_nc = z3.simplify(z3_nc)
+
+    print 'f1', z3_pc, 'f2', z3_nc
+    
+    if z3_pc is None:
+        return z3_nc
+    elif z3_nc is None:
+        return z3_pc
+    else:
+        if z3util.is_tautology(z3.Implies(z3_pc,z3_nc)):
+            return z3_pc
+        elif z3util.is_tautology(z3.Implies(z3_nc,z3_pc)):
+            return z3_nc
+        else:
+            logger.warn("inconsistent ? {}".format(str_of_pncore((pc,nc))))
+            
+        
+
+    
+    
+is_pncore = lambda (pc,nc):  is_cdcore(pc) and is_cdcore(nc)
+
+def str_of_pncore((pc,nc)):
+    return "p: {}, n: {}".format(str_of_cdcore(pc),str_of_cdcore(nc))
+
+
+def get_inv((p1,p2,n1,n2),configs,dom):
+    """
+    Return a *real* inv/overapprox over configs
+    inv = (conj,disj)
+    """
+    #pos traces => p1 & not(n2)
+    if p1: #x & y 
+        if not all(c_implies(c,p1) for c in configs):
+            p1 = None
+
+    if n2: # y & z => not(y) | not(z)
+        n2 = neg_of_core(n2,core,dom)
+        if not all(d_implies(c,n2) for c in configs):
+            n2 = None
+    
+    #neg traces => n1 & not(p2)
+    #not(n1) || p2
+    if n1 is None and p2 is None:
+        pass
+    elif n1 is not None and p2 is None:
+        n1 = neg_of_core(n1,core,dom)
+        if not all(d_implies(c,n1) for c in configs):
+            n1 = None
+    elif n1 is None and p2 is not None:
+        if not all(c_implies(c,p2) for c in configs):
+            p2 = None
+    else:
+        n1 = neg_of_core(n1,core,dom)
+        if not all(d_implies(c,n1) or c_implies(c,p2) 
+                   for c in configs):
+            n1 = None
+            p2 = None
+
+
 
 ## RESULTS ##
 is_cores_d = lambda d: (isinstance(d,dict) and
-                        (all(isinstance(sid,str) and is_cdcore(c)
+                        (all(isinstance(sid,str) and is_pncore(c)
                              for sid,c in d.iteritems())))
                             
 def str_of_cores_d(cores_d):
@@ -222,7 +286,7 @@ def str_of_cores_d(cores_d):
         assert is_cores_d(cores_d),cores_d
         
     return '\n'.join("{}. {}: {}"
-                     .format(i+1,sid,str_of_cdcore(cores_d[sid]))
+                     .format(i+1,sid,str_of_pncore(cores_d[sid]))
                      for i,sid in enumerate(sorted(cores_d)))
 
 def merge_cores_d(cores_d):
@@ -230,12 +294,12 @@ def merge_cores_d(cores_d):
         assert is_cores_d(cores_d), cores_d
         
     mcores_d = OrderedDict()
-    for sid,cdcore in cores_d.iteritems():
+    for sid,pncore in cores_d.iteritems():
         
-        if cdcore in mcores_d:
-            mcores_d[cdcore].add(sid)
+        if pncore in mcores_d:
+            mcores_d[pncore].add(sid)
         else:
-            mcores_d[cdcore] = set([sid])
+            mcores_d[pncore] = set([sid])
 
     for sid in mcores_d:
         mcores_d[sid]=frozenset(mcores_d[sid])
@@ -247,7 +311,7 @@ def merge_cores_d(cores_d):
 
 
 is_mcores_d = lambda d: (isinstance(d,dict) and
-                         all(is_cdcore(c) and is_cov(cov)
+                         all(is_pncore(c) and is_cov(cov)
                              for c,cov in d.iteritems()))
 
 def str_of_mcores_d(mcores_d):
@@ -255,24 +319,24 @@ def str_of_mcores_d(mcores_d):
         assert is_mcores_d(mcores_d),mcores_d
 
     mcores_d_ = sorted(mcores_d.iteritems(),
-                       key=lambda (c,cov):(strength_cdcore(c),len(cov)))
+                       key=lambda (c,cov):(strength_pncore(c),len(cov)))
 
     return '\n'.join("{}. ({}) {}: {}"
                      .format(i+1,
-                             strength_cdcore(cdcore),
-                             str_of_cdcore(cdcore),
+                             strength_pncore(pncore),
+                             str_of_pncore(pncore),
                              str_of_cov(cov))
-                     for i,(cdcore,cov) in enumerate(mcores_d_))
+                     for i,(pncore,cov) in enumerate(mcores_d_))
 
 def mcores_d_strengths(mcores_d):
     if vdebug:
         assert is_mcores_d(mcores_d),mcores_d
     
     res = []
-    sizs = [strength_cdcore(c) for c in mcores_d]
+    sizs = [strength_pncore(c) for c in mcores_d]
 
     for siz in sorted(set(sizs)):
-        siz_conds = [c for c in mcores_d if strength_cdcore(c) == siz]
+        siz_conds = [c for c in mcores_d if strength_pncore(c) == siz]
         cov = set()
         for c in siz_conds:
             for sid in mcores_d[c]:
@@ -291,17 +355,34 @@ def str_of_mcores_d_strengths(mstrengths):
                   format(siz,ninters,ncovs))
     return ','.join(ss)
         
-def strength_core(c):
+# def strength_core(c):
+#     if vdebug:
+#         assert is_core(c),c
+#     return len(c) if c else 0
+
+#strength_pncore = lambda (cores): sum(map(strength_core,cores))
+
+def settings_of_pncore(((pc,pd),(nc,nd))):
+    settings = []
+    for c in [pc,pd,nc,nd]:
+        if c:
+            settings.extend(c.hcontent)
+    settings = list(set(settings))
+    return settings
+
+strength_pncore = lambda pncore: len(settings_of_pncore(pncore))
+
+
+def post_process(mcores_d,dom):
     if vdebug:
-        assert is_core(c),c
-    if c is None:
-        return -1
-    return len(c)
+        assert is_dom(dom)
 
-strength_cdcore = lambda (pc,nc): strength_core(pc) + strength_core(nc)
-
-
+    dom_z3 = z3_of_dom(dom)
+    for pncore,sids in mcores_d.iteritems():
+        pass
+    
 ### MISCS UTILS ###
+
 
 def load_dir(dirname):
     iobj = CM.vload(os.path.join(dirname,'info'))
@@ -319,7 +400,7 @@ def print_iter_stat(robj):
                 .format(len(samples),len(new_covs),len(new_cores)) +
                 "{}".format("** progress **" if new_covs or new_cores else ""))
                 
-    logger.debug('sel_core\n{}'.format(str_of_cdcore(sel_core)))
+    logger.debug('sel_core\n{}'.format(str_of_pncore(sel_core)))
     logger.debug('samples\n'+str_of_configs(samples,covs))
     mcores_d = merge_cores_d(cores_d)
     logger.debug('mcores\n{}'.format(str_of_mcores_d(mcores_d)))
@@ -458,7 +539,7 @@ def infer(configs,old_core,dom):
 
     return core    
 
-def infer_core(old_core,configs,dom,cache):
+def infer_cache(old_core,configs,dom,cache):
     if vdebug:
         assert is_core(old_core),old_core
         assert is_configs(configs),configs
@@ -475,47 +556,45 @@ def infer_core(old_core,configs,dom,cache):
         
     return core
 
-def infer_partition(old_ccore,pconfigs,all_pconfigs,all_nconfigs,
+#x=1&y=0&z=0 => x={1,2}&y={0,1}
+c_implies = lambda config,core: all(config[k] in core[k] for k in core)
+#x=1&y=1&z=0 => x={1}|y={3,1}
+d_implies = lambda config,core: any(config[k] in core[k] for k in core)
+def neg_of_core(core,dom): 
+    if not core:
+        return core
+    else:
+        return HDict([(k,dom[k]-core[k]) for k in core])
+
+def infer_partition((old_pc,old_nc),
+                    pconfigs,nconfigs,all_pconfigs,
                     dom,cache):
     if vdebug:
-        assert is_core(old_ccore),old_ccore
+        assert is_core(old_pc),old_pc
+        assert is_core(old_nc),old_pc
         assert is_configs(pconfigs),pconfigs
-        assert is_configs(all_pconfigs),all_pconfigs
-        assert is_configs(all_nconfigs),all_nconfigs
+        assert is_configs(nconfigs),nconfigs
+        assert is_configs(all_pconfigs),nconfigs
         assert is_dom(dom),dom
-        
-    def implies_c(config,ccore):
-        return all(config[k] in vs for k,vs in ccore.iteritems())
-
-    def implies_d(config,dcore):
-        return any(config[k] in vs for k,vs in dcore.iteritems())
     
-    ccore = infer_core(old_ccore,pconfigs,dom,cache)
+    pc = infer_cache(old_pc,pconfigs,dom,cache)
+    if pc != old_pc and old_pc:
+        nconfigs = [c for c in nconfigs if not c_implies(c,old_pc)]
 
-    #partition traces & infer invs
-    if ccore:
-        print str_of_configs(all_nconfigs)
-        all_nconfigs = [c for c in all_nconfigs if implies_c(c,ccore)]
-        
-    dcore = infer_core(None,all_nconfigs,dom,cache)
-    if dcore:
+    if pc:
+        nconfigs = [c for c in nconfigs if c_implies(c,pc)]
+
+    nc = infer_cache(old_nc,nconfigs,dom,cache)
+    if pc and nc:
         #simplify
-        if ccore:
-            dcore = HDict([(k,vs) for k,vs in dcore.iteritems()
-                           if (k,vs) not in ccore.hcontent])
+        nc = HDict([(k,vs) for k,vs in nc.iteritems()
+                    if (k,vs) not in pc.hcontent])
+    
+    return pc,nc
 
-        #negate
-        dcore = HDict([(k,dom[k]-vs) for k,vs in dcore.iteritems()])
-
-        #verify
-        if not all(implies_d(c,dcore) for c in all_pconfigs):
-            dcore = HDict()
-
-    return ccore,dcore  #proper overapproximation
-        
 def infer_covs(configs,covs,old_cores_d,dom,configs_cache):
     """
-    old_cores_d = {sid : cdcore}
+    old_cores_d = {sid : ((pcore1,pcore2),(ncore1,ncore2))}
     """
     if vdebug:
         assert is_configs(configs), configs
@@ -536,9 +615,9 @@ def infer_covs(configs,covs,old_cores_d,dom,configs_cache):
     cache = {}
     for sid in sorted(sids):
         if sid in old_cores_d:
-            old_ccore,old_dcore = old_cores_d[sid]
+            old_pcdc,old_ncdc = old_cores_d[sid]
         else:
-            old_ccore,old_dcore = (None,None)
+            old_pcdc,old_ncdc = ((None, None), (None, None))
             new_covs.add(sid)
 
         pconfigs,nconfigs = [],[]
@@ -548,40 +627,26 @@ def infer_covs(configs,covs,old_cores_d,dom,configs_cache):
             else:
                 nconfigs.append(c)
 
-        all_pconfigs,all_nconfigs = [],[]
+        all_pconfigs,all_nconfigs=[],[]
         for c,cov in configs_cache.iteritems():
             if sid in cov:
                 all_pconfigs.append(c)
             else:
                 all_nconfigs.append(c)
+        
+        new_pcdc = infer_partition(
+            old_pcdc,pconfigs,nconfigs,all_pconfigs,dom,cache)
 
-        pccore,pdcore = infer_partition(
-            old_ccore,pconfigs,all_pconfigs,all_nconfigs,dom,cache)
+        new_ncdc = infer_partition(
+            old_ncdc,nconfigs,pconfigs,all_nconfigs,dom,cache)
             
-        nccore,ndcore = infer_partition(
-            old_dcore,nconfigs,all_nconfigs,all_pconfigs,dom,cache)
+        old_pcdc = old_pcdc,old_ncdc
+        new_pcdc = new_pcdc,new_ncdc
 
-        print sid
-        print str_of_cdcore((ccore,dcore))
-        print str_of_cdcore((ccore2,dcore2))
-
-        # make progress ?
-        old_cdcore = (old_ccore,old_dcore)        
-        cdcore = (ccore,dcore)
-        if cdcore != old_cdcore:
-            if vdebug:
-                assert is_cdcore(cdcore),cdcore
-            
-            old_cores_d[sid] = cdcore
+        if not old_pcdc == new_pcdc: #progress
             new_cores.add(sid)
-        # print sid
-        # print "pos"
-        # print str_of_configs(configs_p)
-        # print ccore
-        # print "neg"
-        # print str_of_configs(configs_n)
-        # print dcore
-
+            old_cores_d[sid] = new_pcdc
+            
     return new_covs,new_cores
 
 ### generate configs
@@ -691,22 +756,22 @@ def gen_configs_core(n,core,dom):
     return configs 
     
 
-def gen_configs_cores(cdcore,dom):
+def gen_configs_cores(pncore,dom):
     if vdebug:
-        assert is_cdcore(cdcore), cdcore
+        assert is_pncore(pncore), pncore
         assert is_dom(dom), dom
 
-    ccore,dcore = cdcore        
+    pc1,_,nc1,_ = pncore        
 
     configs_p = []
-    strength_ccore = strength_core(ccore)
-    if strength_ccore > 0:
-        configs_p = gen_configs_core(strength_ccore,ccore,dom)
+    strength_pc1 = strength_core(pc1)
+    if strength_pc1 > 0:
+        configs_p = gen_configs_core(strength_pc1,pc1,dom)
 
     configs_n = []
-    strength_dcore = strength_core(dcore)
-    if strength_dcore > 0:
-        configs_n = gen_configs_core(strength_dcore,dcore,dom)
+    strength_nc1 = strength_core(nc1)
+    if strength_nc1 > 0:
+        configs_n = gen_configs_core(strength_nc1,nc1,dom)
 
     configs = list(set(configs_p + configs_n))
     
@@ -723,7 +788,7 @@ def select_core(cores,ignore_sizs,ignore_cores):
         assert isinstance(ignore_cores,set),ignore_cores        
 
     cores = [core for core in cores if core not in ignore_cores]
-    core_strengths = [strength_cdcore(cdcore) for cdcore in cores]
+    core_strengths = [strength_pncore(pncore) for pncore in cores]
     sizs = set(core_strengths) - ignore_sizs
     sizs = [stren for stren in sizs if stren >= min_sel_stren]
     if sizs:
@@ -731,7 +796,7 @@ def select_core(cores,ignore_sizs,ignore_cores):
         cores_siz = [core for core,strength in zip(cores,core_strengths)
                      if strength==siz]
 
-        core = max(cores_siz,key=lambda (cp,cn):(strength_core(cp),strength_core(cn)))
+        core = max(cores_siz,key=lambda c:strength_pncore(c))
         return core  #tuple (core_l,dcore)
     else:
         return None
@@ -755,7 +820,7 @@ def eval_samples(samples,get_cov,cache):
     return samples,covs,time() - st
 
 
-def risce(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
+def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
           config_default=None,prefix='vu'):
     """
     cover_siz=(0,n):  generates n random configs
@@ -789,7 +854,7 @@ def risce(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
     ignore_sizs = set()
     ignore_cores = set()
     configs_cache = OrderedDict()
-    sel_core = (None,None)
+    sel_core = ((None,None),(None,None))
   
     #begin
     st = time()
@@ -867,7 +932,7 @@ def risce(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
         else: #no progress
             cur_stuck += 1
             if cur_stuck >= max_stuck:
-                #ignore_sizs.add(strength_cdcore(sel_core))
+                #ignore_sizs.add(strength_pncore(sel_core))
                 cur_stuck = 0
 
     #final refinement
@@ -878,13 +943,13 @@ def risce(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
 
 
 #Shortcuts
-def risce_full(dom,get_cov,tmpdir=None,prefix='vu'):
-    return risce(dom,get_cov,seed=None,tmpdir=tmpdir,
+def intgen_full(dom,get_cov,tmpdir=None,prefix='vu'):
+    return intgen(dom,get_cov,seed=None,tmpdir=tmpdir,
                  cover_siz=(0,-1),config_default=None,
                  prefix=prefix)
 
-def risce_pure_rand(dom,get_cov,rand_n,seed=None,tmpdir=None,prefix='vu'):
-    return risce(dom,get_cov,seed=seed,tmpdir=tmpdir,
+def intgen_pure_rand(dom,get_cov,rand_n,seed=None,tmpdir=None,prefix='vu'):
+    return intgen(dom,get_cov,seed=seed,tmpdir=tmpdir,
                  cover_siz=(0,rand_n),config_default=None,
                  prefix=prefix)
 
@@ -900,12 +965,12 @@ def risce_pure_rand(dom,get_cov,rand_n,seed=None,tmpdir=None,prefix='vu'):
 
 # def igraph(mcores_d):
 #     g = {}
-#     for cdcore in mcores_d:
-#         g[cdcore]=[]
-#         for cdcore_ in mcores_d:
-#             if cdcore != cdcore_:
-#                 ccore,dcore = cdcore
-#                 ccore_,dcore_ = cdcore_
+#     for pncore in mcores_d:
+#         g[pncore]=[]
+#         for pncore_ in mcores_d:
+#             if pncore != pncore_:
+#                 ccore,dcore = pncore
+#                 ccore_,dcore_ = pncore_
 #                 x = mimplies(ccore,ccore_)
 #                 y = mimplies(dcore,dcore_)
 #                 if x is None and y is None:
@@ -917,23 +982,23 @@ def risce_pure_rand(dom,get_cov,rand_n,seed=None,tmpdir=None,prefix='vu'):
 #                 else:
 #                     r = x and y
 #                 if r:
-#                     print "1. {} => {}".format(str_of_cdcore(cdcore),str_of_cdcore(cdcore_))
+#                     print "1. {} => {}".format(str_of_pncore(pncore),str_of_pncore(pncore_))
 #                     print ccore, ccore_
 #                     print "2. {} => {}".format(str_of_core(ccore), str_of_core(ccore_))
 #                     print dcore,dcore_
 #                     print "3. {} => {}".format(str_of_core(dcore), str_of_core(dcore_))
 #                     print ""
 #                     CM.pause()
-#                     g[cdcore].append(cdcore_)
+#                     g[pncore].append(pncore_)
 #     return g
     
 # def str_of_igraph(g):
 #     ss = []
-#     for cdcore,cdcores in g.iteritems():
+#     for pncore,pncores in g.iteritems():
 #         ss.append("{}: ({}) {}"
-#                   .format(str_of_cdcore(cdcore),
-#                           len(cdcores),
-#                           ', '.join(str_of_cdcore(c) for c in cdcores)))
+#                   .format(str_of_pncore(pncore),
+#                           len(pncores),
+#                           ', '.join(str_of_pncore(c) for c in pncores)))
 #     return '\n'.join(ss)
 
 ### Experiments ###
@@ -1158,4 +1223,79 @@ def doctestme():
 
 if __name__ == "__main__":
     print 'loaded'
+    doctestme()
 
+
+
+
+
+# def is_formula(f):
+#     """
+#     ('or',[('x','1'),('y','0')])
+    
+#     """
+#     if is_csetting(f):
+#         return True
+#     else:
+#         return (isinstance(f,tuple) and len(f)==2 and 
+#                 isinstance(f[0],str) and 
+#                 isinstance(f[1],list) and 
+#                 all(is_formula(c) for c in f[1]))
+
+
+
+# def z3_of_config(c,z3dom):
+#     """
+#     return a z3 formula
+#     >>> z3_of_config(HDict(),{})
+#     """
+#     if vdebug:
+#         assert is_config(c),c
+
+#     f = []
+#     for vn,vv in c.iteritems():
+#         vn_,vs_ = z3dom[vn]
+#         f.append(vn_==vs_[vv])
+
+#     return z3util.myAnd(f)
+    
+
+
+    
+
+
+
+# def str_of_cdcore(cc,dc):
+#     conj = lambda: z3_of_core(ccore)
+#     disj = lambda: z3.Not(z3_of_core(dcore))
+
+#     if ccore is None and dcore is None:
+#         return None
+#     elif ccore is None and dcore is not None:
+#         return disj() if dcore else z3util.TRUE
+#     elif ccore is not None and dcore is None:
+#         return conj() if ccore else z3util.TRUE
+#     else:  #ccore is not None and dcore is not None:
+#         if ccore and dcore:
+#             return z3util.myAnd(conj(),disj())
+#         elif ccore and not dcore:
+#             return conj()
+#         elif not ccore and dcore:
+#             return disj()
+#         else:    
+# def str_of_pncore():
+
+#     f1 = str_of_cdcore((p1,p2))
+
+
+
+# def str_of_cdcore((ccore,dcore)):
+#     if vdebug:
+#         assert is_cdcore((ccore,dcore)), (ccore,dcore)
+
+#     return 'p({}), n({})'.format(str_of_core(ccore),str_of_core(dcore))
+
+
+
+# is_cdcores = lambda cs: (isinstance(cs,list) and
+#                          all(is_cdcore(c) for c in cs))
