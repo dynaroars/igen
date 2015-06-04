@@ -5,6 +5,8 @@ import itertools
 import random
 
 from config_miscs import HDict
+import z3
+import z3util
 import vu_common as CM
 
 logger = CM.VLog('config')
@@ -53,25 +55,31 @@ def str_of_configs(configs,covs=None):
 
 is_core = lambda core: (isinstance(core,HDict) and
                         all(is_csetting(s) for s in core.iteritems()))
-def str_of_core(core):
+def str_of_core(core,delim=' '):
+    if CM.__vdebug__:
+        assert is_core(core), core
+        
     if core:
-        return ' '.join(map(str_of_csetting,core.iteritems()))
+        return delim.join(map(str_of_csetting,core.iteritems()))
     else:
         return 'true'
 
-def is_pncore((c1,c2,c3,c4)):
-    return all(c is None or is_core(c) for c in [c1,c2,c3,c4])
+def is_pncore((pc,pd,nc,nd)):
+    return all(c is None or is_core(c) for c in (pc,pd,nc,nd))
 
-def str_of_pncore((c1,c2,c3,c4)):
+def str_of_pncore((pc,pd,nc,nd)):
+    if CM.__vdebug__:
+        assert is_pncore((pc,pd,nc,nd)), (pc,pd,nc,nd)
+        
     ss = []
-    if c1 is not None:
-        ss.append("c1: {}".format(str_of_core(c1)))
-    if c2 is not None:
-        ss.append("c2: {}".format(str_of_core(c2)))
-    if c3 is not None:
-        ss.append("c3: {}".format(str_of_core(c3)))
-    if c4 is not None:
-        ss.append("c4: {}".format(str_of_core(c4)))
+    if pc is not None:
+        ss.append("pc: {}".format(str_of_core(pc)))
+    if pd is not None:
+        ss.append("pd: {}".format(str_of_core(pd)))
+    if nc is not None:
+        ss.append("nc: {}".format(str_of_core(nc)))
+    if nd is not None:
+        ss.append("nd: {}".format(str_of_core(nd)))
 
     return ', '.join(ss)
 
@@ -87,8 +95,8 @@ def str_of_cores_d(cores_d):
                      for i,sid in enumerate(sorted(cores_d)))
 
 is_mcores_d = lambda mcores_d: (isinstance(mcores_d,dict) and
-                               all(is_pncore(c) and is_cov(cov)
-                                   for c,cov in mcores_d.iteritems()))
+                                all(is_pncore(c) and is_cov(cov)
+                                    for c,cov in mcores_d.iteritems()))
 def str_of_mcores_d(mcores_d):
     if CM.__vdebug__:
         assert is_mcores_d(mcores_d),mcores_d
@@ -105,9 +113,16 @@ def str_of_mcores_d(mcores_d):
     return '\n'.join(ss)
 
 # Functions on Data Structures
-config_c_implies = lambda c,d: all(c[k] in d[k] for k in d)
-config_d_implies = lambda c,d: any(c[k] in d[k] for k in d)
-    
+config_c_implies = lambda c,d: len(d) == 0 or all(c[k] in d[k] for k in d)
+config_d_implies = lambda c,d: len(d) == 0 or any(c[k] in d[k] for k in d)
+
+def neg_of_core(core,dom):
+    if CM.__vdebug__:
+        assert is_core(core),core
+        assert is_dom(dom),dom
+
+    return HDict((k,dom[k]-core[k]) for k in core)
+
 pncore_mk_default = lambda : (None,None,None,None)
 def settings_of_pncore(pncore):
     if CM.__vdebug__:
@@ -121,7 +136,7 @@ def settings_of_pncore(pncore):
     return settings
 stren_of_pncore = lambda pncore: len(settings_of_pncore(pncore))
     
-def cores_d_merge(cores_d):
+def merge_cores_d(cores_d):
     if CM.__vdebug__:
         assert is_cores_d(cores_d),cores_d
 
@@ -461,7 +476,6 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
 
     return cores_d,configs_cache
 
-
 #Shortcuts
 def intgen_full(dom,get_cov,tmpdir=None,prefix='vu'):
     return intgen(dom,get_cov,seed=None,tmpdir=tmpdir,
@@ -472,6 +486,186 @@ def intgen_rand(dom,get_cov,rand_n,seed=None,tmpdir=None,prefix='vu'):
     return intgen(dom,get_cov,seed=seed,tmpdir=tmpdir,
                  cover_siz=(0,rand_n),config_default=None,
                  prefix=prefix)
+
+#postprocess
+def analyze(cores_d,configs_cache,dom):
+    if CM.__vdebug__:
+        assert is_cores_d(cores_d),cores_d
+
+    rs = {}
+    for sid,core in cores_d.iteritems():
+        print sid
+        print str_of_pncore(core)
+        if configs_cache:
+            configs = [c for c in configs_cache if sid in configs_cache[c]]
+            if configs:
+                core = verify_pncore(core,configs,dom)
+                print 'verify'
+                print str_of_pncore(core)
+                
+        core = simplify_pncore(core,dom)
+        print 'simplify'
+        print str_of_pncore(core)
+        print 'final', fstr_of_pncore(core,dom)
+        rs[sid]=core
+    return rs
+
+
+def verify_pncore((pc,pd,nc,nd),configs,dom):
+    if CM.__vdebug__:
+        assert is_pncore((pc,pd,nc,nd)), (pc,pd,nc,nd)
+        assert pc is not None, pc #this never could happen
+        #nc is None => pd is None
+        assert (nc is not None or pd is None), (nc,nd)
+        assert all(is_config(c) for c in configs) and configs, configs
+        assert is_dom(dom),dom
+        
+    #traces => pc & neg(pd)
+        
+    if pc:
+        assert all(config_c_implies(c,pc) for c in configs), pc
+        
+    if pd:
+        pd_n = neg_of_core(pd,dom)
+        if not all(config_d_implies(c,pd_n) for c in configs):
+            print 'pd {} invalid'.format(str_of_core(pd))
+            pd = None
+
+    #neg traces => nc & neg(nd)
+    #pos traces => neg(nc & neg(nd))
+    #post traces => nd | neg(nc) 
+    if nc is not None and nd is None:
+        nc_n = neg_of_core(nc,dom)
+        print nc_n
+        if not all(config_d_implies(c,nc_n) for c in configs):
+            print 'nc {} invalid'.format(str_of_core(nc))
+            nc = None
+    elif nc is None and nd is not None:
+        if not all(config_c_implies(c,nd) for c in configs):
+            print 'nd {} invalid'.format(str_of_core(nd))
+            nd = None
+    elif nc is not None and nd is not None:
+        nc_n = neg_of_core(nc,dom)
+        if not all(config_c_implies(c,nd) or config_d_implies(c,nc_n)
+                   for c in configs):
+            print 'nc & nd invalid'
+            nc = None
+            nd = None
+
+    #if pc is None, i.e., no data then everything is None
+    
+    return (pc,pd,nc,nd)
+        
+def simplify_pncore((pc,pd,nc,nd),dom):
+    """
+    Compare between (pc,pd) and (nc,nd) and return the stronger one.
+    This will set either (pc,pd) or (nc,nd) to (None,None)
+    
+    Assumption: all 4 cores are verified
+    """
+    if CM.__vdebug__:
+        assert is_pncore((pc,pd,nc,nd)), (pc,pd,nc,nd)
+        assert pc is not None, pc #this never could happen
+        #nc is None => pd is None
+        assert (nc is not None or pd is None), (nc,nd)
+
+    #pf = pc & neg(pd)
+    #nf = neg(nc & neg(nd)) = nd | neg(nc)
+
+    #remove empty ones
+    if not pc: pc = None
+    if not pd: pd = None
+    if not nc: nc = None
+    if not nd: nd = None
+
+    # print pc,pd
+    # print nc,nd
+    if (pc is None and pd is None) or (nc is None and nd is None):
+        return (pc,pd,nc,nd)
+
+    #convert to z3
+    z3db = z3db_of_dom(dom)
+    fs = []
+    if pc:
+        f = z3expr_of_core(pc,z3db,myf=z3util.myAnd)
+        fs.append(f)
+    if pd:
+        pd_n = neg_of_core(pd,dom)
+        f = z3expr_of_core(pd_n,z3db,myf=z3util.myOr)
+        fs.append(f)
+
+    pf = z3util.myAnd(fs)
+
+    fs = []
+    if nd:
+        f = z3expr_of_core(nd,z3db,myf=z3util.myAnd)
+        fs.append(f)
+    if nc:
+        nc_n = neg_of_core(nc,dom)
+        f = z3expr_of_core(nc_n,z3db,myf=z3util.myOr)
+        fs.append(f)
+    nf = z3util.myOr(fs)
+
+    # print pc,pd
+    # print pf    
+    # print nc,nd
+    # print nf
+    
+    if z3util.is_tautology(z3.Implies(pf,nf)):
+        nc = None
+        nd = None
+    elif z3util.is_tautology(z3.Implies(nf,pf)):
+        pc = None
+        pd = None
+    else:
+        raise AssertionError("inconsistent ? {}"
+                             .format(str_of_pncore((pc,pd,nc,nd))))
+
+    return (pc,pd,nc,nd)
+
+def fstr_of_pncore((pc,pd,nc,nd),dom):
+    """
+    Assumption: all 4 cores are verified and simplified
+    
+    """
+    if CM.__vdebug__:
+        assert pc is None or is_core(pc) and pc, pc
+        assert pd is None or is_core(pd) and pd, pd
+        assert nc is None or is_core(nc) and nc, nc
+        assert nd is None or is_core(nd) and nd, nd
+        assert ((pc is None and pd is None) or
+                (nc is None and nd is None)), (pc,pd,nc,nd)
+        assert is_dom(dom),dom
+        
+    def _f(core,delim):
+        s = str_of_core(core,delim)
+        if len(core) > 1:
+            s = '({})'.format(s)
+        return s
+
+    def _cd(ccore,dcore):
+        ss = []
+        if ccore:
+            ss.append(_f(ccore,' & '))
+        if dcore:
+            print 'dcore'
+            print dcore
+            assert is_dom(dom),dom
+            dcore_n = neg_of_core(dcore,dom)
+            ss.append(_f(dcore_n, ' | '))
+        return ss
+            
+    ss = ''
+    if (nc is None and nd is None):
+        #pc & not(pd)
+        ss = _cd(pc,pd)
+        ss = ' & '.join(ss)
+    else:
+        #not(nc & not(nd))  =  not(nc) | nd
+        ss = _cd(nd,nc)
+        ss = ' | '.join(ss)
+        
+    return ss
 
 #Miscs
 
@@ -560,7 +754,7 @@ def print_iter_stat(robj):
     logger.debug('sel_core: {}'.format(sel_core))
     logger.debug('samples\n'+str_of_configs(samples,covs))
     print str_of_cores_d(cores_d)
-    mcores_d = cores_d_merge(cores_d)
+    mcores_d = merge_cores_d(cores_d)
     logger.debug('mcores\n{}'.format(str_of_mcores_d(mcores_d)))
     #logger.info(mcores_d.stren_str)
     return mcores_d
@@ -645,3 +839,34 @@ def run_gt(dom,pathconds_d,n=None):
     logger.info("infer conds for {} covered lines ({}s)"
                 .format(len(cores_d),time()-st))
     return cores_d
+
+
+#z3 stuff
+def z3db_of_dom(dom):
+    if CM.__vdebug__:
+        assert is_dom(dom), dom
+        
+    z3db = {}  #{'x':(x,{'true':True})}
+    for k,vs in dom.iteritems():
+        vs = sorted(list(vs))
+        ttyp,tvals=z3.EnumSort(k,vs)
+        rs = []
+        for v,v_ in zip(vs,tvals):
+            rs.append((v,v_))
+        rs.append(('typ',ttyp))
+
+        z3db[k]=(z3.Const(k,ttyp),dict(rs))
+    return z3db
+
+def z3expr_of_core(core,z3db,myf):
+    if CM.__vdebug__:
+        assert is_core(core) and core, core
+        f = []
+        for vn,vs in core.iteritems():
+            vn_,vs_ = z3db[vn]
+            f.append(z3util.myOr([vn_ == vs_[v] for v in vs]))
+        return myf(f)
+
+
+
+    
