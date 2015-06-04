@@ -2,7 +2,6 @@ import os.path
 from time import time
 from collections import OrderedDict
 import vu_common as CM
-from vconfig_miscs import HDict
 
 #miscs
 
@@ -161,23 +160,6 @@ def get_data(exp_dir):
     return pathconds_d
 
 
-
-
-
 #pathconds_d = get_data('/Users/tnguyen/Src/Devel/iTree_stuff/expData/vsftpd/rawExecutionPaths')
-
-def get_cov(config,args):
-    """
-    len(get_cov(frozenset([(k,random.choice(vs)) for k,vs in dom.iteritems()]),args))
-    """
-    pathconds_d = args['pathconds_d']  #{fset(configs):[cov]}
-    sids = set()
-    for covs,samples in pathconds_d.itervalues():
-        if any(config.hcontent.issuperset(sample) for sample in samples):
-            for sid in covs:
-                sids.add(sid)
-
-    sids = list(set(sids))
-    return sids
 
 
