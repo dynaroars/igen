@@ -1,167 +1,158 @@
 import tempfile
-import random
+from time import time
 import os.path
 import itertools
-from collections import OrderedDict
-from time import time
+import random
 
-import z3
+from config_miscs import HDict
 import vu_common as CM
 
-from vconfig_miscs import (Dom, Config, Configs,
-                           Core, PCore, NCore, PNCore, CORES_D, MCORES_D,
-                           is_cov)
-import vconfig_miscs
-
-vconfig_miscs.print_cov = False
 logger = CM.VLog('config')
 logger.level = CM.VLog.DEBUG
 CM.VLog.PRINT_TIME = True
+CM.__vdebug__ = True
+do_comb_conj_disj = True
+
+#Data Structures
+print_cov = True
+is_cov = lambda cov: (isinstance(cov,set) and
+                      all(isinstance(sid,str) for sid in cov))
+def str_of_cov(cov):
+    return ','.join(sorted(cov)) if print_cov else str(len(cov))
+
+is_valset = lambda vs: (isinstance(vs,frozenset) and vs and
+                       all(isinstance(v,str) for v in vs))
+def str_of_valset(s): return ','.join(sorted(s))
+    
+is_setting = lambda (k,v): isinstance(k,str) and isinstance(k,str)
+def str_of_setting((k,v)): return '{}={}'.format(k,v)
+
+is_csetting = lambda (k,vs): isinstance(k,str) and is_valset(vs)
+def str_of_csetting((k,vs)): return '{}={}'.format(k,str_of_valset(vs))
+
+is_dom = lambda dom: (isinstance(dom,HDict) and dom and
+                    all(is_csetting(s) for s in dom.iteritems()))
+def str_of_dom(dom):
+    return '\n'.join("{}: {}".format(k,str_of_valset(dom[k]))
+                     for k in dom)
+
+is_config = lambda c: (isinstance(c,HDict) and c and
+                       all(is_setting(s) for s in c.iteritems()))
+def str_of_config(config):
+    return ' '.join(map(str_of_setting,config.iteritems()))
+
+def str_of_configs(configs,covs=None):
+    if covs:
+        ss = ("{}: {}".format(str_of_config(c),str_of_cov(cov))
+              for c,cov in zip(configs,covs))
+    else:
+        ss = (str_of_config(c) for c in configs)
 
 
-### MISCS UTILS ###
+    return '\n'.join("{}. {}".format(i+1,s) for i,s in enumerate(ss))
+
+is_core = lambda core: (isinstance(core,HDict) and
+                        all(is_csetting(s) for s in core.iteritems()))
+def str_of_core(core):
+    if core:
+        return ' '.join(map(str_of_csetting,core.iteritems()))
+    else:
+        return 'true'
+
+def is_pncore((c1,c2,c3,c4)):
+    return all(c is None or is_core(c) for c in [c1,c2,c3,c4])
+
+def str_of_pncore((c1,c2,c3,c4)):
+    ss = []
+    if c1 is not None:
+        ss.append("c1: {}".format(str_of_core(c1)))
+    if c2 is not None:
+        ss.append("c2: {}".format(str_of_core(c2)))
+    if c3 is not None:
+        ss.append("c3: {}".format(str_of_core(c3)))
+    if c4 is not None:
+        ss.append("c4: {}".format(str_of_core(c4)))
+
+    return ', '.join(ss)
 
 
-def load_dir(dirname):
-    iobj = CM.vload(os.path.join(dirname,'info'))
-    rfiles = [os.path.join(dirname,f) for f in os.listdir(dirname)
-              if f.endswith('.tvn')]
-    robjs = [CM.vload(rfile) for rfile in rfiles]
-    return iobj, robjs
+is_cores_d = lambda cores_d: (isinstance(cores_d,dict) and
+                              all(isinstance(sid,str) and is_pncore(c)
+                                  for sid,c in cores_d.iteritems()))
+def str_of_cores_d(cores_d):
+    if CM.__vdebug__:
+        assert is_cores_d(cores_d),cores_d
+    return '\n'.join("{}. {}: {}".format(i+1,sid,
+                                         str_of_pncore(cores_d[sid]))
+                     for i,sid in enumerate(sorted(cores_d)))
 
-def print_iter_stat(robj):
-    (citer,etime,ctime,samples,covs,new_covs,new_cores,sel_core,cores_d) = robj
-    print ''
-    logger.info("ITER {}, ".format(citer) +
-                "{0:.2f}s, ".format(etime) +
-                "{0:.2f}s eval, ".format(ctime) +
-                "total: {} samples, {} covs, {} cores, "
-                .format(0,0,0)+
-                "new: {} samples, {} covs, {} cores, "
-                .format(len(samples),len(new_covs),len(new_cores)) +
-                "{}".format("** progress **"
-                            if new_covs or new_cores else ""))
-                            
-                
-    logger.debug('sel_core: {}'.format(sel_core))
-    logger.debug('samples\n'+samples.__str__(covs))
-    mcores_d = cores_d.merge()
-    logger.debug('mcores\n{}'.format(mcores_d))
-    logger.info(mcores_d.strength_str)
+is_mcores_d = lambda mcores_d: (isinstance(mcores_d,dict) and
+                               all(is_pncore(c) and is_cov(cov)
+                                   for c,cov in mcores_d.iteritems()))
+def str_of_mcores_d(mcores_d):
+    if CM.__vdebug__:
+        assert is_mcores_d(mcores_d),mcores_d
+    
+    mc = sorted(mcores_d.iteritems(),
+                key=lambda (core,cov): (stren_of_pncore(core),len(cov)))
+
+    ss = ("{}. ({}) {}: {}"
+          .format(i+1,
+                  stren_of_pncore(core),str_of_pncore(core),
+                  str_of_cov(cov))
+          for i,(core,cov) in enumerate(mc))
+
+    return '\n'.join(ss)
+
+# Functions on Data Structures
+config_c_implies = lambda c,d: all(c[k] in d[k] for k in d)
+config_d_implies = lambda c,d: any(c[k] in d[k] for k in d)
+    
+pncore_mk_default = lambda : (None,None,None,None)
+def settings_of_pncore(pncore):
+    if CM.__vdebug__:
+        assert is_pncore(pncore), pncore
+        
+    settings = set()
+    for c in pncore:
+        if c:
+            for s in c.iteritems():
+                settings.add(s)
+    return settings
+stren_of_pncore = lambda pncore: len(settings_of_pncore(pncore))
+    
+def cores_d_merge(cores_d):
+    if CM.__vdebug__:
+        assert is_cores_d(cores_d),cores_d
+
+    mcores_d = {}
+    for sid,core in cores_d.iteritems():
+        if core in mcores_d:
+            mcores_d[core].add(sid)
+        else:
+            mcores_d[core] = set([sid])
+
     return mcores_d
 
-def str_of_summary(seed,iters,ntime,ctime,nsamples,ncovs,tmpdir):
-    s = ("Summary: Seed {}, Iters {}, Time ({}, {}), Samples {}, Covs {}, Tmpdir '{}'"
-         .format(seed,iters,ntime,ctime,nsamples,ncovs,tmpdir))
-    return s
-    
-def replay(dirname):
-    iobj,robjs = load_dir(dirname)
-    seed,dom = iobj
-    logger.info('seed: {}'.format(seed))
-    logger.debug(str_of_dom(dom))
-
-    ntime = 0.0
-    nsamples = 0
-    ncovs = 0
-    robjs = sorted(robjs,key=lambda robj: robj[0])
-    for robj in robjs:
-        if len(robj) == 9:
-            (citer,etime,ctime,samples,covs,
-             new_covs,new_cores,sel_core,cores_d) = robj
-        else: #old format
-            (citer,etime,samples,covs,
-             new_covs,new_cores,sel_core,cores_d) = robj
-            ctime = 0.0
-            robj = (citer,etime,ctime,samples,covs,
-                    new_covs,new_cores,sel_core,cores_d)
-
-        mcores_d = print_iter_stat(robj)
-        ntime+=etime
-        nsamples+=len(samples)
-        ncovs+=len(new_covs)
-        #print mstrengths
-        # minint = mstrengths[0][0]
-        # maxint = mstrengths[-1][0]
-        # tt = [citer+1,nsamples,ncovs,len(mcores_d),"{} ({},{})".format(len(mstrengths),minint,maxint)]
-        #print "{}\\\\".format(" & ".join(map(str,tt)))
-        
-    niters = len(robjs)
-    logger.info(str_of_summary(seed,niters,
-                               ntime,ctime,
-                               nsamples,ncovs,dirname))
-
-    return niters,ntime,ctime,nsamples,ncovs,mcores_d
-
-def mk_tcover(vals,cover_siz,tseed,tmpdir):
-        """
-        Call external program to generate t-covering arrays
-
-        sage: mk_tcover([[1,2],[1,2,3],[4,5]], 2, 0,'/tmp/')
-        cmd: cover -r 0 -s 0 -o  /tmp/casaOutput.txt /tmp/casaInput.txt
-        [[1, 1, 5], [2, 1, 4], [2, 2, 5], [1, 2, 4], [2, 3, 4], [1, 3, 5]]
-
-        #linux gives this
-        [[2, 3, 4], [1, 3, 5], [1, 1, 4], [2, 1, 5], [2, 2, 4], [1, 2, 5]]
-        """
-        if CM.__vdebug__:
-            assert tseed >= 0 , tseed
-
-        if cover_siz > len(vals):
-            cover_siz = len(vals)
-
-        infile = os.path.join(tmpdir,"casaInput.txt")
-        outfile = os.path.join(tmpdir,"casaOutput.txt")
-
-        #create input
-        in_contents = "{}\n{}\n{}".format(
-            cover_siz,len(vals),' '.join(map(str,map(len,vals))))
-        CM.vwrite(infile,in_contents)
-        
-        #exec cover on file
-        copt = "-r 0 -s {} -o ".format(tseed)
-        cmd ="cover {} {} {}".format(copt,outfile,infile)
-        logger.debug("cmd: {}".format(cmd))
-        try:
-            _,rs_err = CM.vcmd(cmd)
-            assert len(rs_err) == 0, rs_err
-        except:
-            logger.error("cmd '{}' failed".format(cmd))
-
-        
-        #read output
-        vals_ = CM.vflatten(vals)
-        lines = [l.strip() for l in CM.iread(outfile)]
-        vs = []
-        for l in lines[1:]: #ignore size of covering array
-            idxs = map(int,l.split())
-            assert len(idxs) == len(vals)
-            vs.append([vals_[i] for i in idxs])
-        return vs
-
-### inference ###
-def infer(configs,old_core,dom):
+#Inference algorithm
+def infer(configs,core,dom):
     """
-    Overapproximation in *conjunctive* form
+    Approximation in *conjunctive* form
     """
     if CM.__vdebug__:
-        assert old_core is None or isinstance(old_core,Core),old_core
-        assert isinstance(configs,Configs),configs
-        assert isinstance(dom,Dom),dom
+        assert all(is_config(c) for c in configs) and configs, configs
+        assert core is None or is_core(core),core        
+        assert is_dom(dom),dom
 
-    if not configs:
-        return old_core
-
-    if old_core is None:  #not yet set
-        old_core = min(configs,key=lambda c:len(c))
-        old_core = Core([(x,frozenset([y]))
-                               for x,y in old_core.iteritems()])
-
-    def f(x,s,ldx):
+    if core is None:  #not yet set
+        core = min(configs,key=lambda c:len(c))
+        core = HDict((k,frozenset([v])) for k,v in core.iteritems())
+        
+    def f(k,s,ldx):
         s_ = set(s)
         for config in configs:
-            if x in config:
-                s_.add(config[x])
+            if k in config:
+                s_.add(config[k])
                 if len(s_) == ldx:
                     return None
             else:
@@ -169,127 +160,112 @@ def infer(configs,old_core,dom):
         return s_
 
     settings = []
-    for x,ys in old_core.iteritems():
-        ys_ = f(x,ys,len(dom[x]))
-        if ys_:
-            settings.append((x,frozenset(ys_)))
+    for k,vs in core.iteritems():
+        vs_ = f(k,vs,len(dom[k]))
+        if vs_:
+            settings.append((k,frozenset(vs_)))
             
-    core = Core(settings)
-    return core    
+    core = HDict(settings)
+    return core  
 
-def infer_cache(old_core,configs,dom,cache):
+def infer_cache(core,configs,dom,cache):
     if CM.__vdebug__:
-        assert old_core is None or isinstance(old_core,Core),old_core
-        assert isinstance(configs,Configs),configs
-        assert isinstance(dom,Dom),dom
-    
+        assert core is None or is_core(core),core
+        assert all(is_config(c) for c in configs) and configs, configs
+        assert is_dom(dom),dom
+        assert isinstance(cache,dict),cache
+
     configs = frozenset(configs)
-    key = (configs,old_core)
-    if key in cache:
-        core = cache[key]
-    else:
-        configs = Configs(configs)
-        core = infer(configs,old_core,dom)
-        cache[key] = core
-        
-    return core
-
-
-def infer_partition(old_c,pconfigs,all_nconfigs,dom,cache):
-                    
+    key = (configs,core)
+    if key not in cache:
+        cache[key] = infer(configs,core,dom)
+    return cache[key]
+    
+def infer_covs(configs,covs,cores_d,dom,configs_cache):
     if CM.__vdebug__:
-        assert isinstance(old_c,PCore) or isinstance(old_c,NCore),old_c
-        assert isinstance(pconfigs,Configs),pconfigs
-        assert isinstance(all_nconfigs,Configs),all_nconfigs
-        assert isinstance(dom,Dom),dom
-
-    cc = infer_cache(old_c.conj,pconfigs,dom,cache)
-    if cc:
-        all_nconfigs = Configs(c for c in all_nconfigs if c.c_implies(cc))
-
-    dc = infer_cache(old_c.disj,all_nconfigs,dom,cache)
-
-    if cc and dc:
-        #simplify
-        dc = Core(e for e in dc.iteritems() if e not in cc.hcontent)
-
-    return old_c.__class__((cc,dc))
-
-def infer_covs(configs,covs,old_cores_d,dom,configs_cache):
-    if CM.__vdebug__:
-        assert isinstance(configs,Configs), configs
-        assert all(is_cov(cov) for cov in covs), covs        
-        assert isinstance(old_cores_d,CORES_D), old_cores_d
-        assert isinstance(dom,Dom), dom
+        assert all(is_config(c) for c in configs) and configs, configs
+        assert all(is_cov(cov) for cov in covs), covs
+        assert len(configs) == len(covs), (len(configs),len(covs))
+        assert is_cores_d(cores_d), cores_d
+        assert is_dom(dom), dom
 
     new_covs,new_cores = set(),set()  #updated stuff
     
     if not configs:
         return new_covs,new_cores
 
-    sids = set(old_cores_d.keys())
+    sids = set(cores_d.keys())
     for cov in covs:
         for sid in cov:
             sids.add(sid)
-
-    logger.debug("infer {} cov".format(len(sids)))
+            
+    logger.debug("infer invs for {} cov using {} configs"
+                 .format(len(sids),len(configs)))
     
     cache = {}
     for i,sid in enumerate(sorted(sids)):
-        pconfigs,nconfigs = Configs(),Configs()
-        for c,cov in zip(configs,covs):
-            if sid in cov:
-                pconfigs.append(c)
-            else:
-                nconfigs.append(c)
-
-        all_pconfigs,all_nconfigs=Configs(),Configs()
-        for c,cov in configs_cache.iteritems():
-            if sid in cov:
-                all_pconfigs.append(c)
-            else:
-                all_nconfigs.append(c)
-        
-        if sid in old_cores_d:
-            old_c = old_cores_d[sid]
+        #logger.debug(sid)
+        if sid in cores_d:
+             pc,pd,nc,nd = cores_d[sid]
         else:
-            old_c = PNCore.mk_default()
-            new_covs.add(sid)
+             pc,pd,nc,nd = pncore_mk_default()
+             new_covs.add(sid)
+             
+        new_pc,new_pd,new_nc,new_nd = pc,pd,nc,nd
+        
+        pconfigs,nconfigs = [],[]
+        for config,cov in zip(configs,covs):
+            if sid in cov:
+                pconfigs.append(config)
+            else:
+                nconfigs.append(config)
 
-        new_pc = infer_partition(
-            old_c.pcore,pconfigs,all_nconfigs,dom,cache)
+        if pconfigs:
+            new_pc = infer_cache(pc,pconfigs,dom,cache)
 
-        new_nc = infer_partition(
-            old_c.ncore,nconfigs,all_pconfigs,dom,cache)
-            
-        new_c = PNCore((new_pc,new_nc))
+        if nconfigs:
+            new_nc = infer_cache(nc,nconfigs,dom,cache)
 
-        if not old_c == new_c: #progress
+        if do_comb_conj_disj:
+            if new_pc:
+                nconfigs = [c for c in configs_cache
+                           if sid not in configs_cache[c] and
+                           config_c_implies(c,new_pc)]
+                if nconfigs:
+                    new_pd = infer_cache(pd,nconfigs,dom,cache) 
+                    if new_pd:
+                        new_pd = HDict(e for e in new_pd.iteritems()
+                                       if e not in new_pc.hcontent)
+                    
+            if new_nc:
+                pconfigs = [c for c in configs_cache
+                            if sid in configs_cache[c] and
+                            config_c_implies(c,new_nc)]
+                if pconfigs:
+                    new_nd = infer_cache(nc,pconfigs,dom,cache)
+                    if new_nd:
+                        new_nd = HDict(e for e in new_nd.iteritems()
+                                       if e not in new_nc.hcontent)
+
+        if not (new_pc,new_pd,new_nc,new_nd) == (pc,pd,nc,nd): #progress
             new_cores.add(sid)
-            old_cores_d[sid] = new_c
-
-        print "{}/{}, sid {}".format(i,len(sids),sid)
-        print 'all_pconfigs', len(all_pconfigs)
-        print new_pc
-        
-        print 'all_nconfigs', len(all_nconfigs)
-        print new_nc
-
-        
+            cores_d[sid] = (new_pc,new_pd,new_nc,new_nd)
 
     return new_covs,new_cores
 
-        
+#Interpretation algorithm
+
+
+#Interative algorithm
 def gen_configs_core(n,core,dom):
     """
     create n configs by changing n settings in core
     """
     if CM.__vdebug__:
         assert n > 0, n
-        assert isinstance(core,Core) and core, core
-        assert isinstance(dom,Dom),dom
+        assert is_core(core) and core, core
+        assert is_dom(dom),dom
 
-    
     vnames = random.sample(core.keys(),n)
     vvals = [dom[x]-core[x] for x in vnames]
     
@@ -298,7 +274,7 @@ def gen_configs_core(n,core,dom):
         for v in vval:
             changes.append((vname,v))
 
-    configs = Configs()
+    configs = []
     for x,y in changes:
         settings = []
         for k in dom:
@@ -311,147 +287,46 @@ def gen_configs_core(n,core,dom):
                     v = random.choice(list(dom[k]))
             settings.append((k,v))
 
-        config = Config(settings)
+        config = HDict(settings)
         configs.append(config)
     return configs
     
-
 def gen_configs_cores(core,dom):
     if CM.__vdebug__:
-        assert isinstance(core,PNCore), core
-        assert isinstance(dom,Dom), dom
-    pc = core.pcore.conj
-    pd = core.pcore.disj
-    nc = core.ncore.conj
-    nd = core.ncore.disj
-    cores = set(c for c in [pc,pd,nc,nd] if c)
-    print '\n'.join(map(str,cores))
-        
+        assert is_pncore(core) and core, core        
+        assert is_dom(dom),dom
+
+    cores = set(c for c in core if c)
     configs = []        
     for c in cores:
         configs.extend(gen_configs_core(len(c),c,dom))
         
-    configs = Configs.uniq(configs)
+    configs = set(configs)
     return configs
 
-### iterative refinement alg
-def core_c_implies(c1,c2):
-    """
-    c1 => c2
-    #x&y&z => x&y
-    >>> assert core_c_implies(dict(zip(['x','y','z'],[frozenset(['1']),frozenset(['1']),frozenset(['1'])])),dict(zip(['x','y'],[frozenset(['1']),frozenset(['1'])])))
-
-    #x&y&z=1|2 => x,z=1|2|3
-    >>> assert core_c_implies(dict(zip(['x','y','z'],[frozenset(['1']),frozenset(['1','2']),frozenset(['1'])])),dict(zip(['x','y'],[frozenset(['1']),frozenset(['1','2','3'])])))
-
-    #x&y&z=1|2 => x,z=1|2
-    >>> assert core_c_implies(dict(zip(['x','y','z'],[frozenset(['1']),frozenset(['1','2','3']),frozenset(['1'])])),dict(zip(['x','y'],[frozenset(['1']),frozenset(['1','2','3'])])))
-    
-    #not(x&y&z=1|2 => x,z=1)
-    >>> c1 = dict(zip(['x','y','z'],[frozenset(['1']),frozenset(['1','2','3']),frozenset(['1'])]))
-    >>> c2 = dict(zip(['x','y'],[frozenset(['1']),frozenset(['1'])]))
-    >>> assert not core_c_implies(c1,c2)
-    >>> assert not core_c_implies(c2,c1)
-
-    """
-    return all(k in c1 and c1[k].issubset(c2[k]) for k in c2)
-
-       
-def mycheck(pncore,configs,dom):
-    """
-    Check for correct rapprox over configs 
-    """
-    pc = pncore.pcore.conj
-    pd = pncore.pcore.disj
-    nc = pncore.ncore.conj
-    nd = pncore.ncore.disj
-
-    #pos traces => self.pcore.conj & self.pcore.disj.neg
-
-    if pc:
-        if not all(c.c_implies(pc) for c in configs):
-            print 'pc invalid'
-            pc = None
-
-    if pd:
-        pd_neg = pd.neg(dom)
-        if not all(c.d_implies(pd_neg) for c in configs):
-            print 'pd invalid'
-            pd = None
-
-    #neg traces => self.ncore.conj & self.ncore.disj.neg
-    #pos traces => self.ncore.conj.neg | self.ncore.disj
-    if nc is not None and nd is None:
-        nc_neg = nc.neg(dom)
-        if not all(c.d_implies(nc_neg) for c in configs):
-            print 'nc invalid'
-            nc = None
-    elif nc is None and nd is not None:
-        if not all(c.c_implies(nd) for c in configs):
-            print 'nd invalid'
-            nd = None
-    elif nc is not None and nd is not None:
-        nc_neg = nc.neg(dom)
-        if not all(c.d_implies(nc_neg) or c.c_implies(nd)
-                   for c in configs):
-            print 'nc & nd invalid'
-            nc = None
-            nd = None
-
-    return PNCore.mk(pc,pd,nc,nd)
-
-
-def postprocess(cores_d,configs_cache,dom):
+def select_core(cores,ignore_strens,ignore_cores):
     if CM.__vdebug__:
-        assert isinstance(cores_d,CORES_D), cores_d
-
-    logger.debug("postprocessing")
-    
-    rs = []
-    for sid,core in cores_d.iteritems():
-        configs = [c for c,cov in configs_cache.iteritems()
-                   if sid in cov]
-
-        print sid
-        print core
-        print 'checking {}'.format(sid)
-        core = mycheck(core,configs,dom)
-        print core
-        print 'simplify {}'.format(sid)        
-        cdcore = core.z3simplify(dom)
-        print 'final result {}'.format(cdcore)
-        
-        rs.append((sid,core))
-        
-    return CORES_D(rs)
-
-min_sel_stren=0
-def select_core(cores,ignore_sizs,ignore_cores):
-    if CM.__vdebug__:
-        assert isinstance(ignore_sizs,set),ignore_sizs
+        assert all(is_pncore(c) for c in cores) and cores,cores
+        assert isinstance(ignore_strens,set),ignore_strens
         assert isinstance(ignore_cores,set),ignore_cores        
 
-    cores = [core for core in cores if core not in ignore_cores]
-    core_strengths = [core.strength for core in cores]
-    sizs = set(core_strengths) - ignore_sizs
-    sizs = [stren for stren in sizs if stren >= min_sel_stren]
-    if sizs:
-        siz = max(sizs)
-        cores_siz = [core for core,strength in zip(cores,core_strengths)
-                     if strength==siz]
-
-        core = max(cores_siz,key=lambda c:c.strength)
-        return core  #tuple (core_l,dcore)
+    cores = [(core,stren_of_pncore(core)) for core in cores
+             if core not in ignore_cores]
+    cores = [(core,stren) for core,stren in cores
+             if stren and stren not in ignore_strens]
+    if cores:
+        core = max(cores,key=lambda (c,stren):stren)[0]
+        return core
     else:
         return None
-
+    
 def eval_samples(samples,get_cov,cache):
     if CM.__vdebug__:
-        assert isinstance(samples,Configs),samples
+        assert all(is_config(c) for c in samples), samples
         assert isinstance(cache,dict),cache
 
     st = time()
-    samples_ = Configs()
+    samples_ = []
     for config in samples:
         if config not in cache:
             cov = get_cov(config)
@@ -471,10 +346,10 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
     cover_siz=(0,-1):  generates full random configs
     """
     if CM.__vdebug__:
-        assert isinstance(dom,Dom),dom
+        assert is_dom(dom),dom
         assert callable(get_cov),get_cov
         assert (config_default is None or
-                isinstance(config_default,Config)), config_default
+                is_config(config_default)), config_default
 
     seed = round(time(),2) if seed is None else float(seed)
     random.seed(seed)
@@ -490,14 +365,14 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
     CM.vsave(ifile,iobj)
     
     #some settings
-    cores_d = CORES_D()  #results {sid: (core_l,dcore)}
+    cores_d = {} 
     cur_iter = 0
     max_stuck = 2
     cur_stuck = 0
-    ignore_sizs = set()
+    ignore_strens = set()
     ignore_cores = set()
-    configs_cache = OrderedDict()
-    sel_core = PNCore.mk_default()
+    configs_cache = {}
+    sel_core = pncore_mk_default()
   
     #begin
     st = time()
@@ -506,28 +381,28 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
     
     #initial samples
     if cover_siz:
-        cstrength,max_confs = cover_siz
-        if cstrength == 0:
+        cstren,max_confs = cover_siz
+        if cstren == 0:
             if max_confs < 0:
-                samples = dom.gen_configs_full()
+                samples = gen_configs_full(dom)
                 logger.info("Gen all {} configs".format(len(samples)))
             else:
-                samples = dom.gen_configs_rand(max_confs)
+                samples = gen_configs_rand(max_confs,dom)
                 logger.info("Gen {} rand configs".format(len(samples)))
         else:
-            samples = dom.gen_configs_tcover(cstrength,seed,tmpdir)
+            samples = gen_configs_tcover(cstren,seed,tmpdir)
             samples_rand_n = max_confs - len(samples)
 
             if samples_rand_n:
-                samples_ = dom.gen_configs_rand(samples_rand_n)
+                samples_ = gen_configs_rand(samples_rand_n,dom)
                 samples.extend(samples_)
 
-            samples = Configs.uniq(samples)
+            samples = list(set(samples))
             logger.info("Gen {} {}-cover configs"
-                        .format(len(samples),cstrength))
+                        .format(len(samples),cstren))
                                 
     else:
-        samples = Dom.gen_configs_tcover1(dom)
+        samples = gen_configs_tcover1(dom)
 
     if config_default:
         samples.append(config_default)
@@ -554,7 +429,7 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
         
         cur_iter += 1
         sel_core = select_core(set(cores_d.values()),
-                               ignore_sizs,ignore_cores)
+                               ignore_strens,ignore_cores)
         if sel_core:
             ignore_cores.add(sel_core)
         else:
@@ -562,7 +437,6 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
                         'done at iter {}'.format(cur_iter))
 
             break
-
         samples = gen_configs_cores(sel_core,dom)
         samples,covs,ctime = eval_samples(samples,get_cov,configs_cache)
         cov_time += ctime
@@ -570,12 +444,12 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
 
         if new_covs or new_cores: #progress
             cur_stuck = 0
-            ignore_sizs.clear()
+            ignore_strens.clear()
             
         else: #no progress
             cur_stuck += 1
             if cur_stuck >= max_stuck:
-                ignore_sizs.add(sel_core.strength)
+                ignore_strens.add(stren_of_pncore(sel_core))
                 cur_stuck = 0
 
     #postprocess
@@ -599,71 +473,115 @@ def intgen_rand(dom,get_cov,rand_n,seed=None,tmpdir=None,prefix='vu'):
                  cover_siz=(0,rand_n),config_default=None,
                  prefix=prefix)
 
-### Experiments ###
+#Miscs
 
-def benchmark_stats(results_dir,strength_thres=100000000):
-    niters_total = 0
-    ntime_total = 0
-    nctime_total = 0    
-    nsamples_total = 0
-    ncovs_total = 0
-    nruns_total = 0
-    mcores_d_s = []
-    mstrengths_s = []
-    for rdir in os.listdir(results_dir):
-        rdir = os.path.join(results_dir,rdir)
-        niters,ntime,ctime,nsamples,ncovs,mcores_d = replay(rdir)
-        niters_total += niters
-        ntime_total += ntime
-        nctime_total += (ntime - ctime)
-        nsamples_total += nsamples
-        ncovs_total += ncovs
-        mcores_d_s.append(mcores_d)
-        mstrengths_s.append(mcores_d.strength_cts)
-        nruns_total += 1
+def get_dom(dom_file):
+    def get_lines(lines):
+        rs = (line.split() for line in lines)
+        rs = ((parts[0],frozenset(parts[1:])) for parts in rs)
+        return rs
 
-    nruns_total = float(nruns_total)
-    logger.info("avg: " + 
-                "iter {} ".format(niters_total/nruns_total) +
-                "time {} ".format(ntime_total/nruns_total) +
-                "xtime {} ".format(nctime_total/nruns_total) +                
-                "samples {} ".format(nsamples_total/nruns_total) +
-                "covs {} ".format(ncovs_total/nruns_total)
-                )
+    dom_file = os.path.realpath(dom_file)
+    dom = HDict(get_lines(CM.iread_strip(dom_file)))
 
-    sres = {}
-    for mstrengths in mstrengths_s:
-        for strength,ninters,ncov in mstrengths:
-            if strength >= strength_thres:
-                strength = strength_thres
-                
-            if strength not in sres:
-                sres[strength] = ([ninters],[ncov])
+    config_default = None
+    dom_file_default = os.path.realpath(dom_file+'.default')
+    if os.path.isfile(dom_file_default):
+        rs = get_dom_lines(CM.iread_strip(dom_file_default))
+        config_default = HDict((k,list(rs[k])[0]) for k in rs)
+
+    return dom,config_default
+
+#generate configs
+siz_of_dom = lambda d: CM.vmul(len(y) for _,y in d)
+def gen_configs_full(dom):
+    if CM.__vdebug__:
+        assert is_dom(dom),dom
+    
+    ns,vs = itertools.izip(*dom.iteritems())
+    configs = [HDict(zip(ns,c)) for c in itertools.product(*vs)]
+    return configs
+
+def gen_configs_rand(n,dom):
+    if CM.__vdebug__:
+        assert n > 0,n
+        assert is_dom(dom),dom        
+
+    if n >= siz_of_dom(dom):
+        return gen_configs_full(dom)
+
+    rgen = lambda: [(k,random.choice(list(dom[k]))) for k in dom]
+    configs = list(set(HDict(rgen()) for _ in range(n)))
+    return configs
+
+def gen_configs_tcover1(dom):
+    """
+    Return a set of tcover array of stren 1
+    """
+    if CM.__vdebug__:
+        assert is_dom(dom), dom
+        
+    dom_used = dict((k,set(dom[k])) for k in dom)
+
+    def mk():
+        config = []
+        for k in dom:
+            if k in dom_used:
+                v = random.choice(list(dom_used[k]))
+                dom_used[k].remove(v)
+                if not dom_used[k]:
+                    dom_used.pop(k)
             else:
-                inters,covs = sres[strength]
-                inters.append(ninters)
-                covs.append(ncov)
+                v = random.choice(list(dom[k]))
+
+            config.append((k,v))
+        return HDict(config)
+
+    configs = []
+    while dom_used:
+        configs.append(mk())
+
+    return configs
 
 
-    for strength in sorted(sres):
-        inters,covs = sres[strength]
-        logger.info("({},{},{})"
-                    .format(strength,
-                            sum(inters)/float(len(mstrengths_s)),
-                            sum(covs)/float(len(mstrengths_s))))
-######
+def print_iter_stat(robj):
+    (citer,etime,ctime,samples,covs,new_covs,new_cores,sel_core,cores_d) = robj
+    logger.info("ITER {}, ".format(citer) +
+                "{0:.2f}s, ".format(etime) +
+                "{0:.2f}s eval, ".format(ctime) +
+                "total: {} samples, {} covs, {} cores, "
+                .format(0,0,0)+
+                "new: {} samples, {} covs, {} cores, "
+                .format(len(samples),len(new_covs),len(new_cores)) +
+                "{}".format("** progress **"
+                            if new_covs or new_cores else ""))
+                            
+                
+    logger.debug('sel_core: {}'.format(sel_core))
+    logger.debug('samples\n'+str_of_configs(samples,covs))
+    print str_of_cores_d(cores_d)
+    mcores_d = cores_d_merge(cores_d)
+    logger.debug('mcores\n{}'.format(str_of_mcores_d(mcores_d)))
+    #logger.info(mcores_d.stren_str)
+    return mcores_d
 
+def str_of_summary(seed,iters,ntime,ctime,nsamples,ncovs,tmpdir):
+    s = ("Summary: Seed {}, Iters {}, Time ({}, {}), Samples {}, Covs {}, Tmpdir '{}'"
+         .format(seed,iters,ntime,ctime,nsamples,ncovs,tmpdir))
+    return s
+
+#Tests
 
 def prepare_motiv(dom_file,prog_file):
     import ex_motiv_run
         
-    dom,_ = Dom.get_dom(dom_file)
+    dom,_ = get_dom(dom_file)
     prog =  os.path.realpath(prog_file)
     assert os.path.isfile(prog), prog
     logger.info("dom_file: '{}', ".format(dom_file) + 
                 "prog_file: '{}'".format(prog_file))
-    args = {'varnames':dom.keys(),
-            'prog': prog}
+    args = {'prog': prog,
+            'varnames':dom.keys()}
     get_cov = lambda config: ex_motiv_run.get_cov(config,args)
     return dom,get_cov
 
@@ -674,51 +592,56 @@ def prepare_otter(prog):
     exp_dir = dir_ + '/rawExecutionPaths'.format(prog)
     pathconds_d_file = dir_ + '/pathconds_d.tvn'.format(prog)
 
-    import ex_otter
-    
-    dom,_ = Dom.get_dom(dom_file)
+    dom,_ = get_dom(dom_file)
     if os.path.isfile(pathconds_d_file):
         logger.info("read from '{}'".format(pathconds_d_file))
         pathconds_d = CM.vload(pathconds_d_file)
     else:
+        import ex_otter        
         logger.info("read from '{}'".format(exp_dir))
         pathconds_d = ex_otter.get_data(exp_dir)
 
     logger.info("read {} pathconds".format(len(pathconds_d)))
     args = {'pathconds_d':pathconds_d}
-    get_cov = lambda config: ex_otter.get_cov(config,args)
+    get_cov = lambda config: otter_get_cov(config,args)
     
     return dom,get_cov,pathconds_d
 
+def otter_get_cov(config,args):
+    if CM.__vdebug__:
+        assert is_config(config),config
+        
+    pathconds_d = args['pathconds_d']
+    sids = set()
+    for covs,samples in pathconds_d.itervalues():
+        if any(config.hcontent.issuperset(sample) for sample in samples):
+            for sid in covs:
+                sids.add(sid)
+
+    sids = list(sids)
+    return sids
+
     
-def run_gt(dom,pathconds_d):
+def run_gt(dom,pathconds_d,n=None):
     """
     Obtain conditions using Otter's pathconds
     """
-    allsamples = Configs()
-    allcovs = []
-    for covs,samples in pathconds_d.itervalues():
+    if CM.__vdebug__:
+        assert n is None or 0 <= n <= pathconds_d, n
+    allsamples,allcovs = [],[]
+    ks = random.sample(pathconds_d,n) if n else pathconds_d.iterkeys()
+    for k in ks:
+        covs,samples = pathconds_d[k]
         for sample in samples:
-            allsamples.append(Config(sample))
+            allsamples.append(HDict(sample))
             allcovs.append(covs)
 
-    logger.info("infer interactions using {} samples".format(len(allsamples)))
+    logger.info("infer interactions using {} samples"
+                .format(len(allsamples)))
     st = time()
-    cores_d = CORES_D()
+    cores_d = {}
     configs_cache = {}
     infer_covs(allsamples,allcovs,cores_d,dom,{})
     logger.info("infer conds for {} covered lines ({}s)"
                 .format(len(cores_d),time()-st))
     return cores_d
-
-def doctestme():
-    import doctest
-    doctest.testmod()
-
-
-
-if __name__ == "__main__":
-    print 'loaded'
-    doctestme()
-
-
