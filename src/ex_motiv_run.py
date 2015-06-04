@@ -8,9 +8,7 @@ def get_cov(config,args):
     tmpdir = '/var/tmp/'
     prog = os.path.realpath(os.path.expanduser(prog))
     assert os.path.isfile(prog), prog
-    
-    config_d = dict(config)
-    var_vals = tuple([str(config_d[vname]) for vname in varnames])
+    var_vals = tuple([str(config[vname]) for vname in varnames])
     traces = os.path.join(tmpdir,'t.out')
     # print prog
     # print var_vals
