@@ -22,6 +22,9 @@ is_cov = lambda cov: (isinstance(cov,set) and
 def str_of_cov(cov):
     return ','.join(sorted(cov)) if print_cov else str(len(cov))
 
+is_cov_d = lambda cov_d: (isinstance(cov_d,dict) and
+                          all(isinstance(sid,str) for sid in cov_d))
+                              
 is_valset = lambda vs: (isinstance(vs,frozenset) and vs and
                        all(isinstance(v,str) for v in vs))
 def str_of_valset(s): return ','.join(sorted(s))
@@ -687,7 +690,7 @@ def get_dom(dom_file):
     return dom,config_default
 
 #generate configs
-siz_of_dom = lambda d: CM.vmul(len(y) for _,y in d)
+siz_of_dom = lambda d: CM.vmul(len(vs) for vs in d.itervalues())
 def gen_configs_full(dom):
     if CM.__vdebug__:
         assert is_dom(dom),dom
@@ -778,50 +781,111 @@ def prepare_motiv(dom_file,prog_file):
             'varnames':dom.keys()}
     get_cov = lambda config: ex_motiv_run.get_cov(config,args)
     return dom,get_cov
-
+   
 def prepare_otter(prog):
     dir_ = '~/Src/Devel/iTree_stuff/expData/{}'.format(prog)
     dir_ = os.path.realpath(os.path.expanduser(dir_))
-    dom_file = dir_ + '/possibleValues.txt'
-    exp_dir = dir_ + '/rawExecutionPaths'.format(prog)
-    pathconds_d_file = dir_ + '/pathconds_d.tvn'.format(prog)
 
-    dom,_ = get_dom(dom_file)
-    if os.path.isfile(pathconds_d_file):
+    #read dom
+    dom_file = dir_ + '/possibleValues.txt'    
+    dom,_ = get_dom(dom_file)    
+
+    args = {}
+    def setargs(name):
+        st = time()
+        pathconds_d_file = dir_ + '/{}.tvn'.format(name)
         logger.info("read from '{}'".format(pathconds_d_file))
         pathconds_d = CM.vload(pathconds_d_file)
-    else:
-        import ex_otter        
-        logger.info("read from '{}'".format(exp_dir))
-        pathconds_d = ex_otter.get_data(exp_dir)
-
-    logger.info("read {} pathconds".format(len(pathconds_d)))
-    args = {'pathconds_d':pathconds_d}
-    get_cov = lambda config: otter_get_cov(config,args)
+        logger.info("{} has {} items ({}s)"
+                    .format(name,len(pathconds_d),time()-st))
+        args[name]=pathconds_d
+        
+    setargs('pathconds_d')
+    setargs('cov_d')
+    setargs('configs_d')
     
-    return dom,get_cov,pathconds_d
+    get_cov = lambda config: otter_get_cov(config,args)
+    return dom,get_cov,args
 
 def otter_get_cov(config,args):
+    ### FASTER #2 ###
     if CM.__vdebug__:
         assert is_config(config),config
-        
-    pathconds_d = args['pathconds_d']
-    sids = set()
-    for covs,samples in pathconds_d.itervalues():
+
+    sids = set()        
+    pathconds_d = args['pathconds_d']    
+    for cov,samples in pathconds_d.itervalues():
         if any(config.hcontent.issuperset(sample) for sample in samples):
-            for sid in covs:
+            for sid in cov:
                 sids.add(sid)
 
     sids = list(sids)
     return sids
 
-    
-def run_gt(dom,pathconds_d,n=None):
+def otter_get_cov2(config,args):
+    ### VERY SLOW #3 ###
+    if CM.__vdebug__:
+        assert is_config(config),config
+
+    sids = set()        
+    cov_d = args['cov_d']    
+    for sid in cov_d:
+        if any(config.hcontent.issuperset(sample) for sample in cov_d[sid]):
+            sids.add(sid)
+
+    sids = list(sids)
+    return sids
+
+def otter_get_cov3(config,args):
+    ### FASTEST #1 ###
+    if CM.__vdebug__:
+        assert is_config(config),config
+
+    sids = set()        
+    configs_d = args['configs_d']
+    for sample in configs_d:
+        if config.hcontent.issuperset(sample):
+            for sid in configs_d[sample]:
+                sids.add(sid)
+
+    sids = list(sids)
+    return sids
+
+
+def pathconds_d2cov_d(pathconds_d):
     """
-    Obtain conditions using Otter's pathconds
+    {sid: samples}
+    """
+    cov_d = {}
+    for cov,samples in pathconds_d.itervalues():
+        for sid in cov:
+            if sid not in cov_d:
+                cov_d[sid]=set()
+            ss = cov_d[sid]
+            for sample in samples:
+                ss.add(sample)
+    return cov_d
+
+def pathconds_d2configs_d(pathconds_d):
+    """
+    {sample/config: sids}
+    """
+    configs_d = {}
+    for cov,samples in pathconds_d.itervalues():
+        for sample in samples:
+            if sample not in configs_d:
+                configs_d[sample]=set()
+            ss = configs_d[sample]
+            for sid in cov:
+                ss.add(sid)
+    return configs_d
+
+def run_gt_pathconds(dom,pathconds_d,n=None):
+    """
+    Obtain interactions using Otter's pathconds
     """
     if CM.__vdebug__:
-        assert n is None or 0 <= n <= pathconds_d, n
+        assert n is None or 0 <= n <= len(pathconds_d), n
     allsamples,allcovs = [],[]
     ks = random.sample(pathconds_d,n) if n else pathconds_d.iterkeys()
     for k in ks:
