@@ -1,7 +1,6 @@
 #TODO: figure out why L8 and L9 are too short ?
 #Add verify to Otter
 #Smarter way to generate configs from cores
-#Todo: use infer_covs1 and infer_sid1. For otter: pass in configs,covs  , for intgen: don't update configs_d[cov]
 
 import tempfile
 from time import time
@@ -140,8 +139,6 @@ def strens_str_of_mcores_d(mcores_d):
     return ', '.join("({},{},{})".format(siz,ncores,ncov)
                      for siz,ncores,ncov in strens_of_mcores_d(mcores_d))
 
-    
-
 # Functions on Data Structures
 def config_c_implies(config,core):
     """
@@ -239,51 +236,6 @@ def infer_sid(sid,core,configs,configs_d,covs_d,dom,cache):
         assert isinstance(sid,str),sid
         assert is_pncore(core), core
         assert is_dom(dom),dom
-        assert isinstance(cache,dict),cache
-
-    def _f(configs,cc,cd,_b):
-        new_cc,new_cd = cc,cd
-        if configs:
-            new_cc = infer_cache(cc,configs,dom,cache)
-        if do_comb_conj_disj and new_cc:
-            configs_ = [c for c in _b() if config_c_implies(c,new_cc)]
-            if configs_:
-                new_cd = infer_cache(cd,configs_,dom,cache)
-                if new_cd:
-                    new_cd = HDict(e for e in new_cd.iteritems()
-                                   if e not in new_cc.hcontent)
-            
-        return new_cc,new_cd
-
-    if sid not in covs_d:
-        covs_d[sid]=set()
-        
-    pconfigs,nconfigs = [],[]
-    for config in configs:
-        if sid in configs_d[config]:
-            pconfigs.append(config)
-            covs_d[sid].add(config)
-        else:
-            nconfigs.append(config)
-            
-    # print 'pos'
-    # print str_of_configs(pconfigs)
-    # print 'neg'
-    # print str_of_configs(pconfigs)    
-    pc,pd,nc,nd = core
-    _b = lambda: [c for c in configs_d if sid not in configs_d[c]]
-    pc_,pd_ = _f(pconfigs,pc,pd,_b)
-    _b = lambda: covs_d[sid]
-    nc_,nd_ = _f(nconfigs,nc,nd,_b)    
-    return pc_,pd_,nc_,nd_
-
-
-
-def infer_sid1(sid,core,configs,configs_d,covs_d,dom,cache):
-    if CM.__vdebug__:
-        assert isinstance(sid,str),sid
-        assert is_pncore(core), core
-        assert is_dom(dom),dom
         assert is_configs_d(configs_d),configs_d
         assert is_covs_d(covs_d),covs_d
         assert isinstance(cache,dict),cache
@@ -329,12 +281,13 @@ is_configs_d = lambda configs_d: (isinstance(configs_d,dict) and
                                       and all(isinstance(c,str) for c in cov)
                                       for config,cov in configs_d))
 
-def infer_covs(cores_d,configs,configs_d,covs_d,dom):
+
+def infer_covs(cores_d,configs,covs,configs_d,covs_d,dom):
     if CM.__vdebug__:
         assert is_cores_d(cores_d),cores_d
         assert all(is_config(c) for c in configs) and configs, configs
-        assert len(configs_d) >= len(configs), \
-            (len(configs_d),len(configs))
+        assert all(is_cov(c) for c in covs), covs
+        assert len(configs) == len(covs), (len(configs),len(covs))
         assert is_configs_d(configs_d),configs_d
         assert is_covs_d(covs_d),covs_d
         assert is_dom(dom),dom
@@ -345,9 +298,18 @@ def infer_covs(cores_d,configs,configs_d,covs_d,dom):
         return new_covs,new_cores
 
     sids = set(cores_d.keys())
-    for config in configs:
-        for sid in configs_d[config]:
+
+    #update configs_d and covs_d
+    for config,cov in zip(configs,covs):
+        for sid in cov:
             sids.add(sid)
+            if sid not in covs_d:
+                covs_d[sid] = set()
+            covs_d[sid].add(config)
+
+        assert config not in configs_d
+        configs_d[config] = cov
+
             
     logger.detail("infer invs for {} cov using {} configs"
                   .format(len(sids),len(configs)))
@@ -366,54 +328,6 @@ def infer_covs(cores_d,configs,configs_d,covs_d,dom):
             cores_d[sid] = core_
 
     return new_covs,new_cores
-
-
-
-def infer_covs1(cores_d,configs,covs,configs_d,covs_d,dom):
-    if CM.__vdebug__:
-        assert is_cores_d(cores_d),cores_d
-        assert all(is_config(c) for c in configs) and configs, configs
-        assert all(is_cov(c) for c in covs), covs
-        assert len(configs) == len(covs), (len(configs),len(covs))
-        assert is_configs_d(configs_d),configs_d
-        assert is_covs_d(covs_d),covs_d
-        assert is_dom(dom),dom
-        
-    new_covs,new_cores = set(),set()  #updated stuff
-    
-    if not configs:
-        return new_covs,new_cores
-
-    sids = set(cores_d.keys())
-    for config,cov in zip(configs,covs):
-        for sid in cov:
-            sids.add(sid)
-            if sid not in covs_d:
-                covs_d[sid] = set()
-            covs_d[sid].add(sid)
-
-        assert config not in configs_d
-        configs_d[config] = cov
-
-            
-    logger.detail("infer invs for {} cov using {} configs"
-                  .format(len(sids),len(configs)))
-    
-    cache = {}
-    for i,sid in enumerate(sorted(sids)):
-        if sid in cores_d:
-            core = cores_d[sid]
-        else:
-            core = pncore_mk_default()
-            new_covs.add(sid)
-             
-        core_ = infer_sid1(sid,core,configs,configs_d,covs_d,dom,cache)
-        if not core_ == core: #progress
-            new_cores.add(sid)
-            cores_d[sid] = core_
-
-    return new_covs,new_cores
-
 
 
 #Interpretation algorithm
@@ -476,16 +390,16 @@ def select_core(cores,ignore_strens,ignore_cores):
     else:
         return None
     
-def eval_samples(samples,get_cov,cache):
+def eval_samples(samples,get_cov,configs_d):
     if CM.__vdebug__:
         assert all(is_config(c) for c in samples), samples
-        assert isinstance(cache,dict),cache
+        assert callable(get_cov),get_cov
+        assert is_configs_d(configs_d),configs_d
 
     st = time()
-    samples = [c for c in samples if c not in cache]
-    for config in samples:
-        cache[config]=get_cov(config)
-    return samples,time() - st
+    rs = ((c,get_cov(c)) for c in samples if c not in configs_d)
+    samples,covs = zip(*rs)
+    return samples,covs,time() - st
 
 def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
           config_default=None,prefix='vu'):
@@ -556,16 +470,16 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
     if config_default:
         samples.append(config_default)
 
-    samples,ctime = eval_samples(samples,get_cov,configs_d)
+    samples,covs,ctime = eval_samples(samples,get_cov,configs_d)
     cov_time += ctime
-    new_covs,new_cores = infer_covs(cores_d,samples,configs_d,covs_d,dom)
+    new_covs,new_cores = infer_covs(cores_d,samples,covs,configs_d,covs_d,dom)
 
     while True:
         
         #save info
         ct_ = time();etime = ct_ - ct;ct = ct_
         robj = (cur_iter,etime,cov_time,
-                samples,[configs_d[c] for c in samples],
+                samples,covs,
                 new_covs,new_cores,
                 sel_core,
                 cores_d)
@@ -587,9 +501,10 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
 
             break
         samples = gen_configs_cores(sel_core,dom)
-        samples,ctime = eval_samples(samples,get_cov,configs_d)
+        samples,covs,ctime = eval_samples(samples,get_cov,configs_d)
         cov_time += ctime
-        new_covs,new_cores = infer_covs(cores_d,samples,configs_d,covs_d,dom)
+        new_covs,new_cores = infer_covs(cores_d,samples,covs,
+                                        configs_d,covs_d,dom)
 
         if new_covs or new_cores: #progress
             cur_stuck = 0
@@ -601,9 +516,8 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
                 ignore_strens.add(stren_of_pncore(sel_core))
                 cur_stuck = 0
 
-    final_cores_d = analyze(cores_d,configs_d,dom)
-    final_mcores_d = merge_cores_d(final_cores_d)
-
+    cores_d = analyze(cores_d,covs_d,dom)
+    mcores_d = merge_cores_d(final_cores_d)
     logger.debug("mcores_d has {} items\n".format(len(final_mcores_d)) +
                  str_of_mcores_d(final_mcores_d,dom))
     logger.info(strens_str_of_mcores_d(final_mcores_d))
@@ -612,7 +526,7 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
                                len(configs_d),len(cores_d),
                                tmpdir))
 
-    return cores_d,configs_d
+    return cores_d,configs_d,covs_d
 
 #Shortcuts
 def intgen_full(dom,get_cov,tmpdir=None,prefix='vu'):
@@ -626,25 +540,27 @@ def intgen_rand(dom,get_cov,rand_n,seed=None,tmpdir=None,prefix='vu'):
                  prefix=prefix)
 
 #postprocess
-def analyze(cores_d,configs_d,dom):
+def analyze(cores_d,covs_d,dom):
     if CM.__vdebug__:
         assert is_cores_d(cores_d),cores_d
-
+        assert is_covs_d(covs_d),covs_d
+        assert is_dom(dom),dom
+        
     logger.info("analyze {} interactions".format(len(cores_d)))
     rs = cores_d.iteritems()
-    if len(configs_d):
-        logger.info("verify ...")
-        rs = [(sid,
-               verify_pncore(core,
-                             [c for c in configs_d if sid in configs_d[c]],
-                             dom))
-              for sid,core in rs]
+    logger.info("verify ...")
+    rs = [(sid,verify_pncore(core,covs_d[sid],dom)) for sid,core in rs]
     logger.debug("simplify ...")
     rs = [(sid,simplify_pncore(core,dom)) for sid,core in rs]
     return dict(rs)
+
+def reformat((pc,pd,nc,nd),dom):
+    if pd:
+        pd = neg_of_core(pd,dom)
+    if nc:
+        nc = neg_of_core(nc,dom)
+    return (pc,pd,nc,nd)
     
-
-
 def verify_pncore((pc,pd,nc,nd),configs,dom):
     if CM.__vdebug__:
         assert is_pncore((pc,pd,nc,nd)), (pc,pd,nc,nd)
@@ -653,7 +569,8 @@ def verify_pncore((pc,pd,nc,nd),configs,dom):
         assert (nc is not None or pd is None), (nc,nd)
         assert all(is_config(c) for c in configs) and configs, configs
         assert is_dom(dom),dom
-        
+
+    old_pncore = (pc,pd,nc,nd)        
     #traces => pc & neg(pd)
     if pc:
         assert all(config_c_implies(c,pc) for c in configs), pc
@@ -685,8 +602,13 @@ def verify_pncore((pc,pd,nc,nd),configs,dom):
             nd = None
 
     #if pc is None, i.e., no data then everything is None
-    
-    return (pc,pd,nc,nd)
+    pncore = (pc,pd,nc,nd)
+    if old_pncore != pncore:
+        logger.debug("{} -> {}".
+                     format(str_of_pncore(old_pncore),
+                            str_of_pncore(pncore)))
+        
+    return pncore
         
 def simplify_pncore((pc,pd,nc,nd),dom):
     """
@@ -703,7 +625,8 @@ def simplify_pncore((pc,pd,nc,nd),dom):
 
     #pf = pc & neg(pd)
     #nf = neg(nc & neg(nd)) = nd | neg(nc)
-
+    old_pncore = (pc,pd,nc,nd)
+    
     #remove empty ones
     if not pc: pc = None
     if not pd: pd = None
@@ -742,7 +665,12 @@ def simplify_pncore((pc,pd,nc,nd),dom):
         raise AssertionError("inconsistent ? {}"
                              .format(str_of_pncore((pc,pd,nc,nd))))
 
-    return (pc,pd,nc,nd)
+    pncore = (pc,pd,nc,nd)
+    if old_pncore != pncore:
+        logger.debug("{} -> {}".
+                     format(str_of_pncore(old_pncore),
+                            str_of_pncore(pncore)))        
+    return pncore
 
 def fstr_of_pncore((pc,pd,nc,nd),dom):
     """
@@ -882,7 +810,6 @@ def str_of_summary(seed,iters,ntime,ctime,nsamples,ncovs,tmpdir):
     return s
 
 #Tests
-
 def prepare_motiv(dom_file,prog_file):
     import ex_motiv_run
         
@@ -900,28 +827,22 @@ def prepare_otter(prog):
     dir_ = '~/Src/Devel/iTree_stuff/expData/{}'.format(prog)
     dir_ = os.path.realpath(os.path.expanduser(dir_))
 
-    #read dom
     dom_file = dir_ + '/possibleValues.txt'    
     dom,_ = get_dom(dom_file)    
+    logger.info("'{}' has {} items and {} possible configs"
+                .format(dom_file,len(dom),siz_of_dom(dom)))
+    st = time()
+    pathconds_d_file = dir_ + '/{}.tvn'.format('pathconds_d')
+    pathconds_d = CM.vload(pathconds_d_file)
+    logger.info("'{}' has {} items ({}s)"
+                .format(pathconds_d_file,len(pathconds_d),time()-st))
 
-    args = {}
-    def setargs(name):
-        st = time()
-        pathconds_d_file = dir_ + '/{}.tvn'.format(name)
-        logger.info("read from '{}'".format(pathconds_d_file))
-        pathconds_d = CM.vload(pathconds_d_file)
-        logger.info("{} has {} items ({}s)"
-                    .format(name,len(pathconds_d),time()-st))
-        args[name]=pathconds_d
-        
-    setargs('pathconds_d')
-    setargs('configs_d')
-    
-    get_cov = lambda config: otter_get_cov3(config,args)
-    return dom,get_cov,args
+    args={'pathconds_d':pathconds_d}
+    get_cov = lambda config: otter_get_cov(config,args)
+    return dom,get_cov,pathconds_d
+
 
 def otter_get_cov(config,args):
-    ### FASTER #2 ###
     if CM.__vdebug__:
         assert is_config(config),config
 
@@ -932,86 +853,31 @@ def otter_get_cov(config,args):
             for sid in cov:
                 sids.add(sid)
 
-    sids = list(sids)
     return sids
 
-def otter_get_cov3(config,args):
-    ### FASTEST #1 ###
-    if CM.__vdebug__:
-        assert is_config(config),config
-
-    configs_d = args['configs_d']
-    sids = set()        
-    for sample in configs_d:
-        if config.hcontent.issuperset(sample):
-            for sid in configs_d[sample]:
-                sids.add(sid)
-
-    sids = list(sids)
-    return sids
-
-def pathconds_d2configs_d(pathconds_d):
-    """
-    {sample/config: sids}
-    """
-    configs_d = {}
-    for cov,samples in pathconds_d.itervalues():
-        for sample in samples:
-            if sample not in configs_d:
-                configs_d[sample]=set()
-            ss = configs_d[sample]
-            for sid in cov:
-                ss.add(sid)
-    return configs_d
-
-
-def run_gt_pathconds(dom,pathconds_d,n=None):
+def run_gt(dom,pathconds_d,n=None):
     """
     Obtain interactions using Otter's pathconds
     """
     if CM.__vdebug__:
         assert n is None or 0 <= n <= len(pathconds_d), n
-    configs_d = {}
-    ks = random.sample(pathconds_d,n) if n else pathconds_d.iterkeys()
-    for k in ks:
-        #print k
-        covs,samples = pathconds_d[k]
-        for sample in samples:
-            sample = HDict(sample)
-            assert sample not in configs_d, sample
-            configs_d[sample]=covs
+
+    if n:
+        rs = random.sample(pathconds_d.values(),n)
+    else:
+        rs = pathconds_d.itervalues()
+
+    rs = [(HDict(s),covs) for covs,samples in rs for s in samples]
+    allsamples,allcovs = zip(*rs)
 
     logger.info("infer interactions using {} samples"
-                .format(len(configs_d)))
+                .format(len(allsamples)))
     st = time()
-    cores_d = {}
-    covs_d = {}
-    infer_covs(cores_d,onfigs_d.keys(),configs_d,covs_d,dom)
+    cores_d,configs_d,covs_d = {},{},{}
+    infer_covs(cores_d,allsamples,allcovs,configs_d,covs_d,dom)
     logger.info("infer conds for {} covered lines ({}s)"
                 .format(len(cores_d),time()-st))
-    return cores_d
-
-def run_gt_configs(dom,configs_d,n=None):
-    """
-    Obtain interactions using Otter's pathconds
-    """
-    if CM.__vdebug__:
-        assert n is None or 0 <= n <= len(configs_d), n
-        
-    
-    samples = random.sample(configs_d,n) if n else configs_d.iterkeys()
-    configs_d = dict((HDict(sample),configs_d[sample])
-                      for sample in samples)
-
-    logger.info("infer interactions using {} samples"
-                .format(len(configs_d)))
-    st = time()
-    cores_d = {}
-    covs_d = {}
-    infer_covs(cores_d,configs_d.keys(),configs_d,covs_d,dom)
-    logger.info("infer conds for {} covered lines ({}s)"
-                .format(len(cores_d),time()-st))
-    return cores_d
+    return cores_d,configs_d,covs_d
 
 #z3 stuff
 def z3db_of_dom(dom):
@@ -1037,6 +903,3 @@ def z3expr_of_core(core,z3db,myf):
         f.append(z3util.myOr([vn_ == vs_[v] for v in vs]))
 
     return myf(f)
-
-
-
