@@ -1,7 +1,4 @@
-#TODO: figure out why L8 and L9 are too short ?
-#Add verify to Otter
 #Smarter way to generate configs from cores
-
 import tempfile
 from time import time
 import os.path
@@ -14,11 +11,11 @@ import z3util
 import vu_common as CM
 
 logger = CM.VLog('config')
-logger.level = CM.VLog.DEBUG
+logger.level = CM.VLog.DETAIL
 CM.VLog.PRINT_TIME = True
 CM.__vdebug__ = False
 do_comb_conj_disj = True
-print_cov = True
+print_cov = False
 #Data Structures
 
 is_cov = lambda cov: (isinstance(cov,set) and
@@ -38,31 +35,43 @@ def str_of_csetting((k,vs)): return '{}={}'.format(k,str_of_valset(vs))
 
 is_dom = lambda dom: (isinstance(dom,HDict) and dom and
                     all(is_csetting(s) for s in dom.iteritems()))
-def str_of_dom(dom):
-    return '\n'.join("{}: {}".format(k,str_of_valset(dom[k]))
-                     for k in dom)
+
+def str_of_dom(dom,print_simple=False):
+    if CM.__vdebug__:
+        assert is_dom(dom),dom
+        
+    if print_simple:
+        return("{} variables and {} possible configs"
+               .format(len(dom),siz_of_dom(dom)))
+    else:
+        return '\n'.join("{}: {}".format(k,str_of_valset(dom[k]))
+                         for k in dom)
 
 is_config = lambda c: (isinstance(c,HDict) and c and
                        all(is_setting(s) for s in c.iteritems()))
-def str_of_config(config):
-    return ' '.join(map(str_of_setting,config.iteritems()))
+def str_of_config(config,cov=None):
+    s =  ' '.join(map(str_of_setting,config.iteritems()))
+    if cov:
+        s = "{}: {}".format(s,str_of_cov(cov))
+    return s
 
 def str_of_configs(configs,covs=None):
+    if CM.__vdebug__:
+        assert all(is_config(c) for c in configs), configs
+        assert covs is None or len(covs) == len(configs), \
+            (len(covs),len(configs))
     if covs:
-        ss = ("{}: {}".format(str_of_config(c),str_of_cov(cov))
-              for c,cov in zip(configs,covs))
+        ss = (str_of_config(c,cov) for c,cov in zip(configs,covs))
     else:
-        ss = (str_of_config(c) for c in configs)
-
-
+        ss = (str_of_config(c,None) for c in configs)
     return '\n'.join("{}. {}".format(i+1,s) for i,s in enumerate(ss))
 
 is_core = lambda core: (isinstance(core,HDict) and
                         all(is_csetting(s) for s in core.iteritems()))
+
 def str_of_core(core,delim=' '):
     if CM.__vdebug__:
         assert is_core(core), core
-        
     if core:
         return delim.join(map(str_of_csetting,core.iteritems()))
     else:
@@ -84,7 +93,6 @@ def str_of_pncore(pncore,dom=None):
 is_cores_d = lambda cores_d: (isinstance(cores_d,dict) and
                               all(isinstance(sid,str) and is_pncore(c)
                                   for sid,c in cores_d.iteritems()))
-
 def str_of_cores_d(cores_d,dom=None):
     if CM.__vdebug__:
         assert is_cores_d(cores_d),cores_d
@@ -93,7 +101,6 @@ def str_of_cores_d(cores_d,dom=None):
     return '\n'.join("{}. {}: {}"
                      .format(i+1,sid,str_of_pncore(cores_d[sid],dom))
                      for i,sid in enumerate(sorted(cores_d)))
-
 
 is_mcores_d = lambda mcores_d: (isinstance(mcores_d,dict) and
                                 all(is_pncore(c) and is_cov(cov)
@@ -448,10 +455,10 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
         if cstren == 0:
             if max_confs < 0:
                 samples = gen_configs_full(dom)
-                logger.info("Gen all {} configs".format(len(samples)))
+                logger.info("gen all {} configs".format(len(samples)))
             else:
                 samples = gen_configs_rand(max_confs,dom)
-                logger.info("Gen {} rand configs".format(len(samples)))
+                logger.info("gen {} rand configs".format(len(samples)))
         else:
             samples = gen_configs_tcover(cstren,seed,tmpdir)
             samples_rand_n = max_confs - len(samples)
@@ -461,7 +468,7 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
                 samples.extend(samples_)
 
             samples = list(set(samples))
-            logger.info("Gen {} {}-cover configs"
+            logger.info("gen {} {}-cover configs"
                         .format(len(samples),cstren))
                                 
     else:
@@ -517,10 +524,10 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
                 cur_stuck = 0
 
     cores_d = analyze(cores_d,covs_d,dom)
-    mcores_d = merge_cores_d(final_cores_d)
-    logger.debug("mcores_d has {} items\n".format(len(final_mcores_d)) +
-                 str_of_mcores_d(final_mcores_d,dom))
-    logger.info(strens_str_of_mcores_d(final_mcores_d))
+    mcores_d = merge_cores_d(cores_d)
+    logger.debug("mcores_d has {} items\n".format(len(mcores_d)) +
+                 str_of_mcores_d(mcores_d,dom))
+    logger.info(strens_str_of_mcores_d(mcores_d))
     
     logger.info(str_of_summary(seed,cur_iter,time()-st,cov_time,
                                len(configs_d),len(cores_d),
@@ -547,9 +554,9 @@ def analyze(cores_d,covs_d,dom):
         assert is_dom(dom),dom
         
     logger.info("analyze {} interactions".format(len(cores_d)))
-    rs = cores_d.iteritems()
-    logger.info("verify ...")
-    rs = [(sid,verify_pncore(core,covs_d[sid],dom)) for sid,core in rs]
+    logger.debug("verify ...")
+    rs = [(sid,verify_pncore(core,covs_d[sid],dom))
+          for sid,core in cores_d.iteritems()]
     logger.debug("simplify ...")
     rs = [(sid,simplify_pncore(core,dom)) for sid,core in rs]
     return dict(rs)
@@ -713,16 +720,18 @@ def fstr_of_pncore((pc,pd,nc,nd),dom):
 
 #Miscs
 def get_dom(dom_file):
+    if CM.__vdebug__:
+        assert os.path.isfile(dom_file), domfile
+        
     def get_lines(lines):
         rs = (line.split() for line in lines)
         rs = ((parts[0],frozenset(parts[1:])) for parts in rs)
         return rs
 
-    dom_file = os.path.realpath(dom_file)
     dom = HDict(get_lines(CM.iread_strip(dom_file)))
 
     config_default = None
-    dom_file_default = os.path.realpath(dom_file+'.default')
+    dom_file_default = dom_file+'.default'
     if os.path.isfile(dom_file_default):
         rs = get_dom_lines(CM.iread_strip(dom_file_default))
         config_default = HDict((k,list(rs[k])[0]) for k in rs)
@@ -810,31 +819,201 @@ def str_of_summary(seed,iters,ntime,ctime,nsamples,ncovs,tmpdir):
     return s
 
 #Tests
-def prepare_motiv(dom_file,prog_file):
-    import ex_motiv_run
-        
-    dom,_ = get_dom(dom_file)
-    prog =  os.path.realpath(prog_file)
-    assert os.path.isfile(prog), prog
-    logger.info("dom_file: '{}', ".format(dom_file) + 
-                "prog_file: '{}'".format(prog_file))
-    args = {'prog': prog,
-            'varnames':dom.keys()}
-    get_cov = lambda config: ex_motiv_run.get_cov(config,args)
-    return dom,get_cov
-   
-def prepare_otter(prog):
-    dir_ = '~/Src/Devel/iTree_stuff/expData/{}'.format(prog)
-    dir_ = os.path.realpath(os.path.expanduser(dir_))
+getpath = lambda f: os.path.realpath(os.path.expanduser(f))
+def void_run(cmd,print_outp=False):
+    "just exec command, does not return anything"
+    print cmd
+    try:
+        rs_outp,rs_err = CM.vcmd(cmd)
+        if print_outp: print rs_outp
+        assert len(rs_err) == 0, rs_err
+    except Exception as e:
+        print e
+        raise AssertionError("cmd '{}' failed".format(cmd))
+    
+from gcovparse import gcovparse
+def parse_gcov(gcov_file):
+    if CM.__vdebug__:
+        assert os.path.isfile(gcov_file)
 
-    dom_file = dir_ + '/possibleValues.txt'    
-    dom,_ = get_dom(dom_file)    
-    logger.info("'{}' has {} items and {} possible configs"
-                .format(dom_file,len(dom),siz_of_dom(dom)))
+    gcov_obj = gcovparse(CM.vread(gcov_file))
+    assert len(gcov_obj) == 1, gcov_obj
+    gcov_obj = gcov_obj[0]
+    sids = (d['line'] for d in gcov_obj['lines'] if d['hit'] > 0)
+    sids = set("{}:{}".format(gcov_obj['file'],line) for line in sids)
+    return sids
+
+    
+def get_cov_wrapper(config,args):
+    cur_dir = os.getcwd()
+    try:
+        dir_ = args["dir_"]
+        os.chdir(dir_)
+        cov = args['get_cov'](config,args)
+        os.chdir(cur_dir)
+        return cov
+    except:
+        os.chdir(cur_dir)
+        raise
+
+#Motivation/Simple examples
+def prepare_motiv(dom_file,prog_name):
+    if CM.__vdebug__:
+        assert isinstance(dom_file,str),dom_file
+        assert isinstance(prog_file,str),prog_file        
+    import platform
+    
+    dir_ = getpath('~/Dropbox/git/config/benchmarks/examples')
+    dom_file = getpath(os.path.join(dir_,dom_file))
+    prog_exe = getpath(os.path.join(dir_,"{}.{}.exe"
+                                    .format(prog_name,platform.system())))
+    assert os.path.isfile(dom_file),dom_file
+    assert os.path.isfile(prog_exe),prog_exe
+    
+    dom,_ = get_dom(dom_file)
+    logger.info("dom_file '{}': {}"
+                .format(dom_file,str_of_dom(dom,print_simple=True)))
+    logger.info("prog_exe: '{}'".format(prog_exe))
+
+    args = {'var_names':dom.keys(),
+            'prog_name': prog_name,
+            'prog_exe': prog_exe,
+            'get_cov': get_cov_motiv_gcov,  #_gcov
+            'dir_': dir_}
+    get_cov = lambda config: get_cov_wrapper(config,args)
+    return dom,get_cov
+
+def get_cov_motiv(config,args):
+    """
+    Traces read from stdin
+    """
+    tmpdir = '/var/tmp/'
+    prog_exe = args['prog_exe']
+    var_names = args['var_names']    
+    opts = ' '.join(config[vname] for vname in var_names)
+    traces = os.path.join(tmpdir,'t.out')
+    cmd = "{} {} > {}".format(prog_exe,opts,traces)
+    void_run(cmd,print_outp=False)
+    traces = list(CM.iread_strip(traces))
+    return traces
+
+def get_cov_motiv_gcov(config,args):
+    """
+    Traces ared from gcov info
+    """
+    prog_name = args['prog_name']
+    prog_exe = args['prog_exe']
+    var_names = args['var_names']    
+    opts = ' '.join(config[vname] for vname in var_names)
+    
+    #cleanup
+    cmd = "rm -rf *.gcov *.gcda"
+    void_run(cmd,print_outp=True)
+    #CM.pause()
+    
+    #run testsuite
+    cmd = "{} {}".format(prog_exe,opts)
+    void_run(cmd,print_outp=True)
+    #CM.pause()
+
+    #read traces from gcov
+    #/path/prog.Linux.exe -> prog
+    cmd = "gcov {}".format(prog_name)
+    void_run(cmd,print_outp=True)
+    gcov_dir = os.getcwd()
+    sids = (parse_gcov(os.path.join(gcov_dir,f))
+            for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
+    sids = set(CM.iflatten(sids))
+    return sids
+
+#Coreutils
+def prepare_coreutils(prog_name):
+    if CM.__vdebug__:
+        assert isinstance(prog_file,str),prog_file
+    bdir = getpath('~/Dropbox/git/config/benchmarks/coreutils')
+    dom_file = os.path.join(bdir,"doms","{}.dom".format(prog_name))
+    dom_file = getpath(dom_file)
+    assert os.path.isfile(dom_file),dom_file
+
+    dom,_ = get_dom(dom_file)
+    logger.info("dom_file '{}': {}"
+                .format(dom_file,str_of_dom(dom,print_simple=True)))
+
+    bdir = os.path.join(bdir,'coreutils')
+    prog_dir = os.path.join(bdir,'obj-gcov','src')
+    prog_exe = os.path.join(prog_dir,prog_name)
+    assert os.path.isfile(prog_exe),prog_exe
+    logger.info("prog_exe: '{}'".format(prog_exe))
+
+    dir_ = os.path.join(bdir,'src')
+    assert os.path.isdir(dir_)
+    args = {'var_names':dom.keys(),
+            'prog_name': prog_name,
+            'prog_exe': prog_exe,
+            'get_cov': get_cov_coreutils,
+            'prog_dir':prog_dir,
+            'dir_': dir_}
+    get_cov = lambda config: get_cov_wrapper(config,args)    
+    return dom,get_cov
+
+def getopts_coreutils(config,ks,delim=' '):
+    opts = []
+    for k in ks:
+        if config[k] == "off":
+            continue
+        elif config[k] == "on":
+            opts.append(k)
+        else:
+            opts.append("{}{}{}".format(k,delim,config[k]))
+
+    return ' '.join(opts)
+
+def get_cov_coreutils(config,args):
+    dir_ = args['dir_']
+    prog_dir = args['prog_dir']
+    
+    prog_name = args['prog_name']
+    prog_exe = args['prog_exe']
+    var_names = args['var_names']
+    opts = getopts_coreutils(config,var_names,delim='=')
+
+    #cleanup
+    cmd = "rm -rf {}/*.gcov {}/*.gcda".format(dir_,prog_dir)
+    void_run(cmd,print_outp=True)
+    #CM.pause()
+    
+    #run testsuite
+    cmd = "{} {}".format(prog_exe,opts)
+    void_run(cmd,print_outp=True)
+    #CM.pause()
+
+    #read traces from gcov
+    #/path/prog.Linux.exe -> prog
+    src_dir = os.path.join(dir_,'src')
+    cmd = "gcov {} -o {}".format(prog_name,prog_dir)
+    void_run(cmd,print_outp=True)
+    
+    gcov_dir = os.getcwd()
+    sids = (parse_gcov(os.path.join(gcov_dir,f))
+            for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
+    sids = set(CM.iflatten(sids))
+    return sids
+
+#Otter
+def prepare_otter(prog):
+    dir_ = getpath('~/Src/Devel/iTree_stuff/expData/{}'.format(prog))
+    dom_file = os.path.join(dir_,'possibleValues.txt')
+    pathconds_d_file = os.path.join(dir_,'{}.tvn'.format('pathconds_d'))
+    assert os.path.isfile(dom_file),dom_file
+    assert os.path.isfile(pathconds_d_file),pathconds_d_file
+    
+    dom,_ = get_dom(dom_file)
+    logger.info("dom_file '{}': {}"
+                .format(dom_file,str_of_dom(dom,print_simple=True)))
+    
     st = time()
-    pathconds_d_file = dir_ + '/{}.tvn'.format('pathconds_d')
     pathconds_d = CM.vload(pathconds_d_file)
-    logger.info("'{}' has {} items ({}s)"
+    logger.info("'{}': {} path conds ({}s)"
                 .format(pathconds_d_file,len(pathconds_d),time()-st))
 
     args={'pathconds_d':pathconds_d}
