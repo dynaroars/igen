@@ -9,39 +9,55 @@ import z3
 import z3util
 import vu_common as CM
 
+from collections import namedtuple, OrderedDict
+
 logger = CM.VLog('config')
 logger.level = CM.VLog.DETAIL
-CM.VLog.PRINT_TIME = True
-CM.__vdebug__ = False
+CM.VLog.PRINT_TIME = False
+CM.__vdebug__ = True
 do_comb_conj_disj = True
 print_cov = True
-#Data Structures
 
+#Data Structures
 is_cov = lambda cov: (isinstance(cov,set) and
-                      all(isinstance(sid,str) for sid in cov))
+                      all(isinstance(s,str) for s in cov))
 def str_of_cov(cov):
-    return "({}) {}".format(len(cov),
-                            ','.join(sorted(cov) if print_cov else ''))
+    if CM.__vdebug__:
+        assert is_cov(cov),cov
+
+    s = "({})".format(len(cov))
+    if print_cov:
+        s = "{} {}".format(s,','.join(sorted(cov)))
+    return s
     
 is_valset = lambda vs: (isinstance(vs,frozenset) and vs and
-                       all(isinstance(v,str) for v in vs))
+                        all(isinstance(v,str) for v in vs))
+
 def str_of_valset(s): return ','.join(sorted(s))
     
 is_setting = lambda (k,v): isinstance(k,str) and isinstance(k,str)
-def str_of_setting((k,v)): return '{}={}'.format(k,v)
+def str_of_setting((k,v)):
+    if CM.__vdebug__:
+        assert is_setting((k,v)), (k,v)
+    return '{}={}'.format(k,v)
 
 is_csetting = lambda (k,vs): isinstance(k,str) and is_valset(vs)
-def str_of_csetting((k,vs)): return '{}={}'.format(k,str_of_valset(vs))
+
+def str_of_csetting((k,vs)):
+    if CM.__vdebug__:
+        assert is_setting((k,vs)), (k,vs)
+    
+    return '{}={}'.format(k,str_of_valset(vs))
 
 is_dom = lambda dom: (isinstance(dom,HDict) and dom and
-                    all(is_csetting(s) for s in dom.iteritems()))
+                      all(is_csetting(s) for s in dom.iteritems()))
 
 def str_of_dom(dom,print_simple=False):
     if CM.__vdebug__:
         assert is_dom(dom),dom
         
     if print_simple:
-        return("{} variables and {} possible configs"
+        return("{} vars and {} poss configs"
                .format(len(dom),siz_of_dom(dom)))
     else:
         return '\n'.join("{}: {}".format(k,str_of_valset(dom[k]))
@@ -49,7 +65,12 @@ def str_of_dom(dom,print_simple=False):
 
 is_config = lambda c: (isinstance(c,HDict) and c and
                        all(is_setting(s) for s in c.iteritems()))
+
 def str_of_config(config,cov=None):
+    if CM.__vdebug__:
+        assert is_config(config), config
+        assert cov is None or is_cov(cov), cov
+        
     s =  ' '.join(map(str_of_setting,config.iteritems()))
     if cov:
         s = "{}: {}".format(s,str_of_cov(cov))
@@ -69,6 +90,8 @@ def str_of_configs(configs,covs=None):
 is_core = lambda core: (isinstance(core,HDict) and
                         all(is_csetting(s) for s in core.iteritems()))
 
+maybe_core = lambda c: c is None or is_core(c)
+
 def str_of_core(core,delim=' '):
     if CM.__vdebug__:
         assert is_core(core), core
@@ -77,16 +100,14 @@ def str_of_core(core,delim=' '):
     else:
         return 'true'
 
-def is_cdcore((cc,cd)):
-    return all(c is None or is_core(c) for c in (cc,cd))
-
+is_cdcore = lambda (cc,cd): maybe_core(cc) and maybe_core(cd)
 def is_pncore((pc,pd,nc,nd)):
     return all(c is None or is_core(c) for c in (pc,pd,nc,nd))
 
 def str_of_cdcore(cdcore):
     if CM.__vdebug__:
         assert is_cdcore(cdcore),cdcore
-
+        
     ss = ("{}: {}".format(s,str_of_core(c)) for s,c in
           zip('c d'.split(),cdcore) if c is not None)
     return ', '.join(ss)
@@ -226,6 +247,12 @@ def merge_cores_d(cores_d):
     return mcores_d
 
 #Inference algorithm
+DTrace = namedtuple("DTrace",
+                    "citer etime ctime "
+                    "configs covs "
+                    "new_covs new_cores "
+                    "sel_core cores_d")
+
 def infer(configs,core,dom):
     """
     Approximation in *conjunctive* form
@@ -285,8 +312,8 @@ def infer_sid(sid,core,configs,configs_d,covs_d,dom,cache):
             if configs_:
                 new_cd = infer_cache(cd,configs_,dom,cache)
                 if new_cd:
-                    new_cd = HDict(e for e in new_cd.iteritems()
-                                   if e not in new_cc.hcontent)
+                    new_cd = HDict((k,v) for (k,v) in new_cd.iteritems()
+                                   if k not in new_cc)
             
         return new_cc,new_cd
 
@@ -344,8 +371,8 @@ def infer_covs(cores_d,configs,covs,configs_d,covs_d,dom):
         assert config not in configs_d, str_of_config(config)
         configs_d[config] = cov
 
-    logger.detail("infer invs for {} cov using {} configs"
-                  .format(len(sids),len(configs)))
+    # logger.detail("infer invs for {} cov using {} configs"
+    #               .format(len(sids),len(configs)))
     
     cache = {}
     for i,sid in enumerate(sorted(sids)):
@@ -364,10 +391,7 @@ def infer_covs(cores_d,configs,covs,configs_d,covs_d,dom):
 
 
 #Interpretation algorithm
-
-
-#Interative algorithm
-def gen_configs_core(core,sat_core,dom):
+def gen_configs_core_z3(core,sat_core,configs_d,z3db,dom):
     """
     create configs by changing settings in core
     Also, these configs satisfy sat_core
@@ -384,42 +408,95 @@ def gen_configs_core(core,sat_core,dom):
     for k in core:
         vs = dom[k]-core[k]
         for v in vs:
-            changes.append((k,v))
-    configs = []
-    for x,y in changes:
-        settings = []
-        for k in dom:
-            if k==x:
-                v = y
-            else:
-                if k in core:
-                    v = random.choice(list(core[k]))
-                elif sat_core and k in sat_core:
-                    v = random.choice(list(sat_core[k]))
-                else:
-                    v = random.choice(list(dom[k]))
-            settings.append((k,v))
+            changed_core = HDict([(k,frozenset([v]))])
+            if sat_core:
+                for sk,sv in sat_core.iteritems():
+                    assert sk not in changed_core, sk
+                    changed_core[sk] = sv
+            changes.append(changed_core)
 
-        configs.append(HDict(settings))
+    existing_configs_expr = z3util.myOr([z3expr_of_config(c,z3db)
+                                          for c in configs_d])
+    configs = []
+    for changed_core in changes:
+        config = z3_get_config(changed_core,existing_configs_expr,z3db)
+        if config:
+            configs.append(config)
+            if CM.__vdebug__:
+                assert config_c_implies(config,changed_core)
+                
     return configs
+
+
+
+#Interative algorithm
+# def gen_configs_core(core,sat_core,dom):
+#     """
+#     create configs by changing settings in core
+#     Also, these configs satisfy sat_core
+#     x=0,y=1  =>  [x=0,y=0,z=rand;x=0,y=2,z=rand;x=1,y=1;z=rand]
+#     """
+#     if CM.__vdebug__:
+#         assert is_core(core) and core, core
+#         assert (sat_core is None or
+#                 is_core(sat_core) and
+#                 all(k not in core for k in sat_core)),sat_core
+#         assert is_dom(dom),dom
+    
+#     changes = []
+#     for k in core:
+#         vs = dom[k]-core[k]
+#         for v in vs:
+#             changes.append((k,v))
+#     configs = []
+#     for x,y in changes:
+#         settings = []
+#         for k in dom:
+#             if k==x:
+#                 v = y
+#             else:
+#                 if k in core:
+#                     v = random.choice(list(core[k]))
+#                 elif sat_core and k in sat_core:
+#                     v = random.choice(list(sat_core[k]))
+#                 else:
+#                     v = random.choice(list(dom[k]))
+#             settings.append((k,v))
+
+#         configs.append(HDict(settings))
+#     return configs
 
 def select_core(pncores,ignore_cores):
     if CM.__vdebug__:
         assert all(is_pncore(c) for c in pncores) and pncores,pncores
-        assert isinstance(ignore_cores,set),ignore_cores
-    
+        assert (isinstance(ignore_cores,set) and
+                all(is_cdcore(c) for c in ignore_cores)),ignore_cores
+
+    # print '\n'.join(map(str_of_pncore,pncores))
+    # print pncores
+    # CM.pause()
     cdcores = []
     for pc,pd,nc,nd in pncores:
         cdcores.append((pc,pd))
         cdcores.append((nc,nd))
-    cdcores = [(cc,cd) for cc,cd in cdcores if cc or cd]
+    # print cdcores
+    # print '\n'.join(map(str_of_pncore,pncores))
+    # print '\n'.join(map(str_of_cdcore,cdcores))
+    cdcores = set((c,d) for c,d in cdcores if c or d)
     cdcores = [c for c in cdcores if c not in ignore_cores]
+    # print "select cores"
+    # print "ignore"
+    # print "\n".join(str_of_cdcore(c) for c in ignore_cores)
+    # print "candidates"
+    # print "\n".join(str_of_cdcore(c) for c in cdcores)
+
     if cdcores:
         sel_core = max(cdcores,key=lambda c: stren_of_core(c))
         ignore_cores.add(sel_core)
     else:
         sel_core = None
-
+    # print "selected ", sel_core
+    # CM.pause()    
     return sel_core
     
 def eval_configs(configs,get_cov):
@@ -460,7 +537,7 @@ def gen_configs_init(cover_siz,seed,dom):
     assert configs, "empty set of configs"
     return configs
 
-def gen_configs_iter(cores,ignore_cores,configs_d,dom):
+def gen_configs_iter(cores,ignore_cores,configs_d,z3db,dom):
     if CM.__vdebug__:
         assert (isinstance(cores,set) and 
                 all(is_pncore(c) for c in cores)), cores
@@ -479,13 +556,19 @@ def gen_configs_iter(cores,ignore_cores,configs_d,dom):
         # CM.pause("hi")
         cc,cd = sel_core
         if cc:
-            configs.extend(gen_configs_core(cc,None,dom))
+            configs.extend(gen_configs_core_z3(cc,None,configs_d,z3db,dom))
+                                    
         if cd:
-            configs.extend(gen_configs_core(cd,cc,dom))
-        configs = set(configs)
-        configs = [c for c in configs if c not in configs_d]
+            configs.extend(gen_configs_core_z3(cd,cc,configs_d,z3db,dom))
+                                               
+        #configs = list(set(configs)) TODO, use set
+        assert all(c not in configs_d for c in configs)
+        
         if configs:
             break
+        else:
+            logger.debug("No sample created for sel_core {}"
+                         .format(str_of_cdcore(sel_core)))
         
     #self_core -> configs
     if CM.__vdebug__:
@@ -541,25 +624,29 @@ def intgen(dom,get_cov,seed=None,tmpdir=None,cover_siz=None,
     new_covs,new_cores = infer_covs(cores_d,configs,covs,
                                     configs_d,covs_d,dom)
 
+    z3db = z3db_of_dom(dom)
     while True:
         #save info
         ct_ = time();etime = ct_ - ct;ct = ct_
-        robj = (cur_iter,etime,cov_time,
-                configs,covs,
-                new_covs,new_cores,
-                sel_core,
-                cores_d)
-        rfile = os.path.join(tmpdir,"{}.tvn".format(cur_iter))
-        CM.vsave(rfile,robj)
-        print_iter_stat(robj)
+        dtrace = DTrace(cur_iter,etime,cov_time,
+                        configs,covs,
+                        new_covs,new_cores,
+                        sel_core,
+                        cores_d)
+        dfile = os.path.join(tmpdir,"{}.tvn".format(cur_iter))
+        CM.vsave(dfile,dtrace)
+        print_dtrace(dtrace)
+        
         if cover_siz:
             break
         
         cur_iter += 1
 
+        # print str_of_cores_d(cores_d)
+        # print '\n'.join(map(str_of_pncore,set(cores_d.values())))
         #gen new configs
         sel_core,configs = gen_configs_iter(set(cores_d.values()),
-                                       ignore_cores,configs_d,dom)
+                                            ignore_cores,configs_d,z3db,dom)
         if sel_core is None:
             logger.info('select no core for refinement, '
                         'done at iter {}'.format(cur_iter))
@@ -648,8 +735,6 @@ def verify_pncore_cache(pncore,configs,dom,cache):
     key = (pncore,configs)
     if key not in cache:
         cache[key] = verify_pncore(pncore,configs,dom)
-    else:
-        print "ok, you can delete me now -- verify"
     return cache[key]
     
 def verify_pncore((pc,pd,nc,nd),configs,dom):
@@ -763,8 +848,11 @@ def simplify_pncore((pc,pd,nc,nd),dom):
         pc = None
         pd = None
     else:
-        raise AssertionError("inconsistent ? {}"
-                             .format(str_of_pncore((pc,pd,nc,nd))))
+        #could occur when using incomplete traces
+        logger.warn("inconsistent ? {}\npf: {} ?? nf: {}"
+                    .format(str_of_pncore((pc,pd,nc,nd)),
+                    pf,nf))
+        
 
     pncore = (pc,pd,nc,nd)
     if old_pncore != pncore:
@@ -883,34 +971,75 @@ def gen_configs_tcover1(dom):
 
     return configs
 
-
-def print_iter_stat(robj):
-    (citer,etime,ctime,configs,covs,new_covs,new_cores,sel_core,cores_d) = robj
-    logger.info("ITER {}, ".format(citer) +
-                "{0:.2f}s, ".format(etime) +
-                "{0:.2f}s eval, ".format(ctime) +
-                "total: {} configs, {} covs, {} cores, "
-                .format(0,0,0)+
+def print_dtrace(dt,print_mcores_d=True):
+    if CM.__vdebug__:
+        assert isinstance(dt,DTrace)
+        
+    logger.info("ITER {}, ".format(dt.citer) +
+                "{0:.2f}s, ".format(dt.etime) +
+                "{0:.2f}s eval, ".format(dt.ctime) +
+                "total: {} configs, {} covs, {} cores, ".format(0,0,0) +
                 "new: {} configs, {} covs, {} cores, "
-                .format(len(configs),len(new_covs),len(new_cores)) +
+                .format(len(dt.configs),
+                        len(dt.new_covs),
+                        len(dt.new_cores)) +
                 "{}".format("** progress **"
-                            if new_covs or new_cores else ""))
+                            if dt.new_covs or dt.new_cores else ""))
 
     logger.debug('sel_core: ({}) {}'.format(
-        stren_of_core(sel_core), str_of_cdcore(sel_core)))
-    logger.debug('create {} configs'.format(len(configs)))
-    logger.detail('\n' + str_of_configs(configs,covs))
-    
-    mcores_d = merge_cores_d(cores_d)
-    logger.debug("mcores_d has {} items".format(len(mcores_d)))
-    logger.detail('\n{}'.format(str_of_mcores_d(mcores_d)))
-    logger.info(strens_str_of_mcores_d(mcores_d))
-    return mcores_d
+        stren_of_core(dt.sel_core), str_of_cdcore(dt.sel_core)))
+    logger.debug('create {} configs'.format(len(dt.configs)))
+    logger.detail('\n' + str_of_configs(dt.configs,dt.covs))
+
+    if print_mcores_d:
+        mcores_d = merge_cores_d(dt.cores_d)
+        logger.debug("mcores_d has {} items".format(len(mcores_d)))
+        logger.detail('\n{}'.format(str_of_mcores_d(mcores_d)))
+        logger.info(strens_str_of_mcores_d(mcores_d))
+
 
 def str_of_summary(seed,iters,ntime,ctime,nconfigs,ncovs,tmpdir):
-    s = ("Summary: Seed {}, Iters {}, Time ({}, {}), Configs {}, Covs {}, Tmpdir '{}'"
-         .format(seed,iters,ntime,ctime,nconfigs,ncovs,tmpdir))
+    s = "Summary: "
+    s += "Seed {}, ".format(seed)
+    s += "Iters {}, ".format(iters)
+    s += "Time ({0:.2f}s, {0:.2f}s), ".format(ntime,ctime)
+    s += "Configs {}, ".format(nconfigs)
+    s += "Covs {}, ".format(ncovs)
+    s += "Tmpdir {}".format(tmpdir)
     return s
+
+def replay(dirname):
+    def load_dir(dirname):
+        iobj = CM.vload(os.path.join(dirname,'info'))
+        dt_files = [os.path.join(dirname,f) for f in os.listdir(dirname)
+                    if f.endswith('.tvn')]
+        dts = [CM.vload(dt) for dt in dt_files]
+        return iobj, dts
+    
+    iobj,dts = load_dir(dirname)
+    seed,dom = iobj
+    logger.info('seed: {}'.format(seed))
+    logger.debug(str_of_dom(dom,print_simple=False))
+    logger.debug(str_of_dom(dom,print_simple=True))    
+
+    ntime = 0.0
+    nsamples = 0
+    ncovs = 0
+    robjs = sorted(dts,key=lambda dt: dt.citer)
+    for dt in dts:
+        print_dtrace(dt)
+        ntime += dt.etime
+        nsamples += len(dt.configs)
+        ncovs += len(dt.new_covs)
+        
+    niters = len(dts)
+    logger.info(str_of_summary(seed,niters,
+                               ntime,dt.ctime,
+                               nsamples,ncovs,dirname))
+
+    return niters,ntime,dt.ctime,nsamples,ncovs,dt.cores_d
+
+
 
 #Tests
 getpath = lambda f: os.path.realpath(os.path.expanduser(f))
@@ -1167,7 +1296,7 @@ def z3db_of_dom(dom):
     if CM.__vdebug__:
         assert is_dom(dom), dom
         
-    z3db = {}  #{'x':(x,{'true':True})}
+    z3db = OrderedDict()
     for k,vs in dom.iteritems():
         vs = sorted(list(vs))
         ttyp,tvals=z3.EnumSort(k,vs)
@@ -1187,23 +1316,76 @@ def z3expr_of_core(core,z3db,myf):
 
     return myf(f)
 
+def z3expr_of_config(config,z3db):
+    if CM.__vdebug__:
+        assert is_config(config),config
+        assert len(config) == len(z3db), (len(config), len(z3db))
+
+    f = []
+    for vn,vv in config.iteritems():
+        vn_,vs_ = z3db[vn]
+        f.append(vn_==vs_[vv])
+
+    return z3util.myAnd(f)
+
+def z3_get_config(core,configs_expr,z3db):
+    """
+    Return a config satisfying core and not already in existing_configs
+    >>> mdom = HDict([('a', frozenset(['1', '0'])), ('b', frozenset(['1', '0'])), ('c', frozenset(['1', '0', '2']))])
+    >>> z3db = z3db_of_dom(mdom)
+
+    >>> c1 = HDict([('a', '0'), ('b', '0'), ('c', '0')])
+    >>> c2 = HDict([('a', '0'), ('b', '0'), ('c', '1')])
+    >>> c3 = HDict([('a', '0'), ('b', '0'), ('c', '2')])
+
+    >>> c4 = HDict([('a', '0'), ('b', '1'), ('c', '0')])
+    >>> c5 = HDict([('a', '0'), ('b', '1'), ('c', '1')])
+    >>> c6 = HDict([('a', '0'), ('b', '1'), ('c', '2')])
+
+    >>> c7 = HDict([('a', '1'), ('b', '0'), ('c', '0')])
+    >>> c8 = HDict([('a', '1'), ('b', '0'), ('c', '1')])
+    >>> c9 = HDict([('a', '1'), ('b', '0'), ('c', '2')])
+
+    >>> c10 = HDict([('a', '1'), ('b', '1'), ('c', '0')])
+    >>> c11 = HDict([('a', '1'), ('b', '1'), ('c', '1')])
+    >>> c12 = HDict([('a', '1'), ('b', '1'), ('c', '2')])
+
+    >>> mconfigs = [c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11]
+    >>> configs_expr =  z3util.myOr([z3expr_of_config(c,z3db) for c in mconfigs])
+
+    >>> core = HDict([('a',frozenset(['1']))])
+    >>> gc = z3_get_config(core,configs_expr,z3db)
+    >>> assert gc == c12
+    
+    >>> core = HDict([('a',frozenset(['0']))])
+    >>> gc = z3_get_config(core,configs_expr,z3db)
+    >>> assert gc is None
+
+    >>> core = HDict([('c',frozenset(['0','1']))])
+    >>> gc = z3_get_config(core,configs_expr,z3db)
+    >>> assert gc is None
+
+    >>> core = HDict([('c',frozenset(['0','2']))])
+    >>> gc = z3_get_config(core,configs_expr,z3db)
+    >>> assert gc  == c12
+
+    """
+    core_expr = z3expr_of_core(core,z3db,z3util.myAnd)
+
+    f = z3.And(core_expr,z3.Not(configs_expr))
+    models = z3util.get_models(f,k=1)
+
+    assert models is not None, models  #z3 cannot solve this
+    if not models:  #not satisfy
+        return None
+    assert len(models)==1,models
+    m = models[0]
+    d = dict((str(v),m[v]) for v in m)
+    config = HDict((k,str(d[k])) for k in z3db)
+    return config
 
 
-
-
-"""
-gt
-13:32:42:config:Debug:mcores_d has 8 items
-1. (0) true: (2) L4,L7
-2. (1) listen=0: (1) L3
-3. (2) (listen=1 & timeout=0): (1) L2
-4. (2) (listen=1 & timeout=1): (1) L1
-5. (2) (log=0 & chunks=2048,4096): (1) L9
-6. (2) (log=1 & chunks=2048,4096): (1) L8
-7. (3) onep=1 & (ssl=1 | local=1): (1) L5
-8. (3) (ssl=0 & local=0) | onep=0: (1) L6
-13:32:42:config:Info:(0,1,2), (1,1,1), (2,4,4), (3,2,2)
-
-"""
-
+def doctestme():
+    import doctest
+    doctest.testmod()
 
