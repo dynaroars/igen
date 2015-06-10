@@ -689,8 +689,16 @@ def analyze(cores_d,covs_d,dom):
     logger.info("analyze interactions for {} sids".format(len(cores_d)))
     logger.debug("verify ...")
     verify_cache = {}
-    rs_verify = [(sid,verify_pncore_cache(core,covs_d[sid],dom,verify_cache))
-          for sid,core in cores_d.iteritems()]
+    rs_verify = []    
+    for sid,core in cores_d.iteritems():
+        pncore = verify_pncore_cache(core,covs_d[sid],dom,verify_cache)
+        if sid == "L2":
+            print sid
+            print str_of_configs(covs_d[sid])
+            print str_of_pncore(core)
+            print str_of_pncore(pncore)
+            
+        rs_verify.append((sid,pncore))
     
     logger.debug("simplify ...")
     simplify_cache = {}
@@ -741,16 +749,16 @@ def verify_pncore((pc,pd,nc,nd),configs,dom):
     #neg traces => nc & neg(nd)
     #pos traces => neg(nc & neg(nd))
     #post traces => nd | neg(nc) 
-    if nc is not None and nd is None:
+    if nc and not nd:
         nc_n = neg_of_core(nc,dom)
         if not all(config_d_implies(c,nc_n) for c in configs):
             logger.debug('nc {} invalid'.format(str_of_core(nc)))
             nc = None
-    elif nc is None and nd is not None:
+    elif not nc and nd:
         if not all(config_c_implies(c,nd) for c in configs):
             logger.debug('nd {} invalid'.format(str_of_core(nd)))
             nd = None
-    elif nc is not None and nd is not None:
+    elif nc and nd:
         nc_n = neg_of_core(nc,dom)
         if not all(config_c_implies(c,nd) or config_d_implies(c,nc_n)
                    for c in configs):
