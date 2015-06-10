@@ -4,9 +4,9 @@ import os.path
 import itertools
 import random
 
-from config_miscs import HDict
 import z3
 import z3util
+from vu_common import HDict
 import vu_common as CM
 
 from collections import namedtuple
@@ -52,16 +52,16 @@ def str_of_csetting((k,vs)):
 is_dom = lambda dom: (isinstance(dom,HDict) and dom and
                       all(is_csetting(s) for s in dom.iteritems()))
 
-def str_of_dom(dom,print_simple=False):
+def str_of_dom(dom,print_detail=True):
     if CM.__vdebug__:
         assert is_dom(dom),dom
-        
-    if print_simple:
-        return("{} vars and {} poss configs"
-               .format(len(dom),siz_of_dom(dom)))
-    else:
-        return '\n'.join("{}: {}".format(k,str_of_valset(dom[k]))
-                         for k in dom)
+
+    s = "{} vars and {} poss configs".format(len(dom),siz_of_dom(dom))
+    if print_detail:
+         s_detail = '\n'.join("{}: {}".format(k,str_of_valset(dom[k]))
+                              for k in dom)
+         s = "{}\n{}".format(s,s_detail)
+    return s
 
 is_config = lambda c: (isinstance(c,HDict) and c and
                        all(is_setting(s) for s in c.iteritems()))
@@ -666,8 +666,8 @@ def intgen_full(dom,get_cov,do_postprocess=True):
     return intgen(dom,get_cov,seed=None,cover_siz=(0,-1),
                   config_default=None,do_postprocess=do_postprocess)
 
-def intgen_rand(dom,get_cov,rand_n,seed=None,do_postprocess=True):
-    return intgen(dom,get_cov,seed=seed,cover_siz=(0,rand_n),
+def intgen_rand(dom,get_cov,n,seed=None,do_postprocess=True):
+    return intgen(dom,get_cov,seed=seed,cover_siz=(0,n),
                   config_default=None,do_postprocess=do_postprocess)
 
 #postprocess
@@ -1026,8 +1026,7 @@ def replay(dirname):
     iobj,dts = load_dir(dirname)
     seed,dom = iobj
     logger.info('seed: {}'.format(seed))
-    logger.debug(str_of_dom(dom,print_simple=False))
-    logger.debug(str_of_dom(dom,print_simple=True))    
+    logger.debug(str_of_dom(dom,print_detail=True))
 
     ntime = 0.0
     nsamples = 0
@@ -1061,7 +1060,7 @@ def prepare_otter(prog):
     
     dom,_ = get_dom(dom_file)
     logger.info("dom_file '{}': {}"
-                .format(dom_file,str_of_dom(dom,print_simple=True)))
+                .format(dom_file,str_of_dom(dom,print_detail=True)))
     
     st = time()
     pathconds_d = CM.vload(pathconds_d_file)
@@ -1115,6 +1114,11 @@ def run_gt(dom,pathconds_d,n=None,do_postprocess=True):
 # Real executions
 def void_run(cmd,print_cmd=True,print_outp=False):
     "just exec command, does not return anything"
+
+    if isinstance(cmd,list):
+        logger.detail('run {} cmds'.format(len(cmd)))
+        cmd = '; '.join(cmd)
+        
     if print_cmd:print cmd
     try:
         rs_outp,rs_err = CM.vcmd(cmd)
@@ -1123,7 +1127,12 @@ def void_run(cmd,print_cmd=True,print_outp=False):
         #IMPORTANT, command out the below allows
         #erroneous test runs, which can be helpful
         #to detect incorrect configs
-        #assert len(rs_err) == 0, rs_err  
+        #assert len(rs_err) == 0, rs_err
+        if rs_err:
+            logger.warn("cmd '{}' gives (potentially) err\n'{}'"
+                        .format(cmd,rs_err))
+            #assert len(rs_err) == 0
+
     except Exception as e:
         print e
         raise AssertionError("cmd '{}' failed".format(cmd))
@@ -1152,158 +1161,7 @@ def get_cov_wrapper(config,args):
         os.chdir(cur_dir)
         raise
 
-#Motivation/Simple examples
-def prepare_motiv(dom_file,prog_name):
-    if CM.__vdebug__:
-        assert isinstance(dom_file,str),dom_file
-        assert isinstance(prog_name,str),prog_name
-    import platform
-    
-    dir_ = getpath('~/Dropbox/git/config/benchmarks/examples')
-    dom_file = getpath(os.path.join(dir_,"{}.dom".format(dom_file)))
-    prog_exe = getpath(os.path.join(dir_,"{}.{}.exe"
-                                    .format(prog_name,platform.system())))
-    assert os.path.isfile(dom_file),dom_file
-    assert os.path.isfile(prog_exe),prog_exe
-    
-    dom,_ = get_dom(dom_file)
-    logger.info("dom_file '{}': {}"
-                .format(dom_file,str_of_dom(dom,print_simple=True)))
-    logger.info("prog_exe: '{}'".format(prog_exe))
-
-    args = {'var_names':dom.keys(),
-            'prog_name': prog_name,
-            'prog_exe': prog_exe,
-            'get_cov': get_cov_motiv,  #_gcov
-            'dir_': dir_}
-    get_cov = lambda config: get_cov_wrapper(config,args)
-    return dom,get_cov
-
-def get_cov_motiv(config,args):
-    """
-    Traces read from stdin
-    """
-    if CM.__vdebug__:
-        assert is_config(config),config
-        
-    tmpdir = '/var/tmp/'
-    prog_exe = args['prog_exe']
-    var_names = args['var_names']
-    opts = ' '.join(config[vname] for vname in var_names)
-    traces = os.path.join(tmpdir,'t.out')
-    cmd = "{} {} > {}".format(prog_exe,opts,traces)
-    void_run(cmd,print_cmd=False,print_outp=False)
-    sids = set(CM.iread_strip(traces))
-    return sids
-
-def get_cov_motiv_gcov(config,args):
-    """
-    Traces ared from gcov info
-    """
-    prog_name = args['prog_name']
-    prog_exe = args['prog_exe']
-    var_names = args['var_names']    
-    opts = ' '.join(config[vname] for vname in var_names)
-    
-    #cleanup
-    cmd = "rm -rf *.gcov *.gcda"
-    void_run(cmd,print_outp=True)
-    #CM.pause()
-    
-    #run testsuite
-    cmd = "{} {}".format(prog_exe,opts)
-    void_run(cmd,print_outp=True)
-    #CM.pause()
-
-    #read traces from gcov
-    #/path/prog.Linux.exe -> prog
-    cmd = "gcov {}".format(prog_name)
-    void_run(cmd,print_outp=True)
-    gcov_dir = os.getcwd()
-    sids = (parse_gcov(os.path.join(gcov_dir,f))
-            for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
-    sids = set(CM.iflatten(sids))
-    return sids
-
-#Coreutils
-def prepare_coreutils(prog_name):
-    if CM.__vdebug__:
-        assert isinstance(prog_name,str),prog_name
-        
-    bdir = getpath('~/Dropbox/git/config/benchmarks/coreutils')
-    dom_file = os.path.join(bdir,"doms","{}.dom".format(prog_name))
-    dom_file = getpath(dom_file)
-    assert os.path.isfile(dom_file),dom_file
-
-    dom,_ = get_dom(dom_file)
-    logger.info("dom_file '{}': {}"
-                .format(dom_file,str_of_dom(dom,print_simple=True)))
-
-    bdir = os.path.join(bdir,'coreutils')
-    prog_dir = os.path.join(bdir,'obj-gcov','src')
-    prog_exe = os.path.join(prog_dir,prog_name)
-    assert os.path.isfile(prog_exe),prog_exe
-    logger.info("prog_exe: '{}'".format(prog_exe))
-
-    dir_ = os.path.join(bdir,'src')
-    assert os.path.isdir(dir_)
-    args = {'var_names':dom.keys(),
-            'prog_name': prog_name,
-            'prog_exe': prog_exe,
-            'get_cov': get_cov_coreutils,
-            'prog_dir':prog_dir,
-            'dir_': dir_}
-    get_cov = lambda config: get_cov_wrapper(config,args)    
-    return dom,get_cov
-
-def getopts_coreutils(config,ks,delim=' '):
-    opts = []
-    for k in ks:
-        if config[k] == "off":
-            continue
-        elif config[k] == "on":
-            opts.append(k)
-        elif k == "+" or config[k].startswith("="): #no space
-            opts.append("{}{}".format(k,config[k]))
-        else: #k v
-            opts.append("{}{}{}".format(k,delim,config[k]))
-
-    return ' '.join(opts)
-
-def get_cov_coreutils(config,args):
-    dir_ = args['dir_']
-    prog_dir = args['prog_dir']
-    
-    prog_name = args['prog_name']
-    prog_exe = args['prog_exe']
-    var_names = args['var_names']
-    opts = getopts_coreutils(config,var_names,delim=' ')
-
-    #cleanup
-    cmd = "rm -rf {}/*.gcov {}/*.gcda".format(dir_,prog_dir)
-    void_run(cmd,print_outp=True)
-    #CM.pause()
-    
-    #run testsuite
-    cmd = "{} {}".format(prog_exe,opts)
-    void_run(cmd,print_outp=True)
-    #CM.pause()
-
-    #read traces from gcov
-    #/path/prog.Linux.exe -> prog
-    src_dir = os.path.join(dir_,'src')
-    cmd = "gcov {} -o {}".format(prog_name,prog_dir)
-    void_run(cmd,print_outp=True)
-    
-    gcov_dir = os.getcwd()
-    sids = (parse_gcov(os.path.join(gcov_dir,f))
-            for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
-    sids = set(CM.iflatten(sids))
-    return sids
-
-
-
-#z3 stuff
+#Z3 STUFF
 def z3db_of_dom(dom):
     if CM.__vdebug__:
         assert is_dom(dom), dom
@@ -1422,10 +1280,242 @@ def config_of_model(model,dom):
 
         
 
+
+
+#Motivation/Simple examples
+def prepare_motiv(dom_file,prog_name):
+    if CM.__vdebug__:
+        assert isinstance(dom_file,str),dom_file
+        assert isinstance(prog_name,str),prog_name
+    import platform
+    
+    dir_ = getpath('~/Dropbox/git/config/benchmarks/examples')
+    dom_file = getpath(os.path.join(dir_,"{}.dom".format(dom_file)))
+    prog_exe = getpath(os.path.join(dir_,"{}.{}.exe"
+                                    .format(prog_name,platform.system())))
+    assert os.path.isfile(dom_file),dom_file
+    assert os.path.isfile(prog_exe),prog_exe
+    
+    dom,_ = get_dom(dom_file)
+    logger.info("dom_file '{}': {}"
+                .format(dom_file,str_of_dom(dom,print_True=True)))
+    logger.info("prog_exe: '{}'".format(prog_exe))
+
+    args = {'var_names':dom.keys(),
+            'prog_name': prog_name,
+            'prog_exe': prog_exe,
+            'get_cov': get_cov_motiv,  #_gcov
+            'dir_': dir_}
+    get_cov = lambda config: get_cov_wrapper(config,args)
+    return dom,get_cov
+
+def get_cov_motiv(config,args):
+    """
+    Traces read from stdin
+    """
+    if CM.__vdebug__:
+        assert is_config(config),config
+        
+    tmpdir = '/var/tmp/'
+    prog_exe = args['prog_exe']
+    var_names = args['var_names']
+    opts = ' '.join(config[vname] for vname in var_names)
+    traces = os.path.join(tmpdir,'t.out')
+    cmd = "{} {} > {}".format(prog_exe,opts,traces)
+    void_run(cmd,print_cmd=False,print_outp=False)
+    sids = set(CM.iread_strip(traces))
+    return sids
+
+def get_cov_motiv_gcov(config,args):
+    """
+    Traces ared from gcov info
+    """
+    prog_name = args['prog_name']
+    prog_exe = args['prog_exe']
+    var_names = args['var_names']    
+    opts = ' '.join(config[vname] for vname in var_names)
+    
+    #cleanup
+    cmd = "rm -rf *.gcov *.gcda"
+    void_run(cmd,print_outp=True)
+    #CM.pause()
+    
+    #run testsuite
+    cmd = "{} {}".format(prog_exe,opts)
+    void_run(cmd,print_outp=True)
+    #CM.pause()
+
+    #read traces from gcov
+    #/path/prog.Linux.exe -> prog
+    cmd = "gcov {}".format(prog_name)
+    void_run(cmd,print_outp=True)
+    gcov_dir = os.getcwd()
+    sids = (parse_gcov(os.path.join(gcov_dir,f))
+            for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
+    sids = set(CM.iflatten(sids))
+    return sids
+
+#Coreutils
+def prepare_coreutils(prog_name):
+    if CM.__vdebug__:
+        assert isinstance(prog_name,str),prog_name
+
+
+    main_dir = getpath('~/Dropbox/git/config/benchmarks/coreutils')
+    dom_file = os.path.join(main_dir,"doms","{}.dom".format(prog_name))
+    dom_file = getpath(dom_file)
+    assert os.path.isfile(dom_file),dom_file
+
+    dom,_ = get_dom(dom_file)
+    logger.info("dom_file '{}': {}"
+                .format(dom_file,str_of_dom(dom,print_detail=True)))
+
+    bdir = os.path.join(main_dir,'coreutils')
+    prog_dir = os.path.join(bdir,'obj-gcov','src')
+    prog_exe = os.path.join(prog_dir,prog_name)
+    assert os.path.isfile(prog_exe),prog_exe
+    logger.info("prog_exe: '{}'".format(prog_exe))
+
+    dir_ = os.path.join(bdir,'src')
+    assert os.path.isdir(dir_)
+    args = {'var_names':dom.keys(),
+            'prog_name': prog_name,
+            'prog_exe': prog_exe,
+            'get_cov': get_cov_coreutils,
+            'testsuite_f': get_testsuite_f(prog_name),
+            'prog_dir':prog_dir,
+            'dir_': dir_,
+            'main_dir':main_dir}
+    get_cov = lambda config: get_cov_wrapper(config,args)    
+    return dom,get_cov
+
+def getopts_coreutils(config,ks,delim=' '):
+
+    opts = []
+    for k in ks:
+        if config[k] == "off":
+            continue
+        elif config[k] == "on":
+            opts.append(k)
+        elif k == "+": #nospace
+            opts.append("{}{}".format(k,config[k]))
+        elif k.startswith("--"):  # --option=value
+            opts.append("{}={}".format(k,config[k]))
+        else: #k v
+            opts.append("{}{}{}".format(k,delim,config[k]))
+
+    return ' '.join(opts)
+
+print_outp=True
+def get_cov_coreutils(config,args):
+    """
+    >>> args = {'prog_dir': '/home/tnguyen/Dropbox/git/config/benchmarks/coreutils/coreutils/obj-gcov/src', 'var_names': ['-a', '-s', '-n', '-r', '-v', '-m', '-p', '-i', '-o', '--help', '--version'], 'dir_': '/home/tnguyen/Dropbox/git/config/benchmarks/coreutils/coreutils/src', 'prog_exe': '/home/tnguyen/Dropbox/git/config/benchmarks/coreutils/coreutils/obj-gcov/src/uname', 'prog_name': 'uname'}
+    >>> config = HDict([('-a', 'on'), ('-s', 'off'), ('-n', 'off'), ('-r', 'off'), ('-v', 'off'), ('-m', 'off'), ('-p', 'off'), ('-i', 'off'), ('-o', 'off'), ('--help', 'off'), ('--version', 'off')])
+
+    #>>> sids = get_cov_coreutils(config,args);  len(sids) == 
+
+    """
+    if CM.__vdebug__:
+        assert isinstance(args,dict), args
+        assert 'main_dir' in args
+        assert 'dir_' in args
+        assert 'prog_dir' in args
+        assert 'prog_name' in args
+        assert 'prog_exe' in args
+        assert 'testsuite_f' in args
+        assert 'var_names' in args
+
+
+    dir_ = args['dir_']
+    main_dir = args['main_dir']    
+    prog_dir = args['prog_dir']
+    prog_name = args['prog_name']
+    prog_exe = args['prog_exe']
+    testsuite_f = args['testsuite_f']
+    var_names = args['var_names']
+    opts = getopts_coreutils(config,var_names,delim=' ')
+
+    #cleanup
+    cmd = "rm -rf {}/*.gcov {}/*.gcda".format(dir_,prog_dir)
+    void_run(cmd,print_outp=True)
+    #CM.pause()
+    
+    #run testsuite
+    testfiles_dir = os.path.join(main_dir,'testfiles',prog_name)
+    margs = {'prog_exe':prog_exe, 'opts':opts,
+                 'testfiles_dir':testfiles_dir}
+    testsuite_f(margs)
+    # cmd = "{} {}".format(prog_exe,opts)
+    # void_run(cmd,print_outp=True)
+    #CM.pause()
+
+    #read traces from gcov
+    #/path/prog.Linux.exe -> prog
+    src_dir = os.path.join(dir_,'src')
+    cmd = "gcov {} -o {}".format(prog_name,prog_dir)
+    void_run(cmd,print_outp=True)
+    
+    gcov_dir = os.getcwd()
+    sids = (parse_gcov(os.path.join(gcov_dir,f))
+            for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
+    sids = set(CM.iflatten(sids))
+    return sids
+
+def get_testsuite_f(prog_name):
+    ts_d = {'date': testsuite_date,
+            'default': testsuite_default}
+
+    return ts_d[prog_name if prog_name in ts_d else 'default']
+        
+def testsuite_default(args):
+    """
+    Simple run, e.g.,  uname -opts
+    """
+    if CM.__vdebug__:
+        assert isinstance(args,dict),args
+        assert 'opts' in args
+        assert 'prog_exe' in args
+
+    prog_exe = args['prog_exe']
+    opts = args['opts']
+    cmd = "{} {}".format(prog_exe,opts)
+    void_run(cmd,print_outp=True)
+    
+    
+def testsuite_date(args):
+    if CM.__vdebug__:
+        assert isinstance(args,dict),args
+        assert 'opts' in args
+        assert 'prog_exe' in args
+
+        assert 'testfiles_dir' in args        
+
+
+    prog_exe = args['prog_exe']
+    opts = args['opts']
+
+    testfiles_dir = args['testfiles_dir']
+    date_file = os.path.join(testfiles_dir,'datefile')
+    assert os.path.isfile(date_file),date_file
+    
+    cmds = []
+    cmds.append("{} {}".format(prog_exe,opts))  #date -options
+    cmds.append("{} {} -d '2004-02-29 16:21:42'".format(prog_exe,opts))
+    cmds.append("{} {} -d 'next  Thursday'".format(prog_exe,opts))
+    cmds.append("{} {} -d 'Sun, 29 Feb 2004 16:21:42 -0800'".format(prog_exe,opts))
+    cmds.append("{} {} -d '@2147483647'".format(prog_exe,opts))
+    cmds.append("{} {} -d 'TZ=\"America/Los_Angeles\" 09:00 next Fri'".format(prog_exe,opts))
+    cmds.append("TZ='America/Los_Angeles' {} {}".format(prog_exe,opts))
+
+    cmds.append("{} {} -r /bin/date".format(prog_exe,opts)) #date -otions /bin/date
+    cmds.append("{} {} -r ~".format(prog_exe,opts)) #date -otions /bin/date
+
+    cmds.append("{} {} -f {}".format(prog_exe,opts,date_file)) #date -f filename
+    void_run(cmds,print_outp=True)
+
 def doctestme():
     import doctest
     doctest.testmod()
-
 
 
 """
@@ -1436,4 +1526,12 @@ vsftpd: (0,1,336), (1,4,101), (2,6,170), (3,5,1385), (4,24,410), (5,5,102), (6,6
 
 old alg:
 vsftpd: (0,1,336), (1,4,101), (2,6,170), (3,4,1373), (4,18,410), (5,8,114), (6,6,35), (7,2,10)
+
+
+
+randseed 10
+sage: print '\n'.join(str_of_config(config,cov) for config,cov in rs[2].iteritems())
+-a=off -s=on -n=off -r=on -v=off -m=off -p=off -i=on -o=off --help=on --version=on: (34) ../src/system.h:568,../src/system.h:570,../src/system.h:573,../src/system.h:574,../src/system.h:584,../src/system.h:586,../src/uname.c:114,../src/uname.c:116,../src/uname.c:120,../src/uname.c:122,../src/uname.c:124,../src/uname.c:133,../src/uname.c:149,../src/uname.c:150,../src/uname.c:151,../src/uname.c:153,../src/uname.c:174,../src/uname.c:177,../src/uname.c:179,../src/uname.c:198,../src/uname.c:201,../src/uname.c:208,../src/uname.c:209,../src/uname.c:216,../src/uname.c:217,../src/uname.c:232,../src/uname.c:233,../src/uname.c:239,../src/uname.c:259,../src/uname.c:264,../src/uname.c:267,../src/uname.c:268,../src/uname.c:272,../src/uname.c:274
+
+-a=off -s=off -n=on -r=off -v=off -m=on -p=on -i=off -o=on --help=off --version=off: (47) ../src/uname.c:160,../src/uname.c:163,../src/uname.c:164,../src/uname.c:165,../src/uname.c:166,../src/uname.c:167,../src/uname.c:174,../src/uname.c:177,../src/uname.c:179,../src/uname.c:198,../src/uname.c:201,../src/uname.c:212,../src/uname.c:213,../src/uname.c:224,../src/uname.c:225,../src/uname.c:228,../src/uname.c:229,../src/uname.c:236,../src/uname.c:237,../src/uname.c:249,../src/uname.c:255,../src/uname.c:259,../src/uname.c:264,../src/uname.c:267,../src/uname.c:268,../src/uname.c:272,../src/uname.c:274,../src/uname.c:276,../src/uname.c:279,../src/uname.c:280,../src/uname.c:285,../src/uname.c:288,../src/uname.c:290,../src/uname.c:291,../src/uname.c:292,../src/uname.c:294,../src/uname.c:296,../src/uname.c:297,../src/uname.c:300,../src/uname.c:302,../src/uname.c:340,../src/uname.c:341,../src/uname.c:344,../src/uname.c:369,../src/uname.c:370,../src/uname.c:372,../src/uname.c:374
 """    
