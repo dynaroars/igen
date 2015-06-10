@@ -692,12 +692,6 @@ def analyze(cores_d,covs_d,dom):
     rs_verify = []    
     for sid,core in cores_d.iteritems():
         pncore = verify_pncore_cache(core,covs_d[sid],dom,verify_cache)
-        if sid == "L2":
-            print sid
-            print str_of_configs(covs_d[sid])
-            print str_of_pncore(core)
-            print str_of_pncore(pncore)
-            
         rs_verify.append((sid,pncore))
     
     logger.debug("simplify ...")
