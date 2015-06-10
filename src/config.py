@@ -468,6 +468,9 @@ def select_core(pncores,ignore_sel_cores):
                     for (mc,sc) in ignore_sel_cores)),ignore_sel_cores
 
     sel_cores = []
+    # print 'before'
+    # print '\n'.join(map(str_of_pncore,pncores))
+    
     for (pc,pd,nc,nd) in pncores:
         if pc and (pc,None) not in ignore_sel_cores:
             sel_cores.append((pc,None))
@@ -480,8 +483,13 @@ def select_core(pncores,ignore_sel_cores):
             sel_cores.append((nd,nc))
 
     if sel_cores:
-        sel_core = max(sel_cores,key=lambda c: stren_of_core(c))
-        print "SELECTED" ,str_of_sel_core(sel_core)
+        sel_core = max(sel_cores,
+                       key=lambda c: (stren_of_core(c),
+                                      vstren_of_core(c)))
+        # print 'after'
+        # print '\n'.join(map(str_of_sel_core,sel_cores))
+        # print "SELECTED" ,str_of_sel_core(sel_core)
+        # CM.pause()
         ignore_sel_cores.add(sel_core)
     else:
         sel_core = None
@@ -584,7 +592,7 @@ def intgen(dom,get_cov,seed=None,cover_siz=None,
     
     #some settings
     cur_iter = 1
-    cur_stuck,max_stuck= 0,2
+    cur_stuck= 0
     cores_d,configs_d,covs_d = {},{},{}
     sel_core = (None,None)
     ignore_sel_cores = set()
@@ -602,7 +610,7 @@ def intgen(dom,get_cov,seed=None,cover_siz=None,
                                     configs_d,covs_d,dom)
 
     z3db = z3db_of_dom(dom)
-    while cur_stuck <= max_stuck:
+    while True:
 
         #save info
         ct_ = time();etime = ct_ - ct;ct = ct_
