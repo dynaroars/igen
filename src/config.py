@@ -12,31 +12,46 @@ import vu_common as CM
 from collections import namedtuple
 
 logger = CM.VLog('config')
-logger.level = CM.VLog.DETAIL
+logger.level = CM.VLog.DEBUG
 CM.VLog.PRINT_TIME = True
-CM.__vdebug__ = False  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
+CM.__vdebug__ = True  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
 do_comb_conj_disj = True
-print_cov = True
+show_cov = True
+
+getpath = lambda f: os.path.realpath(os.path.expanduser(f))
 
 #Data Structures
 is_cov = lambda cov: (isinstance(cov,set) and
                       all(isinstance(s,str) for s in cov))
 def str_of_cov(cov):
+    """
+    >>> assert str_of_cov(set("L2 L1 L3".split())) == '(3) L1,L2,L3'
+    """
     if CM.__vdebug__:
         assert is_cov(cov),cov
 
     s = "({})".format(len(cov))
-    if print_cov:
+    if show_cov:
         s = "{} {}".format(s,','.join(sorted(cov)))
     return s
     
 is_valset = lambda vs: (isinstance(vs,frozenset) and vs and
                         all(isinstance(v,str) for v in vs))
 
-def str_of_valset(s): return ','.join(sorted(s))
+def str_of_valset(s):
+    """
+    >>> str_of_valset(frozenset(['1','2','3']))
+    '1,2,3'
+    """
+    return ','.join(sorted(s))
     
 is_setting = lambda (k,v): isinstance(k,str) and isinstance(k,str)
 def str_of_setting((k,v)):
+    """
+    >>> print str_of_setting(('x','1'))
+    x=1
+    """
+    
     if CM.__vdebug__:
         assert is_setting((k,v)), (k,v)
     return '{}={}'.format(k,v)
@@ -44,6 +59,12 @@ def str_of_setting((k,v)):
 is_csetting = lambda (k,vs): isinstance(k,str) and is_valset(vs)
 
 def str_of_csetting((k,vs)):
+    """
+    >>> print str_of_csetting(('x',frozenset(['1'])))
+    x=1
+    >>> print str_of_csetting(('x',frozenset(['3','1'])))
+    x=1,3
+    """
     if CM.__vdebug__:
         assert is_setting((k,vs)), (k,vs)
     
@@ -52,15 +73,21 @@ def str_of_csetting((k,vs)):
 is_dom = lambda dom: (isinstance(dom,HDict) and dom and
                       all(is_csetting(s) for s in dom.iteritems()))
 
-def str_of_dom(dom,print_detail=True):
+def str_of_dom(dom):
+    """
+    >>> print str_of_dom(HDict([('x',frozenset(['1','2'])),('y',frozenset(['1']))]))
+    2 vars and 2 poss configs
+    x: 1,2
+    y: 1
+    """
+    
     if CM.__vdebug__:
         assert is_dom(dom),dom
 
     s = "{} vars and {} poss configs".format(len(dom),siz_of_dom(dom))
-    if print_detail:
-         s_detail = '\n'.join("{}: {}".format(k,str_of_valset(dom[k]))
-                              for k in dom)
-         s = "{}\n{}".format(s,s_detail)
+    s_detail = '\n'.join("{}: {}".format(k,str_of_valset(dom[k]))
+                         for k in dom)
+    s = "{}\n{}".format(s,s_detail)
     return s
 
 is_config = lambda c: (isinstance(c,HDict) and c and
@@ -138,13 +165,12 @@ def str_of_pncore(pncore,fstr_f=None):
 is_cores_d = lambda cores_d: (isinstance(cores_d,dict) and
                               all(isinstance(sid,str) and is_pncore(c)
                                   for sid,c in cores_d.iteritems()))
-def str_of_cores_d(cores_d,fstr_f=None):
+def str_of_cores_d(cores_d):
     if CM.__vdebug__:
         assert is_cores_d(cores_d),cores_d
-        assert fstr_f is None or callable(fstr_f),fstr_f
         
     return '\n'.join("{}. {}: {}"
-                     .format(i+1,sid,str_of_pncore(cores_d[sid],fstr_f))
+                     .format(i+1,sid,str_of_pncore(cores_d[sid],fstr_f=None))
                      for i,sid in enumerate(sorted(cores_d)))
 
 is_mcores_d = lambda mcores_d: (isinstance(mcores_d,dict) and
@@ -568,8 +594,7 @@ def gen_configs_iter(cores,ignore_sel_cores,configs_d,z3db,dom):
     return sel_core, configs
 
 #Iterative Algorithm
-def intgen(dom,get_cov,seed=None,cover_siz=None,
-           config_default=None,do_postprocess=False):
+def intgen(dom,get_cov,seed=None,cover_siz=None,config_default=None):
     """
     cover_siz=(0,n):  generates n random configs
     cover_siz=(0,-1):  generates full random configs
@@ -587,9 +612,7 @@ def intgen(dom,get_cov,seed=None,cover_siz=None,
     logger.info("seed: {}, tmpdir: {}".format(seed,tmpdir))
     
     #save info
-    ifile = os.path.join(tmpdir,'info')
-    iobj = (seed,dom)
-    CM.vsave(ifile,iobj)
+    iobj = (seed,dom); CM.vsave(os.path.join(tmpdir,'info'),iobj)
     
     #some settings
     cur_iter = 1
@@ -637,8 +660,7 @@ def intgen(dom,get_cov,seed=None,cover_siz=None,
                                             ignore_sel_cores,
                                             configs_d,z3db,dom)
         if sel_core is None:
-            logger.info('select no core for refinement, '
-                        'done at iter {}'.format(cur_iter))
+            logger.info('done at iter {}'.format(cur_iter))
             break
 
         assert configs,configs
@@ -656,31 +678,30 @@ def intgen(dom,get_cov,seed=None,cover_siz=None,
         else: #no progress
             cur_stuck += 1
 
+    pp_cores_d = postprocess(cores_d,covs_d,dom)
+    CM.vsave(os.path.join(tmpdir,'postprocess'),pp_cores_d)
+    
     logger.info(str_of_summary(seed,cur_iter,time()-st,cov_time,
                                len(configs_d),len(cores_d),
                                tmpdir))
 
-    pp_cores_d = None
-    if do_postprocess:
-        logger.info("*** postprocess ***")
-        pp_cores_d = postprocess(cores_d,covs_d,dom)
-
     return pp_cores_d,cores_d,configs_d,covs_d,dom
 
 #Shortcuts
-def intgen_full(dom,get_cov,do_postprocess=True):
+def intgen_full(dom,get_cov):
     return intgen(dom,get_cov,seed=None,cover_siz=(0,-1),
-                  config_default=None,do_postprocess=do_postprocess)
+                  config_default=None)
 
-def intgen_rand(dom,get_cov,n,seed=None,do_postprocess=True):
+def intgen_rand(dom,get_cov,n,seed=None):
     return intgen(dom,get_cov,seed=seed,cover_siz=(0,n),
-                  config_default=None,do_postprocess=do_postprocess)
+                  config_default=None)
 
 #postprocess
 def postprocess_rs(rs): return postprocess(rs[1],rs[3],rs[4])
 
 def postprocess(cores_d,covs_d,dom):
     if CM.__vdebug__:
+        assert is_cores_d(cores_d),cores_d
         assert is_covs_d(covs_d),covs_d
         assert is_dom(dom),dom
 
@@ -690,7 +711,8 @@ def postprocess(cores_d,covs_d,dom):
     fstr_f=lambda c: fstr_of_pncore(c,dom)
     logger.debug("mcores_d has {} items\n".format(len(mcores_d)) +
                  str_of_mcores_d(mcores_d,fstr_f)) 
-    logger.info(strens_str_of_mcores_d(mcores_d))
+    logger.info("mcores_d strens: {}"
+                .format(strens_str_of_mcores_d(mcores_d)))
 
     return cores_d
 
@@ -984,10 +1006,10 @@ def gen_configs_tcover1(dom):
 
     return configs
 
-def print_dtrace(dt,print_mcores_d=True):
+def print_dtrace(dt):
     if CM.__vdebug__:
         assert isinstance(dt,DTrace)
-        
+    logger.info("--------------------")        
     logger.info("ITER {}, ".format(dt.citer) +
                 "{0:.2f}s, ".format(dt.etime) +
                 "{0:.2f}s eval, ".format(dt.ctime) +
@@ -1000,16 +1022,16 @@ def print_dtrace(dt,print_mcores_d=True):
                 "{}".format("** progress **"
                             if dt.new_covs or dt.new_cores else ""))
 
-    logger.debug('sel_core: ({}) {}'.format(
+    logger.debug('select core: ({}) {}'.format(
         stren_of_core(dt.sel_core), str_of_sel_core(dt.sel_core)))
     logger.debug('create {} configs'.format(len(dt.configs)))
     logger.detail('\n' + str_of_configs(dt.configs,dt.covs))
 
-    if print_mcores_d:
-        mcores_d = merge_cores_d(dt.cores_d)
-        logger.debug("mcores_d has {} items".format(len(mcores_d)))
-        logger.detail('\n{}'.format(str_of_mcores_d(mcores_d)))
-        logger.info(strens_str_of_mcores_d(mcores_d))
+    mcores_d = merge_cores_d(dt.cores_d)
+    logger.debug("infer {} interactions".format(len(mcores_d)))
+    logger.detail('\n{}'.format(str_of_mcores_d(mcores_d)))
+    logger.info("strens: {}".format(strens_str_of_mcores_d(mcores_d)))
+    logger.info("--------------------")
 
 
 def str_of_summary(seed,iters,ntime,ctime,nconfigs,ncovs,tmpdir):
@@ -1028,12 +1050,14 @@ def replay(dirname):
         dt_files = [os.path.join(dirname,f) for f in os.listdir(dirname)
                     if f.endswith('.tvn')]
         dts = [CM.vload(dt) for dt in dt_files]
-        return iobj, dts
+        pp_cores_d = CM.vload(os.path.join(dirname,'postprocess'))
+        
+        return iobj, dts, pp_cores_d
     
-    iobj,dts = load_dir(dirname)
+    iobj,dts,pp_cores_d = load_dir(dirname)
     seed,dom = iobj
     logger.info('seed: {}'.format(seed))
-    logger.debug(str_of_dom(dom,print_detail=True))
+    logger.debug(str_of_dom(dom))
 
     ntime = 0.0
     nsamples = 0
@@ -1050,126 +1074,8 @@ def replay(dirname):
                                ntime,dt.ctime,
                                nsamples,ncovs,dirname))
 
-    return niters,ntime,dt.ctime,nsamples,ncovs,dt.cores_d
+    return niters,ntime,dt.ctime,nsamples,ncovs,dt.cores_d,pp_cores_d
 
-
-
-#Tests
-getpath = lambda f: os.path.realpath(os.path.expanduser(f))
-
-#Otter
-def prepare_otter(prog):
-    dir_ = getpath('~/Src/Devel/iTree_stuff/expData/{}'.format(prog))
-    dom_file = os.path.join(dir_,'possibleValues.txt')
-    pathconds_d_file = os.path.join(dir_,'{}.tvn'.format('pathconds_d'))
-    assert os.path.isfile(dom_file),dom_file
-    assert os.path.isfile(pathconds_d_file),pathconds_d_file
-    
-    dom,_ = get_dom(dom_file)
-    logger.info("dom_file '{}': {}"
-                .format(dom_file,str_of_dom(dom,print_detail=True)))
-    
-    st = time()
-    pathconds_d = CM.vload(pathconds_d_file)
-    logger.info("'{}': {} path conds ({}s)"
-                .format(pathconds_d_file,len(pathconds_d),time()-st))
-
-    args={'pathconds_d':pathconds_d}
-    get_cov = lambda config: get_cov_otter(config,args)
-    return dom,get_cov,pathconds_d
-
-def get_cov_otter(config,args):
-    if CM.__vdebug__:
-        assert is_config(config),config
-        assert isinstance(args,dict) and 'pathconds_d' in args, args
-    sids = set()        
-    for cov,configs in args['pathconds_d'].itervalues():
-        if any(config.hcontent.issuperset(c) for c in configs):
-            for sid in cov:
-                sids.add(sid)
-    return sids
-
-def run_gt(dom,pathconds_d,n=None,do_postprocess=True):
-    """
-    Obtain interactions using Otter's pathconds
-    """
-    if CM.__vdebug__:
-        assert n is None or 0 <= n <= len(pathconds_d), n
-        logger.warn("DEBUG MODE ON. Can be slow !")
-
-    if n:
-        rs = random.sample(pathconds_d.values(),n)
-    else:
-        rs = pathconds_d.itervalues()
-
-    rs = [(HDict(c),covs) for covs,configs in rs for c in configs]
-    allconfigs,allcovs = zip(*rs)
-    logger.info("infer interactions using {} configs"
-                .format(len(allconfigs)))
-    st = time()
-    cores_d,configs_d,covs_d = {},{},{}
-    infer_covs(cores_d,allconfigs,allcovs,configs_d,covs_d,dom)
-    logger.info("infer conds for {} covered lines ({}s)"
-                .format(len(cores_d),time()-st))
-    pp_cores_d = None
-    if do_postprocess:
-        logger.info("*** postprocess ***")
-        pp_cores_d = postprocess(cores_d,covs_d,dom)
-
-    return pp_cores_d,cores_d,configs_d,covs_d,dom
-
-# Real executions
-def void_run(cmd,print_cmd=True,print_outp=False):
-    "just exec command, does not return anything"
-
-    if isinstance(cmd,list):
-        logger.detail('run {} cmds'.format(len(cmd)))
-        cmd = '; '.join(cmd)
-        
-    if print_cmd: print cmd
-        
-    try:
-        rs_outp,rs_err = CM.vcmd(cmd)
-        if print_outp: print rs_outp
-
-        #IMPORTANT, command out the below allows
-        #erroneous test runs, which can be helpful
-        #to detect incorrect configs
-        #assert len(rs_err) == 0, rs_err
-        if rs_err:
-            logger.warn("cmd '{}' gives (potentially) err\n'{}'"
-                        .format(cmd,rs_err))
-            if "invalid" in rs_err:
-                raise AssertionError("Definitely an error")
-            #assert len(rs_err) == 0
-
-    except Exception as e:
-        print e
-        raise AssertionError("cmd '{}' failed".format(cmd))
-    
-from gcovparse import gcovparse
-def parse_gcov(gcov_file):
-    if CM.__vdebug__:
-        assert os.path.isfile(gcov_file)
-
-    gcov_obj = gcovparse(CM.vread(gcov_file))
-    assert len(gcov_obj) == 1, gcov_obj
-    gcov_obj = gcov_obj[0]
-    sids = (d['line'] for d in gcov_obj['lines'] if d['hit'] > 0)
-    sids = set("{}:{}".format(gcov_obj['file'],line) for line in sids)
-    return sids
-
-def get_cov_wrapper(config,args):
-    cur_dir = os.getcwd()
-    try:
-        dir_ = args["dir_"]
-        os.chdir(dir_)
-        cov = args['get_cov'](config,args)
-        os.chdir(cur_dir)
-        return cov
-    except:
-        os.chdir(cur_dir)
-        raise
 
 #Z3 STUFF
 def z3db_of_dom(dom):
@@ -1288,7 +1194,123 @@ def config_of_model(model,dom):
     config = HDict((k,_f(k)) for k in dom)
     return config
 
+
+#Tests
+
+#Otter
+def prepare_otter(prog):
+    dir_ = getpath('~/Src/Devel/iTree_stuff/expData/{}'.format(prog))
+    dom_file = os.path.join(dir_,'possibleValues.txt')
+    pathconds_d_file = os.path.join(dir_,'{}.tvn'.format('pathconds_d'))
+    assert os.path.isfile(dom_file),dom_file
+    assert os.path.isfile(pathconds_d_file),pathconds_d_file
+    
+    dom,_ = get_dom(dom_file)
+    logger.info("dom_file '{}': {}"
+                .format(dom_file,str_of_dom(dom)))
+    
+    st = time()
+    pathconds_d = CM.vload(pathconds_d_file)
+    logger.info("'{}': {} path conds ({}s)"
+                .format(pathconds_d_file,len(pathconds_d),time()-st))
+
+    args={'pathconds_d':pathconds_d}
+    get_cov = lambda config: get_cov_otter(config,args)
+    return dom,get_cov,pathconds_d
+
+def get_cov_otter(config,args):
+    if CM.__vdebug__:
+        assert is_config(config),config
+        assert isinstance(args,dict) and 'pathconds_d' in args, args
+    sids = set()        
+    for cov,configs in args['pathconds_d'].itervalues():
+        if any(config.hcontent.issuperset(c) for c in configs):
+            for sid in cov:
+                sids.add(sid)
+    return sids
+
+def run_gt(dom,pathconds_d,n=None):
+    """
+    Obtain interactions using Otter's pathconds
+    """
+    if CM.__vdebug__:
+        assert n is None or 0 <= n <= len(pathconds_d), n
+        logger.warn("DEBUG MODE ON. Can be slow !")
+
+    if n:
+        rs = random.sample(pathconds_d.values(),n)
+    else:
+        rs = pathconds_d.itervalues()
+
+    rs = [(HDict(c),covs) for covs,configs in rs for c in configs]
+    allconfigs,allcovs = zip(*rs)
+    logger.info("infer interactions using {} configs"
+                .format(len(allconfigs)))
+    st = time()
+    cores_d,configs_d,covs_d = {},{},{}
+    infer_covs(cores_d,allconfigs,allcovs,configs_d,covs_d,dom)
+    # logger.info("infer conds for {} covered lines ({}s)"
+    #             .format(len(cores_d),time()-st))
+
+    pp_cores_d = postprocess(cores_d,covs_d,dom)
+
+    return pp_cores_d,cores_d,configs_d,covs_d,dom
+
+# Real executions
+def void_run(cmd):
+    "just exec command, does not return anything"
+
+    if isinstance(cmd,list):
+        logger.debug('run {} cmds'.format(len(cmd)))
+        cmd = '; '.join(cmd)
+
+    logger.detail(cmd)
         
+    try:
+        rs_outp,rs_err = CM.vcmd(cmd)
+        logger.detail(rs_outp)
+
+        #IMPORTANT, command out the below allows
+        #erroneous test runs, which can be helpful
+        #to detect incorrect configs
+        #assert len(rs_err) == 0, rs_err
+        if rs_err:
+            logger.warn("cmd '{}' gives the err:\n'{}'"
+                        .format(cmd,rs_err))
+            if "invalid" in rs_err:
+                raise AssertionError("Definitely an error")
+            #assert len(rs_err) == 0
+
+    except Exception as e:
+        print e
+        raise AssertionError("cmd '{}' failed".format(cmd))
+    
+from gcovparse import gcovparse
+def parse_gcov(gcov_file):
+    if CM.__vdebug__:
+        assert os.path.isfile(gcov_file)
+
+    gcov_obj = gcovparse(CM.vread(gcov_file))
+    assert len(gcov_obj) == 1, gcov_obj
+    gcov_obj = gcov_obj[0]
+    sids = (d['line'] for d in gcov_obj['lines'] if d['hit'] > 0)
+    sids = set("{}:{}".format(gcov_obj['file'],line) for line in sids)
+    return sids
+
+def get_cov_wrapper(config,args):
+    cur_dir = os.getcwd()
+    try:
+        dir_ = args["dir_"]
+        os.chdir(dir_)
+        cov = args['get_cov'](config,args)
+        os.chdir(cur_dir)
+        return cov
+    except:
+        os.chdir(cur_dir)
+        raise
+
+        
+
 #Motivation/Simple examples
 def prepare_motiv(dom_file,prog_name):
     if CM.__vdebug__:
@@ -1305,7 +1327,7 @@ def prepare_motiv(dom_file,prog_name):
     
     dom,_ = get_dom(dom_file)
     logger.info("dom_file '{}': {}"
-                .format(dom_file,str_of_dom(dom,print_True=True)))
+                .format(dom_file,str_of_dom(dom)))
     logger.info("prog_exe: '{}'".format(prog_exe))
 
     args = {'var_names':dom.keys(),
@@ -1329,7 +1351,7 @@ def get_cov_motiv(config,args):
     opts = ' '.join(config[vname] for vname in var_names)
     traces = os.path.join(tmpdir,'t.out')
     cmd = "{} {} > {}".format(prog_exe,opts,traces)
-    void_run(cmd,print_cmd=False,print_outp=False)
+    void_run(cmd)
     sids = set(CM.iread_strip(traces))
     return sids
 
@@ -1344,18 +1366,18 @@ def get_cov_motiv_gcov(config,args):
     
     #cleanup
     cmd = "rm -rf *.gcov *.gcda"
-    void_run(cmd,print_outp=True)
+    void_run(cmd)
     #CM.pause()
     
     #run testsuite
     cmd = "{} {}".format(prog_exe,opts)
-    void_run(cmd,print_outp=True)
+    void_run(cmd)
     #CM.pause()
 
     #read traces from gcov
     #/path/prog.Linux.exe -> prog
     cmd = "gcov {}".format(prog_name)
-    void_run(cmd,print_outp=True)
+    void_run(cmd)
     gcov_dir = os.getcwd()
     sids = (parse_gcov(os.path.join(gcov_dir,f))
             for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
@@ -1367,15 +1389,13 @@ def prepare_coreutils(prog_name):
     if CM.__vdebug__:
         assert isinstance(prog_name,str),prog_name
 
-
     main_dir = getpath('~/Dropbox/git/config/benchmarks/coreutils')
     dom_file = os.path.join(main_dir,"doms","{}.dom".format(prog_name))
     dom_file = getpath(dom_file)
     assert os.path.isfile(dom_file),dom_file
 
     dom,_ = get_dom(dom_file)
-    logger.info("dom_file '{}': {}"
-                .format(dom_file,str_of_dom(dom,print_detail=True)))
+    logger.info("dom_file '{}': {}".format(dom_file,str_of_dom(dom)))
 
     bdir = os.path.join(main_dir,'coreutils')
     prog_dir = os.path.join(bdir,'obj-gcov','src')
@@ -1396,8 +1416,13 @@ def prepare_coreutils(prog_name):
     get_cov = lambda config: get_cov_wrapper(config,args)    
     return dom,get_cov
 
-def getopts_coreutils(config,ks,delim=' '):
-
+def getopts_coreutils(config,ks):
+    """
+    >>> ks = "-x -y z + --o".split()
+    >>> config = dict(zip(ks,'on off something "%M" "date"'.split()))
+    >>> assert getopts_coreutils(config,ks) == '-x z something +"%M" --o="date"'
+    
+    """
     opts = []
     for k in ks:
         if config[k] == "off":
@@ -1409,11 +1434,10 @@ def getopts_coreutils(config,ks,delim=' '):
         elif k.startswith("--"):  # --option=value
             opts.append("{}={}".format(k,config[k]))
         else: #k v
-            opts.append("{}{}{}".format(k,delim,config[k]))
+            opts.append("{} {}".format(k,config[k]))
 
     return ' '.join(opts)
 
-print_outp=True
 def get_cov_coreutils(config,args):
     """
     >>> args = {'prog_dir': '/home/tnguyen/Dropbox/git/config/benchmarks/coreutils/coreutils/obj-gcov/src', 'var_names': ['-a', '-s', '-n', '-r', '-v', '-m', '-p', '-i', '-o', '--help', '--version'], 'dir_': '/home/tnguyen/Dropbox/git/config/benchmarks/coreutils/coreutils/src', 'prog_exe': '/home/tnguyen/Dropbox/git/config/benchmarks/coreutils/coreutils/obj-gcov/src/uname', 'prog_name': 'uname'}
@@ -1440,11 +1464,11 @@ def get_cov_coreutils(config,args):
     prog_exe = args['prog_exe']
     testsuite_f = args['testsuite_f']
     var_names = args['var_names']
-    opts = getopts_coreutils(config,var_names,delim=' ')
+    opts = getopts_coreutils(config,var_names)
 
     #cleanup
     cmd = "rm -rf {}/*.gcov {}/*.gcda".format(dir_,prog_dir)
-    void_run(cmd,print_outp=True)
+    void_run(cmd)
     #CM.pause()
     
     #run testsuite
@@ -1452,15 +1476,12 @@ def get_cov_coreutils(config,args):
     margs = {'prog_exe':prog_exe, 'opts':opts,
                  'testfiles_dir':testfiles_dir}
     testsuite_f(margs)
-    # cmd = "{} {}".format(prog_exe,opts)
-    # void_run(cmd,print_outp=True)
-    #CM.pause()
 
     #read traces from gcov
     #/path/prog.Linux.exe -> prog
     src_dir = os.path.join(dir_,'src')
     cmd = "gcov {} -o {}".format(prog_name,prog_dir)
-    void_run(cmd,print_outp=True)
+    void_run(cmd)
     
     gcov_dir = os.getcwd()
     sids = (parse_gcov(os.path.join(gcov_dir,f))
@@ -1488,7 +1509,7 @@ def testsuite_default(args):
     prog_exe = args['prog_exe']
     opts = args['opts']
     cmd = "{} {}".format(prog_exe,opts)
-    void_run(cmd,print_outp=True)
+    void_run(cmd)
     
     
 def testsuite_date(args):
@@ -1521,7 +1542,7 @@ def testsuite_date(args):
 
     cmds.append("{} {} -f {}".format(prog_exe,opts,date_file)) #date -f filename
     cmds.append("{} {} -f notexist".format(prog_exe,opts)) #date -f filename    
-    void_run(cmds,print_outp=True)
+    void_run(cmds)
 
 def testsuite_ls(args):
     """
@@ -1558,7 +1579,7 @@ def testsuite_ls(args):
     cmds.append("{} {} ~/ls_test".format(prog_exe,opts))
     cmds.append("{} {} .".format(prog_exe,opts))
     cmds.append("{} {} ..".format(prog_exe,opts))
-    void_run(cmds,print_outp=True)
+    void_run(cmds,show_outp=True)
     
 def testsuite_ln(args):
     if CM.__vdebug__:
@@ -1601,7 +1622,6 @@ def testsuite_ln(args):
     cmd.append("echo foo > a")      
     cmds.append("ln {} a b > err 2>&1)".format(opts_str))
     myexec(test_dir,cmds)
-
 
 
 
