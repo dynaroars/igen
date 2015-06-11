@@ -14,7 +14,7 @@ from collections import namedtuple
 logger = CM.VLog('config')
 logger.level = CM.VLog.DETAIL
 CM.VLog.PRINT_TIME = True
-CM.__vdebug__ = True
+CM.__vdebug__ = False  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
 do_comb_conj_disj = True
 print_cov = True
 
@@ -197,6 +197,7 @@ def strens_str_of_mcores_d(mcores_d):
 
 DTrace = namedtuple("DTrace",
                     "citer etime ctime "
+                    "nconfigs ncovs ncores "
                     "configs covs "
                     "new_covs new_cores "
                     "sel_core cores_d")
@@ -606,15 +607,16 @@ def intgen(dom,get_cov,seed=None,cover_siz=None,
     if config_default: configs.append(config_default)
     covs,ctime = eval_configs(configs,get_cov)
     cov_time += ctime
+
     new_covs,new_cores = infer_covs(cores_d,configs,covs,
                                     configs_d,covs_d,dom)
-
     z3db = z3db_of_dom(dom)
     while True:
 
         #save info
         ct_ = time();etime = ct_ - ct;ct = ct_
         dtrace = DTrace(cur_iter,etime,cov_time,
+                        len(configs_d),len(covs_d),len(cores_d),
                         configs,covs,
                         new_covs,new_cores,
                         sel_core,
@@ -642,8 +644,12 @@ def intgen(dom,get_cov,seed=None,cover_siz=None,
         assert configs,configs
         covs,ctime = eval_configs(configs,get_cov)
         cov_time += ctime
+        logger.debug("infer: cores {}, configs {}, covs {}, configs_d {}, covs_d {}"
+                     .format(len(cores_d),len(configs),len(covs),
+                             len(configs_d),len(covs_d)))
         new_covs,new_cores = infer_covs(cores_d,configs,covs,
                                         configs_d,covs_d,dom)
+        
 
         if new_covs or new_cores: #progress
             cur_stuck = 0
@@ -985,8 +991,9 @@ def print_dtrace(dt,print_mcores_d=True):
     logger.info("ITER {}, ".format(dt.citer) +
                 "{0:.2f}s, ".format(dt.etime) +
                 "{0:.2f}s eval, ".format(dt.ctime) +
-                "total: {} configs, {} covs, {} cores, ".format(0,0,0) +
-                "new: {} configs, {} covs, {} cores, "
+                "total: {} configs, {} covs, {} cores, "
+                .format(dt.nconfigs,dt.ncovs,dt.ncores) +
+                "new: {} configs, {} covs, {} updated cores, "
                 .format(len(dt.configs),
                         len(dt.new_covs),
                         len(dt.new_cores)) +
@@ -1119,7 +1126,8 @@ def void_run(cmd,print_cmd=True,print_outp=False):
         logger.detail('run {} cmds'.format(len(cmd)))
         cmd = '; '.join(cmd)
         
-    if print_cmd:print cmd
+    if print_cmd: print cmd
+        
     try:
         rs_outp,rs_err = CM.vcmd(cmd)
         if print_outp: print rs_outp
@@ -1131,6 +1139,8 @@ def void_run(cmd,print_cmd=True,print_outp=False):
         if rs_err:
             logger.warn("cmd '{}' gives (potentially) err\n'{}'"
                         .format(cmd,rs_err))
+            if "invalid" in rs_err:
+                raise AssertionError("Definitely an error")
             #assert len(rs_err) == 0
 
     except Exception as e:
@@ -1279,9 +1289,6 @@ def config_of_model(model,dom):
     return config
 
         
-
-
-
 #Motivation/Simple examples
 def prepare_motiv(dom_file,prog_name):
     if CM.__vdebug__:
@@ -1463,6 +1470,8 @@ def get_cov_coreutils(config,args):
 
 def get_testsuite_f(prog_name):
     ts_d = {'date': testsuite_date,
+            'ls': testsuite_ls,
+            'ln': testsuite_ln,
             'default': testsuite_default}
 
     return ts_d[prog_name if prog_name in ts_d else 'default']
@@ -1487,9 +1496,7 @@ def testsuite_date(args):
         assert isinstance(args,dict),args
         assert 'opts' in args
         assert 'prog_exe' in args
-
         assert 'testfiles_dir' in args        
-
 
     prog_exe = args['prog_exe']
     opts = args['opts']
@@ -1502,16 +1509,102 @@ def testsuite_date(args):
     cmds.append("{} {}".format(prog_exe,opts))  #date -options
     cmds.append("{} {} -d '2004-02-29 16:21:42'".format(prog_exe,opts))
     cmds.append("{} {} -d 'next  Thursday'".format(prog_exe,opts))
-    cmds.append("{} {} -d 'Sun, 29 Feb 2004 16:21:42 -0800'".format(prog_exe,opts))
+    cmds.append("{} {} -d 'Sun, 29 Feb 2004 16:21:42 -0800'"
+                .format(prog_exe,opts))
     cmds.append("{} {} -d '@2147483647'".format(prog_exe,opts))
-    cmds.append("{} {} -d 'TZ=\"America/Los_Angeles\" 09:00 next Fri'".format(prog_exe,opts))
+    cmds.append("{} {} -d 'TZ=\"America/Los_Angeles\" 09:00 next Fri'"
+                .format(prog_exe,opts))
     cmds.append("TZ='America/Los_Angeles' {} {}".format(prog_exe,opts))
 
     cmds.append("{} {} -r /bin/date".format(prog_exe,opts)) #date -otions /bin/date
     cmds.append("{} {} -r ~".format(prog_exe,opts)) #date -otions /bin/date
 
     cmds.append("{} {} -f {}".format(prog_exe,opts,date_file)) #date -f filename
+    cmds.append("{} {} -f notexist".format(prog_exe,opts)) #date -f filename    
     void_run(cmds,print_outp=True)
+
+def testsuite_ls(args):
+    """
+    testsuite_ls({'opts':'-d','prog_exe':'/bin/ls', 'testfiles_dir':'/home/tnguyen/Dropbox/git/config/benchmarks/coreutils/testfiles/ls'})
+    """
+    if CM.__vdebug__:
+        assert isinstance(args,dict),args
+        assert 'opts' in args
+        assert 'prog_exe' in args
+        assert 'testfiles_dir' in args        
+
+
+    prog_exe = args['prog_exe']
+    opts = args['opts']
+    testfiles_dir = args['testfiles_dir']
+    exist_dir = os.path.join(args['testfiles_dir'],"edir")
+    cmds = []
+
+    cmds.append("{} {} {}/a_ln".format(prog_exe,opts,exist_dir))
+    cmds.append("{} {} {}/noexist_ln".format(prog_exe,opts,exist_dir))
+    cmds.append("{} {} {}/d1/.hidden1".format(prog_exe,opts,exist_dir))
+    cmds.append("{} {} {}/d1/d1d1/b".format(prog_exe,opts,exist_dir))
+    cmds.append("{} {} {}/d2/a.sh".format(prog_exe,opts,exist_dir))
+    cmds.append("{} {} {}/d2/dirA".format(prog_exe,opts,exist_dir))
+    cmds.append("{} {} {}/d2/dirA/*".format(prog_exe,opts,exist_dir))
+    
+    cmds.append("{} {} {}/d2_ln/a.sh".format(prog_exe,opts,exist_dir))
+    cmds.append("{} {} {}/d2_ln/.hidden_dir".format(prog_exe,opts,exist_dir))
+
+    cmds.append("{} {} /boot".format(prog_exe,opts))
+    cmds.append("{} {} /boot/*".format(prog_exe,opts))
+    cmds.append("{} {} /bin/ls".format(prog_exe,opts))
+    assert os.path.isdir(getpath("~/ls_test")), "create ~/ls_test"
+    cmds.append("{} {} ~/ls_test".format(prog_exe,opts))
+    cmds.append("{} {} .".format(prog_exe,opts))
+    cmds.append("{} {} ..".format(prog_exe,opts))
+    void_run(cmds,print_outp=True)
+    
+def testsuite_ln(args):
+    if CM.__vdebug__:
+        assert isinstance(args,dict),args
+        assert 'opts' in args
+        assert 'prog_exe' in args
+
+        assert 'testfiles_dir' in args        
+
+
+    prog_exe = args['prog_exe']
+    opts = args['opts']
+    testfiles_dir = args['testfiles_dir']
+
+    cmds = []
+ #test 1
+    cmds = []    
+    cmds.append("touch a")
+    cmds.append("ln {} a b".format(opts_str))
+
+    #test 2
+    cmds = []        
+    cmds.append("mkdir d")
+    cmds.append("ln {} d e".format(opts_str))
+    myexec(test_dir,cmds)
+    
+    #from coreutils tests
+    #test 3  # d/f -> ../f
+    cmds = []        
+    cmds.append("mkdir d")
+    cmds.append("ln {} --target_dir=d ../f".format(opts_str))
+    myexec(test_dir,cmds)
+    
+    #test 4
+    # Check that a target directory of '.' is supported
+    # and that indirectly specifying the same target and link name
+    # through that is detected.
+    cmds = []        
+    cmds.append("ln {} . b".format(opts_str))
+    cmd.append("echo foo > a")      
+    cmds.append("ln {} a b > err 2>&1)".format(opts_str))
+    myexec(test_dir,cmds)
+
+
+
+
 
 def doctestme():
     import doctest
@@ -1524,14 +1617,4 @@ ngircd:
 vsftpd: (0,1,336), (1,4,101), (2,6,170), (3,5,1385), (4,24,410), (5,5,102), (6,6,35), (7,2,10)
 
 
-old alg:
-vsftpd: (0,1,336), (1,4,101), (2,6,170), (3,4,1373), (4,18,410), (5,8,114), (6,6,35), (7,2,10)
-
-
-
-randseed 10
-sage: print '\n'.join(str_of_config(config,cov) for config,cov in rs[2].iteritems())
--a=off -s=on -n=off -r=on -v=off -m=off -p=off -i=on -o=off --help=on --version=on: (34) ../src/system.h:568,../src/system.h:570,../src/system.h:573,../src/system.h:574,../src/system.h:584,../src/system.h:586,../src/uname.c:114,../src/uname.c:116,../src/uname.c:120,../src/uname.c:122,../src/uname.c:124,../src/uname.c:133,../src/uname.c:149,../src/uname.c:150,../src/uname.c:151,../src/uname.c:153,../src/uname.c:174,../src/uname.c:177,../src/uname.c:179,../src/uname.c:198,../src/uname.c:201,../src/uname.c:208,../src/uname.c:209,../src/uname.c:216,../src/uname.c:217,../src/uname.c:232,../src/uname.c:233,../src/uname.c:239,../src/uname.c:259,../src/uname.c:264,../src/uname.c:267,../src/uname.c:268,../src/uname.c:272,../src/uname.c:274
-
--a=off -s=off -n=on -r=off -v=off -m=on -p=on -i=off -o=on --help=off --version=off: (47) ../src/uname.c:160,../src/uname.c:163,../src/uname.c:164,../src/uname.c:165,../src/uname.c:166,../src/uname.c:167,../src/uname.c:174,../src/uname.c:177,../src/uname.c:179,../src/uname.c:198,../src/uname.c:201,../src/uname.c:212,../src/uname.c:213,../src/uname.c:224,../src/uname.c:225,../src/uname.c:228,../src/uname.c:229,../src/uname.c:236,../src/uname.c:237,../src/uname.c:249,../src/uname.c:255,../src/uname.c:259,../src/uname.c:264,../src/uname.c:267,../src/uname.c:268,../src/uname.c:272,../src/uname.c:274,../src/uname.c:276,../src/uname.c:279,../src/uname.c:280,../src/uname.c:285,../src/uname.c:288,../src/uname.c:290,../src/uname.c:291,../src/uname.c:292,../src/uname.c:294,../src/uname.c:296,../src/uname.c:297,../src/uname.c:300,../src/uname.c:302,../src/uname.c:340,../src/uname.c:341,../src/uname.c:344,../src/uname.c:369,../src/uname.c:370,../src/uname.c:372,../src/uname.c:374
 """    
