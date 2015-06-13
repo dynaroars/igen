@@ -216,7 +216,6 @@ def strens_str_of_mcores_d(mcores_d):
     return ', '.join("({},{},{})".format(siz,ncores,ncov)
                      for siz,ncores,ncov in strens_of_mcores_d(mcores_d))
 
-
 DTrace = namedtuple("DTrace",
                     "citer etime ctime "
                     "nconfigs ncovs ncores "
@@ -582,7 +581,7 @@ def gen_configs_iter(cores,ignore_sel_cores,configs_d,z3db,dom):
     return sel_core, configs
 
 #Iterative Algorithm
-def intgen(dom,get_cov,seed=None,cover_siz=None,config_default=None):
+def igen(dom,get_cov,seed=None,cover_siz=None,config_default=None):
     """
     cover_siz=(0,n):  generates n random configs
     cover_siz=(0,-1):  generates full random configs
@@ -634,7 +633,7 @@ def intgen(dom,get_cov,seed=None,cover_siz=None,config_default=None):
                         cores_d)
         dfile = os.path.join(tmpdir,"{}.tvn".format(cur_iter))
         CM.vsave(dfile,dtrace)
-        print_dtrace(dtrace)
+        show_dtrace(dtrace)
         
         if cover_siz:
             break
@@ -648,18 +647,14 @@ def intgen(dom,get_cov,seed=None,cover_siz=None,config_default=None):
                                             ignore_sel_cores,
                                             configs_d,z3db,dom)
         if sel_core is None:
-            logger.info('done at iter {}'.format(cur_iter))
+            cur_iter -= 1
+            logger.info('done after iter {}'.format(cur_iter))
             break
 
         assert configs,configs
         cconfigs_d,ctime = eval_configs(configs,get_cov)
         cov_time += ctime
-        # logger.debug("infer: cores {}, configs {}, covs {}, configs_d {}, covs_d {}"
-        #              .format(len(cores_d),len(configs),len(covs),
-        #                      len(configs_d),len(covs_d)))
-        new_covs,new_cores = infer_covs(cores_d,cconfigs_d,
-                                        configs_d,covs_d,dom)
-        
+        new_covs,new_cores = infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom)
 
         if new_covs or new_cores: #progress
             cur_stuck = 0
@@ -667,24 +662,35 @@ def intgen(dom,get_cov,seed=None,cover_siz=None,config_default=None):
             cur_stuck += 1
 
     pp_cores_d = postprocess(cores_d,covs_d,dom)
+    show_analyzed_cores_d(pp_cores_d,dom)
     CM.vsave(os.path.join(tmpdir,'postprocess'),pp_cores_d)
     
     logger.info(str_of_summary(seed,cur_iter,time()-st,cov_time,
-                               len(configs_d),len(pp_cores_d),
+                               len(configs_d),len(covs_d),
                                tmpdir))
 
     return pp_cores_d,cores_d,configs_d,covs_d,dom
 
 #Shortcuts
-def intgen_full(dom,get_cov):
-    return intgen(dom,get_cov,seed=None,cover_siz=(0,-1),
-                  config_default=None)
-
-def intgen_rand(dom,get_cov,n,seed=None):
-    return intgen(dom,get_cov,seed=seed,cover_siz=(0,n),
-                  config_default=None)
+def igen_full(dom,get_cov):
+    return igen(dom,get_cov,seed=None,cover_siz=(0,-1),config_default=None)
+                
+def igen_rand(dom,get_cov,n,seed=None):
+    return igen(dom,get_cov,seed=seed,cover_siz=(0,n),config_default=None)
+                
 
 #postprocess
+def show_analyzed_cores_d(cores_d,dom):
+    if CM.__vdebug__:
+        assert is_cores_d(cores_d),cores_d
+
+    mcores_d = merge_cores_d(cores_d)
+    fstr_f=lambda c: fstr_of_pncore(c,dom)
+    logger.debug("mcores_d has {} items\n".format(len(mcores_d)) +
+                 str_of_mcores_d(mcores_d,fstr_f)) 
+    logger.info("mcores_d strens: {}"
+                .format(strens_str_of_mcores_d(mcores_d)))
+
 def postprocess_rs(rs): return postprocess(rs[1],rs[3],rs[4])
 
 def postprocess(cores_d,covs_d,dom):
@@ -694,16 +700,7 @@ def postprocess(cores_d,covs_d,dom):
         assert is_dom(dom),dom
 
     cores_d = analyze(cores_d,covs_d,dom)
-    mcores_d = merge_cores_d(cores_d)
-
-    fstr_f=lambda c: fstr_of_pncore(c,dom)
-    logger.debug("mcores_d has {} items\n".format(len(mcores_d)) +
-                 str_of_mcores_d(mcores_d,fstr_f)) 
-    logger.info("mcores_d strens: {}"
-                .format(strens_str_of_mcores_d(mcores_d)))
-
     return cores_d
-
         
 def analyze(cores_d,covs_d,dom):
     if CM.__vdebug__:
@@ -717,7 +714,6 @@ def analyze(cores_d,covs_d,dom):
                          format(sid,
                                 str_of_pncore(old_c),
                                 str_of_pncore(new_c)))
-        
         
     logger.info("analyze interactions for {} sids".format(len(cores_d)))
     logger.debug("verify ...")
@@ -821,8 +817,6 @@ def simplify_pncore((pc,pd,nc,nd),dom):
     if not nc: nc = None
     if not nd: nd = None
 
-    # print pc,pd
-    # print nc,nd
     if (pc is None and pd is None) or (nc is None and nd is None):
         return (pc,pd,nc,nd)
 
@@ -983,19 +977,17 @@ def gen_configs_tcover1(dom):
 
     return configs
 
-def print_dtrace(dt):
+def show_dtrace(dt):
     if CM.__vdebug__:
         assert isinstance(dt,DTrace)
-    logger.info("--------------------")        
+        
     logger.info("ITER {}, ".format(dt.citer) +
                 "{}s, ".format(dt.etime) +
                 "{}s eval, ".format(dt.ctime) +
                 "total: {} configs, {} covs, {} cores, "
                 .format(dt.nconfigs,dt.ncovs,dt.ncores) +
                 "new: {} configs, {} covs, {} updated cores, "
-                .format(len(dt.cconfigs_d),
-                        len(dt.new_covs),
-                        len(dt.new_cores)) +
+                .format(len(dt.cconfigs_d),len(dt.new_covs),len(dt.new_cores)) +
                 "{}".format("** progress **"
                             if dt.new_covs or dt.new_cores else ""))
 
@@ -1008,50 +1000,50 @@ def print_dtrace(dt):
     logger.debug("infer {} interactions".format(len(mcores_d)))
     logger.detail('\n{}'.format(str_of_mcores_d(mcores_d)))
     logger.info("strens: {}".format(strens_str_of_mcores_d(mcores_d)))
-    logger.info("--------------------")
 
 
 def str_of_summary(seed,iters,ntime,ctime,nconfigs,ncovs,tmpdir):
-    s = "Summary: "
-    s += "Seed {}, ".format(seed)
-    s += "Iters {}, ".format(iters)
-    s += "Time ({}s, {}s), ".format(ntime,ctime)
-    s += "Configs {}, ".format(nconfigs)
-    s += "Covs {}, ".format(ncovs)
-    s += "Tmpdir {}".format(tmpdir)
+    s = ("Summary: " +
+         "Seed {}, ".format(seed) +
+         "Iters {}, ".format(iters) +
+         "Time ({}s, {}s), ".format(ntime,ctime) +
+         "Configs {}, ".format(nconfigs) +
+         "Covs {}, ".format(ncovs) +
+         "Tmpdir {}".format(tmpdir))
     return s
 
-def replay(dirname):
-    def load_dir(dirname):
-        iobj = CM.vload(os.path.join(dirname,'info'))
-        dt_files = [os.path.join(dirname,f) for f in os.listdir(dirname)
+def replay(dir_):
+    """
+    Replay execution info from saved info in dir_
+    """
+    def load_dir(dir_):
+        info = CM.vload(os.path.join(dir_,'info'))
+        dt_files = [os.path.join(dir_,f) for f in os.listdir(dir_)
                     if f.endswith('.tvn')]
         dts = [CM.vload(dt) for dt in dt_files]
-        pp_cores_d = CM.vload(os.path.join(dirname,'postprocess'))
+        pp_cores_d = CM.vload(os.path.join(dir_,'postprocess'))
         
-        return iobj, dts, pp_cores_d
+        return info, dts, pp_cores_d
     
-    iobj,dts,pp_cores_d = load_dir(dirname)
-    seed,dom = iobj
+    info,dts,pp_cores_d = load_dir(dir_)
+    seed,dom = info
+
+    #print info
     logger.info('seed: {}'.format(seed))
     logger.debug(str_of_dom(dom))
 
-    ntime = 0.0
-    nsamples = 0
-    ncovs = 0
-    robjs = sorted(dts,key=lambda dt: dt.citer)
-    for dt in dts:
-        print_dtrace(dt)
-        ntime += dt.etime
-        nsamples += len(dt.configs)
-        ncovs += len(dt.new_covs)
-        
-    niters = len(dts)
-    logger.info(str_of_summary(seed,niters,
-                               ntime,dt.ctime,
-                               nsamples,ncovs,dirname))
+    #print iterations
+    for dt in sorted(dts,key=lambda dt: dt.citer):
+        show_dtrace(dt)
 
-    return niters,ntime,dt.ctime,nsamples,ncovs,dt.cores_d,pp_cores_d
+    #print postprocess results
+    show_analyzed_cores_d(pp_cores_d,dom)
+
+    #print summary
+    ntime = sum(dt.etime for dt in dts)
+    logger.info(str_of_summary(seed,len(dts),ntime,dt.ctime,
+                               dt.nconfigs,dt.ncovs,dir_))
+    return len(dts),ntime,dt.ctime,dt.nconfigs,dt.ncovs,dt.cores_d,pp_cores_d
 
 
 #Z3 STUFF
@@ -1173,7 +1165,6 @@ def config_of_model(model,dom):
 
 
 #Tests
-
 #Otter
 def prepare_otter(prog):
     #dir_ = getpath('~/Src/Devel/iTree_stuff/expData/{}'.format(prog))
@@ -1224,14 +1215,18 @@ def do_gt(dom,pathconds_d,n=None):
     for covs,configs in rs:
         for c in configs:
             c = HDict(c)
-            assert c not in cconfigs_d, str_of_config(c)
-            cconfigs_d[c] = covs
+            if c not in cconfigs_d:
+                cconfigs_d[c] = set(covs)
+            else:
+                covs_ = cconfigs_d[c]
+                for sid in covs:
+                    covs_.add(sid)
             
     logger.info("infer interactions using {} configs"
                 .format(len(cconfigs_d)))
     st = time()
     cores_d,configs_d,covs_d = {},{},{}
-    infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom)
+    _ = infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom)
     pp_cores_d = postprocess(cores_d,covs_d,dom)
 
     logger.info(str_of_summary(0,0,time()-st,0,
