@@ -1,5 +1,6 @@
-import config
 import vu_common as CM
+import config
+import config_coreutils
 
 otter_d = {"vsftpd":None,
            "ngircd":None}
@@ -75,8 +76,8 @@ if __name__ == "__main__":
     else:
         if prog in examples_d:
             dom,get_cov=config.prepare_motiv(examples_d[prog],prog)            
-        elif prog in config.coreutils_d:
-            dom,get_cov=config.prepare_coreutils(prog)            
+        elif prog in config_coreutils.coreutils_d:
+            dom,get_cov=config_coreutils.prepare_coreutils(prog)            
         else:
             raise AssertionError("unrecognized prog '{}'".format(prog))
 
