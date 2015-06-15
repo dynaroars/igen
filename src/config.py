@@ -14,7 +14,7 @@ from collections import namedtuple
 logger = CM.VLog('config')
 logger.level = CM.VLog.DEBUG
 CM.VLog.PRINT_TIME = True
-CM.__vdebug__ = False  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
+CM.__vdebug__ = True  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
 do_comb_conj_disj = True
 show_cov = True
 
@@ -70,107 +70,204 @@ def str_of_csetting((k,vs)):
     
     return '{}={}'.format(k,str_of_valset(vs))
 
-is_dom = lambda dom: (isinstance(dom,HDict) and dom and
-                      all(is_csetting(s) for s in dom.iteritems()))
+class Dom(HDict):
+    def __init__(self,dom):
+        HDict.__init__(self,dom)
 
-def str_of_dom(dom):
-    """
-    >>> print str_of_dom(HDict([('x',frozenset(['1','2'])),('y',frozenset(['1']))]))
-    2 vars and 2 poss configs
-    x: (2) 1,2
-    y: (1) 1
-    """
-    if CM.__vdebug__:
-        assert is_dom(dom),dom
+        if CM.__vdebug__:
+            assert self and all(is_csetting(s) for s in self.iteritems()), self
+            
+    def __str__(self):
+        """
+        >>> print str_of_dom(HDict([('x',frozenset(['1','2'])),('y',frozenset(['1']))]))
+        2 vars and 2 poss configs
+        x: (2) 1,2
+        y: (1) 1
+        """
+        s = "{} vars and {} poss configs".format(len(self),self.siz)
+        s_detail = '\n'.join("{}:({}) {}".format(k,len(vs),str_of_valset(vs))
+                             for k,vs in self.iteritems())
 
-    s = "{} vars and {} poss configs".format(len(dom),siz_of_dom(dom))
-    s_detail = '\n'.join("{}:({}) {}".format(k,len(vs),str_of_valset(vs))
-                         for k,vs in dom.iteritems())
-                                             
-    s = "{}\n{}".format(s,s_detail)
-    return s
+        s = "{}\n{}".format(s,s_detail)
+        return s
 
-is_config = lambda c: (isinstance(c,HDict) and c and
-                       all(is_setting(s) for s in c.iteritems()))
-
-def str_of_config(config,cov=None):
-    if CM.__vdebug__:
-        assert is_config(config), config
-        assert cov is None or is_cov(cov), cov
+    @property
+    def siz(self): return CM.vmul(len(vs) for vs in self.itervalues())
         
-    s =  ' '.join(map(str_of_setting,config.iteritems()))
-    if cov:
-        s = "{}: {}".format(s,str_of_cov(cov))
-    return s
+
+    @staticmethod
+    def get_dom(dom_file):
+        if CM.__vdebug__:
+            assert os.path.isfile(dom_file), domfile
+
+        def get_lines(lines):
+            rs = (line.split() for line in lines)
+            rs = ((parts[0],frozenset(parts[1:])) for parts in rs)
+            return rs
+
+        dom = Dom(get_lines(CM.iread_strip(dom_file)))
+
+        config_default = None
+        dom_file_default = dom_file+'.default'
+        if os.path.isfile(dom_file_default):
+            rs = get_dom_lines(CM.iread_strip(dom_file_default))
+            config_default = Config((k,list(rs[k])[0]) for k in rs)
+
+        return dom,config_default
+    
+class Config(HDict):
+    def __init__(self,config=HDict()):
+        HDict.__init__(self,config)
+        
+        if CM.__vdebug__:
+            assert all(is_setting(s) for s in self.iteritems()), self
+
+    def __str__(self,cov=None):
+        if CM.__vdebug__:
+            assert cov is None or is_cov(cov), cov
+
+        s =  ' '.join(map(str_of_setting,self.iteritems()))
+        if cov:
+            s = "{}: {}".format(s,str_of_cov(cov))
+        return s
 
 def str_of_configs(configs):
     if CM.__vdebug__:
-        assert all(is_config(c) for c in configs), configs
+        assert all(isinstance(c,Config) for c in configs), configs
 
-    ss = (str_of_config(c,None) for c in configs)
-    return '\n'.join("{}. {}".format(i+1,s) for i,s in enumerate(ss))
+    return '\n'.join("{}. {}".format(i+1,c) for i,c in enumerate(configs))
 
-is_core = lambda core: (isinstance(core,HDict) and
-                        all(is_csetting(s) for s in core.iteritems()))
-
-is_maybe_core = lambda c: c is None or is_core(c)
-
-def str_of_core(core,delim=' '):
-    """
-    >>> print str_of_core(HDict([('a',frozenset(['2'])),('c',frozenset(['0','1']))]))
-    a=2 c=0,1
-    >>> print str_of_core(HDict())
-    true
-    """
-    if CM.__vdebug__:
-        assert is_core(core), core
-    if core:
-        return delim.join(map(str_of_csetting,core.iteritems()))
-    else:
-        return 'true'
-
-def is_pncore((pc,pd,nc,nd)):
-    return all(is_maybe_core(c) for c in (pc,pd,nc,nd))
+class Core(HDict):
+    def __init__(self,core=HDict()):
+        HDict.__init__(self,core)
         
-def sstr_of_pncore(pncore):
-    """
-    >>> pc = HDict([('a',frozenset(['2'])),('c',frozenset(['0','1']))])
-    >>> pd = None
-    >>> nc = HDict([('b',frozenset(['2']))])
-    >>> nd = None
-    >>> print sstr_of_pncore((pc,pd,nc,nd))
-    pc: a=2 c=0,1; nc: b=2
-    """
-    if CM.__vdebug__:
-        assert is_pncore(pncore),pncore
-    pc,pd,nc,nd = pncore
-    ss = ("{}: {}".format(s,str_of_core(c)) for s,c in
-          zip('pc pd nc nd'.split(),(pc,pd,nc,nd)) if c is not None)
-    return '; '.join(ss)
-
-def str_of_pncore(pncore,fstr_f=None):
-    """
-    Important: only call fstr_of_pncore *after* being analyzed
-    """
-    if CM.__vdebug__:
-        assert is_pncore(pncore),pncore
-        assert fstr_f is None or callable(fstr_f),fstr_f
+        if CM.__vdebug__:
+            assert all(is_csetting(s) for s in self.iteritems()), self
         
-    return fstr_f(pncore) if fstr_f else sstr_of_pncore(pncore)
+    def __str__(self,delim=' '):
+        """
+        >>> print Core([('a',frozenset(['2'])),('c',frozenset(['0','1']))])
+        a=2 c=0,1
+        >>> print Core()
+        true
+        """
+        if self:
+            return delim.join(map(str_of_csetting,self.iteritems()))
+        else:
+            return 'true'
+
+    def neg(self,dom):
+        if CM.__vdebug__:
+            assert isinstance(dom,Dom),dom
+
+        return Core((k,dom[k]-self[k]) for k in self)
+        
+
+is_maybe_core = lambda c: c is None or isinstance(c,Core)
+
+class PNCore(tuple):
+    def __init__(self,(pc,pd,nc,nd)):
+        tuple.__init__(self,(pc,pd,nc,nd))
+        
+        if CM.__vdebug__:
+            assert all(is_maybe_core(c) for c in self), self
+        
+    @property
+    def pc(self): return self[0]
+    @property
+    def pd(self): return self[1]
+    @property
+    def nc(self): return self[2]
+    @property
+    def nd(self):return self[3]
+    
+    @staticmethod
+    def mk_default(): return PNCore((None,None,None,None))
+
+    @property
+    def sstr(self):
+        """
+        >>> pc = HDict([('a',frozenset(['2'])),('c',frozenset(['0','1']))])
+        >>> pd = None
+        >>> nc = HDict([('b',frozenset(['2']))])
+        >>> nd = None
+        >>> print sstr_of_pncore((pc,pd,nc,nd))
+        pc: a=2 c=0,1; nc: b=2
+        """
+        ss = ("{}: {}".format(s,c) for s,c in
+              zip('pc pd nc nd'.split(),self) if c is not None)
+        return '; '.join(ss)
+
+    def __str__(self,fstr_f=None):
+        """
+        Important: only call fstr_of_pncore *after* being analyzed
+        """
+        if CM.__vdebug__:
+            assert fstr_f is None or callable(fstr_f),fstr_f
+
+        return fstr_f(self) if fstr_f else self.sstr
+
+    def fstr(self,dom):
+        """
+        Assumption: all 4 cores are verified and simplified
+        """
+
+        if CM.__vdebug__:
+            assert self.pc is None or isinstance(self.pc,Core) and self.pc, self.pc
+            assert self.pd is None or isinstance(self.pd,Core) and self.pd, self.pd
+            assert self.nc is None or isinstance(self.nc,Core) and self.nc, self.nc
+            assert self.nd is None or isinstance(self.nd,Core) and self.nd, self.nd
+            assert isinstance(dom,Dom),dom
+            
+        def _f(core,delim):
+            s = core.__str__(delim)
+            if len(core) > 1:
+                s = '({})'.format(s)
+            return s
+
+        def _cd(ccore,dcore,delim):
+            ss = []
+            if ccore:
+                ss.append(_f(ccore,' & '))
+            if dcore:
+                assert isinstance(dom,Dom),dom
+                dcore_n = dcore.neg(dom)
+                ss.append(_f(dcore_n, ' | '))
+            return delim.join(ss) if ss else 'true'
+
+        if self.is_simplified():
+            if (self.nc is None and self.nd is None):
+                #pc & not(pd)
+                ss = _cd(self.pc,self.pd,' & ')
+            else:
+                #not(nc & not(nd))  =  not(nc) | nd
+                ss = _cd(self.nd,self.nc,' | ')
+        else:
+            p_ss = _cd(self.pc,self.pd,' & ')
+            n_ss = _cd(self.nd,self.nc,' | ')
+            ss = ','.join([p_ss,n_ss]) + '***'
+
+        return ss
+
+    
+    def is_simplified(self):
+        return ((self.pc is None and self.pd is None) or
+                (self.nc is None and self.nd is None))
+    
 
 is_cores_d = lambda cores_d: (isinstance(cores_d,dict) and
-                              all(isinstance(sid,str) and is_pncore(c)
+                              all(isinstance(sid,str) and isinstance(c,PNCore)
                                   for sid,c in cores_d.iteritems()))
 def str_of_cores_d(cores_d):
     if CM.__vdebug__:
         assert is_cores_d(cores_d),cores_d
         
     return '\n'.join("{}. {}: {}"
-                     .format(i+1,sid,str_of_pncore(cores_d[sid],fstr_f=None))
+                     .format(i+1,sid,cores_d[sid].__str__(fstr_f=None))
                      for i,sid in enumerate(sorted(cores_d)))
 
 is_mcores_d = lambda mcores_d: (isinstance(mcores_d,dict) and
-                                all(is_pncore(c) and is_cov(cov)
+                                all(isinstance(c,PNCore) and is_cov(cov)
                                     for c,cov in mcores_d.iteritems()))
 
 def str_of_mcores_d(mcores_d,fstr_f=None):
@@ -186,7 +283,7 @@ def str_of_mcores_d(mcores_d,fstr_f=None):
 
     ss = ("{}. ({}) {}: {}"
           .format(i+1,
-                  stren_of_core(core),str_of_pncore(core,fstr_f),
+                  stren_of_core(core),core.__str__(fstr_f),
                   str_of_cov(cov))
           for i,(core,cov) in enumerate(mc))
 
@@ -230,34 +327,26 @@ def config_c_implies(config,core):
     not(x=0&z=1 => x=0,y=1)
     """
     if CM.__vdebug__:
-        assert is_config(config),config
-        assert is_core(core),core
+        assert isinstance(config,Config),config
+        assert isinstance(core,Core),core
 
     return (not core or
             all(k in config and config[k] in core[k] for k in core))
 
 def config_d_implies(config,core): 
     if CM.__vdebug__:
-        assert is_config(config),config
-        assert is_core(core),core
+        assert isinstance(config,Config),config
+        assert isinstance(core,Core),core
 
     return (not core or
             any(k in config and config[k] in core[k] for k in core))
    
-def neg_of_core(core,dom):
-    if CM.__vdebug__:
-        assert is_core(core),core
-        assert is_dom(dom),dom
-
-    return HDict((k,dom[k]-core[k]) for k in core)
-
-pncore_mk_default = lambda: (None,None,None,None)
 
 def settings_of_core(core):
     if CM.__vdebug__:
         assert (isinstance(core,tuple) and
                 (len(core)==2 or len(core)==4) and 
-                all(c is None or is_core(c) for c in core)),core
+                all(c is None or isinstance(c,Core) for c in core)),core
     core = (c for c in core if c)
     return set(s for c in core for s in c.iteritems())
     
@@ -290,13 +379,13 @@ def infer(configs,core,dom):
     Approximation in *conjunctive* form
     """
     if CM.__vdebug__:
-        assert all(is_config(c) for c in configs) and configs, configs
+        assert all(isinstance(c,Config) for c in configs) and configs, configs
         assert is_maybe_core(core),core
-        assert is_dom(dom),dom
+        assert isinstance(dom,Dom),dom
 
     if core is None:  #not yet set
         core = min(configs,key=lambda c:len(c))
-        core = HDict((k,frozenset([v])) for k,v in core.iteritems())
+        core = Core((k,frozenset([v])) for k,v in core.iteritems())
         
     def f(k,s,ldx):
         s_ = set(s)
@@ -310,14 +399,14 @@ def infer(configs,core,dom):
         return s_
 
     vss = [f(k,vs,len(dom[k])) for k,vs in core.iteritems()]
-    core = HDict((k,frozenset(vs)) for k,vs in zip(core,vss) if vs)
+    core = Core((k,frozenset(vs)) for k,vs in zip(core,vss) if vs)
     return core  
 
 def infer_cache(core,configs,dom,cache):
     if CM.__vdebug__:
-        assert core is None or is_core(core),core
-        assert all(is_config(c) for c in configs) and configs, configs
-        assert is_dom(dom),dom
+        assert core is None or isinstance(core,Core),core
+        assert all(isinstance(c,Config) for c in configs) and configs, configs
+        assert isinstance(dom,Dom),dom
         assert isinstance(cache,dict),cache
 
     configs = frozenset(configs)
@@ -329,11 +418,11 @@ def infer_cache(core,configs,dom,cache):
 def infer_sid(sid,core,cconfigs_d,configs_d,covs_d,dom,cache):
     if CM.__vdebug__:
         assert isinstance(sid,str),sid
-        assert is_pncore(core),core
+        assert isinstance(core,PNCore),core
         assert is_configs_d(cconfigs_d) and cconfigs_d,cconfigs_d
         assert is_configs_d(configs_d),configs_d
         assert is_covs_d(covs_d),covs_d
-        assert is_dom(dom),dom        
+        assert isinstance(dom,Dom),dom        
         assert isinstance(cache,dict),cache
 
     def _f(configs,cc,cd,_b):
@@ -345,8 +434,8 @@ def infer_sid(sid,core,cconfigs_d,configs_d,covs_d,dom,cache):
             if configs_:
                 new_cd = infer_cache(cd,configs_,dom,cache)
                 if new_cd:
-                    new_cd = HDict((k,v) for (k,v) in new_cd.iteritems()
-                                   if k not in new_cc)
+                    new_cd = Core((k,v) for (k,v) in new_cd.iteritems()
+                                  if k not in new_cc)
             
         return new_cc,new_cd
 
@@ -362,21 +451,21 @@ def infer_sid(sid,core,cconfigs_d,configs_d,covs_d,dom,cache):
     pc_,pd_ = _f(pconfigs,pc,pd,_b)
     _b = lambda: covs_d[sid]
     nc_,nd_ = _f(nconfigs,nc,nd,_b)    
-    return pc_,pd_,nc_,nd_
+    return PNCore((pc_,pd_,nc_,nd_))
 
 def is_covs_d(covs_d):
     return (isinstance(covs_d,dict) and
             all(isinstance(sid,str) and isinstance(configs,set)
-                and all(is_config(c) for c in configs)
+                and all(isinstance(c,Config) for c in configs)
                 for sid,configs in covs_d.iteritems()))
 
 def is_configs_d(configs_d):
     return (isinstance(configs_d,dict) and
-            all(is_config(config) and is_cov(cov)
+            all(isinstance(config,Config) and is_cov(cov)
                 for config,cov in configs_d.iteritems()))
 
 def str_of_configs_d(configs_d):
-    ss = (str_of_config(c,configs_d[c]) for c in configs_d)
+    ss = (c.__str__(configs_d[c]) for c in configs_d)
     return '\n'.join("{}. {}".format(i+1,s) for i,s in enumerate(ss))
     
 def infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom):
@@ -386,7 +475,7 @@ def infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom):
         assert is_configs_d(configs_d),configs_d        
         assert all(c not in configs_d for c in cconfigs_d),cconfigs_d
         assert is_covs_d(covs_d),covs_d
-        assert is_dom(dom),dom
+        assert isinstance(dom,Dom),dom
         
     sids = set(cores_d.keys())
     #update configs_d and covs_d
@@ -397,7 +486,7 @@ def infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom):
                 covs_d[sid]=set()
             covs_d[sid].add(config)
 
-        assert config not in configs_d, str_of_config(config)
+        assert config not in configs_d, config
         configs_d[config]=cconfigs_d[config]
         
     cache = {}
@@ -406,7 +495,7 @@ def infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom):
         if sid in cores_d:
             core = cores_d[sid]
         else:
-            core = pncore_mk_default()
+            core = PNCore.mk_default()
             new_covs.add(sid)
         
         core_ = infer_sid(sid,core,cconfigs_d,
@@ -430,13 +519,12 @@ def gen_configs_core_z3(core,sat_core,configs_d,z3db,dom):
     x=0,y=1  =>  [x=0,y=0,z=rand;x=0,y=2,z=rand;x=1,y=1;z=rand]
     """
     if CM.__vdebug__:
-        assert is_core(core) and core, core
-        assert (sat_core is None or
-                is_core(sat_core) and
+        assert isinstance(core,Core) and core, core
+        assert (sat_core is None or isinstance(sat_core,Core) and
                 all(k not in core for k in sat_core)),sat_core
-        assert is_dom(dom),dom
+        assert isinstance(dom,Dom),dom
 
-    _new = lambda : HDict((k,core[k]) for k in core)
+    _new = lambda : Core((k,core[k]) for k in core)
     changes = []
     for k in core:
         vs = dom[k]-core[k]
@@ -471,9 +559,9 @@ def str_of_sel_core((mc,sc)):
         assert is_sel_core((mc,sc)),(mc,sc)
     ss = []
     if mc:
-        ss.append("mc: {}".format(str_of_core(mc)))
+        ss.append("mc: {}".format(mc))
     if sc:
-        ss.append("sc: {}".format(str_of_core(sc)))
+        ss.append("sc: {}".format(sc))
     return ';'.join(ss)
         
 def select_core(pncores,ignore_sel_cores):
@@ -481,7 +569,7 @@ def select_core(pncores,ignore_sel_cores):
     Return a pair of core (mc,sc)
     """
     if CM.__vdebug__:
-        assert all(is_pncore(c) for c in pncores) and pncores,pncores
+        assert all(isinstance(c,PNCore) for c in pncores) and pncores,pncores
         assert (isinstance(ignore_sel_cores,set) and
                 all(is_maybe_core(mc) and is_maybe_core(sc)
                     for (mc,sc) in ignore_sel_cores)),ignore_sel_cores
@@ -511,7 +599,7 @@ def select_core(pncores,ignore_sel_cores):
 def eval_configs(configs,get_cov):
     if CM.__vdebug__:
         assert (isinstance(configs,list) and
-                all(is_config(c) for c in configs)
+                all(isinstance(c,Config) for c in configs)
                 and configs), configs
         assert callable(get_cov),get_cov
     st = time()
@@ -545,19 +633,19 @@ def gen_configs_init(cover_siz,seed,dom):
     else:
         configs = gen_configs_tcover1(dom)
 
-    assert configs, "empty set of configs"
+    assert configs, "init configs empty"
     return configs
 
 def gen_configs_iter(cores,ignore_sel_cores,configs_d,z3db,dom):
     if CM.__vdebug__:
         assert (isinstance(cores,set) and 
-                all(is_pncore(c) for c in cores)), cores
+                all(isinstance(c,PNCore) for c in cores)), cores
         assert (isinstance(ignore_sel_cores,set) and 
                 all(is_sel_core(c) for c in ignore_sel_cores)),\
                 ignore_sel_cores
         assert is_configs_d(configs_d),configs_d
         assert isinstance(z3db,dict),z3db
-        assert is_dom(dom),dom
+        assert isinstance(dom,Dom),dom
 
     configs = []
     while True:
@@ -587,10 +675,10 @@ def igen(dom,get_cov,seed=None,cover_siz=None,config_default=None):
     cover_siz=(0,-1):  generates full random configs
     """
     if CM.__vdebug__:
-        assert is_dom(dom),dom
+        assert isinstance(dom,Dom),dom
         assert callable(get_cov),get_cov
         assert (config_default is None or
-                is_config(config_default)), config_default
+                isinstance(config_default,Config)), config_default
 
     seed = round(time(),2) if seed is None else float(seed)
     random.seed(seed)
@@ -685,7 +773,7 @@ def show_analyzed_cores_d(cores_d,dom):
         assert is_cores_d(cores_d),cores_d
 
     mcores_d = merge_cores_d(cores_d)
-    fstr_f=lambda c: fstr_of_pncore(c,dom)
+    fstr_f=lambda c: c.fstr(dom)
     logger.debug("mcores_d has {} items\n".format(len(mcores_d)) +
                  str_of_mcores_d(mcores_d,fstr_f)) 
     logger.info("mcores_d strens: {}"
@@ -697,7 +785,7 @@ def postprocess(cores_d,covs_d,dom):
     if CM.__vdebug__:
         assert is_cores_d(cores_d),cores_d
         assert is_covs_d(covs_d),covs_d
-        assert is_dom(dom),dom
+        assert isinstance(dom,Dom),dom
 
     cores_d = analyze(cores_d,covs_d,dom)
     return cores_d
@@ -706,14 +794,14 @@ def analyze(cores_d,covs_d,dom):
     if CM.__vdebug__:
         assert is_cores_d(cores_d),cores_d
         assert is_covs_d(covs_d),covs_d
-        assert is_dom(dom),dom
+        assert isinstance(dom,Dom),dom
 
     def show_compare(sid,old_c,new_c):
         if old_c != new_c:
             logger.debug("sid {}: {} ~~> {}".
-                         format(sid,
-                                str_of_pncore(old_c),
-                                str_of_pncore(new_c)))
+                         format(sid,old_c,new_c))
+                                
+
         
     logger.info("analyze interactions for {} sids".format(len(cores_d)))
     logger.debug("verify ...")
@@ -747,53 +835,53 @@ def analyze(cores_d,covs_d,dom):
     return dict(rs_simplify)
 
 def reformat((pc,pd,nc,nd),dom):
-    if pd: pd = neg_of_core(pd,dom)
-    if nc: nc = neg_of_core(nc,dom)
+    if pd: pd.neg(dom) 
+    if nc: nc.neg(dom) 
     return (pc,pd,nc,nd)
 
-def verify_pncore((pc,pd,nc,nd),configs,dom):
+def verify_pncore(pncore,configs,dom):
     if CM.__vdebug__:
-        assert is_pncore((pc,pd,nc,nd)), (pc,pd,nc,nd)
-        assert pc is not None, pc #this never could happen
+        assert isinstance(pncore,PNCore),pncore
+        assert pncore.pc is not None, pncore.pc #this never could happen
         #nc is None => pd is None
-        assert (nc is not None or pd is None), (nc,nd)
-        assert all(is_config(c) for c in configs) and configs, configs
-        assert is_dom(dom),dom
+        assert (pncore.nc is not None or pncore.pd is None), (pncore.nc,pncore.nd)
+        assert all(isinstance(c,Config) for c in configs) and configs, configs
+        assert isinstance(dom,Dom),dom
 
-    old_pncore = (pc,pd,nc,nd)        
+    (pc,pd,nc,nd) = pncore
     #traces => pc & neg(pd)
     if pc:
         assert all(config_c_implies(c,pc) for c in configs), pc
         
     if pd:
-        pd_n = neg_of_core(pd,dom)
+        pd_n = pd.neg(dom)
         if not all(config_d_implies(c,pd_n) for c in configs):
-            logger.debug('pd {} invalid'.format(str_of_core(pd)))
+            logger.debug('pd {} invalid'.format(pd))
             pd = None
 
     #neg traces => nc & neg(nd)
     #pos traces => neg(nc & neg(nd))
     #post traces => nd | neg(nc) 
     if nc and not nd:
-        nc_n = neg_of_core(nc,dom)
+        nc_n = nc.neg(dom)
         if not all(config_d_implies(c,nc_n) for c in configs):
-            logger.debug('nc {} invalid'.format(str_of_core(nc)))
+            logger.debug('nc {} invalid'.format(nc))
             nc = None
     elif not nc and nd:
         if not all(config_c_implies(c,nd) for c in configs):
-            logger.debug('nd {} invalid'.format(str_of_core(nd)))
+            logger.debug('nd {} invalid'.format(nd))
             nd = None
     elif nc and nd:
-        nc_n = neg_of_core(nc,dom)
+        nc_n = nc.neg(dom)        
         if not all(config_c_implies(c,nd) or config_d_implies(c,nc_n)
                    for c in configs):
             logger.debug('nc & nd invalid')
             nc = None
             nd = None
     
-    return (pc,pd,nc,nd)
+    return PNCore((pc,pd,nc,nd))
 
-def simplify_pncore((pc,pd,nc,nd),dom):
+def simplify_pncore(pncore,dom):
     """
     Compare between (pc,pd) and (nc,nd) and return the stronger one.
     This will set either (pc,pd) or (nc,nd) to (None,None)
@@ -801,15 +889,15 @@ def simplify_pncore((pc,pd,nc,nd),dom):
     Assumption: all 4 cores are verified
     """
     if CM.__vdebug__:
-        assert is_pncore((pc,pd,nc,nd)), (pc,pd,nc,nd)
-        assert pc is not None, pc #this never could happen
+        assert isinstance(pncore,PNCore),pncore
+        assert pncore.pc is not None, pncore.pc #this never could happen
         #nc is None => pd is None
-        assert (nc is not None or pd is None), (nc,nd)
-        assert is_dom(dom),dom
+        assert (pncore.nc is not None or pncore.pd is None), (pncore.nc,pncore.nd)
+        assert isinstance(dom,Dom),dom
         
     #pf = pc & neg(pd)
     #nf = neg(nc & neg(nd)) = nd | neg(nc)
-    old_pncore = (pc,pd,nc,nd)
+    (pc,pd,nc,nd) = pncore
     
     #remove empty ones
     if not pc: pc = None
@@ -818,7 +906,7 @@ def simplify_pncore((pc,pd,nc,nd),dom):
     if not nd: nd = None
 
     if (pc is None and pd is None) or (nc is None and nd is None):
-        return (pc,pd,nc,nd)
+        return PNCore((pc,pd,nc,nd))
 
     #convert to z3
     z3db = z3db_of_dom(dom)
@@ -829,7 +917,7 @@ def simplify_pncore((pc,pd,nc,nd),dom):
             f = z3expr_of_core(cc,z3db,myf=z3util.myAnd)
             fs.append(f)
         if cd:
-            cd_n = neg_of_core(cd,dom)
+            cd_n = cd.neg(dom)
             f = z3expr_of_core(cd_n,z3db,myf=z3util.myOr)
             fs.append(f)
         return fs
@@ -846,55 +934,11 @@ def simplify_pncore((pc,pd,nc,nd),dom):
     else:
         #could occur when using incomplete traces
         logger.warn("inconsistent ? {}\npf: {} ?? nf: {}"
-                    .format(str_of_pncore((pc,pd,nc,nd)),
+                    .format(PNCore((pc,pd,nc,nd)),
                     pf,nf))
     
-    return (pc,pd,nc,nd)
+    return PNCore((pc,pd,nc,nd))
 
-def is_simplified((pc,pd,nc,nd)):
-    return (pc is None and pd is None) or (nc is None and nd is None)
-
-def fstr_of_pncore((pc,pd,nc,nd),dom):
-    """
-    Assumption: all 4 cores are verified and simplified
-    """
-
-    if CM.__vdebug__:
-        assert pc is None or is_core(pc) and pc, pc
-        assert pd is None or is_core(pd) and pd, pd
-        assert nc is None or is_core(nc) and nc, nc
-        assert nd is None or is_core(nd) and nd, nd
-        assert is_dom(dom),dom
-        
-    def _f(core,delim):
-        s = str_of_core(core,delim)
-        if len(core) > 1:
-            s = '({})'.format(s)
-        return s
-
-    def _cd(ccore,dcore,delim):
-        ss = []
-        if ccore:
-            ss.append(_f(ccore,' & '))
-        if dcore:
-            assert is_dom(dom),dom
-            dcore_n = neg_of_core(dcore,dom)
-            ss.append(_f(dcore_n, ' | '))
-        return delim.join(ss) if ss else 'true'
-
-    if is_simplified((pc,pd,nc,nd)):
-        if (nc is None and nd is None):
-            #pc & not(pd)
-            ss = _cd(pc,pd,' & ')
-        else:
-            #not(nc & not(nd))  =  not(nc) | nd
-            ss = _cd(nd,nc,' | ')
-    else:
-        p_ss = _cd(pc,pd,' & ')
-        n_ss = _cd(nd,nc,' | ')
-        ss = ','.join([p_ss,n_ss]) + '***'
-        
-    return ss
 
 #Miscs
 def debug_find_configs(sid,configs_d,find_in):
@@ -907,45 +951,27 @@ def debug_find_configs(sid,configs_d,find_in):
 
     print str_of_configs_d(cconfigs_d)
         
-def get_dom(dom_file):
-    if CM.__vdebug__:
-        assert os.path.isfile(dom_file), domfile
-        
-    def get_lines(lines):
-        rs = (line.split() for line in lines)
-        rs = ((parts[0],frozenset(parts[1:])) for parts in rs)
-        return rs
-
-    dom = HDict(get_lines(CM.iread_strip(dom_file)))
-
-    config_default = None
-    dom_file_default = dom_file+'.default'
-    if os.path.isfile(dom_file_default):
-        rs = get_dom_lines(CM.iread_strip(dom_file_default))
-        config_default = HDict((k,list(rs[k])[0]) for k in rs)
-
-    return dom,config_default
 
 #generate configs
-siz_of_dom = lambda d: CM.vmul(len(vs) for vs in d.itervalues())
+
 def gen_configs_full(dom):
     if CM.__vdebug__:
-        assert is_dom(dom),dom
+        assert isinstance(dom,Dom),dom
     
     ns,vs = itertools.izip(*dom.iteritems())
-    configs = [HDict(zip(ns,c)) for c in itertools.product(*vs)]
+    configs = [Config(zip(ns,c)) for c in itertools.product(*vs)]
     return configs
 
 def gen_configs_rand(n,dom):
     if CM.__vdebug__:
         assert n > 0,n
-        assert is_dom(dom),dom        
+        assert isinstance(dom,Dom),dom        
 
-    if n >= siz_of_dom(dom):
+    if n >= dom.siz:
         return gen_configs_full(dom)
 
     rgen = lambda: [(k,random.choice(list(dom[k]))) for k in dom]
-    configs = list(set(HDict(rgen()) for _ in range(n)))
+    configs = list(set(Config(rgen()) for _ in range(n)))
     return configs
 
 def gen_configs_tcover1(dom):
@@ -953,7 +979,7 @@ def gen_configs_tcover1(dom):
     Return a set of tcover array of stren 1
     """
     if CM.__vdebug__:
-        assert is_dom(dom), dom
+        assert isinstance(dom,Dom), dom
         
     dom_used = dict((k,set(dom[k])) for k in dom)
 
@@ -969,7 +995,7 @@ def gen_configs_tcover1(dom):
                 v = random.choice(list(dom[k]))
 
             config.append((k,v))
-        return HDict(config)
+        return Config(config)
 
     configs = []
     while dom_used:
@@ -1004,7 +1030,7 @@ def show_dtrace(dt):
 
 def str_of_summary(seed,iters,ntime,ctime,nconfigs,ncovs,tmpdir):
     s = ("Summary: " +
-         "Seed {}, ".format(seed) +
+         "Seed {} (test {}), ".format(seed,random.randrange(1000)) +
          "Iters {}, ".format(iters) +
          "Time ({}s, {}s), ".format(ntime,ctime) +
          "Configs {}, ".format(nconfigs) +
@@ -1030,7 +1056,7 @@ def replay(dir_):
 
     #print info
     logger.info('seed: {}'.format(seed))
-    logger.debug(str_of_dom(dom))
+    logger.debug(dom)
 
     #print iterations
     for dt in sorted(dts,key=lambda dt: dt.citer):
@@ -1049,7 +1075,7 @@ def replay(dir_):
 #Z3 STUFF
 def z3db_of_dom(dom):
     if CM.__vdebug__:
-        assert is_dom(dom), dom
+        assert isinstance(dom,Dom), dom
         
     z3db = dict()
     for k,vs in dom.iteritems():
@@ -1062,7 +1088,7 @@ def z3db_of_dom(dom):
 
 def z3expr_of_core(core,z3db,myf):
     if CM.__vdebug__:
-        assert is_core(core) and core, core
+        assert isinstance(core,Core) and core, core
 
     f = []
     for vn,vs in core.iteritems():
@@ -1073,7 +1099,7 @@ def z3expr_of_core(core,z3db,myf):
 
 def z3expr_of_config(config,z3db):
     if CM.__vdebug__:
-        assert is_config(config),config
+        assert isinstance(config,Config),config
         assert len(config) == len(z3db), (len(config), len(z3db))
 
     f = []
@@ -1156,11 +1182,11 @@ def z3_get_sat_core(core_expr,configs_expr,z3db):
 def config_of_model(model,dom):
     if CM.__vdebug__:
         assert isinstance(model,dict),model
-        assert is_dom(dom),dom
+        assert isinstance(dom,Dom),dom
         
     _f = lambda k: (model[k] if k in model
                     else random.choice(list(dom[k])))
-    config = HDict((k,_f(k)) for k in dom)
+    config = Config((k,_f(k)) for k in dom)
     return config
 
 
@@ -1174,9 +1200,8 @@ def prepare_otter(prog):
     assert os.path.isfile(dom_file),dom_file
     assert os.path.isfile(pathconds_d_file),pathconds_d_file
     
-    dom,_ = get_dom(dom_file)
-    logger.info("dom_file '{}': {}"
-                .format(dom_file,str_of_dom(dom)))
+    dom,_ = Dom.get_dom(dom_file)
+    logger.info("dom_file '{}': {}".format(dom_file,dom))
     
     st = time()
     pathconds_d = CM.vload(pathconds_d_file)
@@ -1189,7 +1214,7 @@ def prepare_otter(prog):
 
 def get_cov_otter(config,args):
     if CM.__vdebug__:
-        assert is_config(config),config
+        assert isinstance(config,Config),config
         assert isinstance(args,dict) and 'pathconds_d' in args, args
     sids = set()        
     for cov,configs in args['pathconds_d'].itervalues():
@@ -1214,7 +1239,7 @@ def do_gt(dom,pathconds_d,n=None):
     cconfigs_d = {}
     for covs,configs in rs:
         for c in configs:
-            c = HDict(c)
+            c = Config(c)
             if c not in cconfigs_d:
                 cconfigs_d[c] = set(covs)
             else:
@@ -1309,9 +1334,9 @@ def prepare_motiv(dom_file,prog_name):
     assert os.path.isfile(dom_file),dom_file
     assert os.path.isfile(prog_exe),prog_exe
     
-    dom,_ = get_dom(dom_file)
+    dom,_ = Dom.get_dom(dom_file)
     logger.info("dom_file '{}': {}"
-                .format(dom_file,str_of_dom(dom)))
+                .format(dom_file,dom))
     logger.info("prog_exe: '{}'".format(prog_exe))
 
     args = {'var_names':dom.keys(),
@@ -1327,7 +1352,7 @@ def get_cov_motiv(config,args):
     Traces read from stdin
     """
     if CM.__vdebug__:
-        assert is_config(config),config
+        assert isinstance(config,Config),config
         
     tmpdir = '/var/tmp/'
     prog_exe = args['prog_exe']
@@ -1378,8 +1403,8 @@ def prepare_coreutils(prog_name):
     dom_file = getpath(dom_file)
     assert os.path.isfile(dom_file),dom_file
 
-    dom,_ = get_dom(dom_file)
-    logger.info("dom_file '{}': {}".format(dom_file,str_of_dom(dom)))
+    dom,_ = Dom.get_dom(dom_file)
+    logger.info("dom_file '{}': {}".format(dom_file,dom))
 
     bdir = os.path.join(main_dir,'coreutils')
     prog_dir = os.path.join(bdir,'obj-gcov','src')
@@ -1472,7 +1497,7 @@ def get_cov_coreutils(config,args):
             for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
     sids = set(CM.iflatten(sids))
     if not sids:
-        logger.warn("config {} has NO cov".format(str_of_config(config)))
+        logger.warn("config {} has NO cov".format(config))
         
     return sids
 
