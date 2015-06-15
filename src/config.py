@@ -184,8 +184,7 @@ class PNCore(tuple):
     @staticmethod
     def mk_default(): return PNCore((None,None,None,None))
 
-    @property
-    def sstr(self):
+    def __str__(self,fstr_f=None):
         """
         >>> pc = HDict([('a',frozenset(['2'])),('c',frozenset(['0','1']))])
         >>> pd = None
@@ -193,19 +192,18 @@ class PNCore(tuple):
         >>> nd = None
         >>> print sstr_of_pncore((pc,pd,nc,nd))
         pc: a=2 c=0,1; nc: b=2
-        """
-        ss = ("{}: {}".format(s,c) for s,c in
-              zip('pc pd nc nd'.split(),self) if c is not None)
-        return '; '.join(ss)
-
-    def __str__(self,fstr_f=None):
-        """
-        Important: only call fstr_of_pncore *after* being analyzed
+        
+        Important: only call fstr_f *after* being analyzed
         """
         if CM.__vdebug__:
             assert fstr_f is None or callable(fstr_f),fstr_f
+        if fstr_f:
+            return fstr_f(self)
+        else:
+            ss = ("{}: {}".format(s,c) for s,c in
+                  zip('pc pd nc nd'.split(),self) if c is not None)
+            return '; '.join(ss)
 
-        return fstr_f(self) if fstr_f else self.sstr
 
     def fstr(self,dom):
         """
