@@ -1236,19 +1236,13 @@ def do_gt(dom,pathconds_d,n=None):
     return pp_cores_d,cores_d,configs_d,covs_d,dom
 
 # Real executions
-def void_run(cmd):
-    "just exec command, does not return anything"
-
-    if isinstance(cmd,list):
-        logger.detail('run {} cmds'.format(len(cmd)))
-        cmd = '; '.join(cmd)
-
+def void_run_single(cmd):
     logger.detail(cmd)
-    
     try:
         rs_outp,rs_err = CM.vcmd(cmd)
-        logger.detail(rs_outp)
-
+        if rs_outp:
+            logger.detail("outp: {}".format(rs_outp))
+        
         #IMPORTANT, command out the below allows
         #erroneous test runs, which can be helpful
         #to detect incorrect configs
@@ -1258,15 +1252,22 @@ def void_run(cmd):
                           "-c: line",
                           "assuming not executed"]
         if rs_err:
-            logger.detail("cmd '{}' gives the err:\n'{}'"
-                        .format(cmd,rs_err))
+            logger.detail("error: {}".format(rs_err))
             if any(serr in rs_err for serr in serious_errors): 
                 raise AssertionError("Check this error !")
-            #assert len(rs_err) == 0
-
+            
     except Exception as e:
-        print e
-        raise AssertionError("cmd '{}' failed".format(cmd))
+        raise AssertionError("cmd '{}' fails, raise error: {}".format(cmd,e))
+    
+def void_run(cmds):
+    "just exec command, does not return anything"
+
+    if not isinstance(cmds,list):
+        cmds = [cmds]
+    logger.detail('run {} cmds'.format(len(cmds)))
+    for cmd in cmds:
+        void_run_single(cmd)
+    
     
 from gcovparse import gcovparse
 def parse_gcov(gcov_file):
@@ -1392,7 +1393,7 @@ def prepare_coreutils(prog_name):
             'prog_name': prog_name,
             'prog_exe': prog_exe,
             'get_cov': get_cov_coreutils,
-            'testsuite_f': get_testsuite_f(prog_name),
+            'testsuite_f': coreutils_d[prog_name],
             'prog_dir':prog_dir,
             'dir_': dir_,
             'main_dir':main_dir}
@@ -1475,14 +1476,6 @@ def get_cov_coreutils(config,args):
         
     return sids
 
-def get_testsuite_f(prog_name):
-    ts_d = {'date': testsuite_date,
-            'ls': testsuite_ls,
-            'ln': testsuite_ln,
-            'default': testsuite_default}
-
-    return ts_d[prog_name if prog_name in ts_d else 'default']
-        
 def testsuite_default(args):
     """
     Simple run, e.g.,  uname -opts
@@ -1540,23 +1533,21 @@ def testsuite_ls(args):
         assert 'prog_exe' in args
         assert 'testfiles_dir' in args        
 
-
     prog_exe = args['prog_exe']
     opts = args['opts']
     testfiles_dir = args['testfiles_dir']
-    exist_dir = os.path.join(args['testfiles_dir'],"edir")
+    tdir = os.path.join(args['testfiles_dir'],"edir")
     cmds = []
-
-    cmds.append("{} {} {}/a_ln".format(prog_exe,opts,exist_dir))
-    cmds.append("{} {} {}/noexist_ln".format(prog_exe,opts,exist_dir))
-    cmds.append("{} {} {}/d1/.hidden1".format(prog_exe,opts,exist_dir))
-    cmds.append("{} {} {}/d1/d1d1/b".format(prog_exe,opts,exist_dir))
-    cmds.append("{} {} {}/d2/a.sh".format(prog_exe,opts,exist_dir))
-    cmds.append("{} {} {}/d2/dirA".format(prog_exe,opts,exist_dir))
-    cmds.append("{} {} {}/d2/dirA/*".format(prog_exe,opts,exist_dir))
+    cmds.append("{} {} {}/a_ln".format(prog_exe,opts,tdir))
+    cmds.append("{} {} {}/noexist_ln".format(prog_exe,opts,tdir))
+    cmds.append("{} {} {}/d1/.hidden1".format(prog_exe,opts,tdir))
+    cmds.append("{} {} {}/d1/d1d1/b".format(prog_exe,opts,tdir))
+    cmds.append("{} {} {}/d2/a.sh".format(prog_exe,opts,tdir))
+    cmds.append("{} {} {}/d2/dirA".format(prog_exe,opts,tdir))
+    cmds.append("{} {} {}/d2/dirA/*".format(prog_exe,opts,tdir))
     
-    cmds.append("{} {} {}/d2_ln/a.sh".format(prog_exe,opts,exist_dir))
-    cmds.append("{} {} {}/d2_ln/.hidden_dir".format(prog_exe,opts,exist_dir))
+    cmds.append("{} {} {}/d2_ln/a.sh".format(prog_exe,opts,tdir))
+    cmds.append("{} {} {}/d2_ln/.hidden_dir".format(prog_exe,opts,tdir))
 
     cmds.append("{} {} /boot".format(prog_exe,opts))
     cmds.append("{} {} /boot/*".format(prog_exe,opts))
@@ -1566,6 +1557,82 @@ def testsuite_ls(args):
     cmds.append("{} {} .".format(prog_exe,opts))
     cmds.append("{} {} ..".format(prog_exe,opts))
     void_run(cmds)
+
+def testsuite_md5sum(args):
+    """
+    """
+    if CM.__vdebug__:
+        assert isinstance(args,dict),args
+        assert 'opts' in args
+        assert 'prog_exe' in args
+        assert 'testfiles_dir' in args        
+
+    prog_exe = args['prog_exe']
+    opts = args['opts']
+    tdir = args['testfiles_dir']
+
+    cmds = []
+    cmds.append("{} {} {}/file1".format(prog_exe,opts,tdir))
+    cmds.append("{} {} {}/file2".format(prog_exe,opts,tdir))
+    cmds.append("{} {} {}/binary.dat".format(prog_exe,opts,tdir))    
+    cmds.append("{} {} {}/file1 {}/binary.dat".format(prog_exe,opts,tdir,tdir))
+    cmds.append("{} {} {}/*".format(prog_exe,opts,tdir))
+    cmds.append("cat {}/file1 | {} {} -".format(tdir,prog_exe,opts))    
+    cmds.append("{} {} {}/results.md5".format(prog_exe,opts,tdir))
+    cmds.append("{} {} {}/results_failed.md5".format(prog_exe,opts,tdir))
+    
+    void_run(cmds)
+    
+def testsuite_sort(args):
+    """
+    Examples for tests: http://www.theunixschool.com/2012/08/linux-sort-command-examples.html
+    """
+    if CM.__vdebug__:
+        assert isinstance(args,dict),args
+        assert 'opts' in args
+        assert 'prog_exe' in args
+        assert 'testfiles_dir' in args        
+
+    prog_exe = args['prog_exe']
+    opts = args['opts']
+    tdir = args['testfiles_dir']
+
+    cmds = []
+    #cmds.append("wc -l /usr/bin/* | {} {}".format(prog_exe,opts)) #wc -l . | sort
+    cmds.append("{} {} {}/file1".format(prog_exe,opts,tdir))  #sort file1
+    cmds.append("{} {} {}/file3".format(prog_exe,opts,tdir))  #sort file1
+    cmds.append("{} {} {}/file1 {}/file2 {}/file3"  
+                .format(prog_exe,opts,tdir,tdir,tdir)) #multiple fiels
+
+    #some error with this command, cannot read
+    # cmds.append("{} {} --files0-from={}/allfiles"
+    #             .format(prog_exe,opts,tdir)) #multiple fiels
+    
+    void_run(cmds)
+
+def testsuite_pr(args):
+    """
+    ls -a | pr -n -h "Files in $(pwd)" > directory.txt
+    pr -l 40 -h Using Hypertext comms_paper
+    pr -n2
+    http://docstore.mik.ua/orelly/unix3/upt/ch21_15.htm
+    """
+    pass
+
+def testsuite_id(args):
+    if CM.__vdebug__:
+        assert isinstance(args,dict),args
+        assert 'opts' in args
+        assert 'prog_exe' in args
+        assert 'testfiles_dir' in args        
+
+    prog_exe = args['prog_exe']
+    opts = args['opts']
+
+    cmds = []
+    cmds.append("{} {}".format(prog_exe,opts))
+    void_run(cmds)
+
     
 def testsuite_ln(args):
     if CM.__vdebug__:
@@ -1610,6 +1677,14 @@ def testsuite_ln(args):
     myexec(test_dir,cmds)
 
 
+coreutils_d = {'date': testsuite_date,
+               'ls': testsuite_ls,
+               'ln': testsuite_ln,
+               'sort': testsuite_sort,
+               'id': testsuite_id,
+               'md5sum': testsuite_md5sum,
+               'uname': testsuite_default}
+        
 
 
 def doctestme():
