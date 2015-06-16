@@ -77,7 +77,7 @@ if __name__ == "__main__":
         if prog in examples_d:
             dom,get_cov=config.prepare_motiv(examples_d[prog],prog)            
         elif prog in config_coreutils.coreutils_d:
-            dom,get_cov=config_coreutils.prepare_coreutils(prog)            
+            dom,get_cov=config_coreutils.prepare(prog)            
         else:
             raise AssertionError("unrecognized prog '{}'".format(prog))
 

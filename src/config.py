@@ -750,7 +750,7 @@ def igen(dom,get_cov,seed=None,cover_siz=None,config_default=None):
     logger.info(str_of_summary(seed,cur_iter,time()-st,cov_time,
                                len(configs_d),len(covs_d),
                                tmpdir))
-    logger.info("Done seed {} (test {})".format(seed,random.randrange(100)))
+    logger.info("Done (seed {}, test {})".format(seed,random.randrange(100)))
     return pp_cores_d,cores_d,configs_d,covs_d,dom
 
 #Shortcuts
