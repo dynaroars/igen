@@ -253,6 +253,47 @@ class PNCore(tuple):
                 (self.nc is None and self.nd is None))
     
 
+    def verify(self,configs,dom):
+        if CM.__vdebug__:
+            assert self.pc is not None, self.pc #this never could happen
+            #nc is None => pd is None
+            assert self.nc is not None or self.pd is None, (self.nc,self.nd)
+            assert all(isinstance(c,Config) for c in configs) and configs, configs
+            assert isinstance(dom,Dom),dom
+
+        #traces => pc & neg(pd)
+        if CM.__vdebug__:
+            if self.pc:
+                assert all(config_c_implies(c,self.pc) for c in configs), self.pc
+
+        if self.pd:
+            pd_n = self.pd.neg(dom)
+            if not all(config_d_implies(c,pd_n) for c in configs):
+                logger.debug('pd {} invalid'.format(self.pd))
+                pd = None
+
+        #neg traces => nc & neg(nd)
+        #pos traces => neg(nc & neg(nd))
+        #post traces => nd | neg(nc) 
+        if self.nc and not self.nd:
+            nc_n = self.nc.neg(dom)
+            if not all(config_d_implies(c,nc_n) for c in configs):
+                logger.debug('nc {} invalid'.format(self.nc))
+                nc = None
+        elif not self.nc and self.nd:
+            if not all(config_c_implies(c,self.nd) for c in configs):
+                logger.debug('nd {} invalid'.format(self.nd))
+                nd = None
+        elif self.nc and self.nd:
+            nc_n = self.nc.neg(dom)        
+            if not all(config_c_implies(c,self.nd) or
+                       config_d_implies(c,self.nc_n) for c in configs):
+                logger.debug('nc {} & nd {} invalid').format(self.nc,self.nd)
+                nc = None
+                nd = None
+
+        return PNCore((pc,pd,nc,nd))
+    
 is_cores_d = lambda cores_d: (isinstance(cores_d,dict) and
                               all(isinstance(sid,str) and isinstance(c,PNCore)
                                   for sid,c in cores_d.iteritems()))
@@ -493,7 +534,7 @@ def infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom):
         if sid in cores_d:
             core = cores_d[sid]
         else:
-            core = PNCore.mk_default()
+            core = Self.mk_default()
             new_covs.add(sid)
         
         core_ = infer_sid(sid,core,cconfigs_d,
@@ -805,7 +846,7 @@ def analyze(cores_d,covs_d,dom):
         configs = frozenset(covs_d[sid])
         key = (core,configs)
         if key not in vcache:
-            core_ = verify_pncore(core,configs,dom)
+            core_ = core.verify(configs,dom)
             vcache[key]=core_
             show_compare(sid,core,core_)
         else:
@@ -833,47 +874,6 @@ def reformat((pc,pd,nc,nd),dom):
     if nc: nc.neg(dom) 
     return (pc,pd,nc,nd)
 
-def verify_pncore(pncore,configs,dom):
-    if CM.__vdebug__:
-        assert isinstance(pncore,PNCore),pncore
-        assert pncore.pc is not None, pncore.pc #this never could happen
-        #nc is None => pd is None
-        assert (pncore.nc is not None or pncore.pd is None), (pncore.nc,pncore.nd)
-        assert all(isinstance(c,Config) for c in configs) and configs, configs
-        assert isinstance(dom,Dom),dom
-
-    (pc,pd,nc,nd) = pncore
-    #traces => pc & neg(pd)
-    if pc:
-        assert all(config_c_implies(c,pc) for c in configs), pc
-        
-    if pd:
-        pd_n = pd.neg(dom)
-        if not all(config_d_implies(c,pd_n) for c in configs):
-            logger.debug('pd {} invalid'.format(pd))
-            pd = None
-
-    #neg traces => nc & neg(nd)
-    #pos traces => neg(nc & neg(nd))
-    #post traces => nd | neg(nc) 
-    if nc and not nd:
-        nc_n = nc.neg(dom)
-        if not all(config_d_implies(c,nc_n) for c in configs):
-            logger.debug('nc {} invalid'.format(nc))
-            nc = None
-    elif not nc and nd:
-        if not all(config_c_implies(c,nd) for c in configs):
-            logger.debug('nd {} invalid'.format(nd))
-            nd = None
-    elif nc and nd:
-        nc_n = nc.neg(dom)        
-        if not all(config_c_implies(c,nd) or config_d_implies(c,nc_n)
-                   for c in configs):
-            logger.debug('nc & nd invalid')
-            nc = None
-            nd = None
-    
-    return PNCore((pc,pd,nc,nd))
 
 def simplify_pncore(pncore,dom):
     """
