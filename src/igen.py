@@ -55,27 +55,29 @@ if __name__ == "__main__":
                          action="store_true")
 
     args = aparser.parse_args()
-    debug = args.debug
     prog = args.prog
     config.logger.level = args.logger_level
+    CM.__vdebug__ = args.debug
     seed = args.seed
 
     if args.replay:
-        config.replay(args.prog)
+        config.replay(prog)
 
     elif prog in otter_d:
         dom,get_cov,pathconds_d=config.prepare_otter(prog)
-        if args.do_gt:
+        if args.do_gt or args.do_full:
             if args.n:
                 _ = config.do_gt(dom,pathconds_d,n=args.n)
             else:
                 _ = config.do_gt(dom,pathconds_d)
+        elif args.n:
+            _ = _ = config.igen_rand(dom,get_cov,rand_n=args.n,seed=seed)
         else:
             config.igen(dom,get_cov,seed=seed)
             
     else:
         if prog in examples_d:
-            dom,get_cov=config.prepare_motiv(examples_d[prog],prog)            
+            dom,get_cov=config.prepare_motiv(examples_d[prog],prog)
         elif prog in config_coreutils.coreutils_d:
             dom,get_cov=config_coreutils.prepare(prog)            
         else:
@@ -83,9 +85,8 @@ if __name__ == "__main__":
 
         if args.do_full:
             _ = config.igen_full(dom,get_cov)
-
         elif args.n:
-            _ = config.igen_rand(dom,get_cov,n=args.n,seed=seed)
+            _ = config.igen_rand(dom,get_cov,rand_n=args.n,seed=seed)
         else:
             _ = config.igen(dom,get_cov,seed=seed)
 
