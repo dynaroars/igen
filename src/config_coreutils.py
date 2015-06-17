@@ -74,7 +74,6 @@ def get_cov(config,args):
         assert 'prog_exe' in args
         assert 'var_names' in args
 
-
     dir_ = args['dir_']
     main_dir = args['main_dir']    
     prog_dir = args['prog_dir']
@@ -191,27 +190,175 @@ class TS_cp(TestSuite_COREUTILS):
 
 class TS_mv(TestSuite_COREUTILS):
     """
-    tdir: a b c d e f->b dir1 dir2/a,b,z dir3/c,d dir4
-    cd tdir; mv a a_cp
-    cd tdir; mv b dir1
-    cd tdir; mv c dir1/
-    cd tdir; mv e dir2/z
-    cd tdir; mv d e
-    cd tdir; mv dir2/z ..
-    cd tdir; mv dir2/* dir3;
-    cd tdir; mv dir3 dir4
+    done
+    covs: 151
+    (0,1,51), (1,9,36), (2,3,53), (3,3,10), (4,1,1)  
+    (0,1,51), (1,9,36), (2,3,53), (3,4,11)
     """
     def get_cmds(self):
-        cmds =[]
-        cmds.append("rm -rf {}/*;".format(tdir) +
-                    "cd {}; mkdir d1 d2 d3 d4; touch a b c d e d2/a d2/b d2/z d3/c d3/d ; ln -sf e f".format(prog.tdir))
-        cmds.append("cd {}".format(tdir) +
-                    "{} {} a a_cp".format(self.prog,self.opts))
-        cmds.append("{} {} {}/a_cp {}/a".format(self.prog,self.opts))
-        cmds.append("{} {} {}/a {}/d".format(self.prog,self.opts))
-        cmds.append("{} {} {}/a {}/d".format(self.prog,self.opts))        
+        cmds = []
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a ;".format(self.tdir) +
+                    "{} {} {}/a {}/b".format(self.prog,self.opts,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a ;".format(self.tdir) +
+                    "{} {} ~/b {}/a".format(self.prog,self.opts,self.tdir))
         
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a ;".format(self.tdir) +
+                    "{} {} {}/a {}/a".format(self.prog,self.opts,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b;".format(self.tdir,self.tdir) +
+                    "{} {} {}/a {}/b".format(self.prog,self.opts,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b ; mkdir {}/d ;"
+                    .format(self.tdir,self.tdir,self.tdir) +
+                    "{} {} {}/a {}/b {}/d"
+                    .format(self.prog,self.opts,self.tdir,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b ; mkdir {}/d ;"
+                    .format(self.tdir,self.tdir,self.tdir) +
+                    "{} {} {}/d {}/d"
+                    .format(self.prog,self.opts,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b ; mkdir {}/d ;"
+                    .format(self.tdir,self.tdir,self.tdir) +
+                    "{} {} {}/d {}/e"
+                    .format(self.prog,self.opts,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b ; mkdir {}/d ;"
+                    .format(self.tdir,self.tdir,self.tdir) +
+                    "{} {} {}/d/ {}/e"
+                    .format(self.prog,self.opts,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b ; mkdir {}/d ;"
+                    .format(self.tdir,self.tdir,self.tdir) +
+                    "{} {} {}/* {}/d"
+                    .format(self.prog,self.opts,self.tdir,self.tdir))
+        
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "mkdir {}/d ; cd {}/d ; touch a b; "
+                    .format(self.tdir,self.tdir) +
+                    "{} {} * .."
+                    .format(self.prog,self.opts))
+        
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b;".format(self.tdir,self.tdir) +
+                    "{} {} --suffix='_vv' {}/a {}/b "
+                    .format(self.prog,self.opts,self.tdir,self.tdir))
+
+        
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b {}/c {}/d;".format(self.tdir,self.tdir,self.tdir,self.tdir) +
+                    "{} {} {}/a {}/b ;".format(self.prog,self.opts,self.tdir,self.tdir) +
+                    "{} {} {}/c {}/d".format(self.prog,self.opts,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "{} {} /bin/echo ."
+                    .format(self.prog,self.opts))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b ;"
+                    .format(self.tdir,self.tdir) +
+                    "{} {} {}/a {}/b /usr/bin/"
+                    .format(self.prog,self.opts,self.tdir,self.tdir))
+
         return cmds
+
+
+class TS_ln(TestSuite_COREUTILS):
+    """
+    done
+    cov 182
+    (0,1,13), (1,9,42), (2,3,41), (3,3,8), (4,4,63), (5,1,3), (6,6,9), (7,2,3)
+    """
+    def get_cmds(self):
+        cmds = []
+        cmds = []
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a ;".format(self.tdir) +
+                    "{} {} {}/a {}/b".format(self.prog,self.opts,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a ;".format(self.tdir) +
+                    "{} {} ~/b {}/a".format(self.prog,self.opts,self.tdir))
+        
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a ;".format(self.tdir) +
+                    "{} {} {}/a {}/a".format(self.prog,self.opts,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b;".format(self.tdir,self.tdir) +
+                    "{} {} {}/a {}/b".format(self.prog,self.opts,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b ; mkdir {}/d ;"
+                    .format(self.tdir,self.tdir,self.tdir) +
+                    "{} {} {}/a {}/b {}/d"
+                    .format(self.prog,self.opts,self.tdir,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b ; mkdir {}/d ;"
+                    .format(self.tdir,self.tdir,self.tdir) +
+                    "{} {} {}/d {}/d"
+                    .format(self.prog,self.opts,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b ; mkdir {}/d ;"
+                    .format(self.tdir,self.tdir,self.tdir) +
+                    "{} {} {}/d {}/e"
+                    .format(self.prog,self.opts,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b ; mkdir {}/d ;"
+                    .format(self.tdir,self.tdir,self.tdir) +
+                    "{} {} {}/d/ {}/e"
+                    .format(self.prog,self.opts,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b ; mkdir {}/d ;"
+                    .format(self.tdir,self.tdir,self.tdir) +
+                    "{} {} {}/* {}/d"
+                    .format(self.prog,self.opts,self.tdir,self.tdir))
+        
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "mkdir {}/d ; cd {}/d ; touch a b; "
+                    .format(self.tdir,self.tdir) +
+                    "{} {} * .."
+                    .format(self.prog,self.opts))
+        
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b;".format(self.tdir,self.tdir) +
+                    "{} {} --suffix='_vv' {}/a {}/b "
+                    .format(self.prog,self.opts,self.tdir,self.tdir))
+
+        
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b {}/c {}/d;".format(self.tdir,self.tdir,self.tdir,self.tdir) +
+                    "{} {} {}/a {}/b ;".format(self.prog,self.opts,self.tdir,self.tdir) +
+                    "{} {} {}/c {}/d".format(self.prog,self.opts,self.tdir,self.tdir))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "{} {} /bin/echo ."
+                    .format(self.prog,self.opts))
+
+        cmds.append("rm -rf {}/* ;".format(self.tdir) +
+                    "touch {}/a {}/b ;"
+                    .format(self.tdir,self.tdir) +
+                    "{} {} {}/a {}/b /usr/bin/"
+                    .format(self.prog,self.opts,self.tdir,self.tdir))
+
+        #todo , see option -L in manpage
+
+        return cmds
+    
 class TS_touch(TestSuite_COREUTILS):
     def get_cmds(self):
         cmds = []
@@ -406,20 +553,6 @@ def testsuite_sort(args):
 
 
     
-def testsuite_ln(args):
-    if CM.__vdebug__:
-        assert isinstance(args,dict),args
-        assert 'opts' in args
-        assert 'prog_exe' in args
-
-        assert 'testfiles_dir' in args        
-
-
-    prog_exe = args['prog_exe']
-    opts = args['opts']
-    testfiles_dir = args['testfiles_dir']
-
-    cmds = []
  #test 1
     cmds = []    
     cmds.append("touch a")
@@ -451,9 +584,11 @@ def testsuite_ln(args):
 
 coreutils_d = {'date': TS_date,
                'ls': testsuite_ls,
-               'ln': testsuite_ln,
+               'ln': TS_ln,
                'sort': testsuite_sort,
                'id': TS_id,
+               'mv': TS_mv,
+               'ln': TS_ln,  
                'uname': TS_uname}
         
 
