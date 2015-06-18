@@ -47,7 +47,6 @@ def get_run_f(args):
         else:
             _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
                                                 seed=seed,tmpdir=tdir)
-    CM.pause()
     return _f
 
 if __name__ == "__main__":
