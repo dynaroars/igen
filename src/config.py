@@ -1,3 +1,4 @@
+import abc 
 import tempfile
 from time import time
 import os.path
@@ -9,7 +10,7 @@ import z3util
 from vu_common import HDict
 import vu_common as CM
 
-from collections import namedtuple, OrderedDict
+from collections import namedtuple, OrderedDict, MutableMapping
 
 logger = CM.VLog('config')
 logger.level = CM.VLog.DEBUG
@@ -21,6 +22,18 @@ show_cov = True
 getpath = lambda f: os.path.realpath(os.path.expanduser(f))
 
 #Data Structures
+class CustDict(MutableMapping):
+    """
+    MuttableMapping example: https://stackoverflow.com/questions/21361106/how-would-i-implement-a-dict-with-abstract-base-classes-in-python
+    """
+    __metaclass__ = abc.ABCMeta
+    def __init__(self): self.__dict__ = {}
+    def __len__(self): return len(self.__dict__)
+    def __getitem__(self,key): return self.__dict__[key]
+    def __iter__(self): return iter(self.__dict__)    
+    def __setitem__(self,key,val): raise NotImplementedError("no setitem")
+    def __delitem__(self,key): raise NotImplementedError("no delitem")
+
 is_cov = lambda cov: (isinstance(cov,set) and
                       all(isinstance(s,str) for s in cov))
 def str_of_cov(cov):
@@ -211,12 +224,6 @@ class Config(HDict):
             f.append(vn_==vs_[vv])
 
         return z3util.myAnd(f)
-
-def str_of_configs(configs):
-    if CM.__vdebug__:
-        assert all(isinstance(c,Config) for c in configs), configs
-
-    return '\n'.join("{}. {}".format(i+1,c) for i,c in enumerate(configs))
 
 class Core(HDict):
     """
@@ -491,18 +498,17 @@ class PNCore(MCore):
         return ((self.pc is None and self.pd is None) or
                 (self.nc is None and self.nd is None))
 
-class Cores_d(dict):
-    def __init__(self,cores_d={}):
-        dict.__init__(self,cores_d)
-
+class Cores_d(CustDict):
+    def __setitem__(self,sid,pncore):
         if CM.__vdebug__:
-            assert all(isinstance(sid,str) and isinstance(c,PNCore)
-                       for sid,c in self.iteritems()), self
+            assert isinstance(sid,str),sid
+            assert isinstance(pncore,PNCore),pncore
+        self.__dict__[sid]=pncore
+
     def __str__(self):
         return '\n'.join("{}. {}: {}"
                          .format(i+1,sid,self[sid].__str__(fstr_f=None))
                          for i,sid in enumerate(sorted(self)))
-
     def merge(self):
         mcores_d = {}
         for sid,core in self.iteritems():
@@ -515,7 +521,7 @@ class Cores_d(dict):
 
     def analyze(self,covs_d,dom):
         if CM.__vdebug__:
-            assert is_covs_d(covs_d),covs_d
+            assert isinstance(covs_d,Covs_d),covs_d
             assert len(self) == len(covs_d), (len(self),len(covs_d))
             assert isinstance(dom,Dom),dom
 
@@ -542,7 +548,7 @@ class Cores_d(dict):
 
         logger.debug("simplify ...")
         scache = {}
-        rs_simplify = []
+        rs_simplify = Cores_d()
         for sid,core in rs_verify:
             if core not in scache:
                 core_ = core.simplify(dom)
@@ -550,10 +556,9 @@ class Cores_d(dict):
                 show_compare(sid,core,core_)
             else:
                 core_ = scache[core]
-            rs_simplify.append((sid,core_))
+            rs_simplify[sid]=core_
 
-        return Cores_d(rs_simplify)
-
+        return rs_simplify
 
     def show_analysis(self,dom):
         if CM.__vdebug__:
@@ -659,9 +664,9 @@ class Inferrence(object):
         if CM.__vdebug__:
             assert isinstance(sid,str),sid
             assert isinstance(core,PNCore),core
-            assert is_configs_d(cconfigs_d) and cconfigs_d,cconfigs_d
-            assert is_configs_d(configs_d),configs_d
-            assert is_covs_d(covs_d),covs_d
+            assert isinstance(cconfigs_d,Configs_d) and cconfigs_d,cconfigs_d
+            assert isinstance(configs_d,Configs_d),configs_d
+            assert isinstance(covs_d,Covs_d),covs_d
             assert isinstance(dom,Dom),dom        
             assert isinstance(cache,dict),cache
 
@@ -697,10 +702,10 @@ class Inferrence(object):
     def infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom):
         if CM.__vdebug__:
             assert isinstance(cores_d,Cores_d),cores_d
-            assert is_configs_d(cconfigs_d) and cconfigs_d,cconfigs_d
-            assert is_configs_d(configs_d),configs_d        
+            assert isinstance(cconfigs_d,Configs_d) and cconfigs_d,cconfigs_d
+            assert isinstance(configs_d,Configs_d),configs_d        
             assert all(c not in configs_d for c in cconfigs_d),cconfigs_d
-            assert is_covs_d(covs_d),covs_d
+            assert isinstance(covs_d,Covs_d),covs_d
             assert isinstance(dom,Dom),dom
 
         sids = set(cores_d.keys())
@@ -708,9 +713,7 @@ class Inferrence(object):
         for config in cconfigs_d:
             for sid in cconfigs_d[config]:
                 sids.add(sid)
-                if sid not in covs_d:
-                    covs_d[sid]=set()
-                covs_d[sid].add(config)
+                covs_d.add(sid,config)
 
             assert config not in configs_d, config
             configs_d[config]=cconfigs_d[config]
@@ -732,22 +735,41 @@ class Inferrence(object):
                 cores_d[sid] = core_
 
         return new_covs,new_cores
-    
 
-def is_covs_d(covs_d):
-    return (isinstance(covs_d,dict) and
-            all(isinstance(sid,str) and isinstance(configs,set)
-                and all(isinstance(c,Config) for c in configs)
-                for sid,configs in covs_d.iteritems()))
 
-def is_configs_d(configs_d):
-    return (isinstance(configs_d,dict) and
-            all(isinstance(config,Config) and is_cov(cov)
-                for config,cov in configs_d.iteritems()))
+class Covs_d(CustDict):
+    """
+    >>> c1 = Config([('a', '0'), ('b', '0'), ('c', '0')])
+    >>> c2 = Config([('a', '0'), ('b', '0'), ('c', '1')])
+    >>> covs_d = Covs_d()
+    >>> assert 'l1' not in covs_d
+    >>> covs_d.add('l1',c1)
+    >>> covs_d.add('l1',c2)
+    >>> assert 'l1' in covs_d
+    >>> assert covs_d['l1'] == set([c1,c2])
+    """
 
-def str_of_configs_d(configs_d):
-    ss = (c.__str__(configs_d[c]) for c in configs_d)
-    return '\n'.join("{}. {}".format(i+1,s) for i,s in enumerate(ss))
+    def add(self,sid,config):
+        if CM.__vdebug__:
+            assert isinstance(sid,str),sid
+            assert isinstance(config,Config),config
+            
+        if sid not in self.__dict__:
+            self.__dict__[sid] = set()
+        self.__dict__[sid].add(config)
+
+class Configs_d(CustDict):
+    def __setitem__(self,config,cov):
+        if CM.__vdebug__:
+            assert isinstance(config,Config),config
+            assert is_cov(cov),cov
+        self.__dict__[config] = cov
+
+    def __str__(self):
+        ss = (c.__str__(configs_d[c]) for c in self.__dict__)
+        return '\n'.join("{}. {}".format(i+1,s) for i,s in enumerate(ss))
+
+
     
 
 class IGen(object):
@@ -793,7 +815,7 @@ class IGen(object):
         #some settings
         cur_iter = 1
         cur_stuck= 0
-        cores_d,configs_d,covs_d = Cores_d(),{},{}
+        cores_d,configs_d,covs_d = Cores_d(),Configs_d(),Covs_d()
         sel_core = SCore.mk_default()
         ignore_sel_cores = set()
 
@@ -868,9 +890,9 @@ class IGen(object):
                     all(isinstance(c,Config) for c in configs)
                     and configs), configs
         st = time()
-        cconfigs_d = {}
+        cconfigs_d = Configs_d()
         for c in configs:
-            cconfigs_d[c] = self.get_cov(c)
+            cconfigs_d[c]=self.get_cov(c)
         return cconfigs_d,time() - st
 
     def gen_configs_init(self,rand_n,seed):
@@ -896,7 +918,7 @@ class IGen(object):
             assert (isinstance(ignore_sel_cores,set) and 
                     all(isinstance(c,SCore) for c in ignore_sel_cores)),\
                     ignore_sel_cores
-            assert is_configs_d(configs_d),configs_d
+            assert isinstance(configs_d,Configs_d),configs_d
 
         configs = []
         while True:
@@ -1102,7 +1124,7 @@ class DTrace(object):
 
         logger.debug('select core: ({}) {}'.format(self.sel_core.sstren, self.sel_core))
         logger.debug('create {} configs'.format(len(self.cconfigs_d)))
-        logger.detail('\n' + str_of_configs_d(self.cconfigs_d))
+        logger.detail(self.cconfigs_d)
 
         mcores_d = self.cores_d.merge()
         logger.debug("infer {} interactions".format(len(mcores_d)))
@@ -1210,7 +1232,7 @@ class Analysis(object):
             cconfigs_d = dict((c,cov) for c,cov in configs_d.iteritems()
                               if sid not in cov)
 
-        logger.info(str_of_configs_d(cconfigs_d))
+        logger.info(cconfigs_d)
 
 
 #Tests
@@ -1256,17 +1278,17 @@ def do_gt(dom,pathconds_d,n=None):
         logger.warn("DEBUG MODE ON. Can be slow !")
 
     if n:
-        print 'selectin {} rand'.format(n)
+        print 'select {} rand'.format(n)
         rs = random.sample(pathconds_d.values(),n)
     else:
         rs = pathconds_d.itervalues()
 
-    cconfigs_d = {}
+    cconfigs_d = Configs_d()
     for covs,configs in rs:
         for c in configs:
             c = Config(c)
             if c not in cconfigs_d:
-                cconfigs_d[c] = set(covs)
+                cconfigs_d.add(c,set(covs))
             else:
                 covs_ = cconfigs_d[c]
                 for sid in covs:
@@ -1275,7 +1297,7 @@ def do_gt(dom,pathconds_d,n=None):
     logger.info("infer interactions using {} configs"
                 .format(len(cconfigs_d)))
     st = time()
-    cores_d,configs_d,covs_d = Cores_d(),{},{}
+    cores_d,configs_d,covs_d = Cores_d(),Configs_d(),Covs_d()
     _ = Inferrence.infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom)
     pp_cores_d = postprocess(cores_d,covs_d,dom)
     show_analyzed_cores_d(pp_cores_d,dom)
@@ -1317,9 +1339,7 @@ def void_run(cmds):
     
     if not CM.is_iterable(cmds): cmds = [cmds]
     logger.detail('run {} cmds'.format(len(cmds)))
-    for cmd in cmds:
-        void_run_single(cmd)
-    
+    for cmd in cmds: void_run_single(cmd)
     
 from gcovparse import gcovparse
 def parse_gcov(gcov_file):
