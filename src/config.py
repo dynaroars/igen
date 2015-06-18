@@ -257,7 +257,7 @@ class Core(HDict):
             vn_,vs_ = z3db[vn]
             f.append(z3util.myOr([vn_ == vs_[v] for v in vs]))
 
-        return myf(f)        
+        return myf(f)
     
 class MCore(tuple):
     """
@@ -351,10 +351,10 @@ class PNCore(MCore):
         Assumption: all 4 cores are verified and simplified
         """
         if CM.__vdebug__:
-            assert self.pc is None or isinstance(self.pc,Core) and self.pc, self.pc
-            assert self.pd is None or isinstance(self.pd,Core) and self.pd, self.pd
-            assert self.nc is None or isinstance(self.nc,Core) and self.nc, self.nc
-            assert self.nd is None or isinstance(self.nd,Core) and self.nd, self.nd
+            assert self.pc is None or (isinstance(self.pc,Core) and self.pc), self.pc
+            assert self.pd is None or (isinstance(self.pd,Core) and self.pd), self.pd
+            assert self.nc is None or (isinstance(self.nc,Core) and self.nc), self.nc
+            assert self.nd is None or (isinstance(self.nd,Core) and self.nd), self.nd
             assert isinstance(dom,Dom),dom
             
         def _f(core,delim):

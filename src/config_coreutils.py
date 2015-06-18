@@ -463,6 +463,28 @@ class TS_date(TestSuite_COREUTILS):
         cmds.append("{} {} -f notexist".format(self.prog,self.opts)) #date -f filename    
         return cmds
 
+
+class TS_sort(TestSuite_COREUTILS):
+    def get_cmds(self):
+        """
+        Examples for tests: http://www.theunixschool.com/2012/08/linux-sort-command-examples.html
+        """
+        cmds = []
+        #cmds.append("wc -l /usr/bin/* | {} {}".format(self.prog,self.opts)) #wc -l . | sort
+        cmds.append("ls /boot | {}.{}".format(self.prog,self.opts))
+        cmds.append("ls /boot/* | {}.{}".format(self.prog,self.opts)) 
+        cmds.append("{} {} {}/file1".format(self.prog,self.opts,self.tdir))  #sort file1
+        cmds.append("{} {} {}/file3".format(self.prog,self.opts,self.tdir))  #sort file1
+        cmds.append("{} {} {}/file1 {}/file2 {}/file3"  
+                    .format(self.prog,self.opts,self.tdir,self.tdir,self.tdir)) #multiple fiels
+
+        #some error with this command, cannot read
+        # cmds.append("{} {} --files0-from={}/allfiles"
+        #             .format(prog_exe,opts,tdir)) #multiple fiels
+
+        return cmds
+        
+
 def testsuite_md5sum(args):
     """
     """
@@ -524,32 +546,6 @@ def testsuite_ls(args):
     CF.void_run(cmds)
 
 
-def testsuite_sort(args):
-    """
-    Examples for tests: http://www.theunixschool.com/2012/08/linux-sort-command-examples.html
-    """
-    if CM.__vdebug__:
-        assert isinstance(args,dict),args
-        assert 'opts' in args
-        assert 'prog_exe' in args
-        assert 'testfiles_dir' in args        
-
-    prog_exe = args['prog_exe']
-    opts = args['opts']
-    tdir = args['testfiles_dir']
-
-    cmds = []
-    #cmds.append("wc -l /usr/bin/* | {} {}".format(self.prog,self.opts)) #wc -l . | sort
-    cmds.append("{} {} {}/file1".format(prog_exe,opts,tdir))  #sort file1
-    cmds.append("{} {} {}/file3".format(prog_exe,opts,tdir))  #sort file1
-    cmds.append("{} {} {}/file1 {}/file2 {}/file3"  
-                .format(prog_exe,opts,tdir,tdir,tdir)) #multiple fiels
-
-    #some error with this command, cannot read
-    # cmds.append("{} {} --files0-from={}/allfiles"
-    #             .format(prog_exe,opts,tdir)) #multiple fiels
-    
-    CF.void_run(cmds)
 
 
     
@@ -585,7 +581,7 @@ def testsuite_sort(args):
 coreutils_d = {'date': TS_date,
                'ls': testsuite_ls,
                'ln': TS_ln,
-               'sort': testsuite_sort,
+               'sort': TS_sort,
                'id': TS_id,
                'mv': TS_mv,
                'ln': TS_ln,  
