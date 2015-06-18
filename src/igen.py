@@ -22,13 +22,15 @@ def get_run_f(args):
         igen = config.IGen(dom,get_cov,config_default=None)
         if args.do_gt or args.do_full:
             if args.rand_n:
-                _f = lambda _,tdir: config.do_gt(dom,pathconds_d,n=args.rand_n,tmpdir=tdir)
+                _f = lambda _,tdir: config.do_gt(dom,pathconds_d,
+                                                 n=args.rand_n,tmpdir=tdir)
             else:
                 _f = lambda _,tdir: config.do_gt(dom,pathconds_d,tmpdir=tdir)
         elif args.rand_n is None:
-            _f = lambda seed,tdir: igen.go(seed=seed)
+            _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
-            _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,seed=seed,tmpdir=tdir)
+            _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
+                                                seed=seed,tmpdir=tdir)
     else:
         if args.prog in examples_d:
             dom,get_cov=config.prepare_motiv(examples_d[args.prog],args.prog)
@@ -43,8 +45,10 @@ def get_run_f(args):
         elif args.rand_n is None:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
-            _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,seed=seed,tmpdir=tdir)
-        return _f
+            _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
+                                                seed=seed,tmpdir=tdir)
+    CM.pause()
+    return _f
 
 if __name__ == "__main__":
     """
