@@ -6,7 +6,6 @@ import config as CF
 logger = CM.VLog('coreutils')
 logger.level = CF.logger.level
 
-#Coreutils
 def prepare(prog_name):
     if CM.__vdebug__:
         assert isinstance(prog_name,str),prog_name
@@ -14,11 +13,11 @@ def prepare(prog_name):
     main_dir = CF.getpath('~/Dropbox/git/config/benchmarks/coreutils')
     dom_file = os.path.join(main_dir,"doms","{}.dom".format(prog_name))
     dom_file = CF.getpath(dom_file)
-    assert os.path.isfile(dom_file),dom_file
-
     dom,_ = CF.Dom.get_dom(dom_file)
     logger.info("dom_file '{}': {}".format(dom_file,dom))
-
+    assert all(len(vs) >= 2 and "off" in vs 
+               for vs in dom.itervalues()),"incorrect format"
+    
     bdir = os.path.join(main_dir,'coreutils')
     prog_dir = os.path.join(bdir,'obj-gcov','src')
     prog_exe = os.path.join(prog_dir,prog_name)
@@ -84,7 +83,7 @@ def get_cov(config,args):
 
     #cleanup
     cmd = "rm -rf {}/*.gcov {}/*.gcda".format(dir_,prog_dir)
-    CF.void_run(cmd)
+    CF.void_run(cmd,'cleanup')
     #CM.pause()
     
     #run testsuite
@@ -98,7 +97,7 @@ def get_cov(config,args):
     #/path/prog.Linux.exe -> prog
     src_dir = os.path.join(dir_,'src')
     cmd = "gcov {} -o {}".format(prog_name,prog_dir)
-    CF.void_run(cmd)
+    CF.void_run(cmd,'get gcov')
     
     gcov_dir = os.getcwd()
     sids = (CF.parse_gcov(os.path.join(gcov_dir,f))
@@ -116,12 +115,12 @@ class TestSuite_COREUTILS(object):
             assert isinstance(args,dict),args
             assert 'prog' in args            
             assert 'opts' in args
-            assert 'cdir' in args and os.path.isdir(args['cdir']),args['cdir']            
+            assert 'cdir' in args and os.path.isdir(args['cdir']),args['cdir']
             assert 'tdir' in args and os.path.isdir(args['tdir']),args['tdir']
 
         self.prog = args['prog']
         self.opts = args['opts']
-        self.cdir = args['tdir']        
+        self.cdir = args['cdir']
         self.tdir = args['tdir']
 
     @abc.abstractmethod
@@ -130,24 +129,27 @@ class TestSuite_COREUTILS(object):
     def run(self):
         cmds = self.get_cmds()
         assert cmds
-        CF.void_run(cmds)
+        CF.void_run(cmds,'run testsuite')
 
     @property
-    def cmds_default(self):
-        cmds = []
-        cmds.append("{} {}".format(self.prog,self.opts))
-        return cmds
+    def cmd_default(self): return "{} {}".format(self.prog,self.opts)
 
-
+    @property
+    def cmd_notexist(self): return "{} {} ~notexistfile".format(self.prog,self.opts)
+    
 class TS_uname(TestSuite_COREUTILS):
     def get_cmds(self):
-        cmds = self.cmds_default
+        cmds = []
+        cmds.append(self.cmd_default)
+        cmds.append(self.cmd_notexist)
         cmds.append("{} {} a".format(self.prog,self.opts))
         return cmds
     
 class TS_id(TestSuite_COREUTILS):
     def get_cmds(self):
-        cmds = self.cmds_default
+        cmds = []
+        cmds.append(self.cmd_default)
+        cmds.append(self.cmd_notexist)        
         cmds.append("{} {} root".format(self.prog,self.opts)) #id user
         cmds.append("{} {} {}".format(self.prog,self.opts,self.tdir)) #id nonexisting user
         return cmds
@@ -155,37 +157,37 @@ class TS_id(TestSuite_COREUTILS):
 class TS_cat(TestSuite_COREUTILS):
     def get_cmds(self):
         cmds = []
-        cmds.append("{} {} {}/file1".format(prog_exe,opts,tdir))
-        cmds.append("{} {} {}/file3".format(prog_exe,opts,tdir))        
-        cmds.append("{} {} < {}/file2".format(prog_exe,opts,tdir))
-        cmds.append("{} {} {}/binary.dat".format(prog_exe,opts,cdir))
-        cmds.append("{} {} {}/small.jpg".format(prog_exe,opts,cdir))        
+        cmds.append(self.cmd_default)
+        cmds.append(self.cmd_notexist)
+        cmds.append("{} {} {}/file1".format(self.prog,self.opts,self.tdir))
+        cmds.append("{} {} {}/file3".format(self.prog,self.opts,self.tdir))        
+        cmds.append("{} {} < {}/file2".format(self.prog,self.opts,self.tdir))
+        cmds.append("{} {} {}/binary.dat".format(self.prog,self.opts,self.cdir))
+        cmds.append("{} {} {}/small.jpg".format(self.prog,self.opts,self.cdir))
         
-        cmds.append("{} {} {}/*".format(prog_exe,opts,tdir)) #cat /path/*
-        cmds.append("{} {} {}/file1 {}/file2".format(prog_exe,opts,tdir,tdir))
-        cmds.append("ls /usr/bin | {} {}".format(prog_exe,opts)) #stdin
+        cmds.append("{} {} {}/*".format(self.prog,self.opts,self.tdir)) #cat /path/*
+        cmds.append("{} {} {}/file1 {}/file2".format(self.prog,self.opts,self.tdir,self.tdir))
+        cmds.append("ls /boot | {} {}".format(self.prog,self.opts)) #stdin
         #cat f1 - f2
-        cmds.append("ls /usr/bin | {} {} {}/file1 - {}/file2".format(prog_exe,opts,tdir,tdir)) 
-
-        cmds.append("{} nonexist".format(prog_exe,opts,tdir))
-        cmds.append("{} /usr/bin".format(prog_exe,opts,tdir))
+        cmds.append("ls /boot | {} {} {}/file1 - {}/file2".format(self.prog,self.opts,self.tdir,self.tdir)) 
+        cmds.append("{} /boot".format(self.prog,self.opts,self.tdir))
         return cmds
 
 class TS_cp(TestSuite_COREUTILS):
     def get_cmds(self):
         cmds = []
-        cmds.append("{} {} {}/file1 {}".format(prog,opts,tdir,tdir))  #cp f .
+        cmds.append("{} {} {}/file1 {}".format(prog,opts,self.tdir,self.tdir))  #cp f .
         #cp f1 f2
         cmds.append("{} {} {}/files1 {}/files2; rm -rf {}/files2".format()) 
         cmds.append("{} {} {}/small.jpg {}/small_t.jpg; rm -rf {}/small_t.jpg"
                     .format(self.prog,self.opts,self.cdir,self.tdir,self.tdir))
         cmds.append("rm -rf {}/tdir/*; {} {} {}/* {}/tdir"
-                    .format(tdir,prog,opts,cdir,tdir))
+                    .format(tdir,prog,opts,cdir,self.tdir))
         cmds.append("rm -rf {}/tdir/*; {} {} {}/binary.dat {}/file1 {}/tdir"
-                    .format(tdir,prog,opts,cdir,tdir,tdir))
+                    .format(tdir,prog,opts,cdir,self.tdir,self.tdir))
         #recursive copy
         cmds.append("rm -rf {}/tdir/*; ".format(tdir) +
-                    "{} {} {}/dir2levels/ {}/tdir".format(prog,opts,tdir,tdir))
+                    "{} {} {}/dir2levels/ {}/tdir".format(prog,opts,self.tdir,self.tdir))
         return cmds
 
 class TS_mv(TestSuite_COREUTILS):
@@ -363,23 +365,23 @@ class TS_touch(TestSuite_COREUTILS):
     def get_cmds(self):
         cmds = []
         cmds.append("rm -rf {}/* ;".format(tdir) +
-                    "{} {} {}/a {}/b".format(prog,exe,tdir))
+                    "{} {} {}/a {}/b".format(prog,exe,self.tdir))
 
         cmds.append("rm -rf {}/* ;".format(tdir) +
-                    "{} {} {}/a {}/b;".format(prog,exe,tdir)+
-                    "{} {} {}/*".format(prog,exe,tdir))
+                    "{} {} {}/a {}/b;".format(prog,exe,self.tdir)+
+                    "{} {} {}/*".format(prog,exe,self.tdir))
 
         cmds.append("rm -rf {}/*;".format(tdir) +
-                    "{} {} {}/a -d 'next Thursday'".format(prog,exe,tdir))
+                    "{} {} {}/a -d 'next Thursday'".format(prog,exe,self.tdir))
 
         cmds.append("rm -rf {}/*;".format(tdir) +
-                    "{} {} {}/a -r {}/binary.dat".format(prog,exe,cdir,tdir))
+                    "{} {} {}/a -r {}/binary.dat".format(prog,exe,cdir,self.tdir))
 
         cmds.append("rm -rf {}/*;".format(tdir) +
                     "{} {} {}/a -t 15151730.55")
 
         cmds.append("rm -rf {}/*;".format(tdir) +
-                    "{} {} {}/a/".format(prog,exe,tdir))
+                    "{} {} {}/a/".format(prog,exe,self.tdir))
 
         cmds.append("rm -rf {}/tdi;r".format(self.tdir) +
                     "{} {} {}/tdir;".format(self.prog,self.opts,self.tdir) +
@@ -395,8 +397,8 @@ class TS_who(TestSuite_COREUTILS):
         cmds = []
         cmd.append("{} {}")
         cmd.append("{} {} 'am i'")        
-        cmd.append("{} {} {}/junkfood_ringding_wtmp".format(prog,opts,tdir))
-        cmd.append("{} {} {}/notexist".format(prog,opts,tdir))        
+        cmd.append("{} {} {}/junkfood_ringding_wtmp".format(prog,opts,self.tdir))
+        cmd.append("{} {} {}/notexist".format(prog,opts,self.tdir))        
         
         return cmds
 
@@ -463,128 +465,117 @@ class TS_date(TestSuite_COREUTILS):
         cmds.append("{} {} -f notexist".format(self.prog,self.opts)) #date -f filename    
         return cmds
 
-
 class TS_sort(TestSuite_COREUTILS):
     def get_cmds(self):
         """
-        Examples for tests: http://www.theunixschool.com/2012/08/linux-sort-command-examples.html
+        Examples:
+        http://www.theunixschool.com/2012/08/linux-sort-command-examples.html
         """
         cmds = []
-        #cmds.append("wc -l /usr/bin/* | {} {}".format(self.prog,self.opts)) #wc -l . | sort
-        cmds.append("ls /boot | {}.{}".format(self.prog,self.opts))
-        cmds.append("ls /boot/* | {}.{}".format(self.prog,self.opts)) 
-        cmds.append("{} {} {}/file1".format(self.prog,self.opts,self.tdir))  #sort file1
-        cmds.append("{} {} {}/file3".format(self.prog,self.opts,self.tdir))  #sort file1
+        cmds.append(self.cmd_default)
+        cmds.append(self.cmd_notexist)        
+        cmds.append("ls -s /usr/lib/* | {} {}".format(self.prog,self.opts))
+        cmds.append("ls -s /boot | {} {}".format(self.prog,self.opts))
+        cmds.append("ls /boot/* | {} {}".format(self.prog,self.opts)) 
+        cmds.append("{} {} {}/file1".format(self.prog,self.opts,self.tdir))
+        cmds.append("{} {} {}/file3".format(self.prog,self.opts,self.tdir))
         cmds.append("{} {} {}/file1 {}/file2 {}/file3"  
                     .format(self.prog,self.opts,self.tdir,self.tdir,self.tdir)) #multiple fiels
-
-        #some error with this command, cannot read
-        # cmds.append("{} {} --files0-from={}/allfiles"
-        #             .format(prog_exe,opts,tdir)) #multiple fiels
-
+        cmds.append("find {} -name 'file*' -print0 | {} {} --files0-from=-"
+                    .format(self.tdir,self.prog,self.opts))
         return cmds
         
+class TS_ls(TestSuite_COREUTILS):
+    def get_cmds(self):
+        cmds = []
+        #probably don't want these 2, kind useless
+        # cmds.append(self.cmd_default)
+        # cmds.append(self.cmd_notexist)
 
-def testsuite_md5sum(args):
-    """
-    """
-    if CM.__vdebug__:
-        assert isinstance(args,dict),args
-        assert 'opts' in args
-        assert 'prog_exe' in args
-        assert 'testfiles_dir' in args        
+        cmds.append("{} {} {}/a".format(self.prog,self.opts,self.tdir))
+        cmds.append("{} {} {}/a_ln".format(self.prog,self.opts,self.tdir))
+        cmds.append("{} {} {}".format(self.prog,self.opts,self.tdir))
 
-    prog_exe = args['prog_exe']
-    opts = args['opts']
-    tdir = args['testfiles_dir']
+        cmds.append("{} {} {}/noexist_ln".format(self.prog,self.opts,self.tdir))
+        cmds.append("{} {} {}/d1/.hidden1".format(self.prog,self.opts,self.tdir))
+        cmds.append("{} {} {}/d1/d1d1/b".format(self.prog,self.opts,self.tdir))
+        cmds.append("{} {} {}/d2/a.sh".format(self.prog,self.opts,self.tdir))
+        cmds.append("{} {} {}/d2/dirA".format(self.prog,self.opts,self.tdir))
+        cmds.append("{} {} {}/d2/dirA/*".format(self.prog,self.opts,self.tdir))
 
-    cmds = []
-    cmds.append("{} {} {}/file1".format(prog_exe,opts,tdir))
-    cmds.append("{} {} {}/file2".format(prog_exe,opts,tdir))
-    cmds.append("{} {} {}/binary.dat".format(prog_exe,opts,tdir))    
-    cmds.append("{} {} {}/file1 {}/binary.dat".format(prog_exe,opts,tdir,tdir))
-    cmds.append("{} {} {}/*".format(prog_exe,opts,tdir))
-    cmds.append("cat {}/file1 | {} {} -".format(tdir,prog_exe,opts))    
-    cmds.append("{} {} {}/results.md5".format(prog_exe,opts,tdir))
-    cmds.append("{} {} {}/results_failed.md5".format(prog_exe,opts,tdir))
-    
-    CF.void_run(cmds)
-    
-def testsuite_ls(args):
-    """
-    testsuite_ls({'opts':'-d','prog_exe':'/bin/ls', 'testfiles_dir':'/home/tnguyen/Dropbox/git/config/benchmarks/coreutils/testfiles/ls'})
-    """
-    if CM.__vdebug__:
-        assert isinstance(args,dict),args
-        assert 'opts' in args
-        assert 'prog_exe' in args
-        assert 'testfiles_dir' in args        
+        cmds.append("{} {} {}/d2_ln/a.sh".format(self.prog,self.opts,self.tdir))
+        cmds.append("{} {} {}/d2_ln/.hidden_dir".format(self.prog,self.opts,self.tdir))
 
-    prog_exe = args['prog_exe']
-    opts = args['opts']
-    testfiles_dir = args['testfiles_dir']
-    tdir = os.path.join(args['testfiles_dir'],"edir")
-    cmds = []
-    cmds.append("{} {} {}/a_ln".format(prog_exe,opts,tdir))
-    cmds.append("{} {} {}/noexist_ln".format(prog_exe,opts,tdir))
-    cmds.append("{} {} {}/d1/.hidden1".format(prog_exe,opts,tdir))
-    cmds.append("{} {} {}/d1/d1d1/b".format(prog_exe,opts,tdir))
-    cmds.append("{} {} {}/d2/a.sh".format(prog_exe,opts,tdir))
-    cmds.append("{} {} {}/d2/dirA".format(prog_exe,opts,tdir))
-    cmds.append("{} {} {}/d2/dirA/*".format(prog_exe,opts,tdir))
-    
-    cmds.append("{} {} {}/d2_ln/a.sh".format(prog_exe,opts,tdir))
-    cmds.append("{} {} {}/d2_ln/.hidden_dir".format(prog_exe,opts,tdir))
-
-    cmds.append("{} {} /boot".format(self.prog,self.opts))
-    cmds.append("{} {} /boot/*".format(self.prog,self.opts))
-    cmds.append("{} {} /bin/ls".format(self.prog,self.opts))
-    assert os.path.isdir(getpath("~/ls_test")), "create ~/ls_test"
-    cmds.append("{} {} ~/ls_test".format(self.prog,self.opts))
-    cmds.append("{} {} .".format(self.prog,self.opts))
-    cmds.append("{} {} ..".format(self.prog,self.opts))
-    CF.void_run(cmds)
-
-
-
+        cmds.append("{} {} /boot".format(self.prog,self.opts))
+        cmds.append("{} {} /boot/*".format(self.prog,self.opts))
+        cmds.append("{} {} /bin/ls".format(self.prog,self.opts))
+        cmds.append("{} {} .".format(self.prog,self.opts))
+        cmds.append("{} {} ..".format(self.prog,self.opts))
+        return cmds
 
     
- #test 1
-    cmds = []    
-    cmds.append("touch a")
-    cmds.append("ln {} a b".format(opts_str))
+ # #test 1
+ #    cmds = []    
+ #    cmds.append("touch a")
+ #    cmds.append("ln {} a b".format(opts_str))
 
-    #test 2
-    cmds = []        
-    cmds.append("mkdir d")
-    cmds.append("ln {} d e".format(opts_str))
-    myexec(test_dir,cmds)
+ #    #test 2
+ #    cmds = []        
+ #    cmds.append("mkdir d")
+ #    cmds.append("ln {} d e".format(opts_str))
+ #    myexec(test_dir,cmds)
     
-    #from coreutils tests
-    #test 3  # d/f -> ../f
-    cmds = []        
-    cmds.append("mkdir d")
-    cmds.append("ln {} --target_dir=d ../f".format(opts_str))
-    myexec(test_dir,cmds)
+ #    #from coreutils tests
+ #    #test 3  # d/f -> ../f
+ #    cmds = []        
+ #    cmds.append("mkdir d")
+ #    cmds.append("ln {} --target_dir=d ../f".format(opts_str))
+ #    myexec(test_dir,cmds)
     
-    #test 4
-    # Check that a target directory of '.' is supported
-    # and that indirectly specifying the same target and link name
-    # through that is detected.
-    cmds = []        
-    cmds.append("ln {} . b".format(opts_str))
-    cmd.append("echo foo > a")      
-    cmds.append("ln {} a b > err 2>&1)".format(opts_str))
-    myexec(test_dir,cmds)
+ #    #test 4
+ #    # Check that a target directory of '.' is supported
+ #    # and that indirectly specifying the same target and link name
+ #    # through that is detected.
+ #    cmds = []        
+ #    cmds.append("ln {} . b".format(opts_str))
+ #    cmd.append("echo foo > a")      
+ #    cmds.append("ln {} a b > err 2>&1)".format(opts_str))
+ #    myexec(test_dir,cmds)
 
 
 coreutils_d = {'date': TS_date,
-               'ls': testsuite_ls,
+               'ls': TS_ls,
                'ln': TS_ln,
                'sort': TS_sort,
                'id': TS_id,
                'mv': TS_mv,
                'ln': TS_ln,  
-               'uname': TS_uname}
-        
+               'uname': TS_uname,
+               'cat':TS_cat}
 
+
+# def testsuite_md5sum(args):
+#     """
+#     """
+#     if CM.__vdebug__:
+#         assert isinstance(args,dict),args
+#         assert 'opts' in args
+#         assert 'prog_exe' in args
+#         assert 'testfiles_dir' in args        
+
+#     prog_exe = args['prog_exe']
+#     opts = args['opts']
+#     tdir = args['testfiles_dir']
+
+#     cmds = []
+#     cmds.append("{} {} {}/file1".format(self.prog,self.opts,self.tdir))
+#     cmds.append("{} {} {}/file2".format(self.prog,self.opts,self.tdir))
+#     cmds.append("{} {} {}/binary.dat".format(self.prog,self.opts,self.tdir))    
+#     cmds.append("{} {} {}/file1 {}/binary.dat".format(self.prog,self.opts,self.tdir,self.tdir))
+#     cmds.append("{} {} {}/*".format(self.prog,self.opts,self.tdir))
+#     cmds.append("cat {}/file1 | {} {} -".format(tdir,self.prog,self.opts))    
+#     cmds.append("{} {} {}/results.md5".format(self.prog,self.opts,self.tdir))
+#     cmds.append("{} {} {}/results_failed.md5".format(self.prog,self.opts,self.tdir))
+    
+#     CF.void_run(cmds)
+    

@@ -35,13 +35,13 @@ def get_run_f(args):
         if args.prog in examples_d:
             dom,get_cov=config.prepare_motiv(examples_d[args.prog],args.prog)
         elif args.prog in config_coreutils.coreutils_d:
-            dom,get_cov=config_coreutils.prepare(args.prog)            
+            dom,get_cov=config_coreutils.prepare(args.prog)
         else:
             raise AssertionError("unrecognized prog '{}'".format(args.prog))
 
         igen = config.IGen(dom,get_cov,config_default=None)
         if args.do_full:
-            _f = lambda tdir: igen.go_full(tmpdir=tdir)
+            _f = lambda _,tdir: igen.go_full(tmpdir=tdir)
         elif args.rand_n is None:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
@@ -50,12 +50,6 @@ def get_run_f(args):
     return _f
 
 if __name__ == "__main__":
-    """
-    ./igen "ls" 
-    ./igen "vsftpd" --do_gt
-    ./igen "motiv2" --do_full
-    
-    """
     import argparse
     aparser = argparse.ArgumentParser()
     aparser.add_argument("prog", help="prog")
@@ -97,6 +91,10 @@ if __name__ == "__main__":
     aparser.add_argument("--show_cov",
                          help="show coverage info",
                          action="store_true")
+
+    aparser.add_argument("--allows_known_errors",
+                         help="allows for potentially no coverage exec",
+                         action="store_true")
     
     aparser.add_argument("--do_mixed_conj_disj",
                          help="do both conj and disj interactions",
@@ -111,14 +109,15 @@ if __name__ == "__main__":
     config.logger.level = args.logger_level
     CM.__vdebug__ = args.debug
 
+    if args.allows_known_errors:
+        config.allows_known_errors = True
+
     if args.replay:
         config.Analysis.replay(prog)
         exit(0)
-        
-    if args.replay_dirs:
+    elif args.replay_dirs:
         config.Analysis.replay_dirs(prog)
         exit(0)
-
 
     nruns = args.benchmark if args.benchmark else 1
     _f = get_run_f(args)        
