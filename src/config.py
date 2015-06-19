@@ -19,7 +19,6 @@ CM.__vdebug__ = True  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
 do_comb_conj_disj = True
 show_cov = True
 allows_known_errors = False
-analyze_outps = False  #if true then analyze oupt, else analyze cov
 
 getpath = lambda f: os.path.realpath(os.path.expanduser(f))
 
@@ -898,12 +897,7 @@ class IGen(object):
         st = time()
         cconfigs_d = Configs_d()
         for c in configs:
-            sids,outps=self.get_cov(c)
-            if analyze_outps:
-                cconfigs_d[c]=outps
-            else:
-                cconfigs_d[c]=sids
-                
+            cconfigs_d[c]=self.get_cov(c)
         return cconfigs_d,time() - st
 
     def gen_configs_init(self,rand_n,seed):
@@ -1325,13 +1319,10 @@ def do_gt(dom,pathconds_d,n=None):
     return pp_cores_d,cores_d,configs_d,covs_d,dom
 
 # Real executions
-def run_single(cmd):
+def void_run_single(cmd):
     logger.detail(cmd)
     try:
         rs_outp,rs_err = CM.vcmd(cmd)
-        assert isinstance(rs_outp,str), type(rs_outp)
-        assert isinstance(rs_err,str), type(rs_err)
-        
         if rs_outp:
             logger.detail("outp: {}".format(rs_outp))
         
@@ -1353,30 +1344,18 @@ def run_single(cmd):
             if not allows_known_errors:
                 if any(kerr in rs_err for kerr in known_errors):
                     raise AssertionError("Check this known error!")
-        ss = []
-        if rs_outp:
-            ss.append('outp: {}'.format(rs_outp))
-        if rs_err:
-            ss.append('error: {}'.format(rs_err))
-        ss = '\n'.join(ss)
-        return ss
+                    
 
     except Exception as e:
         raise AssertionError("cmd '{}' fails, raise error: {}".format(cmd,e))
     
-def run(cmds,msg=''):
-    """run a set of commands"""
-    if CM.__vdebug__:
-        assert cmds, cmds
-        assert isinstance(msg,str), msg
-
+def void_run(cmds):
+    "just exec command, does not return anything"
+    assert cmds, cmds
+    
     if not CM.is_iterable(cmds): cmds = [cmds]
-    logger.detail('run {} cmds{}'
-                  .format(len(cmds),' ({})'.format(msg) if msg else ''))
-
-    outps = (run_single(cmd) for cmd in cmds)
-    outp = '\n'.join("{}. {}".format(i,outp) for i,oupt in enumerate(outps))
-    return outp
+    logger.detail('run {} cmds'.format(len(cmds)))
+    for cmd in cmds: void_run_single(cmd)
     
 from gcovparse import gcovparse
 def parse_gcov(gcov_file):
@@ -1449,9 +1428,9 @@ def get_cov_motiv(config,args):
     opts = ' '.join(config[vname] for vname in var_names)
     traces = os.path.join(tmpdir,'t.out')
     cmd = "{} {} > {}".format(prog_exe,opts,traces)
-    outps = run(cmd,'get_cov_motiv')
+    void_run(cmd)
     sids = set(CM.iread_strip(traces))
-    return sids, outps
+    return sids
 
 def get_cov_motiv_gcov(config,args):
     """
@@ -1464,23 +1443,23 @@ def get_cov_motiv_gcov(config,args):
     
     #cleanup
     cmd = "rm -rf *.gcov *.gcda"
-    _ = run(cmd,'cleanup')
+    void_run(cmd)
     #CM.pause()
     
     #run testsuite
     cmd = "{} {}".format(prog_exe,opts)
-    outp = run(cmd,'run testsuite')
+    void_run(cmd)
     #CM.pause()
 
     #read traces from gcov
     #/path/prog.Linux.exe -> prog
     cmd = "gcov {}".format(prog_name)
-    _ = run(cmd,'get gcov')
+    void_run(cmd)
     gcov_dir = os.getcwd()
     sids = (parse_gcov(os.path.join(gcov_dir,f))
             for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
     sids = set(CM.iflatten(sids))
-    return sids, outp
+    return sids
 
 
 """
