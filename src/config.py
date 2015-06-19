@@ -1349,12 +1349,12 @@ def void_run_single(cmd):
     except Exception as e:
         raise AssertionError("cmd '{}' fails, raise error: {}".format(cmd,e))
     
-def void_run(cmds):
+def void_run(cmds,msg=''):
     "just exec command, does not return anything"
     assert cmds, cmds
     
     if not CM.is_iterable(cmds): cmds = [cmds]
-    logger.detail('run {} cmds'.format(len(cmds)))
+    logger.detail('run {} cmds{}'.format(len(cmds),' ({})'.format(msg) if msg else''))
     for cmd in cmds: void_run_single(cmd)
     
 from gcovparse import gcovparse
