@@ -18,6 +18,8 @@ CM.VLog.PRINT_TIME = True
 CM.__vdebug__ = True  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
 do_comb_conj_disj = True
 show_cov = True
+allows_known_errors = False
+analyze_outps = False  #if true then analyze oupt, else analyze cov
 
 getpath = lambda f: os.path.realpath(os.path.expanduser(f))
 
@@ -34,6 +36,14 @@ class CustDict(MutableMapping):
     def __setitem__(self,key,val): raise NotImplementedError("no setitem")
     def __delitem__(self,key): raise NotImplementedError("no delitem")
 
+    def add_set(self,key,val):
+        """
+        For mapping from key to set
+        """
+        if key not in self.__dict__:
+            self.__dict__[key] = set()
+        self.__dict__[key].add(val)
+        
 is_cov = lambda cov: (isinstance(cov,set) and
                       all(isinstance(s,str) for s in cov))
 def str_of_cov(cov):
@@ -510,14 +520,10 @@ class Cores_d(CustDict):
                          .format(i+1,sid,self[sid].__str__(fstr_f=None))
                          for i,sid in enumerate(sorted(self)))
     def merge(self):
-        mcores_d = {}
+        mcores_d = Mcores_d()
         for sid,core in self.iteritems():
-            if core in mcores_d:
-                mcores_d[core].add(sid)
-            else:
-                mcores_d[core] = set([sid])
-
-        return Mcores_d(mcores_d)
+            mcores_d.add(core,sid)
+        return mcores_d
 
     def analyze(self,covs_d,dom):
         if CM.__vdebug__:
@@ -570,14 +576,16 @@ class Cores_d(CustDict):
         logger.info("strens: {}".format(mcores_d.strens_str))
         return mcores_d
     
-class Mcores_d(dict):
-    def __init__(self,mcores_d):
-        dict.__init__(self,mcores_d)
-
+class Mcores_d(CustDict):
+    """
+    A mapping from core -> {sids}
+    """
+    def add(self,core,sid):
         if CM.__vdebug__:
-            assert self and all(isinstance(c,PNCore) and is_cov(cov)
-                                for c,cov in mcores_d.iteritems()), self
-
+            assert isinstance(core,PNCore),core
+            assert isinstance(sid,str),str
+        super(Mcores_d,self).add_set(core,sid)
+        
     def __str__(self,fstr_f=None):
         if CM.__vdebug__:
             assert fstr_f is None or callable(fstr_f),fstr_f
@@ -615,7 +623,6 @@ class Mcores_d(dict):
     
 #Inference algorithm
 class Inferrence(object):
-
     @staticmethod
     def infer(configs,core,dom):
         """
@@ -736,9 +743,10 @@ class Inferrence(object):
 
         return new_covs,new_cores
 
-
 class Covs_d(CustDict):
     """
+    A mapping from sid -> {configs}
+
     >>> c1 = Config([('a', '0'), ('b', '0'), ('c', '0')])
     >>> c2 = Config([('a', '0'), ('b', '0'), ('c', '1')])
     >>> covs_d = Covs_d()
@@ -753,10 +761,7 @@ class Covs_d(CustDict):
         if CM.__vdebug__:
             assert isinstance(sid,str),sid
             assert isinstance(config,Config),config
-            
-        if sid not in self.__dict__:
-            self.__dict__[sid] = set()
-        self.__dict__[sid].add(config)
+        super(Covs_d,self).add_set(sid,config)
 
 class Configs_d(CustDict):
     def __setitem__(self,config,cov):
@@ -766,12 +771,9 @@ class Configs_d(CustDict):
         self.__dict__[config] = cov
 
     def __str__(self):
-        ss = (c.__str__(configs_d[c]) for c in self.__dict__)
+        ss = (c.__str__(self[c]) for c in self.__dict__)
         return '\n'.join("{}. {}".format(i+1,s) for i,s in enumerate(ss))
-
-
     
-
 class IGen(object):
     """
     Main algorithm
@@ -790,9 +792,6 @@ class IGen(object):
 
     def go(self,seed=None,rand_n=None,tmpdir=None):
         """
-        cover_siz=(0,n):  generates n random configs
-        cover_siz=(0,-1):  generates full random configs
-
         rand_n = None: use default interative mode
         rand_n = 0  : use init configs
         rand_n > 0  : use rand_n configs
@@ -814,7 +813,10 @@ class IGen(object):
 
         #some settings
         cur_iter = 1
-        cur_stuck= 0
+        min_stren = 1
+        cur_min_stren = min_stren
+        cur_stuck = 0
+        max_stuck = 3
         cores_d,configs_d,covs_d = Cores_d(),Configs_d(),Covs_d()
         sel_core = SCore.mk_default()
         ignore_sel_cores = set()
@@ -848,7 +850,7 @@ class IGen(object):
 
             cur_iter += 1
             sel_core,configs = self.gen_configs_iter(set(cores_d.values()),
-                                                     ignore_sel_cores,
+                                                     ignore_sel_cores,cur_min_stren,
                                                      configs_d)
             if sel_core is None:
                 cur_iter -= 1
@@ -863,8 +865,12 @@ class IGen(object):
 
             if new_covs or new_cores: #progress
                 cur_stuck = 0
+                cur_min_stren = min_stren
             else: #no progress
                 cur_stuck += 1
+                if cur_stuck > max_stuck:
+                    cur_stuck = 0
+                    cur_min_stren += 1
 
         #postprocess
         pp_cores_d = cores_d.analyze(covs_d,self.dom)
@@ -892,7 +898,12 @@ class IGen(object):
         st = time()
         cconfigs_d = Configs_d()
         for c in configs:
-            cconfigs_d[c]=self.get_cov(c)
+            sids,outps=self.get_cov(c)
+            if analyze_outps:
+                cconfigs_d[c]=outps
+            else:
+                cconfigs_d[c]=sids
+                
         return cconfigs_d,time() - st
 
     def gen_configs_init(self,rand_n,seed):
@@ -911,7 +922,7 @@ class IGen(object):
         assert configs, 'no initial configs created'
         return configs
         
-    def gen_configs_iter(self,cores,ignore_sel_cores,configs_d):
+    def gen_configs_iter(self,cores,ignore_sel_cores,min_stren,configs_d):
         if CM.__vdebug__:
             assert (isinstance(cores,set) and 
                     all(isinstance(c,PNCore) for c in cores)), cores
@@ -922,7 +933,7 @@ class IGen(object):
 
         configs = []
         while True:
-            sel_core = self.select_core(cores,ignore_sel_cores)
+            sel_core = self.select_core(cores,ignore_sel_cores,min_stren)
             if sel_core is None:
                 break
             configs = self.gen_configs_sel_core(sel_core,configs_d)
@@ -1062,7 +1073,7 @@ class IGen(object):
     
 
     @staticmethod
-    def select_core(pncores,ignore_sel_cores):
+    def select_core(pncores,ignore_sel_cores,min_stren):
         """
         Returns either None or SCore
         """
@@ -1083,6 +1094,9 @@ class IGen(object):
                 sel_cores.append(SCore((nc,None)))
             elif nd and (nd,nc) not in ignore_sel_cores:
                 sel_cores.append(SCore((nd,nc)))
+
+        #print "ms", min_stren
+        sel_cores = [c for c in sel_cores if c.sstren >= min_stren]
 
         if sel_cores:
             sel_core = max(sel_cores,key=lambda c: (c.sstren,c.vstren))
@@ -1124,7 +1138,7 @@ class DTrace(object):
 
         logger.debug('select core: ({}) {}'.format(self.sel_core.sstren, self.sel_core))
         logger.debug('create {} configs'.format(len(self.cconfigs_d)))
-        logger.detail(self.cconfigs_d)
+        logger.detail(str(self.cconfigs_d))
 
         mcores_d = self.cores_d.merge()
         logger.debug("infer {} interactions".format(len(mcores_d)))
@@ -1157,6 +1171,7 @@ class Analysis(object):
         seed,dom,dts,pp_cores_d = load_dir(dir_)
 
         #print info
+        logger.info("replay dir: '{}'".format(dir_))
         logger.info('seed: {}'.format(seed))
         logger.debug(dom.__str__())
         
@@ -1175,6 +1190,8 @@ class Analysis(object):
 
     @staticmethod
     def replay_dirs(dir_,strength_thres=100000000):
+        logger.info("replay_dirs '{}'".format(dir_))
+        
         niters_total = 0
         ntime_total = 0
         nctime_total = 0    
@@ -1191,7 +1208,6 @@ class Analysis(object):
             ncovs_total += ncovs
             strens_s.append(strens)
             
-
         nruns_total = float(len(strens_s))
         ss = ["iter {}".format(niters_total/nruns_total),
               "time {}".format(ntime_total/nruns_total),
@@ -1278,7 +1294,7 @@ def do_gt(dom,pathconds_d,n=None):
         logger.warn("DEBUG MODE ON. Can be slow !")
 
     if n:
-        print 'select {} rand'.format(n)
+        logger.info('select {} rand'.format(n))
         rs = random.sample(pathconds_d.values(),n)
     else:
         rs = pathconds_d.itervalues()
@@ -1309,10 +1325,13 @@ def do_gt(dom,pathconds_d,n=None):
     return pp_cores_d,cores_d,configs_d,covs_d,dom
 
 # Real executions
-def void_run_single(cmd):
+def run_single(cmd):
     logger.detail(cmd)
     try:
         rs_outp,rs_err = CM.vcmd(cmd)
+        assert isinstance(rs_outp,str), type(rs_outp)
+        assert isinstance(rs_err,str), type(rs_err)
+        
         if rs_outp:
             logger.detail("outp: {}".format(rs_outp))
         
@@ -1323,23 +1342,41 @@ def void_run_single(cmd):
 
         serious_errors = ["invalid",
                           "-c: line",
-                          "assuming not executed",
                           "/bin/sh"]
+
+        known_errors = ["assuming not executed"]
         if rs_err:
             logger.detail("error: {}".format(rs_err))
             if any(serr in rs_err for serr in serious_errors): 
-                raise AssertionError("Check this error !")
+                raise AssertionError("Check this serious error !")
+
+            if not allows_known_errors:
+                if any(kerr in rs_err for kerr in known_errors):
+                    raise AssertionError("Check this known error!")
+        ss = []
+        if rs_outp:
+            ss.append('outp: {}'.format(rs_outp))
+        if rs_err:
+            ss.append('error: {}'.format(rs_err))
+        ss = '\n'.join(ss)
+        return ss
 
     except Exception as e:
         raise AssertionError("cmd '{}' fails, raise error: {}".format(cmd,e))
     
-def void_run(cmds):
-    "just exec command, does not return anything"
-    assert cmds, cmds
-    
+def run(cmds,msg=''):
+    """run a set of commands"""
+    if CM.__vdebug__:
+        assert cmds, cmds
+        assert isinstance(msg,str), msg
+
     if not CM.is_iterable(cmds): cmds = [cmds]
-    logger.detail('run {} cmds'.format(len(cmds)))
-    for cmd in cmds: void_run_single(cmd)
+    logger.detail('run {} cmds{}'
+                  .format(len(cmds),' ({})'.format(msg) if msg else ''))
+
+    outps = (run_single(cmd) for cmd in cmds)
+    outp = '\n'.join("{}. {}".format(i,outp) for i,oupt in enumerate(outps))
+    return outp
     
 from gcovparse import gcovparse
 def parse_gcov(gcov_file):
@@ -1354,6 +1391,12 @@ def parse_gcov(gcov_file):
     return sids
 
 def get_cov_wrapper(config,args):
+    """
+    If anything happens, return to current directory
+    """
+    if CM.__vdebug__:
+        assert isinstance(args,dict) and 'get_cov' in args,args
+        
     cur_dir = os.getcwd()
     try:
         dir_ = args["dir_"]
@@ -1406,9 +1449,9 @@ def get_cov_motiv(config,args):
     opts = ' '.join(config[vname] for vname in var_names)
     traces = os.path.join(tmpdir,'t.out')
     cmd = "{} {} > {}".format(prog_exe,opts,traces)
-    void_run(cmd)
+    outps = run(cmd,'get_cov_motiv')
     sids = set(CM.iread_strip(traces))
-    return sids
+    return sids, outps
 
 def get_cov_motiv_gcov(config,args):
     """
@@ -1421,23 +1464,23 @@ def get_cov_motiv_gcov(config,args):
     
     #cleanup
     cmd = "rm -rf *.gcov *.gcda"
-    void_run(cmd)
+    _ = run(cmd,'cleanup')
     #CM.pause()
     
     #run testsuite
     cmd = "{} {}".format(prog_exe,opts)
-    void_run(cmd)
+    outp = run(cmd,'run testsuite')
     #CM.pause()
 
     #read traces from gcov
     #/path/prog.Linux.exe -> prog
     cmd = "gcov {}".format(prog_name)
-    void_run(cmd)
+    _ = run(cmd,'get gcov')
     gcov_dir = os.getcwd()
     sids = (parse_gcov(os.path.join(gcov_dir,f))
             for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
     sids = set(CM.iflatten(sids))
-    return sids
+    return sids, outp
 
 
 """
