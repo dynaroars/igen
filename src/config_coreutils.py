@@ -83,7 +83,7 @@ def get_cov(config,args):
 
     #cleanup
     cmd = "rm -rf {}/*.gcov {}/*.gcda".format(dir_,prog_dir)
-    CF.void_run(cmd,'cleanup')
+    _ = CF.run(cmd,'cleanup')
     #CM.pause()
     
     #run testsuite
@@ -91,13 +91,13 @@ def get_cov(config,args):
     tdir = os.path.join(main_dir,'testfiles',prog_name)
     margs = {'prog':prog_exe, 'opts':opts,'cdir':cdir,'tdir':tdir}
     ts = coreutils_d[prog_name](margs)
-    ts.run()
+    outps = ts.run()
 
     #read traces from gcov
     #/path/prog.Linux.exe -> prog
     src_dir = os.path.join(dir_,'src')
     cmd = "gcov {} -o {}".format(prog_name,prog_dir)
-    CF.void_run(cmd,'get gcov')
+    _ = CF.run(cmd,'gcov')
     
     gcov_dir = os.getcwd()
     sids = (CF.parse_gcov(os.path.join(gcov_dir,f))
@@ -106,7 +106,7 @@ def get_cov(config,args):
     if not sids:
         logger.warn("config {} has NO cov".format(config))
         
-    return sids
+    return sids,outps
 
 class TestSuite_COREUTILS(object):
     __metaclass__ = abc.ABCMeta
@@ -128,9 +128,9 @@ class TestSuite_COREUTILS(object):
 
     def run(self):
         cmds = self.get_cmds()
-        assert cmds
-        CF.void_run(cmds,'run testsuite')
-
+        outps = CF.run(cmds,'run testsuite')
+        return outps
+    
     @property
     def cmd_default(self): return "{} {}".format(self.prog,self.opts)
 
