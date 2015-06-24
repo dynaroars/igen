@@ -797,7 +797,7 @@ class IGen(object):
         rand_n > 0  : use rand_n configs
         rand_n < 0  : use all possible configs
         """
-        seed = float(seed) if seed is not None else round(time(),2)
+        seed = seed if seed is not None else round(time(),2)
         random.seed(seed)
         if not(tmpdir and os.path.isdir(tmpdir)):
             tmpdir = tempfile.mkdtemp(dir='/var/tmp',prefix="vu")
