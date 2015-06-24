@@ -16,9 +16,11 @@ logger = CM.VLog('config')
 logger.level = CM.VLog.DEBUG
 CM.VLog.PRINT_TIME = True
 CM.__vdebug__ = True  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
+
 do_comb_conj_disj = True
 show_cov = True
 allows_known_errors = False
+analyze_outps = False
 
 getpath = lambda f: os.path.realpath(os.path.expanduser(f))
 
@@ -34,7 +36,6 @@ class CustDict(MutableMapping):
     def __iter__(self): return iter(self.__dict__)    
     def __setitem__(self,key,val): raise NotImplementedError("no setitem")
     def __delitem__(self,key): raise NotImplementedError("no delitem")
-
     def add_set(self,key,val):
         """
         For mapping from key to set
@@ -526,9 +527,9 @@ class Cores_d(CustDict):
 
     def analyze(self,covs_d,dom):
         if CM.__vdebug__:
-            assert isinstance(covs_d,Covs_d),covs_d
+            assert isinstance(covs_d,Covs_d) and covs_d, covs_d
             assert len(self) == len(covs_d), (len(self),len(covs_d))
-            assert isinstance(dom,Dom),dom
+            assert isinstance(dom,Dom), dom
 
         def show_compare(sid,old_c,new_c):
             if old_c != new_c:
@@ -876,15 +877,15 @@ class IGen(object):
         CM.vsave(os.path.join(tmpdir,'postprocess'),pp_cores_d)
 
         pp_cores_d.show_analysis(self.dom)
-        logger.info(Analysis.str_of_summary(seed,cur_iter,time()-st,cov_time,
-                                            len(configs_d),len(covs_d),
-                                            tmpdir))
+        logger.info(Analysis.str_of_summary(
+            seed,cur_iter,time()-st,cov_time,len(configs_d),len(covs_d),tmpdir))
         
         logger.info("Done (seed {}, test {})".format(seed,random.randrange(100)))
         return pp_cores_d,cores_d,configs_d,covs_d,self.dom
 
     #Shortcuts
-    def go_full(self,tmpdir=None): return self.go(seed=None,rand_n=-1,tmpdir=tmpdir)
+    def go_full(self,tmpdir=None):
+        return self.go(seed=None,rand_n=-1,tmpdir=tmpdir)
     def go_rand(self,rand_n,seed=None,tmpdir=None):
         return self.go(seed=seed,rand_n=rand_n,tmpdir=tmpdir)
 
@@ -897,7 +898,11 @@ class IGen(object):
         st = time()
         cconfigs_d = Configs_d()
         for c in configs:
-            cconfigs_d[c]=self.get_cov(c)
+            sids,outps = self.get_cov(c)
+            if analyze_outps:
+                cconfigs_d[c]=outps
+            else:
+                cconfigs_d[c]=sids
         return cconfigs_d,time() - st
 
     def gen_configs_init(self,rand_n,seed):
@@ -1277,7 +1282,8 @@ def get_cov_otter(config,args):
         if any(config.hcontent.issuperset(c) for c in configs):
             for sid in cov:
                 sids.add(sid)
-    return sids
+    outps = []
+    return sids,outps
 
 def do_gt(dom,pathconds_d,n=None):
     """
@@ -1298,7 +1304,7 @@ def do_gt(dom,pathconds_d,n=None):
         for c in configs:
             c = Config(c)
             if c not in cconfigs_d:
-                cconfigs_d.add(c,set(covs))
+                cconfigs_d[c]=set(covs)
             else:
                 covs_ = cconfigs_d[c]
                 for sid in covs:
@@ -1309,17 +1315,16 @@ def do_gt(dom,pathconds_d,n=None):
     st = time()
     cores_d,configs_d,covs_d = Cores_d(),Configs_d(),Covs_d()
     _ = Inferrence.infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom)
-    pp_cores_d = postprocess(cores_d,covs_d,dom)
-    show_analyzed_cores_d(pp_cores_d,dom)
-    
-    logger.info(str_of_summary(0,0,time()-st,0,
-                               len(configs_d),len(pp_cores_d),
-                               ''))
-    
+    pp_cores_d = cores_d.analyze(covs_d,dom)
+    pp_cores_d.show_analysis(dom)
+
+    logger.info(Analysis.str_of_summary(
+        0,0,time()-st,0,len(configs_d),len(pp_cores_d),'no tmpdir'))
+
     return pp_cores_d,cores_d,configs_d,covs_d,dom
 
 # Real executions
-def void_run_single(cmd):
+def run_single(cmd):
     logger.detail(cmd)
     try:
         rs_outp,rs_err = CM.vcmd(cmd)
@@ -1345,18 +1350,22 @@ def void_run_single(cmd):
                 if any(kerr in rs_err for kerr in known_errors):
                     raise AssertionError("Check this known error!")
                     
-
+        return (rs_outp,rs_err)
+    
     except Exception as e:
         raise AssertionError("cmd '{}' fails, raise error: {}".format(cmd,e))
     
-def void_run(cmds,msg=''):
+def run(cmds,msg=''):
     "just exec command, does not return anything"
     assert cmds, cmds
     
     if not CM.is_iterable(cmds): cmds = [cmds]
-    logger.detail('run {} cmds{}'.format(len(cmds),' ({})'.format(msg) if msg else''))
-    for cmd in cmds: void_run_single(cmd)
-    
+    logger.detail('run {} cmds{}'
+                  .format(len(cmds),' ({})'.format(msg) if msg else''))
+    outp = tuple(run_single(cmd) for cmd in cmds)
+    outp = hash(outp)
+    return set([str(outp)])
+
 from gcovparse import gcovparse
 def parse_gcov(gcov_file):
     if CM.__vdebug__:
@@ -1380,9 +1389,9 @@ def get_cov_wrapper(config,args):
     try:
         dir_ = args["dir_"]
         os.chdir(dir_)
-        cov = args['get_cov'](config,args)
+        rs = args['get_cov'](config,args)
         os.chdir(cur_dir)
-        return cov
+        return rs
     except:
         os.chdir(cur_dir)
         raise
@@ -1407,10 +1416,15 @@ def prepare_motiv(dom_file,prog_name):
                 .format(dom_file,dom))
     logger.info("prog_exe: '{}'".format(prog_exe))
 
+    gcno_file = getpath(os.path.join(dir_,"{}.gcno".format(prog_name)))
+    if os.path.isfile(gcno_file):
+        get_cov_f = get_cov_motiv_gcov
+    else:
+        get_cov_f = get_cov_motiv
     args = {'var_names':dom.keys(),
             'prog_name': prog_name,
             'prog_exe': prog_exe,
-            'get_cov': get_cov_motiv,  #_gcov
+            'get_cov': get_cov_f,
             'dir_': dir_}
     get_cov = lambda config: get_cov_wrapper(config,args)
     return dom,get_cov
@@ -1428,9 +1442,9 @@ def get_cov_motiv(config,args):
     opts = ' '.join(config[vname] for vname in var_names)
     traces = os.path.join(tmpdir,'t.out')
     cmd = "{} {} > {}".format(prog_exe,opts,traces)
-    void_run(cmd)
+    outps = run(cmd)
     sids = set(CM.iread_strip(traces))
-    return sids
+    return sids,outps
 
 def get_cov_motiv_gcov(config,args):
     """
@@ -1443,24 +1457,23 @@ def get_cov_motiv_gcov(config,args):
     
     #cleanup
     cmd = "rm -rf *.gcov *.gcda"
-    void_run(cmd)
+    _ = run(cmd)
     #CM.pause()
     
     #run testsuite
     cmd = "{} {}".format(prog_exe,opts)
-    void_run(cmd)
+    outps = run(cmd)
     #CM.pause()
 
     #read traces from gcov
     #/path/prog.Linux.exe -> prog
     cmd = "gcov {}".format(prog_name)
-    void_run(cmd)
+    _ = run(cmd)
     gcov_dir = os.getcwd()
     sids = (parse_gcov(os.path.join(gcov_dir,f))
             for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
     sids = set(CM.iflatten(sids))
-    return sids
-
+    return sids,outps
 
 """
 gt

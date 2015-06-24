@@ -14,7 +14,11 @@ examples_d = {"ex_motiv1": "ex_motiv1",
               "ex_motiv2" : "ex_motiv2",
               "ex_motiv2a" : "ex_motiv2",              
               "ex_motiv2b" : "ex_motiv2",
-              "ex_motiv2c" : "ex_motiv2"}
+              "ex_motiv2c" : "ex_motiv2",
+              'ex_simple_header': "ex_simple",
+              'ex_simple_outp': "ex_simple_outp"
+              }
+
 
 def get_run_f(args):
     if args.prog in otter_d:
@@ -25,7 +29,7 @@ def get_run_f(args):
                 _f = lambda _,tdir: config.do_gt(dom,pathconds_d,
                                                  n=args.rand_n,tmpdir=tdir)
             else:
-                _f = lambda _,tdir: config.do_gt(dom,pathconds_d,tmpdir=tdir)
+                _f = lambda _,tdir: config.do_gt(dom,pathconds_d)
         elif args.rand_n is None:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
@@ -88,8 +92,12 @@ if __name__ == "__main__":
                          help="obtain ground truths",
                          action="store_true")
 
-    aparser.add_argument("--show_cov",
+    aparser.add_argument("--noshow_cov",
                          help="show coverage info",
+                         action="store_true")
+
+    aparser.add_argument("--analyze_outps",
+                         help="analyze outputs instead of coverage",
                          action="store_true")
 
     aparser.add_argument("--allows_known_errors",
@@ -111,7 +119,11 @@ if __name__ == "__main__":
 
     if args.allows_known_errors:
         config.allows_known_errors = True
-
+    if args.noshow_cov:
+        config.show_cov = False
+    if args.analyze_outps:
+        config.analyze_outps = True
+        
     if args.replay:
         config.Analysis.replay(prog)
         exit(0)
