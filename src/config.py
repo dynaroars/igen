@@ -10,7 +10,7 @@ import z3util
 from vu_common import HDict
 import vu_common as CM
 
-from collections import namedtuple, OrderedDict, MutableMapping
+from collections import OrderedDict, MutableMapping
 
 logger = CM.VLog('config')
 logger.level = CM.VLog.DEBUG
@@ -797,19 +797,14 @@ class IGen(object):
         rand_n > 0  : use rand_n configs
         rand_n < 0  : use all possible configs
         """
-        if seed is None:
-            seed = round(time(),2)
-        else:
-            seed = float(seed)
+        seed = float(seed) if seed is not None else round(time(),2)
         random.seed(seed)
-        
         if not(tmpdir and os.path.isdir(tmpdir)):
             tmpdir = tempfile.mkdtemp(dir='/var/tmp',prefix="vu")
             
         logger.info("seed: {}, tmpdir: {}".format(seed,tmpdir))
-
-        #save info
-        iobj = (seed,self.dom); CM.vsave(os.path.join(tmpdir,'info'),iobj)
+        analysis = Analysis(tmpdir)
+        analysis.save_pre(seed,self.dom)
 
         #some settings
         cur_iter = 1
@@ -824,26 +819,24 @@ class IGen(object):
         #begin
         st = time()
         ct = st
-        cov_time = 0.0
+        xtime_total = 0.0
+        
         configs = self.gen_configs_init(rand_n,seed)
         if self.config_default: configs.append(self.config_default)
-        cconfigs_d,ctime = self.eval_configs(configs)
-        cov_time += ctime
-
+        cconfigs_d,xtime = self.eval_configs(configs)
+        xtime_total += xtime
         new_covs,new_cores = Inferrence.infer_covs(cores_d,cconfigs_d,
                                                    configs_d,covs_d,self.dom)
         while True:
-
-            #save info
-            ct_ = time();etime = ct_ - ct;ct = ct_
-            dtrace = DTrace(cur_iter,etime,cov_time,
+            ct_ = time();itime = ct_ - ct;ct = ct_
+            dtrace = DTrace(cur_iter,itime,xtime,
                             len(configs_d),len(covs_d),len(cores_d),
                             cconfigs_d,
                             new_covs,new_cores,
                             sel_core,
                             cores_d)
             dtrace.show()
-            CM.vsave(os.path.join(tmpdir,"{}.tvn".format(cur_iter)),dtrace)
+            analysis.save_iter(cur_iter,dtrace)
 
             if rand_n is not None:
                 break
@@ -858,8 +851,8 @@ class IGen(object):
                 break
 
             assert configs,configs
-            cconfigs_d,ctime = self.eval_configs(configs)
-            cov_time += ctime
+            cconfigs_d,xtime = self.eval_configs(configs)
+            xtime_total += xtime
             new_covs,new_cores = Inferrence.infer_covs(cores_d,cconfigs_d,
                                                        configs_d,covs_d,self.dom)
 
@@ -874,13 +867,15 @@ class IGen(object):
 
         #postprocess
         pp_cores_d = cores_d.analyze(covs_d,self.dom)
-        CM.vsave(os.path.join(tmpdir,'postprocess'),pp_cores_d)
-
         pp_cores_d.show_analysis(self.dom)
-        logger.info(Analysis.str_of_summary(
-            seed,cur_iter,time()-st,cov_time,len(configs_d),len(covs_d),tmpdir))
+        itime_total = time() - st
         
+        logger.info(Analysis.str_of_summary(
+            seed,cur_iter,itime_total,xtime_total,
+            len(configs_d),len(covs_d),tmpdir))
         logger.info("Done (seed {}, test {})".format(seed,random.randrange(100)))
+        analysis.save_post(pp_cores_d,itime_total)
+        
         return pp_cores_d,cores_d,configs_d,covs_d,self.dom
 
     #Shortcuts
@@ -1107,14 +1102,14 @@ class IGen(object):
 
 ### Analyzing results    
 class DTrace(object):
-    def __init__(self,citer,etime,ctime,
+    def __init__(self,citer,itime,xtime,
                  nconfigs,ncovs,ncores,
                  cconfigs_d,new_covs,new_cores,
                  sel_core,cores_d):
 
         self.citer = citer
-        self.etime = etime
-        self.ctime = ctime
+        self.itime = itime
+        self.xtime = xtime
         self.nconfigs = nconfigs
         self.ncovs = ncovs
         self.ncores = ncores
@@ -1126,12 +1121,13 @@ class DTrace(object):
         
     def show(self):
         logger.info("ITER {}, ".format(self.citer) +
-                    "{}s, ".format(self.etime) +
-                    "{}s eval, ".format(self.ctime) +
+                    "{}s, ".format(self.itime) +
+                    "{}s eval, ".format(self.xtime) +
                     "total: {} configs, {} covs, {} cores, "
                     .format(self.nconfigs,self.ncovs,self.ncores) +
                     "new: {} configs, {} covs, {} updated cores, "
-                    .format(len(self.cconfigs_d),len(self.new_covs),len(self.new_cores)) +
+                    .format(len(self.cconfigs_d),
+                            len(self.new_covs),len(self.new_cores)) +
                     "{}".format("** progress **"
                                 if self.new_covs or self.new_cores else ""))
 
@@ -1145,11 +1141,34 @@ class DTrace(object):
         logger.info("strens: {}".format(mcores_d.strens_str))
 
 class Analysis(object):
+    def __init__(self,tmpdir):
+        self.tmpdir = tmpdir
+
+    def save_pre(self,seed,dom):
+        CM.vsave(os.path.join(self.tmpdir,'pre'),(seed,dom))
+    def save_post(self,pp_cores_d,itime_total):
+        CM.vsave(os.path.join(self.tmpdir,'post'),(pp_cores_d,itime_total))
+    def save_iter(self,cur_iter,dtrace):
+        CM.vsave(os.path.join(self.tmpdir,'{}.tvn'.format(cur_iter)),dtrace)
+
     @staticmethod
-    def str_of_summary(seed,iters,ntime,ctime,nconfigs,ncovs,tmpdir):
+    def load_pre(dir_):
+        seed,dom = CM.vload(os.path.join(dir_,'pre'))
+        return seed,dom
+    @staticmethod
+    def load_post(dir_):
+        pp_cores_d,itime_total = CM.vload(os.path.join(dir_,'post'))
+        return pp_cores_d,itime_total
+    @staticmethod
+    def load_iter(dir_,f):
+        dtrace =CM.vload(os.path.join(dir_,f))
+        return dtrace
+    
+    @staticmethod
+    def str_of_summary(seed,iters,itime,xtime,nconfigs,ncovs,tmpdir):
         ss = ["Seed {}".format(seed),
               "Iters {}".format(iters),
-              "Time ({}s, {}s)".format(ntime,ctime),
+              "Time ({}s, {}s)".format(itime,xtime),
               "Configs {}".format(nconfigs),
               "Covs {}".format(ncovs),
               "Tmpdir {}".format(tmpdir)]
@@ -1161,13 +1180,13 @@ class Analysis(object):
         Replay execution info from saved info in dir_
         """
         def load_dir(dir_):
-            seed,dom = CM.vload(os.path.join(dir_,'info'))
-            dts = [CM.vload(os.path.join(dir_,f))
+            seed,dom = Analysis.load_pre(dir_)
+            dts = [Analysis.load_iter(dir_,f)
                    for f in os.listdir(dir_) if f.endswith('.tvn')]
-            pp_cores_d = CM.vload(os.path.join(dir_,'postprocess'))
-            return seed,dom,dts,pp_cores_d
+            pp_cores_d,itime_total = Analysis.load_post(dir_)
+            return seed,dom,dts,pp_cores_d,itime_total
 
-        seed,dom,dts,pp_cores_d = load_dir(dir_)
+        seed,dom,dts,pp_cores_d,itime_total = load_dir(dir_)
 
         #print info
         logger.info("replay dir: '{}'".format(dir_))
@@ -1182,40 +1201,41 @@ class Analysis(object):
         mcores_d = pp_cores_d.show_analysis(dom)
 
         #print summary
-        ntime = sum(dt.etime for dt in dts)
-        logger.info(Analysis.str_of_summary(seed,len(dts),ntime,dt.ctime,
-                                            dt.nconfigs,dt.ncovs,dir_))
-        return (len(dts),ntime,dt.ctime,dt.nconfigs,dt.ncovs,mcores_d.strens)
+        xtime_total = sum(dt.xtime for dt in dts)
+        logger.info(Analysis.str_of_summary(
+            seed,len(dts),itime_total,xtime_total,dt.nconfigs,dt.ncovs,dir_))
+            
+        return (len(dts),itime_total,xtime_total,dt.nconfigs,dt.ncovs,
+                mcores_d.strens)
 
     @staticmethod
     def replay_dirs(dir_,strength_thres=100000000):
         logger.info("replay_dirs '{}'".format(dir_))
         
         niters_total = 0
-        ntime_total = 0
-        nctime_total = 0    
+        nitime_total = 0
+        nxtime_total = 0    
         nconfigs_total = 0
         ncovs_total = 0
         strens_s = []
-        for rdir in os.listdir(dir_):
+        for rdir in sorted(os.listdir(dir_)):
             rdir = os.path.join(dir_,rdir)
-            (niters,ntime,ctime,nconfigs,ncovs,strens) = Analysis.replay(rdir)
+            (niters,itime,xtime,nconfigs,ncovs,strens) = Analysis.replay(rdir)
             niters_total += niters
-            ntime_total += ntime
-            nctime_total += (ntime - ctime)
+            nitime_total += itime
+            nxtime_total += xtime
             nconfigs_total += nconfigs
             ncovs_total += ncovs
             strens_s.append(strens)
             
         nruns_total = float(len(strens_s))
         ss = ["iter {}".format(niters_total/nruns_total),
-              "time {}".format(ntime_total/nruns_total),
-              "xtime {}".format(nctime_total/nruns_total),
+              "time {}".format(nitime_total/nruns_total),
+              "xtime {}".format(nxtime_total/nruns_total),
               "configs {}".format(nconfigs_total/nruns_total),
               "covs {}".format(ncovs_total/nruns_total)]
         logger.info("STATS of {} runs: {}".format(nruns_total,', '.join(ss)))
               
-
         sres = {}
         for i,strens in enumerate(strens_s):
             logger.debug("run {}: {}".format(i+1,Mcores_d.str_of_strens(strens)))
