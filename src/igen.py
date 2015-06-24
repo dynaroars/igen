@@ -19,9 +19,45 @@ examples_d = {"ex_motiv1": "ex_motiv1",
               'ex_simple_outp': "ex_simple_outp"
               }
 
-
+def runscript_get_cov(config,run_script,outdir,from_outfile=False):
+    inputs = ' , '.join(['{} {}'.format(vname,vval) for
+                         vname,vval in config.iteritems()])
+    outfile = os.path.join(outdir,"run_script_result.txt")
+    cmd = "{} \"{}\" > {}".format(run_script,inputs,outfile)
+    try:
+        _,rs_err = CM.vcmd(cmd)
+    except:
+        print("runsript error: cmd '{}' failed".format(cmd))
+        
+    if from_outfile:
+        cov_filename = list(set(CM.iread_strip(outfile)))
+        assert len(cov_filename) == 1, cov_filename
+        cov_filename = cov_filename[0]
+        cov = set(CM.iread_strip(cov_filename))
+        print "read {} covs from '{}'".format(len(cov),cov_filename)
+    else:
+        cov = set(CM.iread_strip(outfile))
+        
+    return cov,[]
+    
 def get_run_f(args):
-    if args.prog in otter_d:
+    
+    if args.dom_file:  #general way to run program
+        dom,config_default = config.Dom.get_dom(os.path.realpath(args.dom_file))
+        run_script = os.path.realpath(args.run_script)
+        assert os.path.isfile(run_script)
+        get_cov = lambda config: runscript_get_cov(
+            config,run_script,
+            outdir=tempfile.mkdtemp(dir='/var/tmp',prefix="vu_outdir"),
+            from_outfile=args.from_outfile)
+
+        igen = config.IGen(dom,get_cov,config_default=config_default)        
+        if args.rand_n:
+            _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
+        else:
+            _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
+                                                seed=seed,tmpdir=tdir)
+    elif args.prog in otter_d:
         dom,get_cov,pathconds_d=config.prepare_otter(args.prog)
         igen = config.IGen(dom,get_cov,config_default=None)
         if args.do_gt or args.do_full:
@@ -111,7 +147,19 @@ if __name__ == "__main__":
     aparser.add_argument("--benchmark",
                          type=int,
                          help="do benchmark")
-    
+
+    aparser.add_argument("--dom_file",
+                        help="the domain file",
+                        action="store")
+
+    aparser.add_argument("--run_script",
+                        help="a script running the subject program",
+                        action="store")
+
+    aparser.add_argument("--from_outfile",
+                        help="cov output to a file instead of stdout",
+                        action="store_true")
+
     args = aparser.parse_args()
     prog = args.prog
     config.logger.level = args.logger_level
@@ -140,6 +188,9 @@ if __name__ == "__main__":
     else:
         seed = float(args.seed)
 
+    print("* benchmark '{}',  {} runs, seed {}, results in '{}'"
+          .format(args.prog,nruns,seed,tdir))
+    
     for i in range(nruns):        
         st_ = time()
         seed_ = seed + i
@@ -148,7 +199,8 @@ if __name__ == "__main__":
         _ = _f(seed_,tdir_)
         print("*run {}, seed {}, time {}s, '{}'".format(i+1,seed_,time()-st_,tdir_))
 
-    print("** done with {} runs, seed {}, time {}s, results stored in '{}'"
-          .format(nruns,seed,time()-st,tdir))
+        
+    print("** done benchmark '{}',  {} runs, seed {}, results in '{}'"
+          .format(args.prog,nruns,seed,time()-st,tdir))
         
 

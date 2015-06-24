@@ -144,8 +144,8 @@ class Dom(OrderedDict):
         config_default = None
         dom_file_default = dom_file+'.default'
         if os.path.isfile(dom_file_default):
-            rs = get_lines(CM.iread_strip(dom_file_default))
-            config_default = Config((k,list(rs[k])[0]) for k in rs)
+            rs = dict(get_lines(CM.iread_strip(dom_file_default)))
+            config_default = Config((k,list(rs[k])[0]) for k in dom)
 
         return dom,config_default
 
@@ -822,7 +822,9 @@ class IGen(object):
         xtime_total = 0.0
         
         configs = self.gen_configs_init(rand_n,seed)
-        if self.config_default: configs.append(self.config_default)
+        if self.config_default:
+            configs.append(self.config_default)
+            
         cconfigs_d,xtime = self.eval_configs(configs)
         xtime_total += xtime
         new_covs,new_cores = Inferrence.infer_covs(cores_d,cconfigs_d,

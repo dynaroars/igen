@@ -22,9 +22,9 @@ v7 0 1 2 3
 My get_cov.py script simply generate some random configuration from this dom file and call the testscript on that configuration.  You don't need to look at this get_cov.py, just make sure that it works well with your run_script. 
 
 
-3. You run get_cov.py as follow
+3. You run igen.py as follow
 
-$ ./get_cov.py --dom_file ex_motiv.dom --run_script run_script
+$ python igen.py --dom_file ex_motiv.dom --run_script run_script
 
 You get a bunch of outputs with the last line looks something like this
 
