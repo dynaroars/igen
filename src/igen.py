@@ -102,7 +102,7 @@ if __name__ == "__main__":
                          help="set logger info",
                          type=int, 
                          choices=range(5),
-                         default = 2)    
+                         default = 4)    
 
     aparser.add_argument("--replay",
                          help="replay info from run dir",
@@ -113,7 +113,7 @@ if __name__ == "__main__":
                          action="store_true")
     
     aparser.add_argument("--seed",
-                         type=int,
+                         type=float,
                          help="use this seed")
 
     aparser.add_argument("--rand_n",
@@ -200,7 +200,7 @@ if __name__ == "__main__":
         print("*run {}, seed {}, time {}s, '{}'".format(i+1,seed_,time()-st_,tdir_))
 
         
-    print("** done benchmark '{}',  {} runs, seed {}, results in '{}'"
+    print("** done benchmark '{}', {} runs, seed {}, time {}, results in '{}'"
           .format(args.prog,nruns,seed,time()-st,tdir))
         
 
