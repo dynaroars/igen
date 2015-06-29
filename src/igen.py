@@ -46,9 +46,10 @@ def get_run_f(args):
         dom,config_default = config.Dom.get_dom(os.path.realpath(args.dom_file))
         run_script = os.path.realpath(args.run_script)
         assert os.path.isfile(run_script)
+        outdir=tempfile.mkdtemp(dir='/var/tmp',prefix="vu_outdir")
         get_cov = lambda config: runscript_get_cov(
             config,run_script,
-            outdir=tempfile.mkdtemp(dir='/var/tmp',prefix="vu_outdir"),
+            outdir=outdir,
             from_outfile=args.from_outfile)
 
         igen = config.IGen(dom,get_cov,config_default=config_default)        
