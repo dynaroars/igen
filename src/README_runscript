@@ -1,9 +1,12 @@
 1. Compile the example program 
-gcc ex_motiv.c -o prog.exe  
+$ gcc ex_motiv.c -o prog.exe  
 
 2. Test that the example run_script works
 
 $ ./run_script "v1 0, v2 1, v3 1, v4 1, v5 0, v6 1, v7 3"
+/var/tmp/tvn.out
+
+$ less /var/tmp/tvn.out
 l3
 l4
 l9
@@ -12,7 +15,7 @@ l9
 
 My script, called igen.py, takes as input a domain file and your runscript
 
-domain_file simply tells me how many variables in the configurations and their values. For boolean v1-v6 and for v7 taking 4 values 0 1 2 3 then the dom_file looks like
+domain_file: simply tells me how many variables in the configurations and their values. For boolean v1-v6 and for v7 taking 4 values 0 1 2 3 then the dom_file looks like
 v1 0 1
 ...
 v6 0 1
@@ -30,14 +33,10 @@ You get a bunch of outputs with the last line looks something like this
 
 ***IMPORTANT: each time the script is run, it creates a temporary dir and save all results there (e.g., the dir '/var/tmp/vu_bmWgPxCP' above). SAVE this entire directory for future analysis. Of course if the run is not successfull, then you can delete the bad directory.
 
-
 4. SEED: you can reproduce experiment by using specific seed, e.g., 
 
 $ python igen.py --dom_file ex_motiv.dom --run_script run_script "progname" --seed 1
 
 In short, try to run this script on your program with some specific seed and make sure you get the same gen N configs at the end 
 
-5. if your output is a file containing the coverage then use the flag --from_file
-
-$ python igen.py --dom_file ex_motiv.dom --run_script run_script "progname" --seed 1 --from_outfile
 
