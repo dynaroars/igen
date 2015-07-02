@@ -19,22 +19,19 @@ examples_d = {"ex_motiv1": "ex_motiv1",
               'ex_simple_outp': "ex_simple_outp"
               }
 
-def runscript_get_cov(config,run_script,from_outfile=False):
+def runscript_get_cov(config,run_script):
     inputs = ' , '.join(['{} {}'.format(vname,vval) for
                          vname,vval in config.iteritems()])
     cmd = "{} \"{}\"".format(run_script,inputs)
     try:
         rs_outp,rs_err = CM.vcmd(cmd)
-        cov = set(CM.strip_contents(rs_outp.split('\n')))
-    except:
-        print("runscript error: cmd '{}' failed".format(cmd))
-        
-    if from_outfile:
-        assert len(cov) == 1, (cmd,rs_outp,cov)
-        cov_filename = list(cov)[0]
-        cov = set(CM.iread_strip(cov_filename))
-        print "read {} covs from '{}'".format(len(cov),cov_filename)
-
+    except Exception as e:
+        raise AssertionError("error: cmd '{}' fails, raise: {}".format(cmd,e))
+    cov_filename  = [l for l in rs_outp.split('\n') if l]
+    assert len(cov_filename) == 1, (cmd,rs_outp,cov_filename)
+    cov_filename = cov_filename[0]
+    cov = set(CM.iread_strip(cov_filename))
+    print "read {} covs from '{}'".format(len(cov),cov_filename)
     return cov,[]
     
 def get_run_f(args):
@@ -43,9 +40,7 @@ def get_run_f(args):
         dom,config_default = config.Dom.get_dom(os.path.realpath(args.dom_file))
         run_script = os.path.realpath(args.run_script)
         assert os.path.isfile(run_script)
-        get_cov = lambda config: runscript_get_cov(
-            config,run_script,from_outfile=args.from_outfile)
-
+        get_cov = lambda config: runscript_get_cov(config,run_script)
         igen = config.IGen(dom,get_cov,config_default=config_default)        
         if args.rand_n:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
