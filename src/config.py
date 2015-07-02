@@ -1181,11 +1181,16 @@ class Analysis(object):
         """
         Replay execution info from saved info in dir_
         """
+
         def load_dir(dir_):
             seed,dom = Analysis.load_pre(dir_)
             dts = [Analysis.load_iter(dir_,f)
                    for f in os.listdir(dir_) if f.endswith('.tvn')]
-            pp_cores_d,itime_total = Analysis.load_post(dir_)
+            try:
+                pp_cores_d,itime_total = Analysis.load_post(dir_)
+            except IOError:
+                logger.error("post info not avail")
+                pp_cores_d,itime_total = None,None
             return seed,dom,dts,pp_cores_d,itime_total
 
         seed,dom,dts,pp_cores_d,itime_total = load_dir(dir_)
@@ -1212,6 +1217,7 @@ class Analysis(object):
 
     @staticmethod
     def replay_dirs(dir_,strength_thres=100000000):
+        dir_ = getpath(dir_)
         logger.info("replay_dirs '{}'".format(dir_))
         
         niters_total = 0

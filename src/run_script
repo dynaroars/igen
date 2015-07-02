@@ -12,34 +12,12 @@ l4
 l7
 
 """
+import argparse
 import os.path
-import subprocess as sp
-
-def iread(filename):
-    """ return a generator """
-    with open(filename, 'r') as fh:
-        for line in fh:
-            yield line
-
-def iread_strip(filename):
-    """
-    like iread but also strip out comments and empty line
-    """
-    lines = (l.strip() for l in iread(filename))
-    lines = (l for l in lines if l and not l.startswith('#'))
-    return lines
-
-
-def vcmd(cmd, inp=None, shell=True):
-    proc = sp.Popen(cmd,shell=shell,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE)
-    return proc.communicate(input=inp)
-
+import vu_common as CM
 
 if __name__ == "__main__":
-
-    import argparse
     parser = argparse.ArgumentParser()
-
     parser.add_argument("inputs", help="input configurations")
 
     args = parser.parse_args()
@@ -53,12 +31,13 @@ if __name__ == "__main__":
     prog_out = "/var/tmp/tvn.out"
     cmd = "{} {} > {}".format(prog,prog_inp,prog_out)
     try:
-        _,rs_err = vcmd(cmd)
+        _,rs_err = CM.vcmd(cmd)
         assert len(rs_err) == 0, rs_err
     except:
         print("cmd '{}' failed".format(cmd))
 
-    print '\n'.join(iread_strip(prog_out))
+    #print '\n'.join(CM.iread_strip(prog_out))
+    print prog_out
     
 
    
