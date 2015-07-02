@@ -19,25 +19,22 @@ examples_d = {"ex_motiv1": "ex_motiv1",
               'ex_simple_outp': "ex_simple_outp"
               }
 
-def runscript_get_cov(config,run_script,outdir,from_outfile=False):
+def runscript_get_cov(config,run_script,from_outfile=False):
     inputs = ' , '.join(['{} {}'.format(vname,vval) for
                          vname,vval in config.iteritems()])
-    outfile = os.path.join(outdir,"run_script_result.txt")
-    cmd = "{} \"{}\" > {}".format(run_script,inputs,outfile)
+    cmd = "{} \"{}\"".format(run_script,inputs)
     try:
-        _,rs_err = CM.vcmd(cmd)
+        rs_outp,rs_err = CM.vcmd(cmd)
+        cov = set(CM.strip_contents(rs_outp.split('\n')))
     except:
-        print("runsript error: cmd '{}' failed".format(cmd))
+        print("runscript error: cmd '{}' failed".format(cmd))
         
     if from_outfile:
-        cov_filename = list(set(CM.iread_strip(outfile)))
-        assert len(cov_filename) == 1, cov_filename
-        cov_filename = cov_filename[0]
+        assert len(cov) == 1, (cmd,rs_outp,cov)
+        cov_filename = list(cov)[0]
         cov = set(CM.iread_strip(cov_filename))
         print "read {} covs from '{}'".format(len(cov),cov_filename)
-    else:
-        cov = set(CM.iread_strip(outfile))
-        
+
     return cov,[]
     
 def get_run_f(args):
@@ -46,11 +43,8 @@ def get_run_f(args):
         dom,config_default = config.Dom.get_dom(os.path.realpath(args.dom_file))
         run_script = os.path.realpath(args.run_script)
         assert os.path.isfile(run_script)
-        outdir=tempfile.mkdtemp(dir='/var/tmp',prefix="vu_outdir")
         get_cov = lambda config: runscript_get_cov(
-            config,run_script,
-            outdir=outdir,
-            from_outfile=args.from_outfile)
+            config,run_script,from_outfile=args.from_outfile)
 
         igen = config.IGen(dom,get_cov,config_default=config_default)        
         if args.rand_n:
