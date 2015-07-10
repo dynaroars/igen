@@ -15,6 +15,9 @@ examples_d = {"ex_motiv1": "ex_motiv1",
               "ex_motiv2a" : "ex_motiv2",              
               "ex_motiv2b" : "ex_motiv2",
               "ex_motiv2c" : "ex_motiv2",
+              "ex_motiv2d" : "ex_motiv2",              
+              "ex_motiv4" : "ex_motiv4",
+              "ex_motiv5" : "ex_motiv5",
               'ex_simple_header': "ex_simple",
               'ex_simple_outp': "ex_simple_outp"
               }

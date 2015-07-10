@@ -1135,7 +1135,7 @@ class DTrace(object):
 
         logger.debug('select core: ({}) {}'.format(self.sel_core.sstren, self.sel_core))
         logger.debug('create {} configs'.format(len(self.cconfigs_d)))
-        logger.detail(str(self.cconfigs_d))
+        logger.detail("\n"+str(self.cconfigs_d))
 
         mcores_d = self.cores_d.merge()
         logger.debug("infer {} interactions".format(len(mcores_d)))
