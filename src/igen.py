@@ -6,26 +6,6 @@ import vu_common as CM
 import config
 import config_coreutils
 
-otter_d = {"vsftpd":None,
-           "ngircd":None}
-
-examples_d = {"ex_motiv1": "ex_motiv1",
-              "ex_motiv1b": "ex_motiv1",
-              "ex_motiv2" : "ex_motiv2",
-              "ex_motiv2a" : "ex_motiv2",              
-              "ex_motiv2b" : "ex_motiv2",
-              "ex_motiv2c" : "ex_motiv2",
-              "ex_motiv2d" : "ex_motiv2",              
-              "ex_motiv4" : "ex_motiv4",
-              "ex_motiv5" : "ex_motiv5",
-              "ex_motiv6" : "ex_motiv6",
-              "ex_motiv7" : "ex_motiv7",
-              "ex_motiv8" : "ex_motiv8",
-              "ex_motiv8b" : "ex_motiv8",              
-              'ex_simple_header': "ex_simple",
-              'ex_simple_outp': "ex_simple_outp"
-              }
-
 def runscript_get_cov(config,run_script):
     inputs = ' , '.join(['{} {}'.format(vname,vval) for
                          vname,vval in config.iteritems()])
@@ -41,7 +21,13 @@ def runscript_get_cov(config,run_script):
     print "read {} covs from '{}'".format(len(cov),cov_filename)
     return cov,[]
     
+
 def get_run_f(args):
+
+    import get_cov_otter as Otter
+    import get_cov_motiv as Motiv
+    import config_coreutils as Coreutils
+        
     
     if args.dom_file:  #general way to run program
         dom,config_default = config.Dom.get_dom(
@@ -55,27 +41,26 @@ def get_run_f(args):
         else:
             _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
                                                 seed=seed,tmpdir=tdir)
-    elif args.prog in otter_d:
-        dom,get_cov,pathconds_d=config.prepare_otter(args.prog)
+    elif args.prog in Otter.otter_d:
+        dom,get_cov,pathconds_d=Otter.prepare(args.prog)
         igen = config.IGen(dom,get_cov,config_default=None)
         if args.do_full:
             if args.rand_n:
-                _f = lambda _,tdir: config.do_gt(
+                _f = lambda _,tdir: Otter.do_full(
                     dom,pathconds_d,n=args.rand_n,tmpdir=tdir)
                     
             else:
-                _f = lambda _,tdir: config.do_gt(dom,pathconds_d)
+                _f = lambda _,tdir: Otter.do_full(dom,pathconds_d)
         elif args.rand_n is None:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
             _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
                                                 seed=seed,tmpdir=tdir)
     else:
-        if args.prog in examples_d:
-            dom,get_cov=config.prepare_motiv(
-                examples_d[args.prog],args.prog)
-        elif args.prog in config_coreutils.coreutils_d:
-            dom,get_cov=config_coreutils.prepare(args.prog)
+        if args.prog in Motiv.xamples_d:
+            dom,get_cov=Motiv.prepare(examples_d[args.prog],args.prog)
+        elif args.prog in coreutils.coreutils_d:
+            dom,get_cov=Coreutils.prepare(args.prog,do_perl=args.do_perl)
         else:
             raise AssertionError("unrecognized prog '{}'".format(args.prog))
 
@@ -124,10 +109,6 @@ if __name__ == "__main__":
                          help="use all possible configs",
                          action="store_true")
 
-    aparser.add_argument("--do_gt",
-                         help="obtain ground truths",
-                         action="store_true")
-
     aparser.add_argument("--noshow_cov",
                          help="show coverage info",
                          action="store_true")
@@ -157,9 +138,13 @@ if __name__ == "__main__":
                         action="store")
 
     aparser.add_argument("--from_outfile",
-                        help="cov output to a file instead of stdout",
+                         help="cov output to a file (DEPRECATED)",
                         action="store_true")
 
+    aparser.add_argument("--do_perl",
+                         help="do coretutils written in perl",
+                        action="store_true")
+    
     args = aparser.parse_args()
     prog = args.prog
     config.logger.level = args.logger_level
