@@ -866,6 +866,7 @@ class IGen(object):
                 if cur_stuck > max_stuck:
                     cur_stuck = 0
                     cur_min_stren += 1
+                    print('cur_min_stren is now {}'.format(cur_min_stren))
 
         #postprocess
         pp_cores_d = cores_d.analyze(covs_d,self.dom)
