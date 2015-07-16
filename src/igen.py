@@ -44,11 +44,12 @@ def runscript_get_cov(config,run_script):
 def get_run_f(args):
     
     if args.dom_file:  #general way to run program
-        dom,config_default = config.Dom.get_dom(os.path.realpath(args.dom_file))
+        dom,config_default = config.Dom.get_dom(
+            os.path.realpath(args.dom_file))
         run_script = os.path.realpath(args.run_script)
         assert os.path.isfile(run_script)
         get_cov = lambda config: runscript_get_cov(config,run_script)
-        igen = config.IGen(dom,get_cov,config_default=config_default)        
+        igen = config.IGen(dom,get_cov,config_default=config_default)
         if args.rand_n:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
@@ -57,10 +58,11 @@ def get_run_f(args):
     elif args.prog in otter_d:
         dom,get_cov,pathconds_d=config.prepare_otter(args.prog)
         igen = config.IGen(dom,get_cov,config_default=None)
-        if args.do_gt or args.do_full:
+        if args.do_full:
             if args.rand_n:
-                _f = lambda _,tdir: config.do_gt(dom,pathconds_d,
-                                                 n=args.rand_n,tmpdir=tdir)
+                _f = lambda _,tdir: config.do_gt(
+                    dom,pathconds_d,n=args.rand_n,tmpdir=tdir)
+                    
             else:
                 _f = lambda _,tdir: config.do_gt(dom,pathconds_d)
         elif args.rand_n is None:
@@ -70,7 +72,8 @@ def get_run_f(args):
                                                 seed=seed,tmpdir=tdir)
     else:
         if args.prog in examples_d:
-            dom,get_cov=config.prepare_motiv(examples_d[args.prog],args.prog)
+            dom,get_cov=config.prepare_motiv(
+                examples_d[args.prog],args.prog)
         elif args.prog in config_coreutils.coreutils_d:
             dom,get_cov=config_coreutils.prepare(args.prog)
         else:
