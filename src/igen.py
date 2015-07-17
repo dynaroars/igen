@@ -164,8 +164,12 @@ if __name__ == "__main__":
         exit(0)
 
     nruns = args.benchmark if args.benchmark else 1
-    _f = get_run_f(args)        
-    tdir = tempfile.mkdtemp(dir='/var/tmp',prefix="vu_bm")
+    _f = get_run_f(args)
+
+    import getpass
+    d_prefix = "{}_bm".format(getpass.getuser())
+    tdir = tempfile.mkdtemp(dir='/var/tmp',prefix=d_prefix)
+                            
     st = time()
     if args.seed is None:
         seed = round(time(),2)

@@ -797,11 +797,11 @@ class IGen(object):
         rand_n > 0  : use rand_n configs
         rand_n < 0  : use all possible configs
         """
+        if CM.__vdebug__:
+            assert isinstance(tmpdir,str) and os.path.isdir(tmpdir), tmpdir
+            
         seed = seed if seed is not None else round(time(),2)
         random.seed(seed)
-        if not(tmpdir and os.path.isdir(tmpdir)):
-            tmpdir = tempfile.mkdtemp(dir='/var/tmp',prefix="vu")
-            
         logger.info("seed: {}, tmpdir: {}".format(seed,tmpdir))
         analysis = Analysis(tmpdir)
         analysis.save_pre(seed,self.dom)
