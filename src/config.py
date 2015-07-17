@@ -27,7 +27,7 @@ getpath = lambda f: os.path.realpath(os.path.expanduser(f))
 #Data Structures
 class CustDict(MutableMapping):
     """
-    MuttableMapping example: https://stackoverflow.com/questions/21361106/how-would-i-implement-a-dict-with-abstract-base-classes-in-python
+    MuttableMapping ex: https://stackoverflow.com/questions/21361106/how-would-i-implement-a-dict-with-abstract-base-classes-in-python
     """
     __metaclass__ = abc.ABCMeta
     def __init__(self): self.__dict__ = {}
