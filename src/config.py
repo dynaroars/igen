@@ -681,6 +681,7 @@ class Inferrence(object):
             new_cc,new_cd = cc,cd
             if configs:
                 new_cc = Inferrence.infer_cache(cc,configs,dom,cache)
+                
             if do_comb_conj_disj and new_cc:
                 configs_ = [c for c in _b() if c.c_implies(new_cc)]
                 if configs_:
@@ -691,18 +692,29 @@ class Inferrence(object):
 
             return new_cc,new_cd
 
-        pconfigs,nconfigs = [],[]
-        for config in cconfigs_d:
-            if sid in cconfigs_d[config]:
-                pconfigs.append(config)
-            else:
-                nconfigs.append(config)
-
         pc,pd,nc,nd = core
+        
+        pconfigs = [c for c in cconfigs_d if sid in cconfigs_d[c]]
+
+        if nc is None:
+            #never done nc, so has to consider all traces
+            nconfigs = [c for c in configs_d if sid not in configs_d[c]]
+        else:
+            #done nc, so can do incremental traces
+            nconfigs = [c for c in cconfigs_d if sid not in cconfigs_d[c]]
+            
+            
         _b = lambda: [c for c in configs_d if sid not in configs_d[c]]
         pc_,pd_ = _f(pconfigs,pc,pd,_b)
+        
         _b = lambda: covs_d[sid]
-        nc_,nd_ = _f(nconfigs,nc,nd,_b)    
+        nc_,nd_ = _f(nconfigs,nc,nd,_b)
+        # if sid == "L5":
+        #     print "L5 get here"
+        #     print '\n'.join(c.__str__(configs_d[c]) for c in nconfigs)
+        #     print nc
+        #     print nc_
+        #     CM.pause()
         return PNCore((pc_,pd_,nc_,nd_))
 
     @staticmethod
@@ -736,6 +748,31 @@ class Inferrence(object):
 
             core_ = Inferrence.infer_sid(sid,core,cconfigs_d,
                                          configs_d,covs_d,dom,cache)
+            if sid == "L5":
+                print sid
+                p_cconfs = [c for c in cconfigs_d if sid in cconfigs_d[c]]
+                print 'cconfigs P {}'.format(len(p_cconfs))
+                print '\n'.join(c.__str__(cconfigs_d[c]) for c in p_cconfs)
+
+                n_cconfs = [c for c in cconfigs_d if sid not in cconfigs_d[c]]
+                print 'cconfigs N {}'.format(len(n_cconfs))
+                print '\n'.join(c.__str__(cconfigs_d[c]) for c in n_cconfs)
+                
+                p_confs = [c for c in configs_d if sid in configs_d[c]]
+                print 'configs P {}'.format(len(p_confs))
+                print '\n'.join(c.__str__(configs_d[c]) for c in p_confs)
+
+                n_confs = [c for c in configs_d if sid not in configs_d[c]]
+                print 'configs N {}'.format(len(n_confs))
+                print '\n'.join(c.__str__(configs_d[c]) for c in n_confs)
+                
+                
+                print "core",core
+                #print "core details",(core.pc,core.pd,core.nc,core.nd)
+                print "core_",core_
+                #print "core_ details",(core_.pc,core_.pd,core_.nc,core_.nd)
+                #CM.pause()
+
 
             if not core_ == core: #progress
                 new_cores.add(sid)
@@ -854,6 +891,9 @@ class IGen(object):
 
             assert configs,configs
             cconfigs_d,xtime = self.eval_configs(configs)
+            print "cex {}".format(len(configs))
+            print '\n'.join(c.__str__(cconfigs_d[c]) for c in configs)
+            
             xtime_total += xtime
             new_covs,new_cores = Inferrence.infer_covs(cores_d,cconfigs_d,
                                                        configs_d,covs_d,self.dom)
@@ -934,7 +974,7 @@ class IGen(object):
             if sel_core is None:
                 break
             configs = self.gen_configs_sel_core(sel_core,configs_d)
-            configs = list(set(configs))        
+            configs = list(set(configs)) 
             if configs:
                 break
             else:
