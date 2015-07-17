@@ -2,6 +2,10 @@ import os.path
 import vu_common as CM
 import config as CF
 
+logger = CM.VLog('get_cov')
+logger.level = logger.level
+
+
 # Real executions
 def run_single(cmd):
     logger.detail(cmd)
@@ -57,36 +61,25 @@ def parse_gcov(gcov_file):
     sids = set("{}:{}".format(gcov_obj['file'],line) for line in sids)
     return sids
 
-
-class GC_D(object):
-    def __init__(var_names,
-                 prog_name,
-                 prog_exe,
-                 prog_dir, #only used for coreutils
-                 dir_,  #where execute prog_exe from
-                 get_cov_f):
-
-
-        assert os.path.isfile(prog_exe),prog_exe
-        assert os.path.isdir(dir_)
-        self.var_names = var_names
-        self.prog_name = prog_name
-        self.prog_exe = prog_exe
-        self.prog_dir = prog_dir
-        self.dir_ = dir_
-        self.get_cov_f = get_cov_f        
-        
+def check_data(data):
+    assert isinstance(data,dict) 
+    assert 'var_names' in data
+    assert 'prog_name' in data
+    assert 'prog_exe' in data
+    assert 'dir_' in data  #where execute prog_exe from
+    assert 'get_cov_f' in data
+                         
 def get_cov_wrapper(config,data):
     """
     If anything happens, return to current directory
     """
     if CM.__vdebug__:
-        assert isinstance(data,GC_D),data 
+        check_data(data)
         
     cur_dir = os.getcwd()
     try:
-        os.chdir(data.dir_)
-        rs = data.get_cov_f(config,data)
+        os.chdir(data['dir_'])
+        rs = data['get_cov_f'](config,data)
         os.chdir(cur_dir)
         return rs
     except:

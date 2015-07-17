@@ -37,7 +37,7 @@ def get_run_f(args):
         else:
             _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
                                                 seed=seed,tmpdir=tdir)
-    elif args.prog in Otter.avail_progs:
+    elif args.prog in Otter.db:
         dom,get_cov,pathconds_d=Otter.prepare(args.prog)
         igen = config.IGen(dom,get_cov,config_default=None)
         if args.do_full:
@@ -54,10 +54,10 @@ def get_run_f(args):
                                                 seed=seed,tmpdir=tdir)
     else:
         import get_cov_motiv as Motiv
-        import config_coreutils as Coreutils
+        #import config_coreutils as Coreutils
         
-        if args.prog in Motiv.xamples_d:
-            dom,get_cov=Motiv.prepare(examples_d[args.prog],args.prog)
+        if args.prog in Motiv.db:
+            dom,get_cov=Motiv.prepare(args.prog)
         elif args.prog in coreutils.coreutils_d:
             dom,get_cov=Coreutils.prepare(args.prog,do_perl=args.do_perl)
         else:
