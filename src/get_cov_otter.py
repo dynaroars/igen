@@ -7,10 +7,10 @@ from config import (getpath,Dom,Config,
 import config as CF
 import vu_common as CM
 
-logger = CM.VLog('coreutils')
-logger.level = CF.logger.level
+logger = CM.VLog('otter')
+logger.level = logger.level
 
-avail_progs = {"vsftpd":None,"ngircd":None}
+db = {"vsftpd":None,"ngircd":None}
 
 def prepare(prog):
     #dir_ = getpath('~/Src/Devel/iTree_stuff/expData/{}'.format(prog))
