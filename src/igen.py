@@ -5,7 +5,7 @@ from time import time
 import vu_common as CM
 import config
 
-def runscript_get_cov(config,run_script):
+def runscript_get_cov(config, run_script):
     inputs = ' , '.join(['{} {}'.format(vname,vval) for
                          vname,vval in config.iteritems()])
     cmd = "{} \"{}\"".format(run_script,inputs)
@@ -43,10 +43,9 @@ def get_run_f(args):
         if args.do_full:
             if args.rand_n:
                 _f = lambda _,tdir: Otter.do_full(
-                    dom,pathconds_d,n=args.rand_n,tmpdir=tdir)
-                    
+                    dom,pathconds_d,n=args.rand_n)
             else:
-                _f = lambda _,tdir: Otter.do_full(dom,pathconds_d)
+                _f = lambda _,tdir: Otter.do_full(dom,pathconds_d,n=None)
         elif args.rand_n is None:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
@@ -129,20 +128,20 @@ if __name__ == "__main__":
                          help="do benchmark")
 
     aparser.add_argument("--dom_file",
-                        help="the domain file",
-                        action="store")
+                         help="the domain file",
+                         action="store")
 
     aparser.add_argument("--run_script",
-                        help="a script running the subject program",
-                        action="store")
-
+                         help="a script running the subject program",
+                         action="store")
+    
     aparser.add_argument("--from_outfile",
                          help="cov output to a file (DEPRECATED)",
-                        action="store_true")
-
+                         action="store_true")
+    
     aparser.add_argument("--do_perl",
                          help="do coretutils written in perl",
-                        action="store_true")
+                         action="store_true")
     
     args = aparser.parse_args()
     prog = args.prog
