@@ -7,9 +7,10 @@ $ ./run_script "v1 0, v2 1, v3 1, v4 1, v5 0, v6 1, v7 3"
 /var/tmp/tvn.out
 
 $ less /var/tmp/tvn.out
-l3
-l4
-l9
+L2
+L3
+L4
+L5
 
 ^^^ So this testscript is something you make,  notice the formats of the input and of the output
 
@@ -23,20 +24,22 @@ v7 0 1 2 3
 
 3. You run igen.py as follow
 
-$ python igen.py --dom_file ex_motiv.dom --run_script run_script "progname"
+$python igen.py --dom_file ex_motiv.dom --run_script run_script "progname" --benchmark N --seed X 
 
-where "progname" is just some string, e.g., "exam motiv", that I use to identify your program
+where
+* "progname" is just some string, e.g., "exam motiv", that I use to identify your program
+* --benchmark N will run the N times , if you don't use this flag, it is equivalent to N=1, i.e., running 1 time
+* --seed X, set seed to X to reproduce these results. If use with --benchmark then the first run is X, second run is X+1, .. X+N
 
-You get a bunch of outputs with the last line looks something like this
+you should see lots of outputs with the last line looks something like this
 
-** done benchmark 'example', 1 runs, seed 1435177886.69, time 3.0952808857, results in '/var/tmp/vu_bmWgPxCP'
+** done benchmark 'progname', 3 runs, seed 0.0, time 6.63573384285, results in '/var/tmp/tnguyen_bm_DuIWC'
 
-***IMPORTANT: each time the script is run, it creates a temporary dir and save all results there (e.g., the dir '/var/tmp/vu_bmWgPxCP' above). SAVE this entire directory for future analysis. Of course if the run is not successfull, then you can delete the bad directory.
-
-4. SEED: you can reproduce experiment by using specific seed, e.g., 
-
-$ python igen.py --dom_file ex_motiv.dom --run_script run_script "progname" --seed 1
 
 In short, try to run this script on your program with some specific seed and make sure you get the same gen N configs at the end 
+
+
+***IMPORTANT: each time the script is run, it creates a temporary dir and save all results there (e.g., the dir '/var/tmp/yourusername_bmWgPxCP' above). SAVE this entire directory for future analysis. Of course if the run is not successfull, then you should delete the bad directory.
+
 
 
