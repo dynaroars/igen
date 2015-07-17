@@ -132,7 +132,7 @@ class Dom(OrderedDict):
         Read domain info from a file
         """
         if CM.__vdebug__:
-            assert os.path.isfile(dom_file), domfile
+            assert os.path.isfile(dom_file), dom_file
 
         def get_lines(lines):
             rs = (line.split() for line in lines)
@@ -157,7 +157,7 @@ class Dom(OrderedDict):
 
     def gen_configs_rand(self,rand_n):
         if CM.__vdebug__:
-            assert 0 < rand_n < dom.siz, (rand_n,self.siz)
+            assert 0 < rand_n < self.siz, (rand_n,self.siz)
 
         rgen = lambda: [(k,random.choice(list(self[k]))) for k in self]
         configs = list(set(Config(rgen()) for _ in range(rand_n)))

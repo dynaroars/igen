@@ -81,25 +81,26 @@ def get_ts_data(config,data):
             'tdir':os.path.join(data['main_dir'],'testfiles',data['prog_name'])}
 
 def get_cov_perl(config,args):
-    if CM.__vdebug__:
-        assert isinstance(config,Config),config
-        check_data(data)
+    pass
+    # if CM.__vdebug__:
+    #     assert isinstance(config,Config),config
+    #     check_data(data)
 
-    #clean up ?
+    # #clean up ?
     
-    #run testsuite
-    ts = db[data['prog_name']](get_ts_data(config,data))
-    ts = ["perl -MDevel::Cover {}".format(t) for t in ts]
-    outps = ts.run()
+    # #run testsuite
+    # ts = db[data['prog_name']](get_ts_data(config,data))
+    # ts = ["perl -MDevel::Cover {}".format(t) for t in ts]
+    # outps = ts.run()
 
-    #read traces
-    parse_script = 'perl parse_script'
-    sids = GC.run("{} {}".format(parse_script,os.getcwd()))
-    sids = set(sids)
-    if not sids:
-        logger.warn("config {} has NO cov".format(config))
+    # #read traces
+    # parse_script = 'perl parse_script'
+    # sids = GC.run("{} {}".format(parse_script,os.getcwd()))
+    # sids = set(sids)
+    # if not sids:
+    #     logger.warn("config {} has NO cov".format(config))
 
-    return sids,outps
+    # return sids,outps
 
 def get_cov_gcov(config,data):
     if CM.__vdebug__:
@@ -129,7 +130,7 @@ def get_cov_gcov(config,data):
         
     return sids,outps
 
-def check_data(data):
+def check_ts_data(data):
     assert isinstance(data,dict) 
     assert 'prog' in data
     assert 'opts' in data
@@ -140,7 +141,7 @@ class TestSuite_COREUTILS(object):
     __metaclass__ = abc.ABCMeta
     def __init__(self,data):
         if CM.__vdebug__:
-            check_data(data),data
+            check_ts_data(data),data
 
         self.prog = data['prog']
         self.opts = data['opts']
@@ -190,29 +191,32 @@ class TS_cat(TestSuite_COREUTILS):
         cmds.append("{} {} {}/small.jpg".format(self.prog,self.opts,self.cdir))
         
         cmds.append("{} {} {}/*".format(self.prog,self.opts,self.tdir)) #cat /path/*
-        cmds.append("{} {} {}/file1 {}/file2".format(self.prog,self.opts,self.tdir,self.tdir))
+        cmds.append("{} {} {}/file1 {}/file2".format(
+            self.prog,self.opts,self.tdir,self.tdir))
         cmds.append("ls /boot | {} {}".format(self.prog,self.opts)) #stdin
         #cat f1 - f2
-        cmds.append("ls /boot | {} {} {}/file1 - {}/file2".format(self.prog,self.opts,self.tdir,self.tdir)) 
-        cmds.append("{} /boot".format(self.prog,self.opts,self.tdir))
+        cmds.append("ls /boot | {} {} {}/file1 - {}/file2".format(
+            self.prog,self.opts,self.tdir,self.tdir)) 
+        cmds.append("{} {} {}".format(self.prog,self.opts,self.tdir))
         return cmds
 
-class TS_cp(TestSuite_COREUTILS):
-    def get_cmds(self):
-        cmds = []
-        cmds.append("{} {} {}/file1 {}".format(prog,opts,self.tdir,self.tdir))  #cp f .
-        #cp f1 f2
-        cmds.append("{} {} {}/files1 {}/files2; rm -rf {}/files2".format()) 
-        cmds.append("{} {} {}/small.jpg {}/small_t.jpg; rm -rf {}/small_t.jpg"
-                    .format(self.prog,self.opts,self.cdir,self.tdir,self.tdir))
-        cmds.append("rm -rf {}/tdir/*; {} {} {}/* {}/tdir"
-                    .format(tdir,prog,opts,cdir,self.tdir))
-        cmds.append("rm -rf {}/tdir/*; {} {} {}/binary.dat {}/file1 {}/tdir"
-                    .format(tdir,prog,opts,cdir,self.tdir,self.tdir))
-        #recursive copy
-        cmds.append("rm -rf {}/tdir/*; ".format(tdir) +
-                    "{} {} {}/dir2levels/ {}/tdir".format(prog,opts,self.tdir,self.tdir))
-        return cmds
+# class TS_cp(TestSuite_COREUTILS):
+#     def get_cmds(self):
+#         cmds = []
+#         cmds.append("{} {} {}/file1 {}".format(
+#             self.prog,self.opts,self.tdir,self.tdir))  #cp f .
+#         #cp f1 f2
+#         cmds.append("{} {} {}/files1 {}/files2; rm -rf {}/files2".format()) 
+#         cmds.append("{} {} {}/small.jpg {}/small_t.jpg; rm -rf {}/small_t.jpg"
+#                     .format(self.prog,self.opts,self.cdir,self.tdir,self.tdir))
+#         cmds.append("rm -rf {}/tdir/*; {} {} {}/* {}/tdir"
+#                     .format(tdir,prog,opts,cdir,self.tdir))
+#         cmds.append("rm -rf {}/tdir/*; {} {} {}/binary.dat {}/file1 {}/tdir"
+#                     .format(self.tdir,prog,opts,cdir,self.tdir,self.tdir))
+#         #recursive copy
+#         cmds.append("rm -rf {}/tdir/*; ".format(tdir) +
+#                     "{} {} {}/dir2levels/ {}/tdir".format(prog,opts,self.tdir,self.tdir))
+#         return cmds
 
 class TS_mv(TestSuite_COREUTILS):
     """
@@ -385,46 +389,46 @@ class TS_ln(TestSuite_COREUTILS):
 
         return cmds
     
-class TS_touch(TestSuite_COREUTILS):
-    def get_cmds(self):
-        cmds = []
-        cmds.append("rm -rf {}/* ;".format(tdir) +
-                    "{} {} {}/a {}/b".format(prog,exe,self.tdir))
+# class TS_touch(TestSuite_COREUTILS):
+#     def get_cmds(self):
+#         cmds = []
+#         cmds.append("rm -rf {}/* ;".format(tdir) +
+#                     "{} {} {}/a {}/b".format(prog,exe,self.tdir))
 
-        cmds.append("rm -rf {}/* ;".format(tdir) +
-                    "{} {} {}/a {}/b;".format(prog,exe,self.tdir)+
-                    "{} {} {}/*".format(prog,exe,self.tdir))
+#         cmds.append("rm -rf {}/* ;".format(tdir) +
+#                     "{} {} {}/a {}/b;".format(prog,exe,self.tdir)+
+#                     "{} {} {}/*".format(prog,exe,self.tdir))
 
-        cmds.append("rm -rf {}/*;".format(tdir) +
-                    "{} {} {}/a -d 'next Thursday'".format(prog,exe,self.tdir))
+#         cmds.append("rm -rf {}/*;".format(tdir) +
+#                     "{} {} {}/a -d 'next Thursday'".format(prog,exe,self.tdir))
 
-        cmds.append("rm -rf {}/*;".format(tdir) +
-                    "{} {} {}/a -r {}/binary.dat".format(prog,exe,cdir,self.tdir))
+#         cmds.append("rm -rf {}/*;".format(tdir) +
+#                     "{} {} {}/a -r {}/binary.dat".format(prog,exe,cdir,self.tdir))
 
-        cmds.append("rm -rf {}/*;".format(tdir) +
-                    "{} {} {}/a -t 15151730.55")
+#         cmds.append("rm -rf {}/*;".format(tdir) +
+#                     "{} {} {}/a -t 15151730.55")
 
-        cmds.append("rm -rf {}/*;".format(tdir) +
-                    "{} {} {}/a/".format(prog,exe,self.tdir))
+#         cmds.append("rm -rf {}/*;".format(tdir) +
+#                     "{} {} {}/a/".format(prog,exe,self.tdir))
 
-        cmds.append("rm -rf {}/tdi;r".format(self.tdir) +
-                    "{} {} {}/tdir;".format(self.prog,self.opts,self.tdir) +
-                    "{} {} {}/tdir -d '2012-10-19 12:12:12.000000000 +0530'"
-                    .format(self.prog,self.opts,self.tdir))
+#         cmds.append("rm -rf {}/tdi;r".format(self.tdir) +
+#                     "{} {} {}/tdir;".format(self.prog,self.opts,self.tdir) +
+#                     "{} {} {}/tdir -d '2012-10-19 12:12:12.000000000 +0530'"
+#                     .format(self.prog,self.opts,self.tdir))
         
-        cmds.append("{} {} /usr/bin")
-        return cmds
+#         cmds.append("{} {} /usr/bin")
+#         return cmds
 
 
-class TS_who(TestSuite_COREUTILS):
-    def get_cmds(self):
-        cmds = []
-        cmd.append("{} {}")
-        cmd.append("{} {} 'am i'")        
-        cmd.append("{} {} {}/junkfood_ringding_wtmp".format(prog,opts,self.tdir))
-        cmd.append("{} {} {}/notexist".format(prog,opts,self.tdir))        
+# class TS_who(TestSuite_COREUTILS):
+#     def get_cmds(self):
+#         cmds = []
+#         cmd.append("{} {}")
+#         cmd.append("{} {} 'am i'")        
+#         cmd.append("{} {} {}/junkfood_ringding_wtmp".format(prog,opts,self.tdir))
+#         cmd.append("{} {} {}/notexist".format(prog,opts,self.tdir))        
         
-        return cmds
+#         return cmds
 
 
     
