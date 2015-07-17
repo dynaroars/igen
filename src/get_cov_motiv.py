@@ -1,12 +1,12 @@
 #Motivation/Simple examples
 from config import (getpath,Config,Dom)
+import config as CF
 import get_cov as GC
 import vu_common as CM
 import os.path
 
 logger = CM.VLog('motiv')
-logger.level = logger.level
-
+logger.level = CF.logger.level
 
 db = {"ex_motiv1": "ex_motiv1",
       "ex_motiv1b": "ex_motiv1",

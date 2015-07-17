@@ -8,7 +8,7 @@ import config as CF
 import vu_common as CM
 
 logger = CM.VLog('otter')
-logger.level = logger.level
+logger.level = CF.logger.level
 
 db = {"vsftpd":None,"ngircd":None}
 

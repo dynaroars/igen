@@ -1,24 +1,24 @@
 import abc 
 import os.path
 import vu_common as CM
+from config import (getpath,Dom,Config)
 import config as CF
-import get_cov as CG
-from collections import namedtuple
+import get_cov as GC
 
 logger = CM.VLog('coreutils')
 logger.level = CF.logger.level
 
-TS_D = namedtupled('prog','opts','cdir','tdir')
+#TS_D = namedtupled('prog','opts','cdir','tdir')
 
 def prepare(prog_name,do_perl):
     if CM.__vdebug__:
         assert isinstance(prog_name,str),prog_name
         assert isinstance(do_perl,bool), do_perl
         
-    main_dir = CF.getpath('~/Dropbox/git/config/benchmarks/coreutils')
+    main_dir = getpath('../benchmarks/coreutils')
     dom_file = os.path.join(main_dir,"doms","{}.dom".format(prog_name))
-    dom_file = CF.getpath(dom_file)
-    dom,_ = CF.Dom.get_dom(dom_file)
+    dom_file = getpath(dom_file)
+    dom,_ = Dom.get_dom(dom_file)
     logger.info("dom_file '{}': {}".format(dom_file,dom))
     
     assert all(len(vs) >= 2 and "off" in vs 
@@ -37,12 +37,21 @@ def prepare(prog_name,do_perl):
     assert os.path.isfile(prog_exe),prog_exe
     logger.info("prog_exe: '{}'".format(prog_exe))
 
-    data = GC.GC_D(dom.keys(),prog_name,prog_exe,
-                   get_cov_perl if do_perl else get_cov_gcov,
-                   prog_dir,
-                   dir_,main_dir)
-    get_cov_f = lambda config: CF.get_cov_wrapper(config,data)
+    data = {'var_names':dom.keys(),
+            'prog_name':prog_name,
+            'prog_exe':prog_exe,
+            'get_cov_f': get_cov_perl if do_perl else get_cov_gcov,
+            'dir_':dir_,
+            'main_dir':main_dir,
+            'prog_dir':prog_dir}
+    get_cov_f = lambda config: GC.get_cov_wrapper(config,data)
     return dom,get_cov_f
+
+def check_data(data):
+    GC.check_data(data)
+    assert 'main_dir' in data
+    assert 'prog_dir' in data
+    
 
 def get_opts(config,ks):
     """
@@ -65,25 +74,27 @@ def get_opts(config,ks):
 
     return ' '.join(opts)
 
+def get_ts_data(config,data):
+    return {'prog':data['prog_exe'],
+            'opts':get_opts(config,data['var_names']),
+            'cdir':os.path.join(data['main_dir'],'testfiles','common'),
+            'tdir':os.path.join(data['main_dir'],'testfiles',data['prog_name'])}
 
 def get_cov_perl(config,args):
-    if __CM.vdebug__:
-        assert isinstance(data,GC_D), data
-    
+    if CM.__vdebug__:
+        assert isinstance(config,Config),config
+        check_data(data)
+
     #clean up ?
     
     #run testsuite
-    ts_data = TS_D(prog=data.prog_exe,
-                   opts=get_opts(config,data.var_names) ,
-                   cdir=os.path.join(data.main_dir,'testfiles','common'),
-                   tdir=os.path.join(data.main_dir,'testfiles',data.prog_name))
-    ts = coreutils_d[data.prog_name](ts_data)
+    ts = db[data['prog_name']](get_ts_data(config,data))
     ts = ["perl -MDevel::Cover {}".format(t) for t in ts]
     outps = ts.run()
 
     #read traces
     parse_script = 'perl parse_script'
-    sids = CF.run("{} {}".format(parse_script,os.getcwd()))
+    sids = GC.run("{} {}".format(parse_script,os.getcwd()))
     sids = set(sids)
     if not sids:
         logger.warn("config {} has NO cov".format(config))
@@ -91,29 +102,26 @@ def get_cov_perl(config,args):
     return sids,outps
 
 def get_cov_gcov(config,data):
-    if __CM.vdebug__:
-        assert isinstance(data,GC_D), data
+    if CM.__vdebug__:
+        assert isinstance(config,Config),config        
+        check_data(data)
         
     #cleanup
-    cmd = "rm -rf {}/*.gcov {}/*.gcda".format(data.dir_,data.prog_dir)
-    _ = CF.run(cmd,'cleanup')
+    cmd = "rm -rf {}/*.gcov {}/*.gcda".format(data['dir_'],data['prog_dir'])
+    _ = GC.run(cmd,'cleanup')
     
     #run testsuite
-    ts_data = TS_D(prog=data.prog_exe,
-                   opts=get_opts(config,data.var_names) ,
-                   cdir=os.path.join(data.main_dir,'testfiles','common'),
-                   tdir=os.path.join(data.main_dir,'testfiles',data.prog_name))
-    ts = coreutils_d[data.prog_name](ts_data)
+    ts = db[data['prog_name']](get_ts_data(config,data))
     outps = ts.run()
 
     #read traces from gcov
     #/path/prog.Linux.exe -> prog
-    src_dir = os.path.join(data.dir_,'src')
-    cmd = "gcov {} -o {}".format(data.prog_name,data.prog_dir)
-    _ = CF.run(cmd,'gcov')
+    src_dir = os.path.join(data['dir_'],'src')
+    cmd = "gcov {} -o {}".format(data['prog_name'],data['prog_dir'])
+    _ = GC.run(cmd,'gcov')
     
     gcov_dir = os.getcwd()
-    sids = (CF.parse_gcov(os.path.join(gcov_dir,f))
+    sids = (GC.parse_gcov(os.path.join(gcov_dir,f))
             for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
     sids = set(CM.iflatten(sids))
     if not sids:
@@ -121,23 +129,30 @@ def get_cov_gcov(config,data):
         
     return sids,outps
 
+def check_data(data):
+    assert isinstance(data,dict) 
+    assert 'prog' in data
+    assert 'opts' in data
+    assert 'cdir' in data
+    assert 'tdir' in data
+    
 class TestSuite_COREUTILS(object):
     __metaclass__ = abc.ABCMeta
     def __init__(self,data):
         if CM.__vdebug__:
-            assert isinstance(data,TS_D), data
+            check_data(data),data
 
-        self.prog = data.prog
-        self.opts = data.opts
-        self.cdir = data.cdir
-        self.tdir = data.tdir
+        self.prog = data['prog']
+        self.opts = data['opts']
+        self.cdir = data['cdir']
+        self.tdir = data['tdir']
 
     @abc.abstractmethod
     def get_cmds(self): pass
 
     def run(self):
         cmds = self.get_cmds()
-        outps = CF.run(cmds,'run testsuite')
+        outps = GC.run(cmds,'run testsuite')
         return outps
     
     @property
@@ -522,88 +537,12 @@ class TS_ls(TestSuite_COREUTILS):
         cmds.append("{} {} ..".format(self.prog,self.opts))
         return cmds
 
-    
- # #test 1
- #    cmds = []    
- #    cmds.append("touch a")
- #    cmds.append("ln {} a b".format(opts_str))
-
- #    #test 2
- #    cmds = []        
- #    cmds.append("mkdir d")
- #    cmds.append("ln {} d e".format(opts_str))
- #    myexec(test_dir,cmds)
-    
- #    #from coreutils tests
- #    #test 3  # d/f -> ../f
- #    cmds = []        
- #    cmds.append("mkdir d")
- #    cmds.append("ln {} --target_dir=d ../f".format(opts_str))
- #    myexec(test_dir,cmds)
-    
- #    #test 4
- #    # Check that a target directory of '.' is supported
- #    # and that indirectly specifying the same target and link name
- #    # through that is detected.
- #    cmds = []        
- #    cmds.append("ln {} . b".format(opts_str))
- #    cmd.append("echo foo > a")      
- #    cmds.append("ln {} a b > err 2>&1)".format(opts_str))
- #    myexec(test_dir,cmds)
-
-
-coreutils_d = {'date': TS_date,
-               'ls': TS_ls,
-               'ln': TS_ln,
-               'sort': TS_sort,
-               'id': TS_id,
-               'mv': TS_mv,
-               'ln': TS_ln,  
-               'uname': TS_uname,
-               'cat':TS_cat}
-
-
-# def testsuite_md5sum(args):
-#     """
-#     """
-#     if CM.__vdebug__:
-#         assert isinstance(args,dict),args
-#         assert 'opts' in args
-#         assert 'prog_exe' in args
-#         assert 'testfiles_dir' in args        
-
-#     prog_exe = args['prog_exe']
-#     opts = args['opts']
-#     tdir = args['testfiles_dir']
-
-#     cmds = []
-#     cmds.append("{} {} {}/file1".format(self.prog,self.opts,self.tdir))
-#     cmds.append("{} {} {}/file2".format(self.prog,self.opts,self.tdir))
-#     cmds.append("{} {} {}/binary.dat".format(self.prog,self.opts,self.tdir))    
-#     cmds.append("{} {} {}/file1 {}/binary.dat".format(self.prog,self.opts,self.tdir,self.tdir))
-#     cmds.append("{} {} {}/*".format(self.prog,self.opts,self.tdir))
-#     cmds.append("cat {}/file1 | {} {} -".format(tdir,self.prog,self.opts))    
-#     cmds.append("{} {} {}/results.md5".format(self.prog,self.opts,self.tdir))
-#     cmds.append("{} {} {}/results_failed.md5".format(self.prog,self.opts,self.tdir))
-    
-#     CF.void_run(cmds)
-    
-
-
-
-# def get_cov_common(args):
-#     """
-#     >>> args = {'prog_dir': '/home/tnguyen/Dropbox/git/config/benchmarks/coreutils/coreutils/obj-gcov/src', 'var_names': ['-a', '-s', '-n', '-r', '-v', '-m', '-p', '-i', '-o', '--help', '--version'], 'dir_': '/home/tnguyen/Dropbox/git/config/benchmarks/coreutils/coreutils/src', 'prog_exe': '/home/tnguyen/Dropbox/git/config/benchmarks/coreutils/coreutils/obj-gcov/src/uname', 'prog_name': 'uname'}
-#     >>> config = HDict([('-a', 'on'), ('-s', 'off'), ('-n', 'off'), ('-r', 'off'), ('-v', 'off'), ('-m', 'off'), ('-p', 'off'), ('-i', 'off'), ('-o', 'off'), ('--help', 'off'), ('--version', 'off')])
-
-#     #>>> sids = get_cov_coreutils(config,args);  len(sids) == 
-#     """
-#     if CM.__vdebug__:
-#         assert isinstance(args,dict), args
-#         assert 'main_dir' in args
-#         assert 'dir_' in args
-#         assert 'prog_dir' in args
-#         assert 'prog_name' in args
-#         assert 'prog_exe' in args
-#         assert 'var_names' in args
-
+db = {'date': TS_date,
+      'ls': TS_ls,
+      'ln': TS_ln,
+      'sort': TS_sort,
+      'id': TS_id,
+      'mv': TS_mv,
+      'ln': TS_ln,  
+      'uname': TS_uname,
+      'cat':TS_cat}

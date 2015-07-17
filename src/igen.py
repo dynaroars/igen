@@ -54,11 +54,11 @@ def get_run_f(args):
                                                 seed=seed,tmpdir=tdir)
     else:
         import get_cov_motiv as Motiv
-        #import config_coreutils as Coreutils
+        import get_cov_coreutils as Coreutils
         
         if args.prog in Motiv.db:
             dom,get_cov=Motiv.prepare(args.prog)
-        elif args.prog in coreutils.coreutils_d:
+        elif args.prog in Coreutils.db:
             dom,get_cov=Coreutils.prepare(args.prog,do_perl=args.do_perl)
         else:
             raise AssertionError("unrecognized prog '{}'".format(args.prog))
