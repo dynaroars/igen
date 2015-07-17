@@ -4,7 +4,6 @@ from time import time
 
 import vu_common as CM
 import config
-import config_coreutils
 
 def runscript_get_cov(config,run_script):
     inputs = ' , '.join(['{} {}'.format(vname,vval) for
@@ -25,11 +24,8 @@ def runscript_get_cov(config,run_script):
 def get_run_f(args):
 
     import get_cov_otter as Otter
-    import get_cov_motiv as Motiv
-    import config_coreutils as Coreutils
         
-    
-    if args.dom_file:  #general way to run program
+    if args.dom_file:  #general way to run program using a runscript
         dom,config_default = config.Dom.get_dom(
             os.path.realpath(args.dom_file))
         run_script = os.path.realpath(args.run_script)
@@ -41,7 +37,7 @@ def get_run_f(args):
         else:
             _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
                                                 seed=seed,tmpdir=tdir)
-    elif args.prog in Otter.otter_d:
+    elif args.prog in Otter.avail_progs:
         dom,get_cov,pathconds_d=Otter.prepare(args.prog)
         igen = config.IGen(dom,get_cov,config_default=None)
         if args.do_full:
@@ -57,6 +53,9 @@ def get_run_f(args):
             _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
                                                 seed=seed,tmpdir=tdir)
     else:
+        import get_cov_motiv as Motiv
+        import config_coreutils as Coreutils
+        
         if args.prog in Motiv.xamples_d:
             dom,get_cov=Motiv.prepare(examples_d[args.prog],args.prog)
         elif args.prog in coreutils.coreutils_d:
