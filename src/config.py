@@ -304,14 +304,27 @@ class MCore(tuple):
 
 class SCore(MCore):
     def __init__(self,(mc,sc)):
+        """
+        mc: main core that will generate cex's
+        sc (if not None): sat core that is satisfied by all generated cex'
+        """
         super(SCore,self).__init__((mc,sc))
-
         #additional assertion
         if CM.__vdebug__:
             assert isinstance(mc,Core) and mc, mc
             #sc is not None => ...
             assert not sc or all(k not in mc for k in sc), sc
+            #assert isinstance(keep,bool), mc
+        self.keep = False
 
+    def set_keep(self):
+        """
+        keep: if true then generated cex's with diff settings than mc 
+        and also those that have the settings of mc
+        """
+        
+        self.keep = True
+    
     @property
     def mc(self): return self[0]
 
@@ -320,12 +333,17 @@ class SCore(MCore):
 
     def __str__(self):
         ss = []
-        if self.mc: ss.append("mc: {}".format(self.mc))
-        if self.sc: ss.append("sc: {}".format(self.sc))
+        if self.mc:
+            ss.append("mc{}: {}".format("(keep)" if self.keep else "",self.mc))
+                      
+        if self.sc:
+            ss.append("sc: {}".format(self.sc))
         return ';'.join(ss)        
         
     @staticmethod
-    def mk_default(): return MCore((None,None))
+    def mk_default(): return SCore((None,None))
+        
+        
 
 class PNCore(MCore):
     def __init__(self,(pc,pd,nc,nd)):
@@ -695,7 +713,7 @@ class Inferrence(object):
         pc,pd,nc,nd = core
         
         pconfigs = [c for c in cconfigs_d if sid in cconfigs_d[c]]
-
+ 
         if nc is None:
             #never done nc, so has to consider all traces
             nconfigs = [c for c in configs_d if sid not in configs_d[c]]
@@ -703,18 +721,11 @@ class Inferrence(object):
             #done nc, so can do incremental traces
             nconfigs = [c for c in cconfigs_d if sid not in cconfigs_d[c]]
             
-            
         _b = lambda: [c for c in configs_d if sid not in configs_d[c]]
         pc_,pd_ = _f(pconfigs,pc,pd,_b)
         
         _b = lambda: covs_d[sid]
         nc_,nd_ = _f(nconfigs,nc,nd,_b)
-        # if sid == "L5":
-        #     print "L5 get here"
-        #     print '\n'.join(c.__str__(configs_d[c]) for c in nconfigs)
-        #     print nc
-        #     print nc_
-        #     CM.pause()
         return PNCore((pc_,pd_,nc_,nd_))
 
     @staticmethod
@@ -748,32 +759,6 @@ class Inferrence(object):
 
             core_ = Inferrence.infer_sid(sid,core,cconfigs_d,
                                          configs_d,covs_d,dom,cache)
-            if sid == "L5":
-                print sid
-                p_cconfs = [c for c in cconfigs_d if sid in cconfigs_d[c]]
-                print 'cconfigs P {}'.format(len(p_cconfs))
-                print '\n'.join(c.__str__(cconfigs_d[c]) for c in p_cconfs)
-
-                n_cconfs = [c for c in cconfigs_d if sid not in cconfigs_d[c]]
-                print 'cconfigs N {}'.format(len(n_cconfs))
-                print '\n'.join(c.__str__(cconfigs_d[c]) for c in n_cconfs)
-                
-                p_confs = [c for c in configs_d if sid in configs_d[c]]
-                print 'configs P {}'.format(len(p_confs))
-                print '\n'.join(c.__str__(configs_d[c]) for c in p_confs)
-
-                n_confs = [c for c in configs_d if sid not in configs_d[c]]
-                print 'configs N {}'.format(len(n_confs))
-                print '\n'.join(c.__str__(configs_d[c]) for c in n_confs)
-                
-                
-                print "core",core
-                #print "core details",(core.pc,core.pd,core.nc,core.nd)
-                print "core_",core_
-                #print "core_ details",(core_.pc,core_.pd,core_.nc,core_.nd)
-                #CM.pause()
-
-
             if not core_ == core: #progress
                 new_cores.add(sid)
                 cores_d[sid] = core_
@@ -891,9 +876,6 @@ class IGen(object):
 
             assert configs,configs
             cconfigs_d,xtime = self.eval_configs(configs)
-            print "cex {}".format(len(configs))
-            print '\n'.join(c.__str__(cconfigs_d[c]) for c in configs)
-            
             xtime_total += xtime
             new_covs,new_cores = Inferrence.infer_covs(cores_d,cconfigs_d,
                                                        configs_d,covs_d,self.dom)
@@ -997,9 +979,26 @@ class IGen(object):
         if CM.__vdebug__:
             assert isinstance(sel_core,SCore),sel_core
 
+        configs = []            
         core,sat_core = sel_core
+        existing_configs = [c.z3expr(self.z3db) for c in configs_d]
+
+        #keep
+        ndiff = len(self.dom) - len(core)
+        if ndiff and sel_core.keep:
+            core_expr = core.z3expr(self.z3db,z3util.myAnd)            
+            for _ in range(ndiff):
+                model = self.get_sat_core(core_expr,z3util.myOr(existing_configs))
+                if not model:
+                    continue
+                config = self.config_of_model(model)
+                configs.append(config)                
+                existing_configs.append(config.z3expr(self.z3db))
+
+        #change
         _new = lambda : Core((k,core[k]) for k in core)
-        changes = []
+        existing_configs_expr = z3util.myOr(existing_configs)
+        changes = []        
         for k in core:
             vs = self.dom[k]-core[k]
             for v in vs:
@@ -1011,9 +1010,6 @@ class IGen(object):
                         new_core[sk] = sv
                 changes.append(new_core)
 
-        existing_configs_expr = z3util.myOr([c.z3expr(self.z3db) for c in configs_d])
-
-        configs = []
         for changed_core in changes:
             core_expr = changed_core.z3expr(self.z3db,z3util.myAnd)
             model = self.get_sat_core(core_expr,existing_configs_expr)
@@ -1123,15 +1119,21 @@ class IGen(object):
         sel_cores = []
         for (pc,pd,nc,nd) in pncores:
             if pc and (pc,None) not in ignore_sel_cores:
-                sel_cores.append(SCore((pc,None)))
+                sc = SCore((pc,None))
+                if pd is None: sc.set_keep()
+                sel_cores.append(sc)
             elif pd and (pd,pc) not in ignore_sel_cores:
-                sel_cores.append(SCore((pd,pc)))
+                sc = SCore((pd,pc))
+                sel_cores.append(sc)
 
             if nc and (nc,None) not in ignore_sel_cores:
-                sel_cores.append(SCore((nc,None)))
+                sc = SCore((nc,None))
+                if nd is None: sc.set_keep()                
+                sel_cores.append(sc)
             elif nd and (nd,nc) not in ignore_sel_cores:
-                sel_cores.append(SCore((nd,nc)))
-
+                sc = SCore((nd,nc))
+                sel_cores.append(sc)
+                
         #print "ms", min_stren
         sel_cores = [c for c in sel_cores if c.sstren >= min_stren]
 
