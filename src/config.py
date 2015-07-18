@@ -314,7 +314,6 @@ class SCore(MCore):
             assert isinstance(mc,Core) and mc, mc
             #sc is not None => ...
             assert not sc or all(k not in mc for k in sc), sc
-            #assert isinstance(keep,bool), mc
         self.keep = False
 
     def set_keep(self):
@@ -322,7 +321,6 @@ class SCore(MCore):
         keep: if true then generated cex's with diff settings than mc 
         and also those that have the settings of mc
         """
-        
         self.keep = True
     
     @property
@@ -640,7 +638,7 @@ class Mcores_d(CustDict):
                          for siz,ncores,ncov in strens)
     
 #Inference algorithm
-class Inferrence(object):
+class Infer(object):
     @staticmethod
     def infer(configs,core,dom):
         """
@@ -681,7 +679,7 @@ class Inferrence(object):
         configs = frozenset(configs)
         key = (core,configs)
         if key not in cache:
-            cache[key] = Inferrence.infer(configs,core,dom)
+            cache[key] = Infer.infer(configs,core,dom)
         return cache[key]
 
     @staticmethod
@@ -698,12 +696,12 @@ class Inferrence(object):
         def _f(configs,cc,cd,_b):
             new_cc,new_cd = cc,cd
             if configs:
-                new_cc = Inferrence.infer_cache(cc,configs,dom,cache)
+                new_cc = Infer.infer_cache(cc,configs,dom,cache)
                 
             if do_comb_conj_disj and new_cc:
                 configs_ = [c for c in _b() if c.c_implies(new_cc)]
                 if configs_:
-                    new_cd = Inferrence.infer_cache(cd,configs_,dom,cache)
+                    new_cd = Infer.infer_cache(cd,configs_,dom,cache)
                     if new_cd:
                         new_cd = Core((k,v) for (k,v) in new_cd.iteritems()
                                       if k not in new_cc)
@@ -757,7 +755,7 @@ class Inferrence(object):
                 core = PNCore.mk_default()
                 new_covs.add(sid)
 
-            core_ = Inferrence.infer_sid(sid,core,cconfigs_d,
+            core_ = Infer.infer_sid(sid,core,cconfigs_d,
                                          configs_d,covs_d,dom,cache)
             if not core_ == core: #progress
                 new_cores.add(sid)
@@ -849,8 +847,8 @@ class IGen(object):
             
         cconfigs_d,xtime = self.eval_configs(configs)
         xtime_total += xtime
-        new_covs,new_cores = Inferrence.infer_covs(cores_d,cconfigs_d,
-                                                   configs_d,covs_d,self.dom)
+        new_covs,new_cores = Infer.infer_covs(cores_d,cconfigs_d,
+                                              configs_d,covs_d,self.dom)
         while True:
             ct_ = time();itime = ct_ - ct;ct = ct_
             dtrace = DTrace(cur_iter,itime,xtime,
@@ -877,8 +875,8 @@ class IGen(object):
             assert configs,configs
             cconfigs_d,xtime = self.eval_configs(configs)
             xtime_total += xtime
-            new_covs,new_cores = Inferrence.infer_covs(cores_d,cconfigs_d,
-                                                       configs_d,covs_d,self.dom)
+            new_covs,new_cores = Infer.infer_covs(cores_d,cconfigs_d,
+                                                  configs_d,covs_d,self.dom)
 
             if new_covs or new_cores: #progress
                 cur_stuck = 0
@@ -984,21 +982,12 @@ class IGen(object):
         existing_configs = [c.z3expr(self.z3db) for c in configs_d]
 
         #keep
-        ndiff = len(self.dom) - len(core)
-        if ndiff and sel_core.keep:
-            core_expr = core.z3expr(self.z3db,z3util.myAnd)            
-            for _ in range(ndiff):
-                model = self.get_sat_core(core_expr,z3util.myOr(existing_configs))
-                if not model:
-                    continue
-                config = self.config_of_model(model)
-                configs.append(config)                
-                existing_configs.append(config.z3expr(self.z3db))
+        changes = []        
+        if sel_core.keep and (len(self.dom) - len(core)):
+            changes.append(core)
 
         #change
         _new = lambda : Core((k,core[k]) for k in core)
-        existing_configs_expr = z3util.myOr(existing_configs)
-        changes = []        
         for k in core:
             vs = self.dom[k]-core[k]
             for v in vs:
@@ -1012,11 +1001,12 @@ class IGen(object):
 
         for changed_core in changes:
             core_expr = changed_core.z3expr(self.z3db,z3util.myAnd)
-            model = self.get_sat_core(core_expr,existing_configs_expr)
+            model = self.get_sat_core(core_expr,z3util.myOr(existing_configs))
             if not model:
                 continue
             config = self.config_of_model(model)
             configs.append(config)
+            existing_configs.append(config.z3expr(self.z3db))
             if CM.__vdebug__:
                 assert config.c_implies(changed_core)
 
@@ -1259,7 +1249,7 @@ class Analysis(object):
                 mcores_d.strens)
 
     @staticmethod
-    def replay_dirs(dir_,strength_thres=100000000):
+    def replay_dirs(dir_):
         dir_ = getpath(dir_)
         logger.info("replay_dirs '{}'".format(dir_))
         
@@ -1291,9 +1281,6 @@ class Analysis(object):
         for i,strens in enumerate(strens_s):
             logger.debug("run {}: {}".format(i+1,Mcores_d.str_of_strens(strens)))
             for strength,ninters,ncov in strens:
-                if strength >= strength_thres:
-                    strength = strength_thres
-
                 if strength not in sres:
                     sres[strength] = ([ninters],[ncov])
                 else:

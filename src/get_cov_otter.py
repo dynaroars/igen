@@ -3,7 +3,7 @@ import random
 import os
 from config import (getpath,Dom,Config,
                     Configs_d,Cores_d,Covs_d,
-                    Inferrence,Analysis)
+                    Infer,Analysis)
 import config as CF
 import vu_common as CM
 
@@ -73,7 +73,7 @@ def do_full(dom,pathconds_d,n=None):
     logger.info("use {} configs".format(len(cconfigs_d)))
     st = time()
     cores_d,configs_d,covs_d = Cores_d(),Configs_d(),Covs_d()
-    _ = Inferrence.infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom)
+    _ = Infer.infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom)
     pp_cores_d = cores_d.analyze(covs_d,dom)
     pp_cores_d.show_analysis(dom)
 
