@@ -26,7 +26,7 @@ def prepare(prog_name,do_perl):
         prog_dir = os.path.join(main_dir,'coreutils_perl')
         dir_ = None
         prog_exe = "@@@"+prog_name
-        
+        get_cov_f = get_cov_perl
     else:
         bdir = os.path.join(main_dir,'coreutils')
         prog_dir = os.path.join(bdir,'obj-gcov','src')
@@ -35,11 +35,12 @@ def prepare(prog_name,do_perl):
         prog_exe = os.path.join(prog_dir,prog_name)        
         assert os.path.isfile(prog_exe),prog_exe
         logger.info("prog_exe: '{}'".format(prog_exe))
+        get_cov_f = get_cov_gcov
 
     data = {'var_names':dom.keys(),
             'prog_name':prog_name,
             'prog_exe':prog_exe,
-            'get_cov_f': get_cov_perl if do_perl else get_cov_gcov,
+            'get_cov_f': get_cov_f,
             'dir_':dir_,
             'main_dir':main_dir,
             'prog_dir':prog_dir}
@@ -90,7 +91,8 @@ def get_cov_perl(config,data):
     sids = set(CM.iflatten(sids))
     if not sids:
         logger.warn("config {} has NO cov".format(config))
-        
+
+    print len(sids)
     return sids,[]
 
 def get_cov_gcov(config,data):
@@ -151,13 +153,10 @@ class TestSuite_COREUTILS(object):
         cmds = self.get_cmds()
         sids = []
         for cmd in cmds:
-            print cmd
             sids_ = GC.run_runscript('perlCoverage.pl',cmd)
             sids.append(sids_)
         return sids
 
-        
-    
     @property
     def cmd_default(self): return "{} {}".format(self.prog,self.opts)
 
