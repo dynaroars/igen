@@ -843,6 +843,7 @@ class IGen(object):
         
         configs = self.gen_configs_init(rand_n,seed)
         if self.config_default:
+            logger.debug("add default config")
             configs.append(self.config_default)
             
         cconfigs_d,xtime = self.eval_configs(configs)
@@ -979,7 +980,6 @@ class IGen(object):
 
         configs = []            
         core,sat_core = sel_core
-        existing_configs = [c.z3expr(self.z3db) for c in configs_d]
 
         #keep
         changes = []        
@@ -999,6 +999,7 @@ class IGen(object):
                         new_core[sk] = sv
                 changes.append(new_core)
 
+        existing_configs = [c.z3expr(self.z3db) for c in configs_d]                
         for changed_core in changes:
             core_expr = changed_core.z3expr(self.z3db,z3util.myAnd)
             model = self.get_sat_core(core_expr,z3util.myOr(existing_configs))
