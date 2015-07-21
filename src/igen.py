@@ -5,19 +5,14 @@ from time import time
 import vu_common as CM
 import config
 
+
 def runscript_get_cov(config, run_script):
+
     inputs = ' , '.join(['{} {}'.format(vname,vval) for
                          vname,vval in config.iteritems()])
-    cmd = "{} \"{}\"".format(run_script,inputs)
-    try:
-        rs_outp,rs_err = CM.vcmd(cmd)
-    except Exception as e:
-        raise AssertionError("error: cmd '{}' fails, raise: {}".format(cmd,e))
-    cov_filename  = [l for l in rs_outp.split('\n') if l]
-    assert len(cov_filename) == 1, (cmd,rs_outp,cov_filename)
-    cov_filename = cov_filename[0]
-    cov = set(CM.iread_strip(cov_filename))
-    print "read {} covs from '{}'".format(len(cov),cov_filename)
+
+    import get_cov
+    cov = get_cov.run_runscript(run_script,inputs)
     return cov,[]
     
 
@@ -30,16 +25,16 @@ def get_run_f(args):
             os.path.realpath(args.dom_file))
         run_script = os.path.realpath(args.run_script)
         assert os.path.isfile(run_script)
-        get_cov = lambda config: runscript_get_cov(config,run_script)
-        igen = config.IGen(dom,get_cov,config_default=config_default)
+        get_cov_f = lambda config: runscript_get_cov(config,run_script)
+        igen = config.IGen(dom,get_cov_f,config_default=config_default)
         if args.rand_n:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
             _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
                                                 seed=seed,tmpdir=tdir)
     elif args.prog in Otter.db:
-        dom,get_cov,pathconds_d=Otter.prepare(args.prog)
-        igen = config.IGen(dom,get_cov,config_default=None)
+        dom,get_cov_f,pathconds_d=Otter.prepare(args.prog)
+        igen = config.IGen(dom,get_cov_f,config_default=None)
         if args.do_full:
             if args.rand_n:
                 _f = lambda _,tdir: Otter.do_full(
@@ -56,13 +51,13 @@ def get_run_f(args):
         import get_cov_coreutils as Coreutils
         
         if args.prog in Motiv.db:
-            dom,get_cov=Motiv.prepare(args.prog)
+            dom,get_cov_f=Motiv.prepare(args.prog)
         elif args.prog in Coreutils.db:
-            dom,get_cov=Coreutils.prepare(args.prog,do_perl=args.do_perl)
+            dom,get_cov_f=Coreutils.prepare(args.prog,do_perl=args.do_perl)
         else:
             raise AssertionError("unrecognized prog '{}'".format(args.prog))
 
-        igen = config.IGen(dom,get_cov,config_default=None)
+        igen = config.IGen(dom,get_cov_f,config_default=None)
         if args.do_full:
             _f = lambda _,tdir: igen.go_full(tmpdir=tdir)
         elif args.rand_n is None:
