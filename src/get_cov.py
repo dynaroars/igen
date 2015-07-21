@@ -5,6 +5,8 @@ import config as CF
 logger = CM.VLog('get_cov')
 logger.level = CF.logger.level
 
+
+    
 # Real executions
 def run_single(cmd):
     logger.detail(cmd)
@@ -36,7 +38,25 @@ def run_single(cmd):
     
     except Exception as e:
         raise AssertionError("cmd '{}' fails, raise error: {}".format(cmd,e))
-    
+
+
+
+def run_runscript(run_script,arg):
+    """
+    Exec runscript on arg and return a single line representing the cov file
+    E.g., ./runscript.sh "args"
+    """
+
+    cmd = "{} \"{}\"".format(run_script,arg)
+    rs_outp,rs_err = run_single(cmd)
+    cov_filename  = [l for l in rs_outp.split('\n') if l]
+    assert len(cov_filename) == 1, (cmd,rs_outp,cov_filename)
+    cov_filename = cov_filename[0]
+    cov = set(CM.iread_strip(cov_filename))
+    print "read {} covs from '{}'".format(len(cov),cov_filename)
+    return cov
+
+
 def run(cmds,msg=''):
     "just exec command, does not return anything"
     assert cmds, cmds
@@ -77,7 +97,8 @@ def get_cov_wrapper(config,data):
         
     cur_dir = os.getcwd()
     try:
-        os.chdir(data['dir_'])
+        if data['dir_']:
+            os.chdir(data['dir_'])
         rs = data['get_cov_f'](config,data)
         os.chdir(cur_dir)
         return rs

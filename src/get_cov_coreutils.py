@@ -8,8 +8,6 @@ import get_cov as GC
 logger = CM.VLog('coreutils')
 logger.level = CF.logger.level
 
-#TS_D = namedtupled('prog','opts','cdir','tdir')
-
 def prepare(prog_name,do_perl):
     if CM.__vdebug__:
         assert isinstance(prog_name,str),prog_name
@@ -27,15 +25,16 @@ def prepare(prog_name,do_perl):
     if do_perl:
         prog_dir = os.path.join(main_dir,'coreutils_perl')
         dir_ = None
+        prog_exe = "@@@"+prog_name
+        
     else:
         bdir = os.path.join(main_dir,'coreutils')
         prog_dir = os.path.join(bdir,'obj-gcov','src')
         dir_ = os.path.join(bdir,'src')
         assert os.path.isdir(dir_)
-        
-    prog_exe = os.path.join(prog_dir,prog_name)
-    assert os.path.isfile(prog_exe),prog_exe
-    logger.info("prog_exe: '{}'".format(prog_exe))
+        prog_exe = os.path.join(prog_dir,prog_name)        
+        assert os.path.isfile(prog_exe),prog_exe
+        logger.info("prog_exe: '{}'".format(prog_exe))
 
     data = {'var_names':dom.keys(),
             'prog_name':prog_name,
@@ -80,27 +79,19 @@ def get_ts_data(config,data):
             'cdir':os.path.join(data['main_dir'],'testfiles','common'),
             'tdir':os.path.join(data['main_dir'],'testfiles',data['prog_name'])}
 
-def get_cov_perl(config,args):
-    pass
-    # if CM.__vdebug__:
-    #     assert isinstance(config,Config),config
-    #     check_data(data)
+def get_cov_perl(config,data):
+    if CM.__vdebug__:
+        assert isinstance(config,Config),config
+        check_data(data)
 
-    # #clean up ?
-    
-    # #run testsuite
-    # ts = db[data['prog_name']](get_ts_data(config,data))
-    # ts = ["perl -MDevel::Cover {}".format(t) for t in ts]
-    # outps = ts.run()
-
-    # #read traces
-    # parse_script = 'perl parse_script'
-    # sids = GC.run("{} {}".format(parse_script,os.getcwd()))
-    # sids = set(sids)
-    # if not sids:
-    #     logger.warn("config {} has NO cov".format(config))
-
-    # return sids,outps
+    #run perlCoverage.pl script
+    ts = db[data['prog_name']](get_ts_data(config,data))
+    sids = ts.run_perl()
+    sids = set(CM.iflatten(sids))
+    if not sids:
+        logger.warn("config {} has NO cov".format(config))
+        
+    return sids,[]
 
 def get_cov_gcov(config,data):
     if CM.__vdebug__:
@@ -155,6 +146,17 @@ class TestSuite_COREUTILS(object):
         cmds = self.get_cmds()
         outps = GC.run(cmds,'run testsuite')
         return outps
+
+    def run_perl(self):
+        cmds = self.get_cmds()
+        sids = []
+        for cmd in cmds:
+            print cmd
+            sids_ = GC.run_runscript('perlCoverage.pl',cmd)
+            sids.append(sids_)
+        return sids
+
+        
     
     @property
     def cmd_default(self): return "{} {}".format(self.prog,self.opts)
