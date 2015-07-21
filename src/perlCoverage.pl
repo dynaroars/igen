@@ -32,14 +32,14 @@ $te->parse_file("cover_db/ppt-0-14-bin-$prog_name.html");
 my @tables = $te->tables;
 my $counter = 0;
 for my $row ($tables[1]->rows) {
-    no warnings 'uninitialized';
-    if (length $row){
-	if ($tables[1]->cell($counter,1) > 0){
-	    my $lineNumber=$tables[1]->cell($counter,0);
-	    `echo $lineNumber >> $covFile 2>&1`;
-	}
-	$counter++;
-    }
+   no warnings 'uninitialized';
+   if (length $row){
+      if ($tables[1]->cell($counter,1) > 0){
+         my $lineNumber=$tables[1]->cell($counter,0);
+         `echo $lineNumber >> $covFile 2>&1`;
+      }
+      $counter++;
+   }
 }
 
 `rm -fr cover_db/`; #cleaning
