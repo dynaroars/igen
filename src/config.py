@@ -336,7 +336,7 @@ class SCore(MCore):
                       
         if self.sc:
             ss.append("sc: {}".format(self.sc))
-        return ';'.join(ss)        
+        return '; '.join(ss)        
         
     @staticmethod
     def mk_default(): return SCore((None,None))
