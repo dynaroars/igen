@@ -139,7 +139,6 @@ if __name__ == "__main__":
                          action="store_true")
     
     args = aparser.parse_args()
-    prog = args.prog
     config.logger.level = args.logger_level
     CM.__vdebug__ = args.debug
 
@@ -151,19 +150,17 @@ if __name__ == "__main__":
         config.analyze_outps = True
         
     if args.replay:
-        config.Analysis.replay(prog)
+        config.Analysis.replay(args.prog)
         exit(0)
     elif args.replay_dirs:
-        config.Analysis.replay_dirs(prog)
+        config.Analysis.replay_dirs(args.prog)
         exit(0)
 
     nruns = args.benchmark if args.benchmark else 1
     _f = get_run_f(args)
 
     import getpass
-    d_prefix = "{}_bm".format(getpass.getuser())
-    if args.prog:
-        d_prefix = "{}_{}".format(d_prefix,args.prog)
+    d_prefix = "{}_bm_{}_".format(getpass.getuser(),args.prog)
 
     tdir = tempfile.mkdtemp(dir='/var/tmp',prefix=d_prefix)
                             
