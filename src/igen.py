@@ -162,6 +162,9 @@ if __name__ == "__main__":
 
     import getpass
     d_prefix = "{}_bm".format(getpass.getuser())
+    if args.prog:
+        d_prefix = "{}_{}".format(d_prefix,args.prog)
+
     tdir = tempfile.mkdtemp(dir='/var/tmp',prefix=d_prefix)
                             
     st = time()
