@@ -311,7 +311,7 @@ class SCore(MCore):
         super(SCore,self).__init__((mc,sc))
         #additional assertion
         if CM.__vdebug__:
-            assert isinstance(mc,Core) and mc, mc
+            assert mc is None or isinstance(mc,Core) and mc, mc
             #sc is not None => ...
             assert not sc or all(k not in mc for k in sc), sc
         self.keep = False

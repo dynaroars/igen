@@ -45,8 +45,6 @@ def run_runscript(run_script,arg):
     """
 
     cmd = "{} \"{}\"".format(run_script,arg)
-    print cmd
-    CM.pause()
     rs_outp,rs_err = run_single(cmd)
     cov_filename  = [l for l in rs_outp.split('\n') if l]
     assert len(cov_filename) == 1, (cmd,rs_outp,cov_filename)
