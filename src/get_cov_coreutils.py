@@ -177,7 +177,9 @@ class TS_id(TestSuite_COREUTILS):
         cmds.append(self.cmd_default)
         cmds.append(self.cmd_notexist)        
         cmds.append("{} {} root".format(self.prog,self.opts)) #id user
-        cmds.append("{} {} {}".format(self.prog,self.opts,self.tdir)) #id nonexisting user
+        cmds.append("{} {} tnguyen".format(self.prog,self.opts)) #id user
+        cmds.append("{} {} ukoc".format(self.prog,self.opts)) #id user
+        cmds.append("{} {} nonexist".format(self.prog,self.opts)) #id nonexist
         return cmds
 
 class TS_cat(TestSuite_COREUTILS):
