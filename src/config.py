@@ -828,10 +828,9 @@ class IGen(object):
 
         #some settings
         cur_iter = 1
-        min_stren = 1
-        cur_min_stren = min_stren
         cur_stuck = 0
         max_stuck = 3
+        do_perturb = False
         cores_d,configs_d,covs_d = Cores_d(),Configs_d(),Covs_d()
         sel_core = SCore.mk_default()
         ignore_sel_cores = set()
@@ -865,29 +864,40 @@ class IGen(object):
                 break
 
             cur_iter += 1
-            sel_core,configs = self.gen_configs_iter(set(cores_d.values()),
-                                                     ignore_sel_cores,cur_min_stren,
-                                                     configs_d)
-            if sel_core is None:
-                cur_iter -= 1
-                logger.info('done after iter {}'.format(cur_iter))
-                break
+            sel_core,configs = self.gen_configs_iter(
+                set(cores_d.values()),ignore_sel_cores,configs_d)
 
+            stop = False
+            if sel_core is None:
+                if do_perturb: #if already perturb
+                    stop = True
+                else:
+                    do_perturb = True
+                    logger.debug("perturb !")
+                    sel_core,configs = self.gen_configs_iter(
+                        set(cores_d.values()),set(),configs_d)
+                    if sel_core is None:
+                        stop = True
+                        
+                if stop:
+                    cur_iter -= 1
+                    logger.info('done after iter {}'.format(cur_iter))
+                    break
+
+            ignore_sel_cores.add(sel_core)
             assert configs,configs
             cconfigs_d,xtime = self.eval_configs(configs)
             xtime_total += xtime
-            new_covs,new_cores = Infer.infer_covs(cores_d,cconfigs_d,
-                                                  configs_d,covs_d,self.dom)
+            new_covs,new_cores = Infer.infer_covs(
+                cores_d,cconfigs_d,configs_d,covs_d,self.dom)
 
             if new_covs or new_cores: #progress
                 cur_stuck = 0
-                cur_min_stren = min_stren
+                
             else: #no progress
                 cur_stuck += 1
                 if cur_stuck > max_stuck:
                     cur_stuck = 0
-                    cur_min_stren += 1
-                    print('cur_min_stren is now {}'.format(cur_min_stren))
 
         #postprocess
         pp_cores_d = cores_d.analyze(covs_d,self.dom)
@@ -917,6 +927,9 @@ class IGen(object):
         st = time()
         cconfigs_d = Configs_d()
         for c in configs:
+            if c in cconfigs_d: #skip
+                continue
+
             sids,outps = self.get_cov(c)
             if analyze_outps:
                 cconfigs_d[c]=outps
@@ -940,7 +953,7 @@ class IGen(object):
         assert configs, 'no initial configs created'
         return configs
         
-    def gen_configs_iter(self,cores,ignore_sel_cores,min_stren,configs_d):
+    def gen_configs_iter(self,cores,ignore_sel_cores,configs_d):
         if CM.__vdebug__:
             assert (isinstance(cores,set) and 
                     all(isinstance(c,PNCore) for c in cores)), cores
@@ -951,15 +964,17 @@ class IGen(object):
 
         configs = []
         while True:
-            sel_core = self.select_core(cores,ignore_sel_cores,min_stren)
+            sel_core = self.select_core(cores,ignore_sel_cores)
             if sel_core is None:
                 break
+
             configs = self.gen_configs_sel_core(sel_core,configs_d)
             configs = list(set(configs)) 
             if configs:
                 break
             else:
-                logger.debug("no sample created for sel_core {}".format(sel_core))
+                logger.debug("no cex's created for sel_core {}, try new core"
+                             .format(sel_core))
 
         #self_core -> configs
         if CM.__vdebug__:
@@ -1097,7 +1112,7 @@ class IGen(object):
     
 
     @staticmethod
-    def select_core(pncores,ignore_sel_cores,min_stren):
+    def select_core(pncores,ignore_sel_cores):
         """
         Returns either None or SCore
         """
@@ -1109,30 +1124,32 @@ class IGen(object):
 
         sel_cores = []
         for (pc,pd,nc,nd) in pncores:
+            #if can add pc then don't cosider pd (i.e., refine pc first)
             if pc and (pc,None) not in ignore_sel_cores:
                 sc = SCore((pc,None))
                 if pd is None: sc.set_keep()
                 sel_cores.append(sc)
+                    
             elif pd and (pd,pc) not in ignore_sel_cores:
                 sc = SCore((pd,pc))
                 sel_cores.append(sc)
 
             if nc and (nc,None) not in ignore_sel_cores:
                 sc = SCore((nc,None))
-                if nd is None: sc.set_keep()                
+                if nd is None: sc.set_keep()
                 sel_cores.append(sc)
+
             elif nd and (nd,nc) not in ignore_sel_cores:
                 sc = SCore((nd,nc))
                 sel_cores.append(sc)
                 
-        #print "ms", min_stren
-        sel_cores = [c for c in sel_cores if c.sstren >= min_stren]
+        sel_cores = [c for c in sel_cores if c.sstren > 0]
 
         if sel_cores:
             sel_core = max(sel_cores,key=lambda c: (c.sstren,c.vstren))
-            ignore_sel_cores.add(sel_core)
         else:
             sel_core = None
+
         return sel_core
 
 
