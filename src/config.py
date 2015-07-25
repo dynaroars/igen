@@ -828,6 +828,8 @@ class IGen(object):
 
         #some settings
         cur_iter = 1
+        min_stren = 1
+        cur_min_stren = min_stren
         cur_stuck = 0
         max_stuck = 3
         do_perturb = False
@@ -865,7 +867,8 @@ class IGen(object):
 
             cur_iter += 1
             sel_core,configs = self.gen_configs_iter(
-                set(cores_d.values()),ignore_sel_cores,configs_d)
+                set(cores_d.values()),ignore_sel_cores,
+                cur_min_stren,configs_d)
 
             stop = False
             if sel_core is None:
@@ -875,7 +878,7 @@ class IGen(object):
                     do_perturb = True
                     logger.debug("perturb !")
                     sel_core,configs = self.gen_configs_iter(
-                        set(cores_d.values()),set(),configs_d)
+                        set(cores_d.values()),set(),cur_min_stren,configs_d)
                     if sel_core is None:
                         stop = True
                         
@@ -883,7 +886,7 @@ class IGen(object):
                     cur_iter -= 1
                     logger.info('done after iter {}'.format(cur_iter))
                     break
-
+            assert sel_core, sel_core
             ignore_sel_cores.add(sel_core)
             assert configs,configs
             cconfigs_d,xtime = self.eval_configs(configs)
@@ -893,11 +896,13 @@ class IGen(object):
 
             if new_covs or new_cores: #progress
                 cur_stuck = 0
-                
+                cur_min_stren = min_stren
             else: #no progress
                 cur_stuck += 1
                 if cur_stuck > max_stuck:
                     cur_stuck = 0
+                    cur_min_stren += 1
+                    print('cur_min_stren is now {}'.format(cur_min_stren))
 
         #postprocess
         pp_cores_d = cores_d.analyze(covs_d,self.dom)
@@ -953,7 +958,7 @@ class IGen(object):
         assert configs, 'no initial configs created'
         return configs
         
-    def gen_configs_iter(self,cores,ignore_sel_cores,configs_d):
+    def gen_configs_iter(self,cores,ignore_sel_cores,min_stren,configs_d):
         if CM.__vdebug__:
             assert (isinstance(cores,set) and 
                     all(isinstance(c,PNCore) for c in cores)), cores
@@ -964,7 +969,7 @@ class IGen(object):
 
         configs = []
         while True:
-            sel_core = self.select_core(cores,ignore_sel_cores)
+            sel_core = self.select_core(cores,ignore_sel_cores,min_stren)
             if sel_core is None:
                 break
 
@@ -1112,7 +1117,7 @@ class IGen(object):
     
 
     @staticmethod
-    def select_core(pncores,ignore_sel_cores):
+    def select_core(pncores,ignore_sel_cores,min_stren):
         """
         Returns either None or SCore
         """
@@ -1143,7 +1148,7 @@ class IGen(object):
                 sc = SCore((nd,nc))
                 sel_cores.append(sc)
                 
-        sel_cores = [c for c in sel_cores if c.sstren > 0]
+        sel_cores = [c for c in sel_cores if c.sstren >= min_stren]
 
         if sel_cores:
             sel_core = max(sel_cores,key=lambda c: (c.sstren,c.vstren))
