@@ -886,8 +886,7 @@ class IGen(object):
                     cur_iter -= 1
                     logger.info('done after iter {}'.format(cur_iter))
                     break
-            assert sel_core, sel_core
-            ignore_sel_cores.add(sel_core)
+
             assert configs,configs
             cconfigs_d,xtime = self.eval_configs(configs)
             xtime_total += xtime
@@ -1152,6 +1151,7 @@ class IGen(object):
 
         if sel_cores:
             sel_core = max(sel_cores,key=lambda c: (c.sstren,c.vstren))
+            ignore_sel_cores.add(sel_core)
         else:
             sel_core = None
 
