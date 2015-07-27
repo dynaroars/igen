@@ -299,8 +299,10 @@ class MCore(tuple):
 
     @property
     def sstren(self): return len(self.settings)
+    
     @property
     def vstren(self): return sum(map(len,self.values))
+
 
 class SCore(MCore):
     def __init__(self,(mc,sc)):
@@ -416,9 +418,42 @@ class PNCore(MCore):
         else:
             p_ss = _cd(self.pc,self.pd,' & ')
             n_ss = _cd(self.nd,self.nc,' | ')
-            ss = ','.join([p_ss,n_ss]) + '***'
+            ss = ','.join([p_ss,n_ss]) + '***'  #inconcistent?
 
         return ss
+    @property
+    def typ(self):
+        ss = set()
+        if self.pc and self.pd:
+            ss.add('mixed1')
+        elif self.pc:
+            ss.add('conj')
+        elif self.pd:
+            ss.add('disj')
+
+        if self.nc and self.nd:
+            ss.add('mixed2')
+        elif self.nc:
+            ss.add('disj')
+        elif self.nd:
+            ss.add('conj')
+
+        if any(s.startswith('mixed') for s in ss):
+            return 'mix'
+        elif 'conj' in ss and 'disj' in ss:
+            return 'mix'
+        elif len(ss)==1 and 'conj' in ss:
+            return 'conj'
+        elif len(ss)==1 and 'disj' in ss:
+            return 'disj'
+        elif len(ss)==0:
+            return 'conj'  #true
+        else:
+            logger.warn("W: unexpected case of typ, ss {}".format(ss))
+            return 'conj'
+            
+            
+            
 
     def verify(self,configs,dom):
         if CM.__vdebug__:
@@ -524,6 +559,8 @@ class PNCore(MCore):
         return ((self.pc is None and self.pd is None) or
                 (self.nc is None and self.nd is None))
 
+
+
 class Cores_d(CustDict):
     def __setitem__(self,sid,pncore):
         if CM.__vdebug__:
@@ -585,11 +622,17 @@ class Cores_d(CustDict):
     def show_analysis(self,dom):
         if CM.__vdebug__:
             assert isinstance(dom,Dom),dom
+            
         mcores_d = self.merge()
         fstr_f=lambda c: c.fstr(dom)
+        strs = mcores_d.strs(fstr_f)
+        
         logger.debug("mcores_d has {} items\n".format(len(mcores_d)) +
-                     mcores_d.__str__(fstr_f)) 
-        logger.info("strens: {}".format(mcores_d.strens_str))
+                     '\n'.join(strs))
+        
+        logger.info("mcores_d strens: {}".format(mcores_d.strens_str))
+
+        
         return mcores_d
     
 class Mcores_d(CustDict):
@@ -601,8 +644,8 @@ class Mcores_d(CustDict):
             assert isinstance(core,PNCore),core
             assert isinstance(sid,str),str
         super(Mcores_d,self).add_set(core,sid)
-        
-    def __str__(self,fstr_f=None):
+
+    def strs(self,fstr_f=None):
         if CM.__vdebug__:
             assert fstr_f is None or callable(fstr_f),fstr_f
 
@@ -612,9 +655,23 @@ class Mcores_d(CustDict):
         ss = ("{}. ({}) {}: {}"
               .format(i+1,core.sstren,core.__str__(fstr_f),str_of_cov(cov))
               for i,(core,cov) in enumerate(mc))
+        return ss
+        
+    def __str__(self,fstr_f=None):
+        return '\n'.join(self.strs(fstr_f))
 
-        return '\n'.join(ss)
+    @property
+    def typs(self):
+        typs = [core.typ for core in self]
+        return typs
+    @property
+    def ntyps(self):
+        d = {'conj':0,'disj':0,'mix':0}
+        for t in self.typs:
+            d[t] = d[t] + 1
 
+        return (d['conj'],d['disj'],d['mix'])
+    
     @property
     def strens(self):
         """
@@ -636,6 +693,24 @@ class Mcores_d(CustDict):
     def str_of_strens(strens):
         return ', '.join("({}, {}, {})".format(siz,ncores,ncov)
                          for siz,ncores,ncov in strens)
+
+    
+
+    # @property
+    # def shared_graph(self):
+    #     g = {}
+    #     for core in self:
+    #         if not core.settings:  #skip true
+    #             continue
+    #         for core_ in self:
+    #             if core_ is not core and core_.settings:
+    #                 if core.settings.is_superset(core_.settings):
+    #                     if core not in d:
+    #                         g[core] = set()
+    #                     g[core].add(core_)
+    #     return g
+
+        
     
 #Inference algorithm
 class Infer(object):
@@ -1262,14 +1337,15 @@ class Analysis(object):
 
         #print postprocess results
         mcores_d = pp_cores_d.show_analysis(dom)
-
+        
         #print summary
         xtime_total = sum(dt.xtime for dt in dts)
         logger.info(Analysis.str_of_summary(
             seed,len(dts),itime_total,xtime_total,dt.nconfigs,dt.ncovs,dir_))
             
-        return (len(dts),itime_total,xtime_total,dt.nconfigs,dt.ncovs,
-                mcores_d.strens)
+        return (len(dts),len(mcores_d),
+                itime_total,xtime_total,dt.nconfigs,dt.ncovs,
+                mcores_d.strens,mcores_d.ntyps)
 
     @staticmethod
     def replay_dirs(dir_):
@@ -1277,23 +1353,28 @@ class Analysis(object):
         logger.info("replay_dirs '{}'".format(dir_))
         
         niters_total = 0
+        nresults_total = 0        
         nitime_total = 0
         nxtime_total = 0    
         nconfigs_total = 0
         ncovs_total = 0
         strens_s = []
+        ntyps_s = []
         for rdir in sorted(os.listdir(dir_)):
             rdir = os.path.join(dir_,rdir)
-            (niters,itime,xtime,nconfigs,ncovs,strens) = Analysis.replay(rdir)
+            (niters,nresults,itime,xtime,nconfigs,ncovs,strens,ntyps) = Analysis.replay(rdir)
             niters_total += niters
+            nresults_total += nresults
             nitime_total += itime
             nxtime_total += xtime
             nconfigs_total += nconfigs
             ncovs_total += ncovs
             strens_s.append(strens)
-            
+            ntyps_s.append(ntyps)
+    
         nruns_total = float(len(strens_s))
         ss = ["iter {}".format(niters_total/nruns_total),
+              "results {}".format(nresults_total/nruns_total),
               "time {}".format(nitime_total/nruns_total),
               "xtime {}".format(nxtime_total/nruns_total),
               "configs {}".format(nconfigs_total/nruns_total),
@@ -1318,6 +1399,12 @@ class Analysis(object):
                       .format(strength,sum(inters)/nruns_total,
                               sum(covs)/nruns_total))
         logger.info("interaction strens: {}".format(', '.join(ss)))
+
+        nconjs = sum(c for c,_,_ in ntyps_s)/nruns_total
+        ndisjs = sum(d for _,d,_ in ntyps_s)/nruns_total
+        nmixs  = sum(m for _,_,m in ntyps_s)/nruns_total
+        logger.info("interaction typs: conjs {}, disjs {}, mixeds {}"
+                    .format(nconjs,ndisjs,nmixs))
 
     @staticmethod
     def debug_find_configs(sid,configs_d,find_in):
