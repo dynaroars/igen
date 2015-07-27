@@ -94,8 +94,7 @@ def get_cov_wrapper(config,data):
         
     cur_dir = os.getcwd()
     try:
-        if data['dir_']:
-            os.chdir(data['dir_'])
+        os.chdir(data['dir_'])
         rs = data['get_cov_f'](config,data)
         os.chdir(cur_dir)
         return rs

@@ -14,19 +14,13 @@ def prepare(prog_name,do_perl):
         assert isinstance(do_perl,bool), do_perl
         
     main_dir = getpath('../benchmarks/coreutils')
-    dom_file = os.path.join(main_dir,"doms","{}.dom".format(prog_name))
-    dom_file = getpath(dom_file)
-    dom,_ = Dom.get_dom(dom_file)
-    logger.info("dom_file '{}': {}".format(dom_file,dom))
-    
-    assert all(len(vs) >= 2 and "off" in vs 
-               for vs in dom.itervalues()),"incorrect format"
 
     if do_perl:
         prog_dir = os.path.join(main_dir,'coreutils_perl')
-        dir_ = None
+        dir_ = '../benchmarks/ppt'
         prog_exe = "@@@"+prog_name
         get_cov_f = get_cov_perl
+        dom_file = os.path.join(main_dir,"doms_perl","{}.dom".format(prog_name))
     else:
         bdir = os.path.join(main_dir,'coreutils')
         prog_dir = os.path.join(bdir,'obj-gcov','src')
@@ -36,6 +30,15 @@ def prepare(prog_name,do_perl):
         assert os.path.isfile(prog_exe),prog_exe
         logger.info("prog_exe: '{}'".format(prog_exe))
         get_cov_f = get_cov_gcov
+        dom_file = os.path.join(main_dir,"doms","{}.dom".format(prog_name))
+
+    dom_file = getpath(dom_file)
+    dom,_ = Dom.get_dom(dom_file)
+    logger.info("dom_file '{}': {}".format(dom_file,dom))
+    
+    assert all(len(vs) >= 2 and "off" in vs 
+               for vs in dom.itervalues()),"incorrect format"
+
 
     data = {'var_names':dom.keys(),
             'prog_name':prog_name,
@@ -199,6 +202,21 @@ class TS_cat(TestSuite_COREUTILS):
         cmds.append("ls /boot | {} {} {}/file1 - {}/file2".format(
             self.prog,self.opts,self.tdir,self.tdir)) 
         cmds.append("{} {} {}".format(self.prog,self.opts,self.tdir))
+        return cmds
+
+class TS_join(TestSuite_COREUTILS):
+    def get_cmds(self):
+        cmds = []
+        cmds.append(self.cmd_default)
+        cmds.append(self.cmd_notexist)
+        cmds.append("{} {} {}/file1.txt {}/file2.txt".format(self.prog,self.opts,self.tdir,self.tdir))
+        cmds.append("{} {} {}/file1.txt {}/file3.txt".format(self.prog,self.opts,self.tdir,self.tdir))
+        cmds.append("{} {} {}/file1.txt {}/file1.txt".format(self.prog,self.opts,self.tdir,self.tdir))
+        cmds.append("{} {} {}/file4.txt {}/file6.txt".format(self.prog,self.opts,self.tdir,self.tdir))
+        cmds.append("{} {} {}/file5.txt {}/file6.txt".format(self.prog,self.opts,self.tdir,self.tdir))
+        cmds.append("{} {} {}/file4.txt".format(self.prog,self.opts,self.tdir))
+        cmds.append("{} {} {}/file1.txt {}/nonExistingFile.txt".format(self.prog,self.opts,self.tdir,self.tdir))
+        cmds.append("{} {} {}/file4.txt {}/file4.txt {}/file4.txt".format(self.prog,self.opts,self.tdir,self.tdir,self.tdir))
         return cmds
 
 # class TS_cp(TestSuite_COREUTILS):
@@ -550,4 +568,5 @@ db = {'date': TS_date,
       'mv': TS_mv,
       'ln': TS_ln,  
       'uname': TS_uname,
-      'cat':TS_cat}
+      'cat':TS_cat,
+      'join':TS_join}
