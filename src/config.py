@@ -907,7 +907,7 @@ class IGen(object):
         cur_min_stren = min_stren
         cur_stuck = 0
         max_stuck = 3
-        do_perturb = False
+        do_perturb = True #set this to True will not do any perturbing
         cores_d,configs_d,covs_d = Cores_d(),Configs_d(),Covs_d()
         sel_core = SCore.mk_default()
         ignore_sel_cores = set()
