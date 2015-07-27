@@ -183,5 +183,6 @@ if __name__ == "__main__":
 
     print("** done benchmark '{}', {} runs, seed {}, time {}, results in '{}'"
           .format(args.prog,nruns,seed,time()-st,tdir))
-    print("\n***** STATISTICS *****\n")
-    config.Analysis.replay_dirs(tdir)
+
+    # print("\n***** STATISTICS *****\n")
+    # config.Analysis.replay_dirs(tdir)
