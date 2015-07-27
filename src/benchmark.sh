@@ -1,11 +1,11 @@
-#Otter
-prog="vsftpd"
-echo ${prog}
-python2.7 igen.py ${prog}  --logger_level 4 --seed 0 --benchmark 20 > ~/Dropbox1/config_results/${prog}_bm20 2>&1
+# #Otter
+# prog="vsftpd"
+# echo ${prog}
+# python2.7 igen.py ${prog}  --logger_level 4 --seed 100 --benchmark 20 > ~/Dropbox1/config_results/${prog}_bm20 2>&1
 
-prog="ngircd"
-echo ${prog}
-python2.7 igen.py ${prog}  --logger_level 4 --seed 0 --benchmark 20 > ~/Dropbox1/config_results/${prog}_bm20 2>&1
+# prog="ngircd"
+# echo ${prog}
+# python2.7 igen.py ${prog}  --logger_level 4 --seed 0 --benchmark 20 > ~/Dropbox1/config_results/${prog}_bm20 2>&1
 
 #CoreUtils
 prog="id"
