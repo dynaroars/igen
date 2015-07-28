@@ -3,7 +3,7 @@ import random
 import os
 from config import (getpath,Dom,Config,
                     Configs_d,Cores_d,Covs_d,
-                    Infer,Analysis)
+                    Infer,Analysis,DTrace)
 import config as CF
 import vu_common as CM
 
@@ -13,7 +13,6 @@ logger.level = CF.logger.level
 db = {"vsftpd":None,"ngircd":None}
 
 def prepare(prog):
-    #dir_ = getpath('~/Src/Devel/iTree_stuff/expData/{}'.format(prog))
     dir_ = getpath('../otter_exps/{}'.format(prog))
     dom_file = os.path.join(dir_,'possibleValues.txt')
     pathconds_d_file = os.path.join(dir_,'{}.tvn'.format('pathconds_d'))
@@ -45,14 +44,21 @@ def get_cov(config,args):
     outps = []
     return sids,outps
 
-def do_full(dom,pathconds_d,n=None):
+def do_full(dom,pathconds_d,tmpdir,n=None):
     """
     Obtain interactions using Otter's pathconds
     """
     if CM.__vdebug__:
         assert n is None or 0 <= n <= len(pathconds_d), n
+        assert isinstance(tmpdir,str) and os.path.isdir(tmpdir), tmpdir
+        
         logger.warn("DEBUG MODE ON. Can be slow !")
 
+    seed=0
+    logger.info("seed: {} default, tmpdir: {}".format(seed,tmpdir))
+    analysis = Analysis(tmpdir)
+    analysis.save_pre(seed,dom)
+    
     if n:
         logger.info('select {} rand'.format(n))
         rs = random.sample(pathconds_d.values(),n)
@@ -77,9 +83,18 @@ def do_full(dom,pathconds_d,n=None):
     pp_cores_d = cores_d.analyze(covs_d,dom)
     pp_cores_d.show_analysis(dom)
 
+    itime_total = time()-st
     logger.info(Analysis.str_of_summary(
-        0,0,time()-st,0,len(configs_d),len(pp_cores_d),'no tmpdir'))
+        0,0,itime_total,0,len(configs_d),len(pp_cores_d),tmpdir))
 
+    dtrace = DTrace(1,0,0,
+                    len(configs_d),len(covs_d),len(cores_d),
+                    {},set(),set(),
+                    CF.SCore.mk_default(),
+                    cores_d)
+    analysis.save_iter(1,dtrace)
+    analysis.save_post(pp_cores_d,itime_total)
+    
     return pp_cores_d,cores_d,configs_d,covs_d,dom
 
 

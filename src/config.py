@@ -334,7 +334,15 @@ class SCore(MCore):
     def __str__(self):
         ss = []
         if self.mc:
-            ss.append("mc{}: {}".format("(keep)" if self.keep else "",self.mc))
+            s = ""
+            try:  #to support old format that doesn't have keep
+                if self.keep:
+                    s = "(keep)" 
+            except AttributeError:
+                pass
+
+            ss.append("mc{}: {}".format(s,self.mc))
+                                            
                       
         if self.sc:
             ss.append("sc: {}".format(self.sc))
@@ -1264,7 +1272,8 @@ class DTrace(object):
                     "{}".format("** progress **"
                                 if self.new_covs or self.new_cores else ""))
 
-        logger.debug('select core: ({}) {}'.format(self.sel_core.sstren, self.sel_core))
+        logger.debug('select core: ({}) {}'.format(self.sel_core.sstren,
+                                                   self.sel_core))
         logger.debug('create {} configs'.format(len(self.cconfigs_d)))
         logger.detail("\n"+str(self.cconfigs_d))
 
