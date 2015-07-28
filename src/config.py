@@ -1348,7 +1348,7 @@ class Analysis(object):
         mcores_d = pp_cores_d.show_analysis(dom)
         
         #print summary
-        xtime_total = sum(dt.xtime for dt in dts)
+        xtime_total = itime_total - sum(dt.xtime for dt in dts)
         logger.info(Analysis.str_of_summary(
             seed,len(dts),itime_total,xtime_total,dt.nconfigs,dt.ncovs,dir_))
             
