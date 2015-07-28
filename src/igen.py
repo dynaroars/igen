@@ -38,9 +38,10 @@ def get_run_f(args):
         if args.do_full:
             if args.rand_n:
                 _f = lambda _,tdir: Otter.do_full(
-                    dom,pathconds_d,n=args.rand_n)
+                    dom,pathconds_d,tmpdir=tdir,n=args.rand_n)
             else:
-                _f = lambda _,tdir: Otter.do_full(dom,pathconds_d,n=None)
+                _f = lambda _,tdir: Otter.do_full(dom,pathconds_d,tmpdir=tdir,n=None)
+                                                  
         elif args.rand_n is None:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
