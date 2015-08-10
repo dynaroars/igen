@@ -4,6 +4,7 @@ from time import time
 import os.path
 import itertools
 import random
+import numpy
 
 import z3
 import z3util
@@ -1369,6 +1370,17 @@ class Analysis(object):
         ncovs_total = 0
         strens_s = []
         ntyps_s = []
+
+        #modified by ugur
+        niters_arr = []
+        nresults_arr = []
+        nitime_arr = []
+        nxtime_arr = [] 
+        nconfigs_arr = []
+        ncovs_arr = []
+        counter = 0
+        csv_arr = []
+
         for rdir in sorted(os.listdir(dir_)):
             rdir = os.path.join(dir_,rdir)
             (niters,nresults,itime,xtime,nconfigs,ncovs,strens,ntyps) = Analysis.replay(rdir)
@@ -1380,16 +1392,41 @@ class Analysis(object):
             ncovs_total += ncovs
             strens_s.append(strens)
             ntyps_s.append(ntyps)
-    
+            niters_arr.append(niters)
+            nresults_arr.append(nresults)
+            nitime_arr.append(itime)
+            nxtime_arr.append(xtime)
+            nconfigs_arr.append(nconfigs)
+            ncovs_arr.append(ncovs)
+            csv_arr.append("{},{},{},{},{},{},{},{},{}".format(counter,niters,nresults,itime,xtime,nconfigs,ncovs,','.join(map(str, ntyps)),','.join(map(str, strens))))
+            counter += 1
+
         nruns_total = float(len(strens_s))
+
         ss = ["iter {}".format(niters_total/nruns_total),
               "results {}".format(nresults_total/nruns_total),
               "time {}".format(nitime_total/nruns_total),
               "xtime {}".format(nxtime_total/nruns_total),
               "configs {}".format(nconfigs_total/nruns_total),
               "covs {}".format(ncovs_total/nruns_total)]
-        logger.info("STATS of {} runs: {}".format(nruns_total,', '.join(ss)))
-              
+        logger.info("STATS of {} runs (averages): {}".format(nruns_total,', '.join(ss)))
+        
+        ssMed = ["iter {}".format(numpy.median(niters_arr)),
+              "results {}".format(numpy.median(nresults_arr)),
+              "time {}".format(numpy.median(nitime_arr)),
+              "xtime {}".format(numpy.median(nxtime_arr)),
+              "configs {}".format(numpy.median(nconfigs_arr)),
+              "covs {}".format(numpy.median(ncovs_arr))]
+        logger.info("STATS of {} runs (medians) : {}".format(nruns_total,', '.join(ssMed)))
+        
+        ssSIQR = ["iter {}".format(Analysis.siqr(niters_arr)),
+              "results {}".format(Analysis.siqr(nresults_arr)),
+              "time {}".format(Analysis.siqr(nitime_arr)),
+              "xtime {}".format(Analysis.siqr(nxtime_arr)),
+              "configs {}".format(Analysis.siqr(nconfigs_arr)),
+              "covs {}".format(Analysis.siqr(ncovs_arr))]
+        logger.info("STATS of {} runs (SIQR)   : {}".format(nruns_total,', '.join(ssSIQR)))
+
         sres = {}
         for i,strens in enumerate(strens_s):
             logger.debug("run {}: {}".format(i+1,Mcores_d.str_of_strens(strens)))
@@ -1402,19 +1439,42 @@ class Analysis(object):
                     covs.append(ncov)
 
         ss = []
+        medians = []
+        siqrs = []
         for strength in sorted(sres):
             inters,covs = sres[strength]
-            ss.append("({}, {}, {})"
-                      .format(strength,sum(inters)/nruns_total,
-                              sum(covs)/nruns_total))
-        logger.info("interaction strens: {}".format(', '.join(ss)))
+            ss.append("({}, {}, {})".format(strength,sum(inters)/nruns_total,sum(covs)/nruns_total))
+            medians.append("({}, {}, {})".format(strength, numpy.median(inters), numpy.median(covs)))
+            siqrs.append("({}, {}, {})".format(strength, Analysis.siqr(inters), Analysis.siqr(covs)))
+            
+        logger.info("interaction strens averages: {}".format(', '.join(ss)))
+        logger.info("interaction strens medians : {}".format(', '.join(medians)))
+        logger.info("interaction strens SIQRs   : {}".format(', '.join(siqrs)))
+        
+        conjs = [c for c,_,_ in ntyps_s]
+        disjs = [c for _,d,_ in ntyps_s]
+        mixs = [c for _,_,m in ntyps_s]
+        
+        nconjs = sum(conjs)/nruns_total
+        ndisjs = sum(disjs)/nruns_total
+        nmixs  = sum(mixs)/nruns_total
+        logger.info("interaction typs (averages): conjs {0:.2f}, disjs {0:.2f}, mixeds {0:.2f}"
+                    .format(nconjs,ndisjs,nmixs))            
+        
+        logger.info("interaction typs (medians) : conjs {0:.2f}, disjs {0:.2f}, mixeds {0:.2f}"
+                    .format(numpy.median(conjs),numpy.median(disjs),numpy.median(mixs)))
+        
+        logger.info("interaction typs (SIQRs)   : conjs {0:.2f}, disjs {0:.2f}, mixeds {0:.2f}"
+                    .format(Analysis.siqr(conjs),Analysis.siqr(disjs),Analysis.siqr(mixs)))
 
-        nconjs = sum(c for c,_,_ in ntyps_s)/nruns_total
-        ndisjs = sum(d for _,d,_ in ntyps_s)/nruns_total
-        nmixs  = sum(m for _,_,m in ntyps_s)/nruns_total
-        logger.info("interaction typs: conjs {}, disjs {}, mixeds {}"
-                    .format(nconjs,ndisjs,nmixs))
+        logger.info("CVSs\n{}".format('\n'.join(csv_arr)))
+        #end of modification
 
+    @staticmethod
+    def siqr(arr):
+        return (numpy.percentile(arr, 75, interpolation='higher') - 
+                numpy.percentile(arr, 25, interpolation='lower'))/2
+    
     @staticmethod
     def debug_find_configs(sid,configs_d,find_in):
         if find_in:

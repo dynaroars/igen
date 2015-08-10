@@ -16,19 +16,20 @@ int main(int argc, char **argv){
   int max_z = 3;
   
   if (x&&y){
+    printf("L0\n");
     if (!(0 < z && z < max_z)){
       printf("L1\n"); //x & y & (z=0|3|4)
     }
   }
   else{
     printf("L2\n"); // !x|!y
-    printf("L3\n"); // !x|!y    
   }
 
-  printf("L4\n"); // true
-  if(s||t){
-    if(u&&v){
-      printf("L5\n");  // (s|t) & (u&v)
+  printf("L3\n"); // true
+  if(u&&v){
+    printf("L4\n");
+    if(s||t){
+      printf("L5\n");  // (u&v)&(s|t)
     }
   }
 
