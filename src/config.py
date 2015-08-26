@@ -1392,6 +1392,7 @@ class Analysis(object):
             ncovs_total += ncovs
             strens_s.append(strens)
             ntyps_s.append(ntyps)
+
             niters_arr.append(niters)
             nresults_arr.append(nresults)
             nitime_arr.append(itime)
@@ -1441,31 +1442,62 @@ class Analysis(object):
         ss = []
         medians = []
         siqrs = []
+        tmp = []
+        tex_table4=[]
+        tex_table5=[]
         for strength in sorted(sres):
             inters,covs = sres[strength]
+            length=len(inters)
+            for num in range(length,int(nruns_total)):
+                inters.append(0)
+                covs.append(0)
             ss.append("({}, {}, {})".format(strength,sum(inters)/nruns_total,sum(covs)/nruns_total))
             medians.append("({}, {}, {})".format(strength, numpy.median(inters), numpy.median(covs)))
             siqrs.append("({}, {}, {})".format(strength, Analysis.siqr(inters), Analysis.siqr(covs)))
-            
+            tmp.append("{},{})".format(strength,','.join(map(str, inters))))
+            tex_table4.append("{} \\mso{{{}}}{{{}}}".format(strength,numpy.median(inters),Analysis.siqr(inters)))
+            tex_table5.append("{} \\mso{{{}}}{{{}}}".format(strength,numpy.median(covs),Analysis.siqr(covs)))
+        
         logger.info("interaction strens averages: {}".format(', '.join(ss)))
         logger.info("interaction strens medians : {}".format(', '.join(medians)))
         logger.info("interaction strens SIQRs   : {}".format(', '.join(siqrs)))
+        #logger.info("interactions arrays   : {}".format('\n'.join(tmp)))
         
         conjs = [c for c,_,_ in ntyps_s]
-        disjs = [c for _,d,_ in ntyps_s]
-        mixs = [c for _,_,m in ntyps_s]
+        disjs = [d for _,d,_ in ntyps_s]
+        mixs = [m for _,_,m in ntyps_s]
         
+        length=len(conjs)
+        for num in range(length,int(nruns_total)):
+            conjs.append(0)
+        
+        length=len(disjs)
+        for num in range(length,int(nruns_total)):
+            disjs.append(0)
+        
+        length=len(mixs)
+        for num in range(length,int(nruns_total)):
+            mixs.append(0)
+        
+        #logger.info("conjs array: {}".format(', '.join(map(str, conjs))))
+        #logger.info("disjs array: {}".format(', '.join(map(str, disjs))))
+        #logger.info("mixs  array: {}".format(', '.join(map(str, mixs))))
+
         nconjs = sum(conjs)/nruns_total
         ndisjs = sum(disjs)/nruns_total
         nmixs  = sum(mixs)/nruns_total
-        logger.info("interaction typs (averages): conjs {0:.2f}, disjs {0:.2f}, mixeds {0:.2f}"
+        
+        logger.info("interaction typs (averages): conjs {}, disjs {}, mixeds {}"
                     .format(nconjs,ndisjs,nmixs))            
         
-        logger.info("interaction typs (medians) : conjs {0:.2f}, disjs {0:.2f}, mixeds {0:.2f}"
+        logger.info("interaction typs (medians) : conjs {}, disjs {}, mixeds {}"
                     .format(numpy.median(conjs),numpy.median(disjs),numpy.median(mixs)))
         
-        logger.info("interaction typs (SIQRs)   : conjs {0:.2f}, disjs {0:.2f}, mixeds {0:.2f}"
+        logger.info("interaction typs (SIQRs)   : conjs {}, disjs {}, mixeds {}"
                     .format(Analysis.siqr(conjs),Analysis.siqr(disjs),Analysis.siqr(mixs)))
+
+        logger.info("tex_table4:{}".format(' & '.join(tex_table4)))
+        logger.info("tex_table5:{}".format(' & '.join(tex_table5)))
 
         logger.info("CVSs\n{}".format('\n'.join(csv_arr)))
         #end of modification
