@@ -430,8 +430,28 @@ class PNCore(MCore):
             ss = ','.join([p_ss,n_ss]) + '***'  #inconcistent?
 
         return ss
+    
+    @staticmethod
+    def get_styp(s):
+        if ' & ' in s and ' | ' in s:
+            return 'mix'
+        elif ' | ' in s:
+            return 'disj'
+        else:
+            return 'conj'
+
+    @staticmethod
+    def get_ntyps(typs):
+        d = {'conj':0,'disj':0,'mix':0}
+        for t in typs:
+            d[t] = d[t] + 1
+
+        return (d['conj'],d['disj'],d['mix'])
+
+
     @property
     def typ(self):
+
         ss = set()
         if self.pc and self.pd:
             ss.add('mixed1')
@@ -634,13 +654,14 @@ class Cores_d(CustDict):
             
         mcores_d = self.merge()
         fstr_f=lambda c: c.fstr(dom)
-        strs = mcores_d.strs(fstr_f)
+        #strs = mcores_d.strs(fstr_f)
+        typs,strs = mcores_d.typs_strs(fstr_f)
         
         logger.debug("mcores_d has {} items\n".format(len(mcores_d)) +
                      '\n'.join(strs))
         
         logger.info("mcores_d strens: {}".format(mcores_d.strens_str))
-
+        
         
         return mcores_d
     
@@ -660,26 +681,50 @@ class Mcores_d(CustDict):
 
         mc = sorted(self.iteritems(),
                     key=lambda (core,cov): (core.sstren,core.vstren,len(cov)))
-
+        
+        ss_fs = [core.__str__(fstr_f) for (core,_) in mc]
+        
         ss = ("{}. ({}) {}: {}"
-              .format(i+1,core.sstren,core.__str__(fstr_f),str_of_cov(cov))
+              .format(i+1,core.sstren,ss_fs[i],str_of_cov(cov))
               for i,(core,cov) in enumerate(mc))
+
         return ss
         
     def __str__(self,fstr_f=None):
         return '\n'.join(self.strs(fstr_f))
 
-    @property
-    def typs(self):
-        typs = [core.typ for core in self]
-        return typs
-    @property
-    def ntyps(self):
-        d = {'conj':0,'disj':0,'mix':0}
-        for t in self.typs:
-            d[t] = d[t] + 1
 
-        return (d['conj'],d['disj'],d['mix'])
+    def typs_strs(self,fstr_f):
+        if CM.__vdebug__:
+            callable(fstr_f),fstr_f
+
+        mc = sorted(self.iteritems(),
+                    key=lambda (core,cov): (core.sstren,core.vstren,len(cov)))
+        
+        ss_fs = [core.__str__(fstr_f) for (core,_) in mc]
+        
+        ss = ("{}. ({}) {}: {} ((pc {}, pd {}, nc {}, nd {}) ==> {})"
+              .format(i+1,core.sstren,ss_fs[i],str_of_cov(cov),core.pd,core.nc,core.nc,core.nd,core.typ)
+              for i,(core,cov) in enumerate(mc))
+
+        typs = [PNCore.get_styp(ss_f) for ss_f in ss_fs]
+
+        return typs,ss
+
+
+    # @property
+    # def typs(self):
+    #     typs = [core.typ for core in self]
+    #     return typs
+
+    # @property
+    # def ntyps(self):
+    #     typs = [core.typ for core in self]
+    #     d = {'conj':0,'disj':0,'mix':0}
+    #     for t in typs:
+    #         d[t] = d[t] + 1
+
+    #     return (d['conj'],d['disj'],d['mix'])
     
     @property
     def strens(self):
@@ -1353,9 +1398,15 @@ class Analysis(object):
         logger.info(Analysis.str_of_summary(
             seed,len(dts),itime_total,xtime_total,dt.nconfigs,dt.ncovs,dir_))
             
+
+
+        fstr_f=lambda c: c.fstr(dom)
+        typs,_ = mcores_d.typs_strs(fstr_f)
+        ntyps = PNCore.get_ntyps(typs)
+
         return (len(dts),len(mcores_d),
                 itime_total,xtime_total,dt.nconfigs,dt.ncovs,
-                mcores_d.strens,mcores_d.ntyps)
+                mcores_d.strens,ntyps)
 
     @staticmethod
     def replay_dirs(dir_):
