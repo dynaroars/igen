@@ -461,7 +461,7 @@ class PNCore(MCore):
                 assert isinstance(dom,Dom),dom
                 dcore_n = dcore.neg(dom)
                 ss.append(_f(dcore_n, ' | '))
-            return delim.join(ss) if ss else 'true'
+            return delim.join(sorted(ss)) if ss else 'true'
 
         def _typ(s):
             if ' & ' in s and ' | ' in s:
@@ -592,6 +592,46 @@ class PNCore(MCore):
                 (self.nc is None and self.nd is None))
 
 class Cores_d(CustDict):
+    """
+    rare case when diff c1 and c2 became equiv after simplification
+
+    c1 = a & b
+    >>> pc = Core([('a',frozenset('1'))])
+    >>> pd = Core([('b',frozenset('0'))])
+    >>> nc = Core()
+    >>> nd = Core()
+    >>> c1 = PNCore((pc,pd,nc,nd))
+
+    c2 = b & a 
+    >>> pc = Core([('b',frozenset('1'))])
+    >>> pd = Core([('a',frozenset('0'))])
+    >>> nc = Core()
+    >>> nd = Core()
+    >>> c2 = PNCore((pc,pd,nc,nd))
+
+    >>> cores_d = Cores_d()
+    >>> cores_d['L1'] = c1
+    >>> cores_d['L2'] = c2
+    >>> print cores_d
+    1. L1: pc: a=1; pd: b=0; nc: true; nd: true
+    2. L2: pc: b=1; pd: a=0; nc: true; nd: true
+
+    >>> print cores_d.merge()
+    1. (2) pc: a=1; pd: b=0; nc: true; nd: true: (1) L1
+    2. (2) pc: b=1; pd: a=0; nc: true; nd: true: (1) L2
+
+    >>> dom = Dom([('a',frozenset(['0','1'])),('b',frozenset(['0','1']))])
+    >>> covs_d = Covs_d()
+    >>> config = Config([('a', '1'), ('b', '1')])
+    >>> covs_d.add('L1',config)
+    >>> covs_d.add('L2',config)
+
+    >>> logger.level = CM.VLog.WARN
+    >>> cores_d = cores_d.analyze(covs_d,dom)
+    >>> print cores_d.merge()
+    1. (2) a=1 & b=1 (conj): (2) L1,L2
+
+    """
     def __setitem__(self,sid,pncore):
         if CM.__vdebug__:
             assert isinstance(sid,str),sid
@@ -604,8 +644,15 @@ class Cores_d(CustDict):
                          for i,sid in enumerate(sorted(self)))
     def merge(self):
         mcores_d = Mcores_d()
+        cache = {}
         for sid,core in self.iteritems():
-            mcores_d.add(core,sid)
+            key = core.vstr if core.vstr else core
+            if key not in cache:
+                core_ = core
+                cache[key] = core_
+            else:
+                core_ = cache[key]
+            mcores_d.add(core_,sid)
         return mcores_d
 
     def analyze(self,covs_d,dom):
@@ -660,7 +707,6 @@ class Cores_d(CustDict):
             
             cores_d[sid].vstr = vstr
             cores_d[sid].vtyp = vtyp
-            
         return cores_d
     
 class Mcores_d(CustDict):
