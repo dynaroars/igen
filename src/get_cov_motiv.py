@@ -8,21 +8,23 @@ import os.path
 logger = CM.VLog('motiv')
 logger.level = CF.logger.level
 
-db = {"ex_motiv1": "ex_motiv1",
-      "ex_motiv1b": "ex_motiv1",
-      "ex_motiv2" : "ex_motiv2",
-      "ex_motiv2a" : "ex_motiv2",              
-      "ex_motiv2b" : "ex_motiv2",
-      "ex_motiv2c" : "ex_motiv2",
-      "ex_motiv2d" : "ex_motiv2",              
-      "ex_motiv4" : "ex_motiv4",
-      "ex_motiv5" : "ex_motiv5",
-      "ex_motiv6" : "ex_motiv6",
-      "ex_motiv7" : "ex_motiv7",
-      "ex_motiv8" : "ex_motiv8",
-      "ex_motiv8b" : "ex_motiv8",              
-      'ex_simple_header': "ex_simple",
-      'ex_simple_outp': "ex_simple_outp"
+db = {
+    "ex": "ex",
+    "ex_motiv1": "ex_motiv1",
+    "ex_motiv1b": "ex_motiv1",
+    "ex_motiv2" : "ex_motiv2",
+    "ex_motiv2a" : "ex_motiv2",              
+    "ex_motiv2b" : "ex_motiv2",
+    "ex_motiv2c" : "ex_motiv2",
+    "ex_motiv2d" : "ex_motiv2",              
+    "ex_motiv4" : "ex_motiv4",
+    "ex_motiv5" : "ex_motiv5",
+    "ex_motiv6" : "ex_motiv6",
+    "ex_motiv7" : "ex_motiv7",
+    "ex_motiv8" : "ex_motiv8",
+    "ex_motiv8b" : "ex_motiv8",              
+    'ex_simple_header': "ex_simple",
+    'ex_simple_outp': "ex_simple_outp"
 }
 
 
