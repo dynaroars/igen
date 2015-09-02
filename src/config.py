@@ -18,7 +18,6 @@ logger.level = CM.VLog.DEBUG
 CM.VLog.PRINT_TIME = True
 CM.__vdebug__ = True  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
 
-do_comb_conj_disj = True
 show_cov = True
 allows_known_errors = False
 analyze_outps = False
@@ -827,7 +826,7 @@ class Infer(object):
             if configs:
                 new_cc = Infer.infer_cache(cc,configs,dom,cache)
                 
-            if do_comb_conj_disj and new_cc:
+            if new_cc:
                 configs_ = [c for c in _b() if c.c_implies(new_cc)]
                 if configs_:
                     new_cd = Infer.infer_cache(cd,configs_,dom,cache)
