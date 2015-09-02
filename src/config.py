@@ -34,8 +34,8 @@ class CustDict(MutableMapping):
     def __len__(self): return len(self.__dict__)
     def __getitem__(self,key): return self.__dict__[key]
     def __iter__(self): return iter(self.__dict__)    
-    def __setitem__(self,key,val): raise NotImplementedError("no setitem")
-    def __delitem__(self,key): raise NotImplementedError("no delitem")
+    def __setitem__(self,key,val): raise NotImplementedError("setitem")
+    def __delitem__(self,key): raise NotImplementedError("delitem")
     def add_set(self,key,val):
         """
         For mapping from key to set
@@ -55,7 +55,7 @@ def str_of_cov(cov):
 
     s = "({})".format(len(cov))
     if show_cov:
-        s = "{} {}".format(s,','.join(sorted(cov)))
+        s = "{} {}".format(s, ','.join(sorted(cov)))
     return s
     
 is_valset = lambda vs: (isinstance(vs,frozenset) and vs and
@@ -93,6 +93,38 @@ def str_of_csetting((k,vs)):
     return '{}={}'.format(k,str_of_valset(vs))
 
 class Dom(OrderedDict):
+    """
+    >>> dom0 = Dom([('x',frozenset(['1','2'])),('y',frozenset(['1']))])
+    >>> print dom0
+    2 vars and 2 pos configs
+    1. x: (2) 1,2
+    2. y: (1) 1
+
+    
+    >>> dom1 = Dom([('x',frozenset(['1','2'])),\
+    ('y',frozenset(['1'])),\
+    ('z',frozenset(['0','1','2'])),\
+    ('w',frozenset(['a','b','c']))\
+    ])
+
+    >>> print dom1
+    4 vars and 18 pos configs
+    1. x: (2) 1,2
+    2. y: (1) 1
+    3. z: (3) 0,1,2
+    4. w: (3) a,b,c
+
+    >>> assert dom1.siz == len(dom1.gen_configs_full())
+
+    >>> random.seed(0)
+    >>> configs = dom1.gen_configs_rand(5)
+    >>> print "\\n".join(map(str,configs))
+    x=2 y=1 z=2 w=a
+    x=2 y=1 z=2 w=b
+    x=2 y=1 z=0 w=a
+    x=1 y=1 z=0 w=a
+    x=1 y=1 z=2 w=c
+    """
     def __init__(self,dom):
         OrderedDict.__init__(self,dom)
         
@@ -101,12 +133,8 @@ class Dom(OrderedDict):
 
     def __str__(self):
         """
-        >>> print Dom([('x',frozenset(['1','2'])),('y',frozenset(['1']))])
-        2 vars and 2 poss configs
-        1. x: (2) 1,2
-        2. y: (1) 1
         """
-        s = "{} vars and {} poss configs".format(len(self),self.siz)
+        s = "{} vars and {} pos configs".format(len(self),self.siz)
         s_detail = '\n'.join("{}. {}: ({}) {}"
                              .format(i+1,k,len(vs),str_of_valset(vs))
                              for i,(k,vs) in enumerate(self.iteritems()))
@@ -115,6 +143,7 @@ class Dom(OrderedDict):
 
     @property
     def siz(self): return CM.vmul(len(vs) for vs in self.itervalues())
+    
     @property
     def z3db(self):
         z3db = dict()
@@ -190,6 +219,8 @@ class Dom(OrderedDict):
 class Config(HDict):
     """
     >>> c1 = Config([('a', '0'), ('b', '0'), ('c', '0')])
+    >>> print c1
+    a=0 b=0 c=0
     """
     def __init__(self,config=HDict()):
         HDict.__init__(self,config)
@@ -266,7 +297,7 @@ class Core(HDict):
             return self._neg
         
     @staticmethod
-    def is_maybe_core(core): return core is None or isinstance(core,Core)
+    def is_maybe_core(c): return c is None or isinstance(c,Core)
 
     def z3expr(self,z3db,myf):
         f = []
@@ -351,11 +382,13 @@ class SCore(MCore):
     @staticmethod
     def mk_default(): return SCore((None,None))
         
-        
-
 class PNCore(MCore):
     def __init__(self,(pc,pd,nc,nd)):
         super(PNCore,self).__init__((pc,pd,nc,nd))
+
+        #only analyzed one has the below fields
+        self._vtyp = None
+        self._vstr = None
         
     @property
     def pc(self): return self[0]
@@ -364,12 +397,28 @@ class PNCore(MCore):
     @property
     def nc(self): return self[2]
     @property
-    def nd(self):return self[3]
+    def nd(self): return self[3]
+    @property
+    def vtyp(self): return self._vtyp
+    @vtyp.setter
+    def vtyp(self,vt):
+        if CM.__vdebug__:
+            assert isinstance(vt,str) and \
+                vt in 'conj disj mixed'.split(), vt
+        self._vtyp = vt
+        
+    @property
+    def vstr(self): return self._vstr
+    @vstr.setter
+    def vstr(self,vs):
+        if CM.__vdebug__:
+            assert isinstance(vs,str) and vs, vs
+        self._vstr = vs
     
     @staticmethod
     def mk_default(): return PNCore((None,None,None,None))
 
-    def __str__(self,fstr_f=None):
+    def __str__(self):
         """
         >>> pc = Core([('a',frozenset(['2'])),('c',frozenset(['0','1']))])
         >>> pd = None
@@ -378,19 +427,17 @@ class PNCore(MCore):
         >>> print PNCore((pc,pd,nc,nd))
         pc: a=2 c=0,1; nc: b=2
         
-        Important: only call fstr_f *after* being analyzed
         """
-        if CM.__vdebug__:
-            assert fstr_f is None or callable(fstr_f),fstr_f
-        if fstr_f:
-            return fstr_f(self)
+        if self.vstr:
+            return "{} ({})".format(self.vstr,self.vtyp)
         else:
             ss = ("{}: {}".format(s,c) for s,c in
                   zip('pc pd nc nd'.split(),self) if c is not None)
             return '; '.join(ss)
 
-    def fstr(self,dom):
+    def get_vstr_vtyp(self,dom):
         """
+        Important: only call this *after* being analyzed
         Assumption: all 4 cores are verified and simplified
         """
         if CM.__vdebug__:
@@ -416,6 +463,14 @@ class PNCore(MCore):
                 ss.append(_f(dcore_n, ' | '))
             return delim.join(ss) if ss else 'true'
 
+        def _typ(s):
+            if ' & ' in s and ' | ' in s:
+                return 'mix'
+            elif ' | ' in s:
+                return 'disj'
+            else:
+                return 'conj'            
+
         if self.is_simplified():
             if (self.nc is None and self.nd is None):
                 #pc & not(pd)
@@ -428,61 +483,10 @@ class PNCore(MCore):
             n_ss = _cd(self.nd,self.nc,' | ')
             ss = ','.join([p_ss,n_ss]) + '***'  #inconcistent?
 
-        return ss
+        vstr = ss
+        vtyp = _typ(ss)
+        return vstr,vtyp
     
-    @staticmethod
-    def get_styp(s):
-        if ' & ' in s and ' | ' in s:
-            return 'mix'
-        elif ' | ' in s:
-            return 'disj'
-        else:
-            return 'conj'
-
-    @staticmethod
-    def get_ntyps(typs):
-        d = {'conj':0,'disj':0,'mix':0}
-        for t in typs:
-            d[t] = d[t] + 1
-
-        return (d['conj'],d['disj'],d['mix'])
-
-
-    @property
-    def typ(self):
-
-        ss = set()
-        if self.pc and self.pd:
-            ss.add('mixed1')
-        elif self.pc:
-            ss.add('conj')
-        elif self.pd:
-            ss.add('disj')
-
-        if self.nc and self.nd:
-            ss.add('mixed2')
-        elif self.nc:
-            ss.add('disj')
-        elif self.nd:
-            ss.add('conj')
-
-        if any(s.startswith('mixed') for s in ss):
-            return 'mix'
-        elif 'conj' in ss and 'disj' in ss:
-            return 'mix'
-        elif len(ss)==1 and 'conj' in ss:
-            return 'conj'
-        elif len(ss)==1 and 'disj' in ss:
-            return 'disj'
-        elif len(ss)==0:
-            return 'conj'  #true
-        else:
-            logger.warn("W: unexpected case of typ, ss {}".format(ss))
-            return 'conj'
-            
-            
-            
-
     def verify(self,configs,dom):
         if CM.__vdebug__:
             assert self.pc is not None, self.pc #this never could happen
@@ -587,8 +591,6 @@ class PNCore(MCore):
         return ((self.pc is None and self.pd is None) or
                 (self.nc is None and self.nd is None))
 
-
-
 class Cores_d(CustDict):
     def __setitem__(self,sid,pncore):
         if CM.__vdebug__:
@@ -598,7 +600,7 @@ class Cores_d(CustDict):
 
     def __str__(self):
         return '\n'.join("{}. {}: {}"
-                         .format(i+1,sid,self[sid].__str__(fstr_f=None))
+                         .format(i+1,sid,self[sid])
                          for i,sid in enumerate(sorted(self)))
     def merge(self):
         mcores_d = Mcores_d()
@@ -617,52 +619,49 @@ class Cores_d(CustDict):
                 logger.debug("sid {}: {} ~~> {}".
                              format(sid,old_c,new_c))
 
+        cores_d = Cores_d()                
         logger.info("analyze interactions for {} sids".format(len(self)))
+
         logger.debug("verify ...")
-        vcache = {}
-        rs_verify = []    
+        cache = {}
         for sid,core in self.iteritems():
             configs = frozenset(covs_d[sid])
             key = (core,configs)
-            if key not in vcache:
+            if key not in cache:
                 core_ = core.verify(configs,dom)
-                vcache[key]=core_
+                cache[key]=core_
                 show_compare(sid,core,core_)
             else:
-                core_ = vcache[key]
+                core_ = cache[key]
 
-            rs_verify.append((sid,core_))        
+            cores_d[sid]=core
 
         logger.debug("simplify ...")
-        scache = {}
-        rs_simplify = Cores_d()
-        for sid,core in rs_verify:
-            if core not in scache:
+        cache = {}
+        for sid in cores_d:
+            core = cores_d[sid]
+            if core not in cache:
                 core_ = core.simplify(dom)
-                scache[core]=core_
+                cache[core]=core_
                 show_compare(sid,core,core_)
             else:
-                core_ = scache[core]
-            rs_simplify[sid]=core_
+                core_ = cache[core]
+            cores_d[sid]=core_
 
-        return rs_simplify
-
-    def show_analysis(self,dom):
-        if CM.__vdebug__:
-            assert isinstance(dom,Dom),dom
+        logger.debug("vstr and vtyp ...")
+        cache = {}
+        for sid in cores_d:
+            core = cores_d[sid]
+            if core not in cache:
+                vstr,vtyp = core.get_vstr_vtyp(dom)
+                cache[core] = (vstr,vtyp)
+            else:
+                vstr,vtyp = cache[core]
             
-        mcores_d = self.merge()
-        fstr_f=lambda c: c.fstr(dom)
-        #strs = mcores_d.strs(fstr_f)
-        typs,strs = mcores_d.typs_strs(fstr_f)
-        
-        logger.debug("mcores_d has {} items\n".format(len(mcores_d)) +
-                     '\n'.join(strs))
-        
-        logger.info("mcores_d strens: {}".format(mcores_d.strens_str))
-        
-        
-        return mcores_d
+            cores_d[sid].vstr = vstr
+            cores_d[sid].vtyp = vtyp
+            
+        return cores_d
     
 class Mcores_d(CustDict):
     """
@@ -674,56 +673,26 @@ class Mcores_d(CustDict):
             assert isinstance(sid,str),str
         super(Mcores_d,self).add_set(core,sid)
 
-    def strs(self,fstr_f=None):
-        if CM.__vdebug__:
-            assert fstr_f is None or callable(fstr_f),fstr_f
+    def show_analysis(self):
+        logger.debug("mcores_d has {} items\n{}".format(len(self),self))
+        logger.info("mcores_d strens: {}".format(self.strens_str))
 
+    def __str__(self):
         mc = sorted(self.iteritems(),
                     key=lambda (core,cov): (core.sstren,core.vstren,len(cov)))
-        
-        ss_fs = [core.__str__(fstr_f) for (core,_) in mc]
-        
         ss = ("{}. ({}) {}: {}"
-              .format(i+1,core.sstren,ss_fs[i],str_of_cov(cov))
+              .format(i+1,core.sstren,core,str_of_cov(cov))
               for i,(core,cov) in enumerate(mc))
+        return '\n'.join(ss)
 
-        return ss
-        
-    def __str__(self,fstr_f=None):
-        return '\n'.join(self.strs(fstr_f))
+    @property
+    def vtyps(self):
+        d = {'conj':0,'disj':0,'mix':0}
+        for core in self:
+            vtyp = core.vtyp
+            d[vtyp] = d[vtyp] + 1
 
-
-    def typs_strs(self,fstr_f):
-        if CM.__vdebug__:
-            callable(fstr_f),fstr_f
-
-        mc = sorted(self.iteritems(),
-                    key=lambda (core,cov): (core.sstren,core.vstren,len(cov)))
-        
-        ss_fs = [core.__str__(fstr_f) for (core,_) in mc]
-        
-        ss = ("{}. ({}) {}: {} ((pc {}, pd {}, nc {}, nd {}) ==> {})"
-              .format(i+1,core.sstren,ss_fs[i],str_of_cov(cov),core.pd,core.nc,core.nc,core.nd,core.typ)
-              for i,(core,cov) in enumerate(mc))
-
-        typs = [PNCore.get_styp(ss_f) for ss_f in ss_fs]
-
-        return typs,ss
-
-
-    # @property
-    # def typs(self):
-    #     typs = [core.typ for core in self]
-    #     return typs
-
-    # @property
-    # def ntyps(self):
-    #     typs = [core.typ for core in self]
-    #     d = {'conj':0,'disj':0,'mix':0}
-    #     for t in typs:
-    #         d[t] = d[t] + 1
-
-    #     return (d['conj'],d['disj'],d['mix'])
+        return (d['conj'],d['disj'],d['mix'])
     
     @property
     def strens(self):
@@ -746,24 +715,6 @@ class Mcores_d(CustDict):
     def str_of_strens(strens):
         return ', '.join("({}, {}, {})".format(siz,ncores,ncov)
                          for siz,ncores,ncov in strens)
-
-    
-
-    # @property
-    # def shared_graph(self):
-    #     g = {}
-    #     for core in self:
-    #         if not core.settings:  #skip true
-    #             continue
-    #         for core_ in self:
-    #             if core_ is not core and core_.settings:
-    #                 if core.settings.is_superset(core_.settings):
-    #                     if core not in d:
-    #                         g[core] = set()
-    #                     g[core].add(core_)
-    #     return g
-
-        
     
 #Inference algorithm
 class Infer(object):
@@ -1033,7 +984,8 @@ class IGen(object):
 
         #postprocess
         pp_cores_d = cores_d.analyze(covs_d,self.dom)
-        pp_cores_d.show_analysis(self.dom)
+        mcores_d = pp_cores_d.merge()
+        mcores_d.show_analysis()
         itime_total = time() - st
         
         logger.info(Analysis.str_of_summary(
@@ -1390,22 +1342,17 @@ class Analysis(object):
             dt.show()
 
         #print postprocess results
-        mcores_d = pp_cores_d.show_analysis(dom)
+        mcores_d = pp_cores_d.merge()
+        mcores_d.show_analysis()
         
         #print summary
         xtime_total = itime_total - sum(dt.xtime for dt in dts)
         logger.info(Analysis.str_of_summary(
             seed,len(dts),itime_total,xtime_total,dt.nconfigs,dt.ncovs,dir_))
-            
-
-
-        fstr_f=lambda c: c.fstr(dom)
-        typs,_ = mcores_d.typs_strs(fstr_f)
-        ntyps = PNCore.get_ntyps(typs)
 
         return (len(dts),len(mcores_d),
                 itime_total,xtime_total,dt.nconfigs,dt.ncovs,
-                mcores_d.strens,ntyps)
+                mcores_d.strens,mcores_d.vtyps)
 
     @staticmethod
     def replay_dirs(dir_):
@@ -1568,3 +1515,7 @@ class Analysis(object):
 
         logger.info(cconfigs_d)
 
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
