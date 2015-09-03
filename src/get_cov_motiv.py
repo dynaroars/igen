@@ -1,5 +1,5 @@
 #Motivation/Simple examples
-from config import (getpath,Config,Dom)
+from config import (Config,Dom)
 import config as CF
 import get_cov as GC
 import vu_common as CM
@@ -33,16 +33,16 @@ def prepare(prog_name):
         assert isinstance(prog_name,str),prog_name
 
     import platform
-    dir_ = getpath('../benchmarks/examples')
+    dir_ = CM.getpath('../benchmarks/examples')
     dom_file = db[prog_name]
-    dom_file = getpath(os.path.join(dir_,"{}.dom".format(dom_file)))
+    dom_file = CM.getpath(os.path.join(dir_,"{}.dom".format(dom_file)))
     dom,_ = Dom.get_dom(dom_file)
     logger.info("dom_file '{}': {}".format(dom_file,dom))
-    prog_exe = getpath(os.path.join(dir_,"{}.{}.exe"
+    prog_exe = CM.getpath(os.path.join(dir_,"{}.{}.exe"
                                     .format(prog_name,platform.system())))
     logger.info("prog_exe: '{}'".format(prog_exe))
 
-    gcno_file = getpath(os.path.join(dir_,"{}.gcno".format(prog_name)))
+    gcno_file = CM.getpath(os.path.join(dir_,"{}.gcno".format(prog_name)))
     get_cov_f = get_cov_gcov if os.path.isfile(gcno_file) else get_cov
 
     data = {'var_names':dom.keys(),
