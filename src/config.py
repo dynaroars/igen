@@ -299,6 +299,15 @@ class Core(HDict):
 
     >>> print c.neg(dom)
     x=1 z=2
+
+    >>> dom = Dom([('x',frozenset(['1','2'])),\
+    ('y',frozenset(['1','2','3','a'])),\
+    ('z',frozenset(['0','1','2'])),\
+    ('w',frozenset(['a','b','c']))\
+    ])
+    >>> print c.neg(dom)
+    x=1 z=2
+
     """
     def __init__(self,core=HDict()):
         HDict.__init__(self,core)
