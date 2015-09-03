@@ -1,7 +1,7 @@
 import abc 
 import os.path
 import vu_common as CM
-from config import (getpath,Dom,Config)
+from config import (Dom,Config)
 import config as CF
 import get_cov as GC
 
@@ -13,7 +13,7 @@ def prepare(prog_name,do_perl):
         assert isinstance(prog_name,str),prog_name
         assert isinstance(do_perl,bool), do_perl
         
-    main_dir = getpath('../benchmarks/coreutils')
+    main_dir = CM.getpath('../benchmarks/coreutils')
 
     if do_perl:
         prog_dir = os.path.join(main_dir,'coreutils_perl')
@@ -32,7 +32,7 @@ def prepare(prog_name,do_perl):
         get_cov_f = get_cov_gcov
         dom_file = os.path.join(main_dir,"doms","{}.dom".format(prog_name))
 
-    dom_file = getpath(dom_file)
+    dom_file = CM.getpath(dom_file)
     dom,_ = Dom.get_dom(dom_file)
     logger.info("dom_file '{}': {}".format(dom_file,dom))
     

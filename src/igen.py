@@ -1,10 +1,8 @@
 import os.path
 import tempfile
 from time import time
-
 import vu_common as CM
 import config
-
 
 def runscript_get_cov(config, run_script):
 
@@ -14,7 +12,6 @@ def runscript_get_cov(config, run_script):
     import get_cov
     cov = get_cov.run_runscript(run_script,inputs)
     return cov,[]
-    
 
 def get_run_f(args):
 
@@ -150,11 +147,13 @@ if __name__ == "__main__":
     if args.analyze_outps:
         config.analyze_outps = True
         
-    if args.replay:
-        config.Analysis.replay(args.prog)
-        exit(0)
-    elif args.replay_dirs:
-        config.Analysis.replay_dirs(args.prog)
+    if args.replay or args.replay_dirs:
+        import config_analysis as analysis
+        analysis.logger.level = args.logger_level
+        if args.replay:
+            analysis.Analysis.replay(args.prog)
+        else:
+            analysis.Analysis.replay_dirs(args.prog)
         exit(0)
 
     nruns = args.benchmark if args.benchmark else 1

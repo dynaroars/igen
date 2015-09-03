@@ -1,11 +1,13 @@
 from time import time
 import random
 import os
-from config import (getpath,Dom,Config,
+import vu_common as CM
+
+from config_analysis import Analysis
+from config import (Dom,Config,
                     Configs_d,Cores_d,Covs_d,
                     Infer,Analysis,DTrace)
 import config as CF
-import vu_common as CM
 
 logger = CM.VLog('otter')
 logger.level = CF.logger.level
@@ -13,7 +15,7 @@ logger.level = CF.logger.level
 db = {"vsftpd":None,"ngircd":None}
 
 def prepare(prog):
-    dir_ = getpath('../otter_exps/{}'.format(prog))
+    dir_ = CM.getpath('../otter_exps/{}'.format(prog))
     dom_file = os.path.join(dir_,'possibleValues.txt')
     pathconds_d_file = os.path.join(dir_,'{}.tvn'.format('pathconds_d'))
     assert os.path.isfile(dom_file),dom_file
