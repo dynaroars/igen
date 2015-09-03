@@ -69,8 +69,7 @@ class Analysis(object):
             dt.show()
 
         #print postprocess results
-        mcores_d = pp_cores_d.merge()
-        mcores_d.show_analysis()
+        mcores_d = pp_cores_d.merge(show_detail=True)
         
         #print summary
         xtime_total = itime_total - sum(dt.xtime for dt in dts)

@@ -300,13 +300,9 @@ class Core(HDict):
     >>> print c.neg(dom)
     x=1 z=2
 
-    >>> dom = Dom([('x',frozenset(['1','2'])),\
-    ('y',frozenset(['1','2','3','a'])),\
-    ('z',frozenset(['0','1','2'])),\
-    ('w',frozenset(['a','b','c']))\
-    ])
+    >>> c = Core([('x',frozenset(['2'])),('z',frozenset(['0','1'])),('w',frozenset(['a']))])
     >>> print c.neg(dom)
-    x=1 z=2
+    x=1 z=2 w=b,c
 
     """
     def __init__(self,core=HDict()):
@@ -344,7 +340,7 @@ class Core(HDict):
     
 class MCore(tuple):
     """
-    Multiple cores
+    Multiple (tuples) cores
     """
     def __init__(self,cores):
         tuple.__init__(self,cores)
@@ -677,7 +673,8 @@ class Cores_d(CustDict):
         return '\n'.join("{}. {}: {}"
                          .format(i+1,sid,self[sid])
                          for i,sid in enumerate(sorted(self)))
-    def merge(self):
+
+    def merge(self,show_detail=False):
         mcores_d = Mcores_d()
         cache = {}
         for sid,core in self.iteritems():
@@ -688,6 +685,12 @@ class Cores_d(CustDict):
             else:
                 core_ = cache[key]
             mcores_d.add(core_,sid)
+
+        if show_detail:
+            logger.debug("mcores_d has {} items\n{}"
+                         .format(len(mcores_d),mcores_d))
+            logger.info("mcores_d strens: {}".format(mcores_d.strens_str))
+            
         return mcores_d
 
     def analyze(self,covs_d,dom):
@@ -753,10 +756,6 @@ class Mcores_d(CustDict):
             assert isinstance(core,PNCore),core
             assert isinstance(sid,str),str
         super(Mcores_d,self).add_set(core,sid)
-
-    def show_analysis(self):
-        logger.debug("mcores_d has {} items\n{}".format(len(self),self))
-        logger.info("mcores_d strens: {}".format(self.strens_str))
 
     def __str__(self):
         mc = sorted(self.iteritems(),
@@ -1065,8 +1064,7 @@ class IGen(object):
 
         #postprocess
         pp_cores_d = cores_d.analyze(covs_d,self.dom)
-        mcores_d = pp_cores_d.merge()
-        mcores_d.show_analysis()
+        mcores_d = pp_cores_d.merge(show_detail=True)
         itime_total = time() - st
         
         logger.info(Analysis.str_of_summary(
