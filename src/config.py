@@ -4,6 +4,7 @@ from time import time
 import os.path
 import itertools
 import random
+
 import numpy
 
 import z3
