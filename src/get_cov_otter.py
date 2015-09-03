@@ -3,7 +3,9 @@ import random
 import os
 from config import (getpath,Dom,Config,
                     Configs_d,Cores_d,Covs_d,
-                    Infer,Analysis,DTrace)
+                    Infer,DTrace)
+from config_analysis import Analysis
+
 import config as CF
 import vu_common as CM
 
