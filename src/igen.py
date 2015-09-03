@@ -149,13 +149,12 @@ if __name__ == "__main__":
         config.show_cov = False
     if args.analyze_outps:
         config.analyze_outps = True
-
-    from config_analysis import Analysis
+        
     if args.replay:
-        Analysis.replay(args.prog)
+        config.Analysis.replay(args.prog)
         exit(0)
     elif args.replay_dirs:
-        Analysis.replay_dirs(args.prog)
+        config.Analysis.replay_dirs(args.prog)
         exit(0)
 
     nruns = args.benchmark if args.benchmark else 1
