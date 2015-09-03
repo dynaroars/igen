@@ -476,58 +476,6 @@ class PNCore(MCore):
                   zip('pc pd nc nd'.split(),self) if c is not None)
             return '; '.join(ss)
 
-    # def get_vstr_vtyp(self,dom):
-    #     """
-    #     Important: only call this *after* being analyzed
-    #     Assumption: all 4 cores are verified and simplified
-    #     """
-    #     if CM.__vdebug__:
-    #         assert self.pc is None or (isinstance(self.pc,Core) and self.pc), self.pc
-    #         assert self.pd is None or (isinstance(self.pd,Core) and self.pd), self.pd
-    #         assert self.nc is None or (isinstance(self.nc,Core) and self.nc), self.nc
-    #         assert self.nd is None or (isinstance(self.nd,Core) and self.nd), self.nd
-    #         assert isinstance(dom,Dom),dom
-            
-    #     def _f(core,delim):
-    #         s = core.__str__(delim)
-    #         if len(core) > 1:
-    #             s = '({})'.format(s)
-    #         return s
-
-    #     def _cd(ccore,dcore,delim):
-    #         ss = []
-    #         if ccore:
-    #             ss.append(_f(ccore,' & '))
-    #         if dcore:
-    #             assert isinstance(dom,Dom),dom
-    #             dcore_n = dcore.neg(dom)
-    #             ss.append(_f(dcore_n, ' | '))
-    #         return delim.join(sorted(ss)) if ss else 'true'
-
-    #     def _typ(s):
-    #         if ' & ' in s and ' | ' in s:
-    #             return 'mix'
-    #         elif ' | ' in s:
-    #             return 'disj'
-    #         else:
-    #             return 'conj'            
-
-    #     if self.is_simplified():
-    #         if (self.nc is None and self.nd is None):
-    #             #pc & not(pd)
-    #             ss = _cd(self.pc,self.pd,' & ')
-    #         else:
-    #             #not(nc & not(nd))  =  not(nc) | nd
-    #             ss = _cd(self.nd,self.nc,' | ')
-    #     else:
-    #         p_ss = _cd(self.pc,self.pd,' & ')
-    #         n_ss = _cd(self.nd,self.nc,' | ')
-    #         ss = ','.join([p_ss,n_ss]) + '***'  #inconcistent?
-
-    #     vstr = ss
-    #     vtyp = _typ(ss)
-    #     return vstr,vtyp
-    
     def verify(self,configs,dom):
         if CM.__vdebug__:
             assert self.pc is not None, self.pc #this never happens
@@ -570,6 +518,44 @@ class PNCore(MCore):
                 nd = None
 
         return PNCore((pc,pd,nc,nd))
+
+    @staticmethod
+    def _simplify(cc,cd,dom,z3db,is_and):
+        and_delim = ' & '
+        or_delim = ' | '
+
+        def _str(core,delim):
+            s = core.__str__(delim)
+            if len(core) > 1:
+                s = '({})'.format(s)
+            return s
+        
+        fs = []
+        ss = []
+        if cc:
+            f = cc.z3expr(z3db,myf=z3util.myAnd)
+            fs.append(f)
+
+            s = _str(cc,and_delim)
+            ss.append(s)
+
+        if cd:
+            cd_n = cd.neg(dom)
+            f = cd_n.z3expr(z3db,myf=z3util.myOr)
+            fs.append(f)
+
+            s = _str(cd_n,or_delim)
+            ss.append(s)
+
+        ss = sorted(ss)
+        if is_and:
+            expr = z3util.myAnd(fs)
+            vstr = and_delim.join(ss) if ss else 'true'
+        else:
+            expr = z3util.myOr(fs)
+            vstr = or_delim.join(ss) if ss else 'true'
+
+        return expr,vstr
     
     def simplify(self,dom):
         """
@@ -577,6 +563,9 @@ class PNCore(MCore):
         This will set either (pc,pd) or (nc,nd) to (None,None)
 
         Assumption: all 4 cores are verified
+
+        inv1 = pc & not(pd)
+        inv2 = not(nc & not(nd)) = nd | not(nc)
         """
         if CM.__vdebug__:
             assert self.pc is not None, self.pc #this never could happen
@@ -594,59 +583,14 @@ class PNCore(MCore):
         if not nc: nc = None
         if not nd: nd = None
 
-        and_delim = ' & '
-        or_delim = ' | '
-
-        def _str(core,delim):
-            s = core.__str__(delim)
-            if len(core) > 1:
-                s = '({})'.format(s)
-            return s
-
-        def _typ(s):
-            if ' & ' in s and ' | ' in s:
-                return 'mix'
-            elif ' | ' in s:
-                return 'disj'
-            else:
-                return 'conj'         
-        
-        def _do(cc,cd,is_and):
-            fs = []
-            ss = []
-            if cc:
-                f = cc.z3expr(z3db,myf=z3util.myAnd)
-                fs.append(f)
-
-                s = _str(cc,and_delim)
-                ss.append(s)
-
-            if cd:
-                cd_n = cd.neg(dom)
-                f = cd_n.z3expr(z3db,myf=z3util.myOr)
-                fs.append(f)
-
-                s = _str(cd_n,or_delim)
-                ss.append(s)
-
-            ss = sorted(ss)
-            if is_and:
-                expr = z3util.myAnd(fs)
-                vstr = and_delim.join(ss) if ss else 'true'
-            else:
-                expr = z3util.myOr(fs)
-                vstr = or_delim.join(ss) if ss else 'true'
-
-            return expr,vstr
-
         z3db = dom.z3db
         if pc is None and pd is None:
-            expr,vstr = _do(nd,nc,is_and=False)
+            expr,vstr = PNCore._simplify(nd,nc,dom,z3db,is_and=False)
         elif nc is None and nd is None:
-            expr,vstr = _do(pc,pd,is_and=True)
+            expr,vstr = PNCore._simplify(pc,pd,dom,z3db,is_and=True)
         else:
-            pexpr,pvstr = _do(pc,pd,is_and=True)            
-            nexpr,nvstr = _do(nd,nc,is_and=False)
+            pexpr,pvstr = PNCore._simplify(pc,pd,dom,z3db,is_and=True)
+            nexpr,nvstr = PNCore._simplify(nd,nc,dom,z3db,is_and=False)
 
             if z3util.is_tautology(z3.Implies(pexpr,nexpr)):
                 nc = None
@@ -665,48 +609,19 @@ class PNCore(MCore):
                 expr = z3util.myAnd([pexpr,nexpr])
                 vstr = ','.join([pvstr,nvstr]) + '***'
 
+                
+        def _typ(s):
+            #hackish way to get type
+            if ' & ' in s and ' | ' in s:
+                return 'mix'
+            elif ' | ' in s:
+                return 'disj'
+            else:
+                return 'conj'         
         
         core = PNCore((pc,pd,nc,nd))
         core.vstr = vstr
         core.vtyp = _typ(vstr)
-
-
-        # if (pc is None and pd is None) or (nc is None and nd is None):
-        #     core = PNCore((pc,pd,nc,nd))
-        # else:
-        #     #convert to z3
-        #     z3db = dom.z3db
-
-        #     def _f(cc,cd):
-        #         fs = []
-        #         if cc:
-        #             f = cc.z3expr(z3db,myf=z3util.myAnd)
-        #             fs.append(f)
-        #         if cd:
-        #             cd_n = cd.neg(dom)
-        #             f = cd_n.z3expr(z3db,myf=z3util.myOr)
-        #             fs.append(f)
-        #         return fs
-
-        #     pf = z3util.myAnd(_f(pc,pd))
-        #     nf = z3util.myOr(_f(nd,nc))
-
-        #     if z3util.is_tautology(z3.Implies(pf,nf)):
-        #         nc = None
-        #         nd = None
-        #     elif z3util.is_tautology(z3.Implies(nf,pf)):
-        #         pc = None
-        #         pd = None
-        #     else:
-        #         #could occur when using incomplete traces
-        #         logger.warn("inconsistent ? {}\npf: {} ?? nf: {}"
-        #                     .format(PNCore((pc,pd,nc,nd)),
-        #                     pf,nf))
-
-        #       core = PNCore((pc,pd,nc,nd))
-        # vstr,vtyp = core.get_vstr_vtyp(dom)
-        # core.vstr = vstr
-        # core.vtyp = vtyp
         
         return core,expr
 
@@ -750,8 +665,8 @@ class Cores_d(CustDict):
     >>> covs_d.add('L2',config)
 
     >>> logger.level = CM.VLog.WARN
-    >>> cores_d = cores_d.analyze(covs_d,dom,None)
-    >>> print cores_d.merge()
+    >>> cores_d = cores_d.analyze(dom,covs_d,None)
+    >>> print cores_d.merge(show_detail=False)
     1. (2) a=1 & b=1 (conj): (2) L1,L2
 
     """
