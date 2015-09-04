@@ -448,14 +448,6 @@ class PNCore(MCore):
             assert isinstance(vs,str) and vs, vs
         self._vstr = vs
 
-    # @property
-    # def z3expr(self): return self._z3expr
-    # @z3expr.setter
-    # def z3expr(self,e):
-    #     if CM.__vdebug__:
-    #         assert z3.is_expr(e), e
-    #     self._z3expr = e
-    
     @staticmethod
     def mk_default(): return PNCore((None,None,None,None))
 
@@ -518,9 +510,23 @@ class PNCore(MCore):
                 nd = None
 
         return PNCore((pc,pd,nc,nd))
+    
+    @staticmethod
+    def _get_expr(cc,cd,dom,z3db,is_and):
+        fs = []
+        if cc:
+            f = cc.z3expr(z3db,myf=z3util.myAnd)
+            fs.append(f)
+        if cd:
+            cd_n = cd.neg(dom)
+            f = cd_n.z3expr(z3db,myf=z3util.myOr)
+            fs.append(f)
+
+        myf = z3util.myAnd if is_and else z3util.myOr
+        return myf(fs)
 
     @staticmethod
-    def _simplify(cc,cd,dom,z3db,is_and):
+    def _get_str(cc,cd,dom,is_and):
         and_delim = ' & '
         or_delim = ' | '
 
@@ -530,32 +536,24 @@ class PNCore(MCore):
                 s = '({})'.format(s)
             return s
         
-        fs = []
         ss = []
         if cc:
-            f = cc.z3expr(z3db,myf=z3util.myAnd)
-            fs.append(f)
-
             s = _str(cc,and_delim)
             ss.append(s)
-
         if cd:
             cd_n = cd.neg(dom)
-            f = cd_n.z3expr(z3db,myf=z3util.myOr)
-            fs.append(f)
-
             s = _str(cd_n,or_delim)
             ss.append(s)
 
-        ss = sorted(ss)
-        if is_and:
-            expr = z3util.myAnd(fs)
-            vstr = and_delim.join(ss) if ss else 'true'
-        else:
-            expr = z3util.myOr(fs)
-            vstr = or_delim.join(ss) if ss else 'true'
-
+        delim = and_delim if is_and else or_delim
+        return delim.join(sorted(ss)) if ss else 'true'
+        
+    @staticmethod
+    def _get_expr_str(cc,cd,dom,z3db,is_and):
+        expr = PNCore._get_expr(cc,cd,dom,z3db,is_and)
+        vstr = PNCore._get_str(cc,cd,dom,is_and)
         return expr,vstr
+
     
     def simplify(self,dom):
         """
@@ -585,12 +583,12 @@ class PNCore(MCore):
 
         z3db = dom.z3db
         if pc is None and pd is None:
-            expr,vstr = PNCore._simplify(nd,nc,dom,z3db,is_and=False)
+            expr,vstr = PNCore._get_expr_str(nd,nc,dom,z3db,is_and=False)
         elif nc is None and nd is None:
-            expr,vstr = PNCore._simplify(pc,pd,dom,z3db,is_and=True)
+            expr,vstr = PNCore._get_expr_str(pc,pd,dom,z3db,is_and=True)
         else:
-            pexpr,pvstr = PNCore._simplify(pc,pd,dom,z3db,is_and=True)
-            nexpr,nvstr = PNCore._simplify(nd,nc,dom,z3db,is_and=False)
+            pexpr,pvstr = PNCore._get_expr_str(pc,pd,dom,z3db,is_and=True)
+            nexpr,nvstr = PNCore._get_expr_str(nd,nc,dom,z3db,is_and=False)
 
             if z3util.is_tautology(z3.Implies(pexpr,nexpr)):
                 nc = None
@@ -609,7 +607,6 @@ class PNCore(MCore):
                 expr = z3util.myAnd([pexpr,nexpr])
                 vstr = ','.join([pvstr,nvstr]) + '***'
 
-                
         def _typ(s):
             #hackish way to get type
             if ' & ' in s and ' | ' in s:
@@ -629,6 +626,19 @@ class PNCore(MCore):
         return ((self.pc is None and self.pd is None) or
                 (self.nc is None and self.nd is None))
 
+    def z3expr(self,dom,z3db):
+        pc,pd,nc,nd = self        
+        z3db = dom.z3db
+        if pc is None and pd is None:
+            expr = PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
+        elif nc is None and nd is None:
+            expr,vstr = PNCore._get_expr(pc,pd,dom,z3db,is_and=True)
+        else:
+            pexpr,pvstr = PNCore._get_expr(pc,pd,dom,z3db,is_and=True)
+            nexpr,nvstr = PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
+            expr = z3util.myAnd([pexpr,nexpr])
+        return expr
+        
 class Cores_d(CustDict):
     """
     rare case when diff c1 and c2 became equiv after simplification
