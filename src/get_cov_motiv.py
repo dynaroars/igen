@@ -10,6 +10,7 @@ logger.level = CF.logger.level
 
 db = {
     "ex": "ex",
+    "ex1": "ex",
     "ex_motiv1": "ex_motiv1",
     "ex_motiv1b": "ex_motiv1",
     "ex_motiv2" : "ex_motiv2",
