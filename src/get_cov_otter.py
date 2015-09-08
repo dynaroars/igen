@@ -82,8 +82,7 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     st = time()
     cores_d,configs_d,covs_d = Cores_d(),Configs_d(),Covs_d()
     _ = Infer.infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom)
-    z3exprs_d = {}
-    pp_cores_d = cores_d.analyze(dom,covs_d,z3exprs_d)
+    pp_cores_d = cores_d.analyze(dom,covs_d)
     pp_cores_d.show_analysis(dom)
 
     itime_total = time()-st

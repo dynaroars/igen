@@ -414,6 +414,48 @@ class SCore(MCore):
     def mk_default(): return SCore((None,None))
         
 class PNCore(MCore):
+    """
+    >>> pc = Core([('x',frozenset(['0','1'])),('y',frozenset(['1']))])
+    >>> pd = None
+    >>> nc = Core([('z',frozenset(['1']))])
+    >>> nd = None
+    >>> pncore = PNCore((pc,pd,nc,nd))
+    >>> print pncore
+    pc: x=0,1 y=1; nc: z=1
+
+
+    >>> dom = Dom([('x',frozenset(['0','1','2'])),\
+    ('y',frozenset(['0','1'])),\
+    ('z',frozenset(['0','1'])),\
+    ('w',frozenset(['0','1']))\
+    ])
+    >>> z3db = dom.z3db
+
+    >>> print PNCore._get_str(pc,pd,dom,is_and=True)
+    (x=0,1 & y=1)
+    >>> print PNCore._get_expr(pc,pd,dom,z3db,is_and=True)
+    And(Or(x == 1, x == 0), y == 1)
+
+    >>> print PNCore._get_str(nd,nc,dom,is_and=False)
+    z=0
+    >>> print PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
+    z == 0
+    >>> print pncore.z3expr(dom,z3db)
+    And(And(Or(x == 1, x == 0), y == 1), z == 0)
+
+    >>> pc = Core([])
+    >>> pd = None
+    >>> nc = None
+    >>> nd = None
+    >>> pncore = PNCore((pc,pd,nc,nd))
+
+    >>> assert PNCore._get_str(pc,pd,dom,is_and=True) == 'true'
+    >>> assert PNCore._get_str(nd,nc,dom,is_and=False) == 'true'
+    >>> assert PNCore._get_expr(pc,pd,dom,z3db,is_and=True) is None
+    >>> assert PNCore._get_expr(nd,nc,dom,z3db,is_and=True) is None
+    >>> assert pncore.z3expr(dom,z3db) is None
+    """
+
     def __init__(self,(pc,pd,nc,nd)):
         super(PNCore,self).__init__((pc,pd,nc,nd))
 
@@ -452,15 +494,6 @@ class PNCore(MCore):
     def mk_default(): return PNCore((None,None,None,None))
 
     def __str__(self):
-        """
-        >>> pc = Core([('a',frozenset(['2'])),('c',frozenset(['0','1']))])
-        >>> pd = None
-        >>> nc = Core([('b',frozenset(['2']))])
-        >>> nd = None
-        >>> print PNCore((pc,pd,nc,nd))
-        pc: a=2 c=0,1; nc: b=2
-        
-        """
         if self.vstr:
             return "{} ({})".format(self.vstr,self.vtyp)
         else:
@@ -589,6 +622,10 @@ class PNCore(MCore):
         else:
             pexpr,pvstr = PNCore._get_expr_str(pc,pd,dom,z3db,is_and=True)
             nexpr,nvstr = PNCore._get_expr_str(nd,nc,dom,z3db,is_and=False)
+            
+            if CM.__vdebug__:
+                assert pexpr is not None
+                assert nexpr is not None
 
             if z3util.is_tautology(z3.Implies(pexpr,nexpr)):
                 nc = None
@@ -632,10 +669,10 @@ class PNCore(MCore):
         if pc is None and pd is None:
             expr = PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
         elif nc is None and nd is None:
-            expr,vstr = PNCore._get_expr(pc,pd,dom,z3db,is_and=True)
+            expr = PNCore._get_expr(pc,pd,dom,z3db,is_and=True)
         else:
-            pexpr,pvstr = PNCore._get_expr(pc,pd,dom,z3db,is_and=True)
-            nexpr,nvstr = PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
+            pexpr = PNCore._get_expr(pc,pd,dom,z3db,is_and=True)
+            nexpr = PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
             expr = z3util.myAnd([pexpr,nexpr])
         return expr
         
@@ -675,7 +712,7 @@ class Cores_d(CustDict):
     >>> covs_d.add('L2',config)
 
     >>> logger.level = CM.VLog.WARN
-    >>> cores_d = cores_d.analyze(dom,covs_d,None)
+    >>> cores_d = cores_d.analyze(dom,covs_d)
     >>> print cores_d.merge(show_detail=False)
     1. (2) a=1 & b=1 (conj): (2) L1,L2
 
@@ -710,7 +747,7 @@ class Cores_d(CustDict):
             
         return mcores_d
 
-    def analyze(self,dom,covs_d,z3exprs_d=None):
+    def analyze(self,dom,covs_d):
         if CM.__vdebug__:
             assert isinstance(covs_d,Covs_d) and covs_d, covs_d
             assert len(self) == len(covs_d), (len(self),len(covs_d))
@@ -745,8 +782,6 @@ class Cores_d(CustDict):
             if core not in cache:
                 core_,expr = core.simplify(dom)
                 cache[core]=core_
-                if z3exprs_d is not None:
-                    z3exprs_d[core]=expr
                 show_compare(sid,core,core_)
             else:
                 core_ = cache[core]
@@ -803,47 +838,138 @@ class Mcores_d(CustDict):
         return ', '.join("({}, {}, {})".format(siz,ncores,ncov)
                          for siz,ncores,ncov in strens)
 
-    # def min_configs(self,configs_d,covs_d):
-    #     """
-    #     Return a set of minimal configs with high cov
-    #     """
-    #     assert self
 
-    #     def select_core():
-    #         cores = [c for c in self if c.vtyp == "conj"]
-    #         if cores:
-    #             score = max(c,key=lambda c: (c.sstren,c.vstren))
-    #             return score
+    def get_strongest(self,dom,z3db=None):
+        """
+        Return the set of strongest cores (i.e., not implied by any other cores)
 
-    #         cores = [c for c in self if c.vtyp == "disj"]
-    #         if cores:
-    #             score = min(c,key=lambda c: (c.sstren))
+        >>> dom = Dom([('x',frozenset(['0','1'])),\
+        ('y',frozenset(['0','1'])),\
+        ('z',frozenset(['0','1'])),\
+        ('w',frozenset(['0','1']))\
+        ])
+        
+        #true
+        >>> core0 = PNCore((Core(),None,None,None))
+        >>> core0,_ = core0.simplify(dom)
+        >>> print core0.vstr
+        true
+        
+        >>> pc = Core([('x',frozenset(['1'])),('y',frozenset(['1']))]) 
+        >>> core1 = PNCore((pc,None,None,None)) 
+        >>> core1,_ = core1.simplify(dom)
+        >>> print core1.vstr
+        (x=1 & y=1)
+
+        >>> pd = Core([('x',frozenset(['0'])),('y',frozenset(['0']))])
+        >>> core2 = PNCore((Core(),pd,Core(),None))
+        >>> core2,_ = core2.simplify(dom)
+        >>> print core2.vstr
+        (x=1 | y=1)
+
+        >>> pc = Core([('x',frozenset(['1']))])
+        >>> core3 = PNCore((pc,None,None,None))
+        >>> core3,_ = core3.simplify(dom)
+        >>> print core3.vstr
+        x=1
+
+        >>> pc = Core([('z',frozenset(['1'])),('y',frozenset(['1']))]) 
+        >>> core4 = PNCore((pc,None,None,None))  
+        >>> core4,_ = core4.simplify(dom)
+        >>> print core4.vstr
+        (z=1 & y=1)
+
+        >>> nc = Core([('x',frozenset(['0'])),('y',frozenset(['0']))]) 
+        >>> nd = Core([('w',frozenset(['1']))])
+        >>> core5 = PNCore((Core(),None,nc,nd))   #
+        >>> core5,_ = core5.simplify(dom)
+        >>> print core5.vstr
+        (x=1 | y=1) | w=1
+
+        >>> mcores_d= Mcores_d()
+        >>> mcores_d.add(core0,'7');mcores_d.add(core0,'8');
+        >>> mcores_d.add(core1,'1')
+        >>> mcores_d.add(core2,'2')
+        >>> mcores_d.add(core3,'3')
+        >>> mcores_d.add(core4,'4')
+        >>> mcores_d.add(core5,'5')
+        >>> print mcores_d
+        1. (0) true (conj): (2) 7,8
+        2. (1) x=1 (conj): (1) 3
+        3. (2) (x=1 | y=1) (disj): (1) 2
+        4. (2) (x=1 & y=1) (conj): (1) 1
+        5. (2) (z=1 & y=1) (conj): (1) 4
+        6. (3) (x=1 | y=1) | w=1 (disj): (1) 5
+
+        >>> cores = mcores_d.get_strongest(dom)
+        >>> print '\\n'.join(c.vstr for c in cores)
+        (x=1 & y=1)
+        (z=1 & y=1)
+
+        >>> mcores_d = Mcores_d()
+        >>> mcores_d.add(core0,'7');mcores_d.add(core0,'8');        
+        >>> cores = mcores_d.get_strongest(dom)
+        >>> assert len(cores) == 1
+
+        """
+        if not z3db:
+            z3db = dom.z3db
+
+        cores = sorted(self,key=lambda c:len(c.pc) if c.pc else 0)
+        cores = [(c,c.z3expr(dom,z3db)) for c in cores]
+        cores_unused = set(c for c,e in cores if not e)
+        
+        if len(cores_unused) > 1:
+            logger.warn("more than 1 cores unused ??")
+            print cores_unused
+            
+        cores = [(c,e) for (c,e) in cores if c not in cores_unused]
+        
+        implied = set()
+        for (c,e) in cores:
+            if c in implied:
+                continue
+
+            for c_,e_ in cores:
+                if c_ == c or c_ in implied:
+                    continue
+
+                if z3util.is_tautology(z3.Implies(e,e_)):
+                    implied.add(c_)
+
+        strongest_cores = set(c for (c,_) in cores if c not in implied)
+        if strongest_cores:
+            return strongest_cores
+        else:
+            return cores_unused
+
+    # def get_min_configs(self,cores_exprs,dom):
+
+    #     def get_core(cores):
+    #         scores = [c for c in cores if c.pc]
+    #         if scores:
+    #             score = max(c,key=lambda c: len(c.pc))
     #             return score
 
     #         score = random.choice(cores)
-    #         return score
+    #         return score                        
         
-    #     def create_config(core):
-    #         pass
-        
-    #     covs = covs_d.items()
-    #     configs = set()
-    #     while covered:
-    #         #pick an interation
-    #         core = select()
 
-    #         #create a configuration
-    #         configs = [c for c in configs_d if c not in configs]
-    #         for c in configs:
-    #             if z3.Implies(c,core):
-    #                 configs.add(c)
-    #         config = min(configs)
-            
-    #         #obtain cov from that config
-    #         for sid in configs_d[config]:
-    #             covs.delete(sid)
+    #     covs_used = set()
+    #     configs = set()
+    #     while min_cores:
+    #         core = get_core(min_cores)
+    #         min_cores.remove(core)
+
+    #         config = get_config(core)
+    #         for c in min_cores:
+    #             if z3.is_tautology(z3.Implies(config_expr,core_expr)):
+    #                 min_cores.remove(core)
+                    
+    #         configs.add(config)
 
     #     return configs
+                            
     
 #Inference algorithm
 class Infer(object):
@@ -1112,7 +1238,7 @@ class IGen(object):
                     print('cur_min_stren is now {}'.format(cur_min_stren))
 
         #postprocess
-        pp_cores_d = cores_d.analyze(self.dom,covs_d,None)
+        pp_cores_d = cores_d.analyze(self.dom,covs_d)
         mcores_d = pp_cores_d.merge(show_detail=True)
         itime_total = time() - st
         
