@@ -983,17 +983,30 @@ class Mcores_d(CustDict):
             z3.Implies(cores_exprs_d[a],cores_exprs_d[b]))
 
         while covs:
+            #print covs
+            print len(covs)
+            if len(covs) <= 3:
+                print covs
+                
             if cores:
                 try:
-                    core = max(cores,key=lambda c: len(c.pc)
-                               if c.pc else 0)
+                    core = min(cores,key=lambda c: (len(covs - self[c]),
+                                                    1/len(c.pc) if c.pc else 1.1))
+                    print 'nonrandom'                    
                 except ValueError:
                     core = random.choice(cores)
+                    print 'random'                    
+
                 cores.remove(core)
                 
                 configs = [c for c in remain_configs if _imply(c,core)]
-
-            config = max(configs,key=lambda c: len(covs - configs_d[c]))
+                print "selected core {}".format(core)                
+            else:
+                configs = remain_configs
+                
+            config = min(configs,key=lambda c: len(covs - configs_d[c]))
+            print "selected config {}: {}".format(config,configs_d[config])
+            
             mconfigs_d[config]=configs_d[config]
 
             remain_configs.remove(config)
