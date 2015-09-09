@@ -53,7 +53,7 @@ class Analysis(object):
         return seed,dom,dts,pp_cores_d,itime_total
         
     @staticmethod
-    def replay(dir_,show_iters):
+    def replay(dir_,show_iters,do_min_configs):
         """
         Replay execution info from saved info in dir_
         """
@@ -79,12 +79,26 @@ class Analysis(object):
         logger.info(Analysis.str_of_summary(
             seed,len(dts),itime_total,xtime_total,nconfigs,ncovs,dir_))
 
+        if do_min_configs:
+            #reconstruct information
+            from config import Configs_d
+            configs_d = Configs_d()
+            covs = set()
+            for dt in dts:
+                for c in dt.cconfigs_d:
+                    configs_d[c] = dt.cconfigs_d[c]
+                    
+                for sid in dt.new_covs:
+                    covs.add(sid)
+
+            mcores_d.get_min_configs(covs,configs_d,dom)
+        
         return (len(dts),len(mcores_d),
                 itime_total,xtime_total,nconfigs,ncovs,
                 mcores_d.strens,mcores_d.strens_str,mcores_d.vtyps)
 
     @staticmethod
-    def replay_dirs(dir_,show_iters):
+    def replay_dirs(dir_,show_iters,do_min_configs):
         dir_ = CM.getpath(dir_)
         logger.info("replay_dirs '{}'".format(dir_))
         
@@ -111,7 +125,9 @@ class Analysis(object):
         for rdir in sorted(os.listdir(dir_)):
             rdir = os.path.join(dir_,rdir)
             (niters,nresults,itime,xtime,nconfigs,ncovs,
-             strens,strens_str,ntyps) = Analysis.replay(rdir,show_iters)
+             strens,strens_str,ntyps) = Analysis.replay(rdir,
+                                                        show_iters,
+                                                        do_min_configs)
             niters_total += niters
             nresults_total += nresults
             nitime_total += itime
