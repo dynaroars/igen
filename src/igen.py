@@ -87,6 +87,10 @@ if __name__ == "__main__":
     aparser.add_argument("--replay_dirs",
                          help="replay info from adir containing multiple run dirs",
                          action="store_true")
+
+    aparser.add_argument("--show_iters",
+                         help="for use with replay, show stats of all iters",
+                         action="store_true")
     
     aparser.add_argument("--seed",
                          type=float,
@@ -151,9 +155,9 @@ if __name__ == "__main__":
         import config_analysis as analysis
         analysis.logger.level = args.logger_level
         if args.replay:
-            analysis.Analysis.replay(args.prog)
+            analysis.Analysis.replay(args.prog,show_iters=args.show_iters)
         else:
-            analysis.Analysis.replay_dirs(args.prog)
+            analysis.Analysis.replay_dirs(args.prog,show_iters=args.show_iters)
         exit(0)
 
     nruns = args.benchmark if args.benchmark else 1
