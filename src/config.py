@@ -428,7 +428,6 @@ class PNCore(MCore):
     >>> print pncore
     pc: x=0,1 y=1; nc: z=1
 
-
     >>> dom = Dom([('x',frozenset(['0','1','2'])),\
     ('y',frozenset(['0','1'])),\
     ('z',frozenset(['0','1'])),\
@@ -842,7 +841,7 @@ class Mcores_d(CustDict):
         return ', '.join("({}, {}, {})".format(siz,ncores,ncov)
                          for siz,ncores,ncov in strens)
 
-    def get_strongest(self,dom,z3db=None):
+    def get_strongest(self,cores_exprs_d):
         """
         Return the set of strongest cores (i.e., not implied by any other cores)
 
@@ -851,6 +850,7 @@ class Mcores_d(CustDict):
         ('z',frozenset(['0','1'])),\
         ('w',frozenset(['0','1']))\
         ])
+        >>> z3db = dom.z3db
         
         #true
         >>> core0 = PNCore((Core(),None,None,None))
@@ -904,29 +904,26 @@ class Mcores_d(CustDict):
         5. (2) (z=1 & y=1) (conj): (1) 4
         6. (3) (x=1 | y=1) | w=1 (disj): (1) 5
 
-        >>> cores,_ = mcores_d.get_strongest(dom)
+        >>> cores_exprs_d =  dict((c,c.z3expr(z3db,dom)) for c in mcores_d)
+        >>> cores = mcores_d.get_strongest(cores_exprs_d)
         >>> print '\\n'.join(c.vstr for c in cores)
         (x=1 & y=1)
         (z=1 & y=1)
 
         >>> mcores_d = Mcores_d()
-        >>> mcores_d.add(core0,'7');mcores_d.add(core0,'8');        
-        >>> cores,_ = mcores_d.get_strongest(dom)
+        >>> mcores_d.add(core0,'7');mcores_d.add(core0,'8'); 
+
+        >>> cores_exprs_d = dict((c,c.z3expr(z3db,dom)) for c in mcores_d)
+        >>> cores = mcores_d.get_strongest(cores_exprs_d)
         >>> assert len(cores) == 1
         """
-
-        if not z3db:
-            z3db = dom.z3db
-
         cores = sorted(self,key=lambda c:len(c.pc) if c.pc else 0)            
-        cores_exprs_d =  dict((c,c.z3expr(z3db,dom)) for c in cores)
-
-        cores_unused = set(c for c in cores_exprs_d if not cores_exprs_d[c])
+        cores_unused = set(c for c in cores if not cores_exprs_d[c])
         if len(cores_unused) > 1:
             logger.warn("more than 1 cores unused ??")
             print cores_unused
             
-        cores = [c for c in cores_exprs_d if c not in cores_unused]
+        cores = set(c for c in cores if c not in cores_unused)
         implied = set()
         for c in cores:
             if c in implied:
@@ -942,49 +939,53 @@ class Mcores_d(CustDict):
 
         cores = set(c for c in cores if c not in implied)
         rs = cores if cores else cores_unused
-        return rs,cores_exprs_d
+        return rs
 
-    # def get_min_configs(self,configs_d,covs_d,dom):
-
-    #     z3db = dom.z3db
-    #     cores,exprs_d = self.get_strongest(dom,z3db)
-    #     for c in configs_d:
-    #         exprs_d[c]=c.z3expr(z3db)
-        
-    #     def get_core(cores):
-    #         print cores
-    #         cores = [c for c in cores if c and c.pc]
-    #         if cores:
-    #             core = max(c,key=lambda c: len(c.pc))
-    #         else:
-    #             core = random.choice(cores)
-    #         return core
-
-    #     def get_config(core_expr,remain_configs,remain_covs,configs_d):
-    #         if core_expr:
-    #             configs = [c for c in remain_configs
-    #                        if z3util.is_tautology(
-    #                                z3.Implies(exprs_d[c],core_expr))]
-    #         return max(configs,key=lambda c: len(remain_covs - configs_d[c]))
-
-    #     configs = set() #results
-    #     remain_configs = configs_d.keys()
-    #     remain_covs = covs_d.keys()
-    #     while remain_covs:
-    #         if cores:
-    #             core = get_core(cores)
-    #             core_expr = expr_d[core]
-    #             cores.remove(core)
-    #         else:
-    #             core_expr = None
-                
-    #         config = get_config(core_expr,remain_configs,remain_covs,configs_d)
-                                
-    #         configs.add(config)
-    #         remain_configs.remove(config)
-    #         remain_covs = remain_covs - configs_d[config]
+    def get_min_configs(self,configs_d,covs_d,dom):
+        if CM.__vdebug__:
+            assert isinstance(configs_d,Configs_d) and configs_d, configs_d
+            assert isinstance(covs_d,Covs_d) and covs_d, covs_d
+            assert isinstance(dom,Dom), dom
             
-    #     return configs
+        z3db = dom.z3db
+        cores_exprs_d = dict((c,c.z3expr(z3db,dom)) for c in self)
+        cores = self.get_strongest(cores_exprs_d)
+        logger.debug("{} strongest cores".format(len(cores)))
+        logger.detail("\n+{}"
+                      .format('\n'.join("{}. {}".format(i,c.vstr)
+                                        for i,c in enumerate(cores))))
+        for c in configs_d:
+            cores_exprs_d[c]=c.z3expr(z3db)
+
+        mconfigs_d = Configs_d() #results
+
+        remain_configs = set(configs_d.keys())
+        remain_covs = set(covs_d.keys())
+
+        _imply = lambda a,b: z3util.is_tautology(
+            z3.Implies(cores_exprs_d[a],cores_exprs_d[b]))
+        
+        while remain_covs:
+            if cores:
+                try:
+                    core = max(cores,key=lambda c: len(c.pc)
+                               if c.pc else 0)
+                except ValueError:
+                    core = random.choice(cores)
+                cores.remove(core)
+                
+                configs = [c for c in remain_configs if _imply(c,core)]
+
+            config = max(configs,key=lambda c: len(remain_covs - configs_d[c]))
+            mconfigs_d[config]=configs_d[config]
+
+            remain_configs.remove(config)
+            remain_covs = remain_covs - configs_d[config]
+
+        logger.debug("{} min configs".format(len(mconfigs_d)))
+        logger.detail('\n{}'.format(mconfigs_d))
+                     
+        return set(mconfigs_d.keys())
     
 #Inference algorithm
 class Infer(object):
@@ -1257,8 +1258,7 @@ class IGen(object):
         mcores_d = pp_cores_d.merge(show_detail=True)
 
         #test
-        mcores_d.get_min_configs(configs_d,covs_d,self.dom)
-        
+        min_configs = mcores_d.get_min_configs(configs_d,covs_d,self.dom)
         itime_total = time() - st
         
         logger.info(Analysis.str_of_summary(
