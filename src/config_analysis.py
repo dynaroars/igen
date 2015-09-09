@@ -69,13 +69,15 @@ class Analysis(object):
                 dt.show()
 
         #print postprocess results
-        try:
-            mcores_d = pp_cores_d.merge(show_detail=True)
-        except AttributeError:  #old format
+
+        
+        if hasattr(pp_cores_d.keys()[0],'vstr'):
+            mcores_d = pp_cores_d.merge(show_detail=True)            
+        else:
             logger.warn("Old format that doesn't have vstr")            
             pp_cores_d = pp_cores_d.analyze(dom,covs_d=None)
             mcores_d = pp_cores_d.merge(show_detail=True)
-        
+            
         #print summary
         xtime_total = itime_total - sum(dt.xtime for dt in dts)
         last_dt = max(dts,key=lambda dt: dt.citer) #last iteration
