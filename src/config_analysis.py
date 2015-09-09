@@ -39,49 +39,52 @@ class Analysis(object):
               "Covs {}".format(ncovs),
               "Tmpdir {}".format(tmpdir)]
         return "Summary: " + ', '.join(ss)
-    
+
     @staticmethod
-    def replay(dir_):
+    def load_dir(dir_):
+        seed,dom = Analysis.load_pre(dir_)
+        dts = [Analysis.load_iter(dir_,f)
+               for f in os.listdir(dir_) if f.endswith('.tvn')]
+        try:
+            pp_cores_d,itime_total = Analysis.load_post(dir_)
+        except IOError:
+            logger.error("post info not avail")
+            pp_cores_d,itime_total = None,None
+        return seed,dom,dts,pp_cores_d,itime_total
+        
+    @staticmethod
+    def replay(dir_,show_iters):
         """
         Replay execution info from saved info in dir_
         """
-
-        def load_dir(dir_):
-            seed,dom = Analysis.load_pre(dir_)
-            dts = [Analysis.load_iter(dir_,f)
-                   for f in os.listdir(dir_) if f.endswith('.tvn')]
-            try:
-                pp_cores_d,itime_total = Analysis.load_post(dir_)
-            except IOError:
-                logger.error("post info not avail")
-                pp_cores_d,itime_total = None,None
-            return seed,dom,dts,pp_cores_d,itime_total
-
-        seed,dom,dts,pp_cores_d,itime_total = load_dir(dir_)
+        seed,dom,dts,pp_cores_d,itime_total = Analysis.load_dir(dir_)
 
         #print info
         logger.info("replay dir: '{}'".format(dir_))
         logger.info('seed: {}'.format(seed))
         logger.debug(dom.__str__())
         
-        #print iterations
-        for dt in sorted(dts,key=lambda dt: dt.citer):
-            dt.show()
+        if show_iters:
+            for dt in sorted(dts,key=lambda dt: dt.citer):
+                dt.show()
 
         #print postprocess results
         mcores_d = pp_cores_d.merge(show_detail=True)
         
         #print summary
         xtime_total = itime_total - sum(dt.xtime for dt in dts)
+        last_dt = max(dts,key=lambda dt: dt.citer) #last iteration
+        nconfigs = last_dt.nconfigs
+        ncovs = last_dt.ncovs
         logger.info(Analysis.str_of_summary(
-            seed,len(dts),itime_total,xtime_total,dt.nconfigs,dt.ncovs,dir_))
+            seed,len(dts),itime_total,xtime_total,nconfigs,ncovs,dir_))
 
         return (len(dts),len(mcores_d),
-                itime_total,xtime_total,dt.nconfigs,dt.ncovs,
+                itime_total,xtime_total,nconfigs,ncovs,
                 mcores_d.strens,mcores_d.strens_str,mcores_d.vtyps)
 
     @staticmethod
-    def replay_dirs(dir_):
+    def replay_dirs(dir_,show_iters):
         dir_ = CM.getpath(dir_)
         logger.info("replay_dirs '{}'".format(dir_))
         
@@ -108,7 +111,7 @@ class Analysis(object):
         for rdir in sorted(os.listdir(dir_)):
             rdir = os.path.join(dir_,rdir)
             (niters,nresults,itime,xtime,nconfigs,ncovs,
-             strens,strens_str,ntyps) = Analysis.replay(rdir)
+             strens,strens_str,ntyps) = Analysis.replay(rdir,show_iters)
             niters_total += niters
             nresults_total += nresults
             nitime_total += itime
