@@ -91,7 +91,11 @@ if __name__ == "__main__":
     aparser.add_argument("--show_iters",
                          help="for use with replay, show stats of all iters",
                          action="store_true")
-    
+
+    aparser.add_argument("--do_min_configs",
+                         help="for use with replay, compute a set of min configs",
+                         action="store_true")
+
     aparser.add_argument("--seed",
                          type=float,
                          help="use this seed")
@@ -154,10 +158,11 @@ if __name__ == "__main__":
     if args.replay or args.replay_dirs:
         import config_analysis as analysis
         analysis.logger.level = args.logger_level
-        if args.replay:
-            analysis.Analysis.replay(args.prog,show_iters=args.show_iters)
-        else:
-            analysis.Analysis.replay_dirs(args.prog,show_iters=args.show_iters)
+        analysis_f =  (analysis.Analysis.replay if args.replay else
+                       analysis.Analysis.replay_dirs)
+        analysis_f(args.prog,show_iters=args.show_iters,
+                   do_min_configs=args.do_min_configs)
+            
         exit(0)
 
     nruns = args.benchmark if args.benchmark else 1

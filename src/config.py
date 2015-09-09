@@ -941,18 +941,18 @@ class Mcores_d(CustDict):
         rs = cores if cores else cores_unused
         return rs
 
-    def get_min_configs(self,configs_d,covs_d,dom):
+    def get_min_configs(self,covs,configs_d,dom):
         if CM.__vdebug__:
+            assert is_cov(covs),covs            
             assert isinstance(configs_d,Configs_d) and configs_d, configs_d
-            assert isinstance(covs_d,Covs_d) and covs_d, covs_d
             assert isinstance(dom,Dom), dom
             
         z3db = dom.z3db
         cores_exprs_d = dict((c,c.z3expr(z3db,dom)) for c in self)
         cores = self.get_strongest(cores_exprs_d)
         logger.debug("{} strongest cores".format(len(cores)))
-        logger.detail("\n+{}"
-                      .format('\n'.join("{}. {}".format(i,c.vstr)
+        logger.detail("\n{}"
+                      .format('\n'.join("{}. {}".format(i+1,c.vstr)
                                         for i,c in enumerate(cores))))
         for c in configs_d:
             cores_exprs_d[c]=c.z3expr(z3db)
@@ -960,12 +960,12 @@ class Mcores_d(CustDict):
         mconfigs_d = Configs_d() #results
 
         remain_configs = set(configs_d.keys())
-        remain_covs = set(covs_d.keys())
-
+        ncovs = len(covs)
+        
         _imply = lambda a,b: z3util.is_tautology(
             z3.Implies(cores_exprs_d[a],cores_exprs_d[b]))
-        
-        while remain_covs:
+
+        while covs:
             if cores:
                 try:
                     core = max(cores,key=lambda c: len(c.pc)
@@ -976,13 +976,14 @@ class Mcores_d(CustDict):
                 
                 configs = [c for c in remain_configs if _imply(c,core)]
 
-            config = max(configs,key=lambda c: len(remain_covs - configs_d[c]))
+            config = max(configs,key=lambda c: len(covs - configs_d[c]))
             mconfigs_d[config]=configs_d[config]
 
             remain_configs.remove(config)
-            remain_covs = remain_covs - configs_d[config]
+            covs = covs - configs_d[config]
 
-        logger.debug("{} min configs".format(len(mconfigs_d)))
+        logger.debug("min configs: at most {} configs to cover {} sids"
+                     .format(len(mconfigs_d),ncovs))
         logger.detail('\n{}'.format(mconfigs_d))
                      
         return set(mconfigs_d.keys())
@@ -1256,10 +1257,11 @@ class IGen(object):
         #postprocess
         pp_cores_d = cores_d.analyze(self.dom,covs_d)
         mcores_d = pp_cores_d.merge(show_detail=True)
-
-        #test
-        min_configs = mcores_d.get_min_configs(configs_d,covs_d,self.dom)
         itime_total = time() - st
+        
+        #test
+        min_configs = mcores_d.get_min_configs(set(covs_d),
+                                               configs_d,self.dom)
         
         logger.info(Analysis.str_of_summary(
             seed,cur_iter,itime_total,xtime_total,
@@ -1551,6 +1553,7 @@ class DTrace(object):
         logger.debug("infer {} interactions".format(len(mcores_d)))
         logger.detail('\n{}'.format(mcores_d))
         logger.info("strens: {}".format(mcores_d.strens_str))
+
 
 if __name__ == "__main__":
     import doctest
