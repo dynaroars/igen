@@ -69,7 +69,12 @@ class Analysis(object):
                 dt.show()
 
         #print postprocess results
-        mcores_d = pp_cores_d.merge(show_detail=True)
+        try:
+            mcores_d = pp_cores_d.merge(show_detail=True)
+        except AttributeError:  #old format
+            logger.warn("Old format that doesn't have vstr")            
+            pp_cores_d = pp_cores_d.analyze(dom,covs_d=None)
+            mcores_d = pp_cores_d.merge(show_detail=True)
         
         #print summary
         xtime_total = itime_total - sum(dt.xtime for dt in dts)

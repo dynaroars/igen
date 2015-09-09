@@ -406,6 +406,7 @@ class SCore(MCore):
                 if self.keep:
                     s = "(keep)" 
             except AttributeError:
+                logger.warn("Old format that doesn't support keep in SCore")
                 pass
 
             ss.append("mc{}: {}".format(s,self.mc))
@@ -463,11 +464,6 @@ class PNCore(MCore):
     def __init__(self,(pc,pd,nc,nd)):
         super(PNCore,self).__init__((pc,pd,nc,nd))
 
-        #only analyzed one has the below fields
-        self._vtyp = None
-        self._vstr = None
-        self._z3expr = None
-        
     @property
     def pc(self): return self[0]
     @property
@@ -483,11 +479,12 @@ class PNCore(MCore):
     def vtyp(self,vt):
         if CM.__vdebug__:
             assert isinstance(vt,str) and \
-                vt in 'conj disj mixed'.split(), vt
+                vt in 'conj disj mix'.split(), vt
         self._vtyp = vt
     
     @property
     def vstr(self): return self._vstr
+    
     @vstr.setter
     def vstr(self,vs):
         if CM.__vdebug__:
@@ -498,9 +495,9 @@ class PNCore(MCore):
     def mk_default(): return PNCore((None,None,None,None))
 
     def __str__(self):
-        if self.vstr:
+        try:
             return "{} ({})".format(self.vstr,self.vtyp)
-        else:
+        except AttributeError:
             ss = ("{}: {}".format(s,c) for s,c in
                   zip('pc pd nc nd'.split(),self) if c is not None)
             return '; '.join(ss)
@@ -592,10 +589,13 @@ class PNCore(MCore):
         return expr,vstr
 
     
-    def simplify(self,dom):
+    def simplify(self,dom,do_firsttime=True):
         """
         Compare between (pc,pd) and (nc,nd) and return the stronger one.
         This will set either (pc,pd) or (nc,nd) to (None,None)
+
+        if do_firstime is False then don't do any checking,
+        essentialy this option is used for compatibility purpose
 
         Assumption: all 4 cores are verified
 
@@ -603,10 +603,12 @@ class PNCore(MCore):
         inv2 = not(nc & not(nd)) = nd | not(nc)
         """
         if CM.__vdebug__:
-            assert self.pc is not None, self.pc #this never could happen
-            #nc is None => pd is None
-            assert (self.nc is not None or self.pd is None), (self.nc,self.nd)
             assert isinstance(dom,Dom),dom
+
+            if do_firsttime:
+                assert self.pc is not None, self.pc #this never could happen
+                #nc is None => pd is None
+                assert self.nc is not None or self.pd is None, (self.nc,self.nd)
 
         #pf = pc & neg(pd)
         #nf = neg(nc & neg(nd)) = nd | neg(nc)
@@ -719,6 +721,10 @@ class Cores_d(CustDict):
     >>> print cores_d.merge(show_detail=False)
     1. (2) a=1 & b=1 (conj): (2) L1,L2
 
+    >>> cores_d = cores_d.analyze(dom,covs_d=None)
+    >>> print cores_d.merge(show_detail=False)
+    1. (2) a=1 & b=1 (conj): (2) L1,L2
+
     """
     def __setitem__(self,sid,pncore):
         if CM.__vdebug__:
@@ -735,7 +741,11 @@ class Cores_d(CustDict):
         mcores_d = Mcores_d()
         cache = {}
         for sid,core in self.iteritems():
-            key = core.vstr if core.vstr else core
+            try:
+                key = core.vstr 
+            except AttributeError:
+                key = core
+                
             if key not in cache:
                 core_ = core
                 cache[key] = core_
@@ -751,9 +761,13 @@ class Cores_d(CustDict):
         return mcores_d
 
     def analyze(self,dom,covs_d):
+        """
+        Simplify cores. If covs_d then also check that cores are valid invs
+        """
         if CM.__vdebug__:
-            assert isinstance(covs_d,Covs_d) and covs_d, covs_d
-            assert len(self) == len(covs_d), (len(self),len(covs_d))
+            if covs_d is not None:
+                assert isinstance(covs_d,Covs_d) and covs_d, covs_d
+                assert len(self) == len(covs_d), (len(self),len(covs_d))
             assert isinstance(dom,Dom), dom
 
         def show_compare(sid,old_c,new_c):
@@ -764,26 +778,29 @@ class Cores_d(CustDict):
         cores_d = Cores_d()                
         logger.info("analyze interactions for {} sids".format(len(self)))
 
-        logger.debug("verify ...")
-        cache = {}
-        for sid,core in self.iteritems():
-            configs = frozenset(covs_d[sid])
-            key = (core,configs)
-            if key not in cache:
-                core_ = core.verify(configs,dom)
-                cache[key]=core_
-                show_compare(sid,core,core_)
-            else:
-                core_ = cache[key]
+        if covs_d:
+            logger.debug("verify ...")
+            cache = {}
+            for sid,core in self.iteritems():
+                configs = frozenset(covs_d[sid])
+                key = (core,configs)
+                if key not in cache:
+                    core_ = core.verify(configs,dom)
+                    cache[key]=core_
+                    show_compare(sid,core,core_)
+                else:
+                    core_ = cache[key]
 
-            cores_d[sid]=core
+                cores_d[sid]=core
+        else:
+            cores_d = self
 
         logger.debug("simplify ...")
         cache = {}
         for sid in cores_d:
             core = cores_d[sid]
             if core not in cache:
-                core_,expr = core.simplify(dom)
+                core_,expr = core.simplify(dom,do_firsttime=(covs_d is not None))
                 cache[core]=core_
                 show_compare(sid,core,core_)
             else:
@@ -982,7 +999,7 @@ class Mcores_d(CustDict):
             remain_configs.remove(config)
             covs = covs - configs_d[config]
 
-        logger.debug("min configs: at most {} configs to cover {} sids"
+        logger.debug("min configs: req <= {} configs to cover {} sids"
                      .format(len(mconfigs_d),ncovs))
         logger.detail('\n{}'.format(mconfigs_d))
                      
@@ -1259,10 +1276,6 @@ class IGen(object):
         mcores_d = pp_cores_d.merge(show_detail=True)
         itime_total = time() - st
         
-        #test
-        min_configs = mcores_d.get_min_configs(set(covs_d),
-                                               configs_d,self.dom)
-        
         logger.info(Analysis.str_of_summary(
             seed,cur_iter,itime_total,xtime_total,
             len(configs_d),len(covs_d),tmpdir))
@@ -1513,8 +1526,11 @@ class IGen(object):
         return sel_core
 
 
-### Analyzing results    
+
 class DTrace(object):
+    """
+    Object for saving information (for later analysis)
+    """
     def __init__(self,citer,itime,xtime,
                  nconfigs,ncovs,ncores,
                  cconfigs_d,new_covs,new_cores,
@@ -1548,7 +1564,6 @@ class DTrace(object):
                                                    self.sel_core))
         logger.debug('create {} configs'.format(len(self.cconfigs_d)))
         logger.detail("\n"+str(self.cconfigs_d))
-
         mcores_d = self.cores_d.merge()
         logger.debug("infer {} interactions".format(len(mcores_d)))
         logger.detail('\n{}'.format(mcores_d))
