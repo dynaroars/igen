@@ -74,7 +74,7 @@ class Analysis(object):
         if hasattr(pp_cores_d.keys()[0],'vstr'):
             mcores_d = pp_cores_d.merge(show_detail=True)            
         else:
-            logger.warn("Old format that doesn't have vstr")            
+            logger.warn("Old format, has no vstr .. re-analyze")
             pp_cores_d = pp_cores_d.analyze(dom,covs_d=None)
             mcores_d = pp_cores_d.merge(show_detail=True)
             
@@ -98,10 +98,15 @@ class Analysis(object):
                 for sid in dt.new_covs:
                     covs.add(sid)
 
-            mcores_d.get_min_configs(covs,configs_d,dom)
+            min_configs = mcores_d.get_min_configs(covs,configs_d,dom)
+            n_min_configs = len(min_configs)
+        else:
+            n_min_configs = 0
         
         return (len(dts),len(mcores_d),
-                itime_total,xtime_total,nconfigs,ncovs,
+                itime_total,xtime_total,
+                nconfigs,ncovs,
+                n_min_configs,
                 mcores_d.strens,mcores_d.strens_str,mcores_d.vtyps)
 
     @staticmethod
@@ -115,6 +120,7 @@ class Analysis(object):
         nxtime_total = 0    
         nconfigs_total = 0
         ncovs_total = 0
+        nminconfigs_total = 0
         strens_s = []
         strens_str_s = []
         ntyps_s = []
@@ -126,21 +132,23 @@ class Analysis(object):
         nxtime_arr = [] 
         nconfigs_arr = []
         ncovs_arr = []
+        nminconfigs_arr = []
         counter = 0
         csv_arr = []
 
         for rdir in sorted(os.listdir(dir_)):
             rdir = os.path.join(dir_,rdir)
-            (niters,nresults,itime,xtime,nconfigs,ncovs,
-             strens,strens_str,ntyps) = Analysis.replay(rdir,
-                                                        show_iters,
-                                                        do_min_configs)
+            rs = Analysis.replay(rdir,show_iters,do_min_configs)
+            (niters,nresults,itime,xtime,
+             nconfigs,ncovs,n_min_configs,
+             strens,strens_str,ntyps) = rs
             niters_total += niters
             nresults_total += nresults
             nitime_total += itime
             nxtime_total += xtime
             nconfigs_total += nconfigs
             ncovs_total += ncovs
+            nminconfigs_total += n_min_configs
             strens_s.append(strens)
             strens_str_s.append(strens_str)
             ntyps_s.append(ntyps)
@@ -151,8 +159,9 @@ class Analysis(object):
             nxtime_arr.append(xtime)
             nconfigs_arr.append(nconfigs)
             ncovs_arr.append(ncovs)
-            csv_arr.append("{},{},{},{},{},{},{},{},{}".format(
-                counter,niters,nresults,itime,xtime,nconfigs,ncovs,
+            nminconfigs_arr.append(n_min_configs)
+            csv_arr.append("{},{},{},{},{},{},{},{},{},{}".format(
+                counter,niters,nresults,itime,xtime,nconfigs,ncovs,n_min_configs,
                 ','.join(map(str, ntyps)),','.join(map(str, strens))))
             counter += 1
 
@@ -163,23 +172,27 @@ class Analysis(object):
               "time {}".format(nitime_total/nruns_total),
               "xtime {}".format(nxtime_total/nruns_total),
               "configs {}".format(nconfigs_total/nruns_total),
-              "covs {}".format(ncovs_total/nruns_total)]
+              "covs {}".format(ncovs_total/nruns_total),
+              "minconfigs {}".format(nminconfigs_total/nruns_total)]
+        
         logger.info("STATS of {} runs (averages): {}".format(nruns_total,', '.join(ss)))
         
         ssMed = ["iter {}".format(numpy.median(niters_arr)),
-              "results {}".format(numpy.median(nresults_arr)),
-              "time {}".format(numpy.median(nitime_arr)),
-              "xtime {}".format(numpy.median(nxtime_arr)),
-              "configs {}".format(numpy.median(nconfigs_arr)),
-              "covs {}".format(numpy.median(ncovs_arr))]
+                 "results {}".format(numpy.median(nresults_arr)),
+                 "time {}".format(numpy.median(nitime_arr)),
+                 "xtime {}".format(numpy.median(nxtime_arr)),
+                 "configs {}".format(numpy.median(nconfigs_arr)),
+                 "nminconfigs {}".format(numpy.median(nminconfigs_arr)),
+                 "covs {}".format(numpy.median(ncovs_arr))]
         logger.info("STATS of {} runs (medians) : {}".format(nruns_total,', '.join(ssMed)))
         
         ssSIQR = ["iter {}".format(Analysis.siqr(niters_arr)),
-              "results {}".format(Analysis.siqr(nresults_arr)),
-              "time {}".format(Analysis.siqr(nitime_arr)),
-              "xtime {}".format(Analysis.siqr(nxtime_arr)),
-              "configs {}".format(Analysis.siqr(nconfigs_arr)),
-              "covs {}".format(Analysis.siqr(ncovs_arr))]
+                  "results {}".format(Analysis.siqr(nresults_arr)),
+                  "time {}".format(Analysis.siqr(nitime_arr)),
+                  "xtime {}".format(Analysis.siqr(nxtime_arr)),
+                  "configs {}".format(Analysis.siqr(nconfigs_arr)),
+                  "nminconfigs {}".format(Analysis.siqr(nminconfigs_arr)),                  
+                  "covs {}".format(Analysis.siqr(ncovs_arr))]
         logger.info("STATS of {} runs (SIQR)   : {}".format(nruns_total,', '.join(ssSIQR)))
 
 
