@@ -45,11 +45,11 @@ def get_run_f(args):
             _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
                                                 seed=seed,tmpdir=tdir)
     else:
-        import get_cov_motiv as Motiv
+        import get_cov_example as Example
         import get_cov_coreutils as Coreutils
         
-        if args.prog in Motiv.db:
-            dom,get_cov_f=Motiv.prepare(args.prog)
+        if args.prog in Example.db:
+            dom,get_cov_f=Example.prepare(args.prog)
         elif args.prog in Coreutils.db:
             dom,get_cov_f=Coreutils.prepare(args.prog,do_perl=args.do_perl)
         else:

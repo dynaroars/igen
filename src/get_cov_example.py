@@ -8,33 +8,15 @@ import os.path
 logger = CM.VLog('motiv')
 logger.level = CF.logger.level
 
-db = {
-    "ex": "ex",
-    "ex1": "ex",
-    "ex_motiv1": "ex_motiv1",
-    "ex_motiv1b": "ex_motiv1",
-    "ex_motiv2" : "ex_motiv2",
-    "ex_motiv2a" : "ex_motiv2",              
-    "ex_motiv2b" : "ex_motiv2",
-    "ex_motiv2c" : "ex_motiv2",
-    "ex_motiv2d" : "ex_motiv2",              
-    "ex_motiv4" : "ex_motiv4",
-    "ex_motiv5" : "ex_motiv5",
-    "ex_motiv6" : "ex_motiv6",
-    "ex_motiv7" : "ex_motiv7",
-    "ex_motiv8" : "ex_motiv8",
-    "ex_motiv8b" : "ex_motiv8",              
-    'ex_simple_header': "ex_simple",
-    'ex_simple_outp': "ex_simple_outp"
-}
-
+db = {"ex": "ex"}
+examples_dir = '../examples'
 
 def prepare(prog_name):
     if CM.__vdebug__:
         assert isinstance(prog_name,str),prog_name
 
     import platform
-    dir_ = CM.getpath('../benchmarks/examples')
+    dir_ = CM.getpath(examples_dir)
     dom_file = db[prog_name]
     dom_file = CM.getpath(os.path.join(dir_,"{}.dom".format(dom_file)))
     dom,_ = Dom.get_dom(dom_file)
@@ -70,34 +52,4 @@ def get_cov(config,data):
     outps = GC.run(cmd)
     sids = set(CM.iread_strip(traces))
     return sids,outps
-
-def get_cov_gcov(config,args):
-    #untest
-    pass
-
-#     """
-#     Traces ared from gcov info
-#     """
-#     if CM.__vdebug__:
-#         assert isinstance(config,Config),config
-#         GC.check_data(data)
-    
-#     opts = ' '.join(config[vname] for vname in data.var_names)
-    
-#     #cleanup
-#     cmd = "rm -rf *.gcov *.gcda"
-#     _ = run(cmd)
-#     #run testsuite
-#     cmd = "{} {}".format(data['prog_exe'],opts)
-#     outps = GC.run(cmd)
-
-#     #read traces from gcov
-#     #/path/prog.Linux.exe -> prog
-#     cmd = "gcov {}".format(data['prog_name'])
-#     _ = GC.run(cmd)
-#     gcov_dir = os.getcwd()
-#     sids = (GC.parse_gcov(os.path.join(gcov_dir,f))
-#             for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
-#     sids = set(CM.iflatten(sids))
-#     return sids,outps
 

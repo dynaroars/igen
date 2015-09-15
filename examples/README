@@ -1,0 +1,5 @@
+Some simple examples
+- First, compile the file
+$gcc ex.c -o ex.Linux.exe  #if running on Mac, change Linux to Darwin (note that Linux is the main testing platform for iGen)
+
+- Then run iGen, e.g., python igen.py "ex"
