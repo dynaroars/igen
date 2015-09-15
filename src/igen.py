@@ -29,15 +29,16 @@ def get_run_f(args):
         else:
             _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
                                                 seed=seed,tmpdir=tdir)
-    elif args.prog in Otter.db:
-        dom,get_cov_f,pathconds_d=Otter.prepare(args.prog)
+    elif args.inp in Otter.db:
+        dom,get_cov_f,pathconds_d=Otter.prepare(args.inp)
         igen = config.IGen(dom,get_cov_f,config_default=None)
         if args.do_full:
             if args.rand_n:
                 _f = lambda _,tdir: Otter.do_full(
                     dom,pathconds_d,tmpdir=tdir,n=args.rand_n)
             else:
-                _f = lambda _,tdir: Otter.do_full(dom,pathconds_d,tmpdir=tdir,n=None)
+                _f = lambda _,tdir: Otter.do_full(
+                    dom,pathconds_d,tmpdir=tdir,n=None)
                                                   
         elif args.rand_n is None:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
@@ -48,13 +49,13 @@ def get_run_f(args):
         import get_cov_example as Example
         import get_cov_coreutils as Coreutils
         
-        if args.prog in Example.db:
-            dom,get_cov_f=Example.prepare(args.prog)
+        if args.inp in Example.db:
+            dom,get_cov_f=Example.prepare(args.inp)
             
-        elif args.prog in Coreutils.db:
-            dom,get_cov_f=Coreutils.prepare(args.prog,do_perl=args.do_perl)
+        elif args.inp in Coreutils.db:
+            dom,get_cov_f=Coreutils.prepare(args.inp,do_perl=args.do_perl)
         else:
-            raise AssertionError("unrecognized prog '{}'".format(args.prog))
+            raise AssertionError("unrecognized prog '{}'".format(args.inp))
 
         igen = config.IGen(dom,get_cov_f,config_default=None)
         if args.do_full:
@@ -67,9 +68,10 @@ def get_run_f(args):
     return _f
 
 if __name__ == "__main__":
+
     import argparse
     aparser = argparse.ArgumentParser()
-    aparser.add_argument("prog", help="prog")
+    aparser.add_argument("inp", help="inp")
     
     aparser.add_argument("--debug",help="set debug on (can be slow)",
                          action="store_true")
@@ -121,13 +123,9 @@ if __name__ == "__main__":
                          help="allows for potentially no coverage exec",
                          action="store_true")
     
-    aparser.add_argument("--do_mixed_conj_disj",
-                         help="do both conj and disj interactions",
-                         action="store_true")
-
     aparser.add_argument("--benchmark",
                          type=int,
-                         help="do benchmark")
+                         help="run benchmark program n times")
 
     aparser.add_argument("--dom_file",
                          help="the domain file",
@@ -155,44 +153,43 @@ if __name__ == "__main__":
         config.show_cov = False
     if args.analyze_outps:
         config.analyze_outps = True
+
         
-    if args.replay or args.replay_dirs:
+    if args.replay or args.replay_dirs: #analyze results
         import config_analysis as analysis
         analysis.logger.level = args.logger_level
-        analysis_f =  (analysis.Analysis.replay if args.replay else
-                       analysis.Analysis.replay_dirs)
-        analysis_f(args.prog,show_iters=args.show_iters,
+        analysis_f = (analysis.Analysis.replay if args.replay else
+                      analysis.Analysis.replay_dirs)
+        analysis_f(args.inp,show_iters=args.show_iters,
                    do_min_configs=args.do_min_configs)
             
-        exit(0)
+    else: #run iGen
+        nruns = args.benchmark if args.benchmark else 1
+        _f = get_run_f(args)
 
-    nruns = args.benchmark if args.benchmark else 1
-    _f = get_run_f(args)
+        from config_settings import temp_dir    
+        import getpass
+        d_prefix = "{}_bm_{}_".format(getpass.getuser(),args.inp)
+        tdir = tempfile.mkdtemp(dir=temp_dir,prefix=d_prefix)
 
-    import getpass
-    d_prefix = "{}_bm_{}_".format(getpass.getuser(),args.prog)
 
-    tdir = tempfile.mkdtemp(dir='/var/tmp',prefix=d_prefix)
-                            
-    st = time()
-    if args.seed is None:
-        seed = round(time(),2)
-    else:
-        seed = float(args.seed)
+        if args.seed is None:
+            seed = round(time(),2)
+        else:
+            seed = float(args.seed)
 
-    print("* benchmark '{}',  {} runs, seed {}, results in '{}'"
-          .format(args.prog,nruns,seed,tdir))
-    
-    for i in range(nruns):        
-        st_ = time()
-        seed_ = seed + i
-        tdir_ = tempfile.mkdtemp(dir=tdir,prefix="run{}_".format(i))
-        print("*run {}/{}".format(i+1,nruns))
-        _ = _f(seed_,tdir_)
-        print("*run {}, seed {}, time {}s, '{}'".format(i+1,seed_,time()-st_,tdir_))
+        print("* benchmark '{}',  {} runs, seed {}, results in '{}'"
+              .format(args.inp,nruns,seed,tdir))
 
-    print("** done benchmark '{}', {} runs, seed {}, time {}, results in '{}'"
-          .format(args.prog,nruns,seed,time()-st,tdir))
+        st = time()
+        for i in range(nruns):        
+            st_ = time()
+            seed_ = seed + i
+            tdir_ = tempfile.mkdtemp(dir=tdir,prefix="run{}_".format(i))
+            print("*run {}/{}".format(i+1,nruns))
+            _ = _f(seed_,tdir_)
+            print("*run {}, seed {}, time {}s, '{}'".format(i+1,seed_,time()-st_,tdir_))
 
-    # print("\n***** STATISTICS *****\n")
-    # config.Analysis.replay_dirs(tdir)
+        print("** done benchmark '{}', {} runs, seed {}, time {}, results in '{}'"
+              .format(args.inp,nruns,seed,time()-st,tdir))
+
