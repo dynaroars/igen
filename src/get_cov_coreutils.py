@@ -8,16 +8,18 @@ import get_cov as GC
 logger = CM.VLog('coreutils')
 logger.level = CF.logger.level
 
+from config_settings import coreutils_dir
+
 def prepare(prog_name,do_perl):
     if CM.__vdebug__:
         assert isinstance(prog_name,str),prog_name
         assert isinstance(do_perl,bool), do_perl
         
-    main_dir = CM.getpath('../benchmarks/coreutils')
+    main_dir = CM.getpath(coreutils_dir)
 
     if do_perl:
         prog_dir = os.path.join(main_dir,'coreutils_perl')
-        dir_ = '../benchmarks/ppt'
+        dir_ = os.path.join(main_dir,'ppt')
         prog_exe = "@@@"+prog_name
         get_cov_f = get_cov_perl
         dom_file = os.path.join(main_dir,"doms_perl","{}.dom".format(prog_name))
@@ -25,7 +27,7 @@ def prepare(prog_name,do_perl):
         bdir = os.path.join(main_dir,'coreutils')
         prog_dir = os.path.join(bdir,'obj-gcov','src')
         dir_ = os.path.join(bdir,'src')
-        assert os.path.isdir(dir_)
+        assert os.path.isdir(dir_), dir_
         prog_exe = os.path.join(prog_dir,prog_name)        
         assert os.path.isfile(prog_exe),prog_exe
         logger.info("prog_exe: '{}'".format(prog_exe))

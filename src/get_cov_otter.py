@@ -62,7 +62,6 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     logger.info("seed: {} default, tmpdir: {}".format(seed,tmpdir))
     analysis = Analysis(tmpdir)
     analysis.save_pre(seed,dom)
-    
     if n:
         logger.info('select {} rand'.format(n))
         rs = random.sample(pathconds_d.values(),n)
@@ -85,13 +84,14 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     cores_d,configs_d,covs_d = Cores_d(),Configs_d(),Covs_d()
     _ = Infer.infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom)
     pp_cores_d = cores_d.analyze(dom,covs_d)
-    pp_cores_d.show_analysis(dom)
-
-    itime_total = time()-st
+    mcores_d = pp_cores_d.merge(show_detail=True)    
+    itime_total = time() - st
+    assert len(pp_cores_d) == len(covs_d), (len(pp_cores_d),len(covs_d))
+    
     logger.info(Analysis.str_of_summary(
-        0,0,itime_total,0,len(configs_d),len(pp_cores_d),tmpdir))
+        0,1,itime_total,0,len(configs_d),len(pp_cores_d),tmpdir))
 
-    dtrace = DTrace(1,0,0,
+    dtrace = DTrace(1,itime_total,0,
                     len(configs_d),len(covs_d),len(cores_d),
                     {},set(),set(),
                     CF.SCore.mk_default(),
@@ -100,8 +100,3 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     analysis.save_post(pp_cores_d,itime_total)
     
     return pp_cores_d,cores_d,configs_d,covs_d,dom
-
-
-
-           
-
