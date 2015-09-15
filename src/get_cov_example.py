@@ -8,13 +8,16 @@ import os.path
 logger = CM.VLog('motiv')
 logger.level = CF.logger.level
 
-def prepare(prog_name,dom_file,dir_):
+db = {"ex": "ex"}
+from config_settings import examples_dir
+
+def prepare(prog_name):
     if CM.__vdebug__:
         assert isinstance(prog_name,str),prog_name
 
     import platform
-    dir_ = CM.getpath(dir_)
-    #dom_file = db[prog_name]
+    dir_ = CM.getpath(examples_dir)
+    dom_file = db[prog_name]
     dom_file = CM.getpath(os.path.join(dir_,"{}.dom".format(dom_file)))
     dom,_ = Dom.get_dom(dom_file)
     logger.info("dom_file '{}': {}".format(dom_file,dom))

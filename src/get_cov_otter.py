@@ -13,9 +13,11 @@ logger = CM.VLog('otter')
 logger.level = CF.logger.level
 
 db = {"vsftpd":None,"ngircd":None}
+from config_settings import otter_dir
+
 
 def prepare(prog):
-    dir_ = CM.getpath('../otter_exps/{}'.format(prog))
+    dir_ = CM.getpath(os.path.join(otter_dir,prog))
     dom_file = os.path.join(dir_,'possibleValues.txt')
     pathconds_d_file = os.path.join(dir_,'{}.tvn'.format('pathconds_d'))
     assert os.path.isfile(dom_file),dom_file
