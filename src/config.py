@@ -966,10 +966,99 @@ class Mcores_d(CustDict):
         rs = cores if cores else cores_unused
         return rs
 
-    @staticmethod
-    def pack(cores,exprs_d):
-        pass
 
+    @staticmethod
+    def mypack(cores,exprs_d):
+        """
+        note: don't operate directly on z3exprs, which don't work well with
+        operators such as ==, !=, is etc
+
+        >>> from z3 import And,Ints
+        >>> x,y,z,w = Ints('x y z w')
+        >>> a = And(x==1,z==1)
+        >>> b = And(y==1,z==1)
+        >>> f = And(z==1,w==1)
+
+        >>> c = w==0
+        >>> d = x==0
+        >>> e = And(x==1,w==1,y==0,z==0)
+
+        >>> exprs_d = {'a':a,'b':b,'c':c,'d':d,'e':e,'f':f}
+        >>> Mcores_d.pack(sorted(exprs_d.keys()),exprs_d)
+        ['e', ('d', 'c'), (('b', 'a'), 'f')]
+        """
+
+        def rem(cores,cache):
+            
+            for i,c in enumerate(cores):
+                for c_ in cores[i+1:]:
+                    k = (c_,c)
+                    k_ = (c,c_)
+                    if k in cache:
+                        is_sat = cache[k]
+                    elif k_ in cache:
+                        is_sat = cache[k_]
+                    else:
+                        if k not in exprs_d:
+                            exprs_d[k]=z3.And(exprs_d[c],exprs_d[c_])
+
+                        aexpr = exprs_d[k]
+                        is_sat = z3util.is_sat(aexpr)
+                        cache[k] = is_sat
+                        cache[(c_,c)] = is_sat
+
+                    if is_sat:
+                        cores = [x for x in cores if x != c and x != c_]
+                        cores.append(k)
+                        return cores,True
+                        
+            return cores,False
+
+        cache = {}
+        cores,progress = rem(cores,cache)
+        while progress:
+            cores,progress = rem(cores,cache)
+            
+        return cores
+                    
+
+    @staticmethod
+    def pack(fs,exprs_d):
+        if CM.__vdebug__:
+            assert fs, fs
+            assert all(PNCore.is_expr(exprs_d[f]) for f in fs), exprs_d
+
+        def rem(fs,cache):
+            for i,f in enumerate(fs):
+                for f_ in fs[i+1:]:
+                    
+                    k = (f,f_)
+                    if k in cache:
+                        is_sat = cache[k]
+                    else:
+                        if k not in exprs_d:
+                            exprs_d[k] = z3.And(exprs_d[f],exprs_d[f_])
+
+                        is_sat = z3util.is_sat(exprs_d[k])
+                        cache[k]=is_sat
+
+                        
+                    if is_sat(f,f_):
+                        fs = [x for x in fs if x != f and x != f_]
+                        fs.append(k)
+                        return fs,True
+
+            return fs,False
+                
+        cache = {}
+
+        fs = [f for f in fs if exprs_d[f]] #remove true interaction
+        fs,progress = rem(fs,cache)
+        while progress:
+            fs,progress = rem(fs,cache)
+        return cores
+    
+    
     def get_min_configs(self,covs,configs_d,dom):
         if CM.__vdebug__:
             assert is_cov(covs),covs            
@@ -1195,6 +1284,7 @@ class Configs_d(CustDict):
         ss = (c.__str__(self[c]) for c in self.__dict__)
         return '\n'.join("{}. {}".format(i+1,s) for i,s in enumerate(ss))
     
+
 class IGen(object):
     """
     Main algorithm
