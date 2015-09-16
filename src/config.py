@@ -953,16 +953,63 @@ class Mcores_d(CustDict):
         f = lambda x: x.vstr if isinstance(x,PNCore) else str(x)
         return '({})'.format('; '.join(map(f,packed_core)))
     
-    def get_min_configs(self,covs,configs_d,dom):
+    def get_min_configs(self,remain_covs,configs_d,dom):
         """
         TODO: handle the case when covs contains lines that are not covered by any of config in configs_d
         """
         if CM.__vdebug__:
-            assert covs and is_cov(covs), covs            
+            assert remain_covs and is_cov(remain_covs), remain_covs
             assert configs_d and isinstance(configs_d,Configs_d), configs_d
             assert isinstance(dom,Dom), dom
 
         z3db = dom.z3db
+        
+        def _imply(config,constraint):
+            if config not in exprs_d:
+                exprs_d[config] = config.z3expr(z3db)
+            return z3util.is_tautology(
+                z3.Implies(exprs_d[config],exprs_d[constraint]))
+            
+        def _f(remain_configs,covs,core):
+            assert remain_configs
+
+            curr_config = None
+            curr_min_lc = None
+
+            #take too long
+            # for c in remain_configs:
+            #     if _imply(c,core):
+            #         lc = len(covs-configs_d[c])
+            #         if lc == 0:
+            #             return c
+            #         else:
+            #             if curr_min_lc is None or curr_min_lc > lc:
+            #                 curr_min_lc = lc
+            #                 curr_config = c
+
+            print 'long0'
+            for c in remain_configs:
+                if _imply(c,core):
+                    print 'long1'
+                    return c
+
+            print 'long2'
+            return curr_config
+
+        def score(packed_core,covs):
+            c_covs = set.union(*(self[c] for c in packed_core))
+            d_covs = len(covs - c_covs)
+            
+            #c_len = sum((len(c.pc) if c.pc else 0) for c in packed_core)
+            #d_len = 1.0/c_len if c_len else 1.1
+            #pick shorter conjunction first to remove as many configs as possible
+            #d_len = c_len if c_len else 0.0
+            d_len = len(packed_core)
+            return d_covs,d_len
+
+        st = time()
+
+        ncovs = len(remain_covs)
         exprs_d = dict(((c,),c.z3expr(z3db,dom)) for c in self)
         packed_cores = Mcores_d.pack(exprs_d)
         logger.debug("{} packed cores".format(len(packed_cores)))
@@ -970,67 +1017,39 @@ class Mcores_d(CustDict):
                       .format('\n'.join("{}. {}"
                                         .format(i+1,Mcores_d.str_of_packed_core(c))
                                         for i,c in enumerate(packed_cores))))
-        st = time()
-        for c in configs_d:        
-            exprs_d[c]=c.z3expr(z3db)
-        logger.debug("compute z3exprs for {} configs takes {}s"
-                     .format(len(configs_d),time()-st))
 
-        mconfigs_d = Configs_d() #results
+
         remain_configs = set(configs_d.keys())
-        ncovs = len(covs)
+        rs_configs_d = Configs_d()
+        while remain_covs and remain_configs:
 
-        def _f(remain_configs,covs,core):
-            assert remain_configs
-            _imply = lambda a,b: z3util.is_tautology(
-                z3.Implies(exprs_d[a],exprs_d[b]))
-
-            curr_config = None
-            curr_min_lc = None
-
-            for c in remain_configs:
-                if _imply(c,core):
-                    lc = len(covs-configs_d[c])
-                    if lc == 0:
-                        return c
-                    else:
-                        if curr_min_lc is None or curr_min_lc > lc:
-                            curr_min_lc = lc
-                            curr_config = c
-
-            return curr_config
-
-        def score(packed_core,covs):
-            c_covs = set.union(*(self[c] for c in packed_core))
-            d_covs = len(covs - c_covs)
-            c_len = sum((len(c.pc) if c.pc else 0) for c in packed_core)
-            d_len = 1.0/c_len if c_len else 1.1
-            return d_covs,d_len
-            
-        while covs and remain_configs:
+            #select a config
             if packed_cores:
-                core = min(packed_cores, key=lambda c:score(c,covs))
+                core = min(packed_cores, key=lambda c:score(c,remain_covs))
                 packed_cores.remove(core)
-                config = _f(remain_configs,covs,core)
+                config = _f(remain_configs,remain_covs,core)
 
-                #happens when none of the config => core,
-                #i.e., when the resulting cores aren't too good yet
+                #when the generated config do not satisfy core,
                 if config is None:  
-                    logger.warn("non of the avail => core{}".format(core))
-                    config = min(remain_configs,key=lambda c: len(covs - configs_d[c]))
+                    logger.warn("none of the avail configs => {}"
+                                .format(Mcores_d.str_of_packed_core(core)))
+                    config = min(remain_configs,key=lambda c: len(remain_covs - configs_d[c]))
             else:
-                config = min(remain_configs,key=lambda c: len(covs - configs_d[c]))
-            
-            mconfigs_d[config]=configs_d[config]
-            remain_configs.remove(config)
-            covs = covs - configs_d[config]
+                config = min(remain_configs,key=lambda c: len(remain_covs - configs_d[c]))
 
+            assert config not in rs_configs_d
+            rs_configs_d[config] = configs_d[config]
+            remain_covs = remain_covs - configs_d[config]
+            remain_configs = [c for c in remain_configs
+                              if len(remain_covs - configs_d[c]) != len(remain_covs)]
+            logger.detail("remain covs {} configs {} (sel configs {})"
+                          .format(len(remain_covs),len(remain_configs),len(rs_configs_d)))
 
-        logger.debug("min configs: req <= {} configs to cover {}/{} sids"
-                     .format(len(mconfigs_d),ncovs-len(covs),ncovs))
-        logger.detail('\n{}'.format(mconfigs_d))
-                     
-        return set(mconfigs_d.keys())
+        
+        logger.debug("min configs: req <= {} configs to cover {}/{} sids (time {}s)"
+                     .format(len(rs_configs_d),ncovs-len(remain_covs),ncovs,time()-st))
+        logger.detail('\n{}'.format(rs_configs_d))
+        return rs_configs_d.keys()
     
 #Inference algorithm
 class Infer(object):
