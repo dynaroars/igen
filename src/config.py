@@ -278,7 +278,10 @@ class Config(HDict):
 
     def z3expr(self,z3db):
         if CM.__vdebug__:
-            assert len(self) == len(z3db), (len(self), len(z3db))
+            
+            #assert len(self) == len(z3db), (len(self), len(z3db))
+            #not true when using partial config from Otter
+            assert all(e in z3db for e in self), (self, z3db)
 
         f = []
         for vn,vv in self.iteritems():
@@ -459,6 +462,7 @@ class PNCore(MCore):
     >>> assert PNCore._get_expr(pc,pd,dom,z3db,is_and=True) is None
     >>> assert PNCore._get_expr(nd,nc,dom,z3db,is_and=True) is None
     >>> assert pncore.z3expr(z3db,dom) is None
+
     """
 
     def __init__(self,(pc,pd,nc,nd)):
@@ -688,7 +692,6 @@ class PNCore(MCore):
     def is_expr(expr):
         #not None => z3expr
         return expr is None or z3.is_expr(expr)
-
     
 class Cores_d(CustDict):
     """
@@ -869,228 +872,122 @@ class Mcores_d(CustDict):
 
     #utilities to compute min # of configs with high cov
     @staticmethod
-    def indep(cores,exprs_d):
+    def pack(exprs_d):
         """
-        Return the set of independent cores (i.e., not implied by any other cores)
+        1. true
+        2. a
+        3. b
+        4. a & b
+        5. b | c
+        6. a & b & (c|d)
+        7. b & c
+        8. a | b 
 
-        >>> dom = Dom([('x',frozenset(['0','1'])),\
-        ('y',frozenset(['0','1'])),\
-        ('z',frozenset(['0','1'])),\
-        ('w',frozenset(['0','1']))\
-        ])
-        >>> z3db = dom.z3db
-        
-        #true
-        >>> core0 = PNCore((Core(),None,None,None))
-        >>> core0,_ = core0.simplify(dom)
-        >>> print core0.vstr
-        true
-        
-        >>> pc = Core([('x',frozenset(['1'])),('y',frozenset(['1']))]) 
-        >>> core1 = PNCore((pc,None,None,None)) 
-        >>> core1,_ = core1.simplify(dom)
-        >>> print core1.vstr
-        (x=1 & y=1)
+        >>> from z3 import And,Or,Bools,Not
+        >>> a,b,c,d,e,f = Bools('a b c d e f')
 
-        >>> pd = Core([('x',frozenset(['0'])),('y',frozenset(['0']))])
-        >>> core2 = PNCore((Core(),pd,Core(),None))
-        >>> core2,_ = core2.simplify(dom)
-        >>> print core2.vstr
-        (x=1 | y=1)
+        >>> exprs_d = {'true': None, \
+        'a':a,\
+        'b':b,\
+        'a & b': z3.And(a,b),\
+        'b | c': z3.Or(b,c),\
+        'a & b & (c|d)': z3.And(a,b,z3.Or(c,d)),\
+        'b & c' : z3.And(b,c),\
+        'd | b' : z3.Or(b,d),\
+        'e & !a': z3.And(e,Not(a)),\
+        'f & a': z3.And(f,a)}
+        >>> exprs_d = dict((tuple([k]),v) for k,v in exprs_d.iteritems())
+        >>> fs = Mcores_d.pack(exprs_d)
+        >>> print '\\n'.join(map(Mcores_d.str_of_packed_core,fs))
+        (d | b; e & !a)
+        (f & a; a & b; a & b & (c|d); b & c)
 
-        >>> pc = Core([('x',frozenset(['1']))])
-        >>> core3 = PNCore((pc,None,None,None))
-        >>> core3,_ = core3.simplify(dom)
-        >>> print core3.vstr
-        x=1
 
-        >>> pc = Core([('z',frozenset(['1'])),('y',frozenset(['1']))]) 
-        >>> core4 = PNCore((pc,None,None,None))  
-        >>> core4,_ = core4.simplify(dom)
-        >>> print core4.vstr
-        (z=1 & y=1)
-
-        >>> nc = Core([('x',frozenset(['0'])),('y',frozenset(['0']))]) 
-        >>> nd = Core([('w',frozenset(['1']))])
-        >>> core5 = PNCore((Core(),None,nc,nd))   #
-        >>> core5,_ = core5.simplify(dom)
-        >>> print core5.vstr
-        (x=1 | y=1) | w=1
-        
-        >>> cores = [core0,core1,core2,core3,core4,core5]
-        >>> print '\\n'.join(map(str,cores))
-        true (conj)
-        (x=1 & y=1) (conj)
-        (x=1 | y=1) (disj)
-        x=1 (conj)
-        (z=1 & y=1) (conj)
-        (x=1 | y=1) | w=1 (disj)
-
-        >>> exprs_d =  dict((c,c.z3expr(z3db,dom)) for c in cores)
-        >>> cores = Mcores_d.indep(cores,exprs_d)
-        >>> print '\\n'.join(c.vstr for c in cores)
-        (x=1 & y=1)
-        (z=1 & y=1)
-
-        >>> cores = [core0]
-        >>> cores = Mcores_d.indep(cores,exprs_d)
-        >>> assert len(cores) == 1
-        
         """
         if CM.__vdebug__:
-            assert (all(isinstance(c,PNCore) for c in cores) and cores),\
-                cores
-            assert all(PNCore.is_expr(exprs_d[c]) for c in cores),\
-                exprs_d
-            
-        cores_unused = set(c for c in cores if not exprs_d[c])
-        if len(cores_unused) > 1:
-            logger.warn("more than 1 unused core ??")
-            print cores_unused
-            
-        cores = set(c for c in cores if c not in cores_unused)
-        implied = set()
-        for c in cores:
-            if c in implied:
-                continue
-
-            for c_ in cores:
-                if c_ == c or c_ in implied:
-                    continue
-
-                expr = z3.Implies(exprs_d[c],exprs_d[c_])
-                if z3util.is_tautology(expr):
-                    implied.add(c_)
-
-        cores = set(c for c in cores if c not in implied)
-        rs = cores if cores else cores_unused
-        return rs
-
-
-    @staticmethod
-    def mypack(cores,exprs_d):
-        """
-        note: don't operate directly on z3exprs, which don't work well with
-        operators such as ==, !=, is etc
-
-        >>> from z3 import And,Ints
-        >>> x,y,z,w = Ints('x y z w')
-        >>> a = And(x==1,z==1)
-        >>> b = And(y==1,z==1)
-        >>> f = And(z==1,w==1)
-
-        >>> c = w==0
-        >>> d = x==0
-        >>> e = And(x==1,w==1,y==0,z==0)
-
-        >>> exprs_d = {'a':a,'b':b,'c':c,'d':d,'e':e,'f':f}
-        >>> Mcores_d.pack(sorted(exprs_d.keys()),exprs_d)
-        ['e', ('d', 'c'), (('b', 'a'), 'f')]
-        """
-
-        def rem(cores,cache):
-            
-            for i,c in enumerate(cores):
-                for c_ in cores[i+1:]:
-                    k = (c_,c)
-                    k_ = (c,c_)
-                    if k in cache:
-                        is_sat = cache[k]
-                    elif k_ in cache:
-                        is_sat = cache[k_]
-                    else:
-                        if k not in exprs_d:
-                            exprs_d[k]=z3.And(exprs_d[c],exprs_d[c_])
-
-                        aexpr = exprs_d[k]
-                        is_sat = z3util.is_sat(aexpr)
-                        cache[k] = is_sat
-                        cache[(c_,c)] = is_sat
-
-                    if is_sat:
-                        cores = [x for x in cores if x != c and x != c_]
-                        cores.append(k)
-                        return cores,True
-                        
-            return cores,False
-
-        cache = {}
-        cores,progress = rem(cores,cache)
-        while progress:
-            cores,progress = rem(cores,cache)
-            
-        return cores
-                    
-
-    @staticmethod
-    def pack(fs,exprs_d):
-        if CM.__vdebug__:
-            assert fs, fs
-            assert all(PNCore.is_expr(exprs_d[f]) for f in fs), exprs_d
+            assert isinstance(exprs_d,dict), exprs_d
+            assert all(isinstance(f,tuple) and
+                       PNCore.is_expr(exprs_d[f]) for f in exprs_d), exprs_d
 
         def rem(fs,cache):
             for i,f in enumerate(fs):
                 for f_ in fs[i+1:]:
-                    
-                    k = (f,f_)
-                    if k in cache:
-                        is_sat = cache[k]
+
+                    f_e = exprs_d[f]
+                    f_e_ = exprs_d[f_]
+
+                    e = z3.And(f_e,f_e_)
+                    if (f,f_) in cache:
+                        print 'gh0'
+                        is_sat = cache[(f,f_)]
+                    elif (f_,f) in cache:
+                        print 'gh1'
+                        is_sat = cache[(f_,f)]
                     else:
-                        if k not in exprs_d:
-                            exprs_d[k] = z3.And(exprs_d[f],exprs_d[f_])
-
-                        is_sat = z3util.is_sat(exprs_d[k])
-                        cache[k]=is_sat
-
+                        is_sat = z3util.is_sat(e)
                         
-                    if is_sat(f,f_):
-                        fs = [x for x in fs if x != f and x != f_]
-                        fs.append(k)
+                    if is_sat:
+                        fs = [x for x in fs if x is not f and x is not f_]
+                        if z3util.is_tautology(z3.Implies(f_e,f_e_)):
+                            fs.append(f)
+                        elif z3util.is_tautology(z3.Implies(f_e_,f_e)):
+                            fs.append(f_)
+                        else:
+                            ks =  f + f_
+                            fs.append(ks)
+                            exprs_d[ks] = e
                         return fs,True
 
             return fs,False
-                
-        cache = {}
 
-        fs = [f for f in fs if exprs_d[f]] #remove true interaction
+        fs = [f for f in sorted(exprs_d) if exprs_d[f]] #remove 'true' interaction
+        cache = {}
         fs,progress = rem(fs,cache)
         while progress:
             fs,progress = rem(fs,cache)
-        return cores
-    
+        return fs
+
+    @staticmethod
+    def str_of_packed_core(packed_core):
+        #c is a tuple
+        f = lambda x: x.vstr if isinstance(x,PNCore) else str(x)
+        return '({})'.format('; '.join(map(f,packed_core)))
     
     def get_min_configs(self,covs,configs_d,dom):
+        """
+        TODO: handle the case when covs contains lines that are not covered by any of config in configs_d
+        """
         if CM.__vdebug__:
-            assert is_cov(covs),covs            
-            assert isinstance(configs_d,Configs_d) and configs_d, configs_d
+            assert covs and is_cov(covs), covs            
+            assert configs_d and isinstance(configs_d,Configs_d), configs_d
             assert isinstance(dom,Dom), dom
 
-        cores = self.keys()
-
         z3db = dom.z3db
-        exprs_d = dict((c,c.z3expr(z3db,dom)) for c in cores)
-        cores = Mcores_d.indep(cores,exprs_d)
-        
-        logger.debug("{} strongest cores".format(len(cores)))
+        exprs_d = dict(((c,),c.z3expr(z3db,dom)) for c in self)
+        packed_cores = Mcores_d.pack(exprs_d)
+        logger.debug("{} packed cores".format(len(packed_cores)))
         logger.detail("\n{}"
-                      .format('\n'.join("{}. {}".format(i+1,c.vstr)
-                                        for i,c in enumerate(cores))))
-        for c in configs_d:         #slow
+                      .format('\n'.join("{}. {}"
+                                        .format(i+1,Mcores_d.str_of_packed_core(c))
+                                        for i,c in enumerate(packed_cores))))
+        st = time()
+        for c in configs_d:        
             exprs_d[c]=c.z3expr(z3db)
+        logger.debug("compute z3exprs for {} configs takes {}s"
+                     .format(len(configs_d),time()-st))
 
         mconfigs_d = Configs_d() #results
-
         remain_configs = set(configs_d.keys())
         ncovs = len(covs)
-        print 'gh2'        
-        _imply = lambda a,b: z3util.is_tautology(
-            z3.Implies(exprs_d[a],exprs_d[b]))
-        print 'gh3'
 
         def _f(remain_configs,covs,core):
-            print 'call f on {}'.format(core.vstr)
-            curr_min_lc = None
+            assert remain_configs
+            _imply = lambda a,b: z3util.is_tautology(
+                z3.Implies(exprs_d[a],exprs_d[b]))
+
             curr_config = None
+            curr_min_lc = None
+
             for c in remain_configs:
                 if _imply(c,core):
                     lc = len(covs-configs_d[c])
@@ -1100,29 +997,37 @@ class Mcores_d(CustDict):
                         if curr_min_lc is None or curr_min_lc > lc:
                             curr_min_lc = lc
                             curr_config = c
+
             return curr_config
 
-        while covs:
-            print len(covs)
-            print len(remain_configs)
+        def score(packed_core,covs):
+            c_covs = set.union(*(self[c] for c in packed_core))
+            d_covs = len(covs - c_covs)
+            c_len = sum((len(c.pc) if c.pc else 0) for c in packed_core)
+            d_len = 1.0/c_len if c_len else 1.1
+            return d_covs,d_len
             
-            if cores:
-                core = min(cores,key=lambda c: (
-                    len(covs - self[c]),1.0/len(c.pc) if c.pc else 1.1))
-                cores.remove(core)
+        while covs and remain_configs:
+            if packed_cores:
+                core = min(packed_cores, key=lambda c:score(c,covs))
+                packed_cores.remove(core)
                 config = _f(remain_configs,covs,core)
+
+                #happens when none of the config => core,
+                #i.e., when the resulting cores aren't too good yet
+                if config is None:  
+                    logger.warn("non of the avail => core{}".format(core))
+                    config = min(remain_configs,key=lambda c: len(covs - configs_d[c]))
             else:
                 config = min(remain_configs,key=lambda c: len(covs - configs_d[c]))
-                
             
-
-            #config = min(remain_configs,key=lambda c: len(covs - configs_d[c]))            
             mconfigs_d[config]=configs_d[config]
             remain_configs.remove(config)
             covs = covs - configs_d[config]
 
-        logger.debug("min configs: req <= {} configs to cover {} sids"
-                     .format(len(mconfigs_d),ncovs))
+
+        logger.debug("min configs: req <= {} configs to cover {}/{} sids"
+                     .format(len(mconfigs_d),ncovs-len(covs),ncovs))
         logger.detail('\n{}'.format(mconfigs_d))
                      
         return set(mconfigs_d.keys())
@@ -1696,3 +1601,11 @@ class DTrace(object):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+
+
+
+
+
+
+
+

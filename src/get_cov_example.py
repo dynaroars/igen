@@ -8,7 +8,8 @@ import os.path
 logger = CM.VLog('motiv')
 logger.level = CF.logger.level
 
-db = {"ex": "ex"}
+db = {'ex': 'ex', 'ex1':'ex'}
+
 from config_settings import examples_dir
 
 def prepare(prog_name):
@@ -18,10 +19,10 @@ def prepare(prog_name):
     import platform
     dir_ = CM.getpath(examples_dir)
     dom_file = db[prog_name]
-    dom_file = CM.getpath(os.path.join(dir_,"{}.dom".format(dom_file)))
+    dom_file = CM.getpath(os.path.join(dir_,'{}.dom'.format(dom_file)))
     dom,_ = Dom.get_dom(dom_file)
     logger.info("dom_file '{}': {}".format(dom_file,dom))
-    prog_exe = CM.getpath(os.path.join(dir_,"{}.{}.exe"
+    prog_exe = CM.getpath(os.path.join(dir_,'{}.{}.exe'
                                     .format(prog_name,platform.system())))
     logger.info("prog_exe: '{}'".format(prog_exe))
 

@@ -167,10 +167,10 @@ if __name__ == "__main__":
         nruns = args.benchmark if args.benchmark else 1
         _f = get_run_f(args)
 
-        from config_settings import temp_dir    
+        from config_settings import tmp_dir    
         import getpass
         d_prefix = "{}_bm_{}_".format(getpass.getuser(),args.inp)
-        tdir = tempfile.mkdtemp(dir=temp_dir,prefix=d_prefix)
+        tdir = tempfile.mkdtemp(dir=tmp_dir,prefix=d_prefix)
 
 
         if args.seed is None:

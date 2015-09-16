@@ -82,7 +82,7 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     logger.info("use {} configs".format(len(cconfigs_d)))
     st = time()
     cores_d,configs_d,covs_d = Cores_d(),Configs_d(),Covs_d()
-    _ = Infer.infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom)
+    new_covs,new_cores = Infer.infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom)
     pp_cores_d = cores_d.analyze(dom,covs_d)
     mcores_d = pp_cores_d.merge(show_detail=True)    
     itime_total = time() - st
@@ -93,10 +93,12 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
 
     dtrace = DTrace(1,itime_total,0,
                     len(configs_d),len(covs_d),len(cores_d),
-                    {},set(),set(),
-                    CF.SCore.mk_default(),
+                    cconfigs_d,
+                    new_covs,new_cores,
+                    CF.SCore.mk_default(), #sel_core
                     cores_d)
     analysis.save_iter(1,dtrace)
+    
     analysis.save_post(pp_cores_d,itime_total)
     
     return pp_cores_d,cores_d,configs_d,covs_d,dom

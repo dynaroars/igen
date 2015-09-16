@@ -70,8 +70,8 @@ class Analysis(object):
 
         #print postprocess results
 
-        
-        if hasattr(pp_cores_d.keys()[0],'vstr'):
+
+        if hasattr(pp_cores_d.values()[0],'vstr'):
             mcores_d = pp_cores_d.merge(show_detail=True)            
         else:
             logger.warn("Old format, has no vstr .. re-analyze")
