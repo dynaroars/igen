@@ -216,6 +216,151 @@ class Dom(OrderedDict):
         configs = []
         while dom_used: configs.append(mk())
         return configs
+
+
+    """
+    Create configs using an SMT solver
+    """   
+    def config_of_model(self,model):
+        """
+        Ret a config from a model
+        """
+        if CM.__vdebug__:
+            assert isinstance(model,dict),model
+
+        _f = lambda k: (model[k] if k in model
+                        else random.choice(list(self[k])))
+        config = Config((k,_f(k)) for k in self)
+        return config
+    
+    def gen_configs_expr(self,expr,k):
+        if CM.__vdebug__:
+            assert z3.is_expr(expr),expr
+            assert k>0,k
+
+        def _f(m):
+            m = dict((str(v),str(m[v])) for v in m)
+            return None if not m else self.config_of_model(m)
+        
+        models = z3util.get_models(expr,k)
+        assert models is not None, models  #z3 cannot solve this
+        if not models:  #not satisfy
+            return []
+        else:
+            assert len(models)>=1,models            
+            configs = [_f(m) for m in models]
+            return configs
+        
+    def gen_configs_exprs(self,yexprs,nexprs,k):
+        """
+        Return a config satisfying core and not already in existing_configs
+
+        >>> dom = Dom([('a', frozenset(['1', '0'])), \
+        ('b', frozenset(['1', '0'])), ('c', frozenset(['1', '0', '2']))])
+        >>> z3db = dom.z3db
+
+        >>> c1 = Config([('a', '0'), ('b', '0'), ('c', '0')])
+        >>> c2 = Config([('a', '0'), ('b', '0'), ('c', '1')])
+        >>> c3 = Config([('a', '0'), ('b', '0'), ('c', '2')])
+
+        >>> c4 = Config([('a', '0'), ('b', '1'), ('c', '0')])
+        >>> c5 = Config([('a', '0'), ('b', '1'), ('c', '1')])
+        >>> c6 = Config([('a', '0'), ('b', '1'), ('c', '2')])
+
+        >>> c7 = Config([('a', '1'), ('b', '0'), ('c', '0')])
+        >>> c8 = Config([('a', '1'), ('b', '0'), ('c', '1')])
+        >>> c9 = Config([('a', '1'), ('b', '0'), ('c', '2')])
+
+        >>> c10 = Config([('a', '1'), ('b', '1'), ('c', '0')])
+        >>> c11 = Config([('a', '1'), ('b', '1'), ('c', '1')])
+        >>> c12 = Config([('a', '1'), ('b', '1'), ('c', '2')])
+
+        >>> configs = [c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11]
+        >>> nexpr = z3util.myOr([c.z3expr(z3db) for c in configs])
+        >>> assert dom.gen_configs_exprs([None],[nexpr],k=1)[0] == c12
+
+        >>> core = Core([('a',frozenset(['1']))])
+        >>> core_expr = core.z3expr(z3db,z3util.myAnd)
+        >>> assert dom.gen_configs_exprs([None],[nexpr],k=1)[0] == c12
+
+        >>> core = Core([('a',frozenset(['0']))])
+        >>> core_expr = core.z3expr(z3db,z3util.myAnd)
+        >>> assert not dom.gen_configs_exprs([core_expr],[nexpr],k=1)
+
+        >>> core = Core([('c',frozenset(['0','1']))])
+        >>> core_expr = core.z3expr(z3db,z3util.myAnd)
+        >>> assert not dom.gen_configs_exprs([core_expr],[nexpr],k=1)
+
+        >>> core = Core([('c',frozenset(['0','2']))])
+        >>> core_expr = core.z3expr(z3db,z3util.myAnd)
+        >>> config = dom.gen_configs_exprs([core_expr],[nexpr],k=1)[0]
+        >>> print config
+        a=1 b=1 c=2
+
+        """
+        if CM.__vdebug__:
+            assert all(e is None or z3.is_expr(e)
+                       for e in yexprs),exprs
+            assert all(e is None or z3.is_expr(e)
+                       for e in nexprs),exprs
+            assert k > 0, k
+
+        yexprs = [e for e in yexprs if e]
+        nexprs = [z3.Not(e) for e in nexprs if e]
+        exprs = yexprs + nexprs
+        assert exprs, 'empty exprs'
+        expr = exprs[0] if len(exprs)==1 else z3util.myAnd(exprs)
+        return self.gen_configs_expr(expr,k)
+        
+    def gen_configs_cex(self,sel_core,existing_configs,z3db):
+        """
+        sel_core = (c_core,s_core)
+        create counterexample configs by changing settings in c_core,
+        but these configs must satisfy s_core
+        x=0,y=1  =>  [x=0,y=0,z=rand;x=0,y=2,z=rand;x=1,y=1;z=rand]
+        """
+        
+        if CM.__vdebug__:
+            assert isinstance(sel_core,SCore),sel_core 
+        
+        configs = []            
+        c_core,s_core = sel_core
+
+        #keep
+        changes = []        
+        if sel_core.keep and (len(self) - len(c_core)):
+            changes.append(c_core)
+
+        #change
+        _new = lambda : Core((k,c_core[k]) for k in c_core)
+        for k in c_core:
+            vs = self[k] - c_core[k]
+            for v in vs:
+                new_core = _new()
+                new_core[k] = frozenset([v])
+                if s_core:
+                    for sk,sv in s_core.iteritems():
+                        assert sk not in new_core, sk
+                        new_core[sk] = sv
+                changes.append(new_core)
+
+        e_configs = [c.z3expr(z3db) for c in existing_configs]
+        
+        for changed_core in changes:
+            yexpr = changed_core.z3expr(z3db,z3util.myAnd)
+            nexpr = z3util.myOr(e_configs)
+            configs_ = self.gen_configs_exprs([yexpr],[nexpr],k=1)
+            if not configs_:
+                continue
+            config=configs_[0]
+            if CM.__vdebug__:
+                assert config.c_implies(changed_core)
+
+            configs.append(config)
+            e_configs.append(config.z3expr(z3db))
+
+        return configs
+
     
 class Config(HDict):
     """
@@ -1206,7 +1351,8 @@ class IGen(object):
             if sel_core is None:
                 break
 
-            configs = self.gen_configs_sel_core(sel_core,configs_d)
+            configs = self.dom.gen_configs_cex(
+                sel_core,configs_d,self.z3db)
             configs = list(set(configs)) 
             if configs:
                 break
@@ -1220,134 +1366,6 @@ class IGen(object):
             assert all(c not in configs_d for c in configs), configs
 
         return sel_core, configs
-
-    #Generate new configurations using z3
-    def gen_configs_sel_core(self,sel_core,configs_d):
-        """
-        create configs by changing settings in core
-        Also, these configs satisfy sat_core
-        x=0,y=1  =>  [x=0,y=0,z=rand;x=0,y=2,z=rand;x=1,y=1;z=rand]
-        """
-        if CM.__vdebug__:
-            assert isinstance(sel_core,SCore),sel_core
-
-        configs = []            
-        core,sat_core = sel_core
-
-        #keep
-        changes = []        
-        if sel_core.keep and (len(self.dom) - len(core)):
-            changes.append(core)
-
-        #change
-        _new = lambda : Core((k,core[k]) for k in core)
-        for k in core:
-            vs = self.dom[k]-core[k]
-            for v in vs:
-                new_core = _new()
-                new_core[k] = frozenset([v])
-                if sat_core:
-                    for sk,sv in sat_core.iteritems():
-                        assert sk not in new_core, sk
-                        new_core[sk] = sv
-                changes.append(new_core)
-
-        existing_configs = [c.z3expr(self.z3db) for c in configs_d]                
-        for changed_core in changes:
-            core_expr = changed_core.z3expr(self.z3db,z3util.myAnd)
-            model = self.get_sat_core(core_expr,z3util.myOr(existing_configs))
-            if not model:
-                continue
-            config = self.config_of_model(model)
-            configs.append(config)
-            existing_configs.append(config.z3expr(self.z3db))
-            if CM.__vdebug__:
-                assert config.c_implies(changed_core)
-
-        return configs
-
-    def get_sat_core(self,core_expr,configs_expr):
-        """
-        Return a config satisfying core and not already in existing_configs
-
-        # >>> dom = HDict([('a', frozenset(['1', '0'])), \
-        # ('b', frozenset(['1', '0'])), ('c', frozenset(['1', '0', '2']))])
-        # >>> z3db = z3db_of_dom(dom)
-
-        # >>> c1 = HDict([('a', '0'), ('b', '0'), ('c', '0')])
-        # >>> c2 = HDict([('a', '0'), ('b', '0'), ('c', '1')])
-        # >>> c3 = HDict([('a', '0'), ('b', '0'), ('c', '2')])
-
-        # >>> c4 = HDict([('a', '0'), ('b', '1'), ('c', '0')])
-        # >>> c5 = HDict([('a', '0'), ('b', '1'), ('c', '1')])
-        # >>> c6 = HDict([('a', '0'), ('b', '1'), ('c', '2')])
-
-        # >>> c7 = HDict([('a', '1'), ('b', '0'), ('c', '0')])
-        # >>> c8 = HDict([('a', '1'), ('b', '0'), ('c', '1')])
-        # >>> c9 = HDict([('a', '1'), ('b', '0'), ('c', '2')])
-
-        # >>> c10 = HDict([('a', '1'), ('b', '1'), ('c', '0')])
-        # >>> c11 = HDict([('a', '1'), ('b', '1'), ('c', '1')])
-        # >>> c12 = HDict([('a', '1'), ('b', '1'), ('c', '2')])
-
-        # >>> configs = [c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11]
-        # >>> configs_expr = z3util.myOr([z3expr_of_config(c,z3db) for c in configs])
-
-        # >>> model = z3_get_sat_core(None,configs_expr,z3db)
-        # >>> assert config_of_model(model,dom) == c12
-
-        # >>> core = HDict([('a',frozenset(['1']))])
-        # >>> core_expr = z3expr_of_core(core,z3db,z3util.myAnd)
-        # >>> model = z3_get_sat_core(core_expr,configs_expr,z3db)
-        # >>> assert config_of_model(model,dom) == c12
-
-
-        # >>> core = HDict([('a',frozenset(['0']))])
-        # >>> core_expr = z3expr_of_core(core,z3db,z3util.myAnd)
-        # >>> model = z3_get_sat_core(core_expr,configs_expr,z3db)
-        # >>> assert model is None
-
-        # >>> core = HDict([('c',frozenset(['0','1']))])
-        # >>> core_expr = z3expr_of_core(core,z3db,z3util.myAnd)
-        # >>> model = z3_get_sat_core(core_expr,configs_expr,z3db)
-        # >>> assert model is None
-
-        # >>> core = HDict([('c',frozenset(['0','2']))])
-        # >>> core_expr = z3expr_of_core(core,z3db,z3util.myAnd)
-        # >>> model = z3_get_sat_core(core_expr,configs_expr,z3db)
-        # >>> assert model == {'a': '1', 'c': '2', 'b': '1'}
-        """
-        if CM.__vdebug__:
-            assert core_expr is None or z3.is_expr(core_expr),core_expr
-            assert z3.is_expr(configs_expr),configs_expr
-
-        not_configs_expr = z3.Not(configs_expr)
-        if core_expr:
-            f = z3.And(core_expr,not_configs_expr)
-        else:
-            f = not_configs_expr
-
-        models = z3util.get_models(f,k=1)
-        assert models is not None, models  #z3 cannot solve this
-        if not models:  #not satisfy
-            return None
-        assert len(models)==1,models
-        model = models[0]
-        model = dict((str(v),str(model[v])) for v in model)
-        return model
-
-    def config_of_model(self,model):
-        """
-        Obtain a config from a model
-        """
-        if CM.__vdebug__:
-            assert isinstance(model,dict),model
-
-        _f = lambda k: (model[k] if k in model
-                        else random.choice(list(self.dom[k])))
-        config = Config((k,_f(k)) for k in self.dom)
-        return config
-    
 
     @staticmethod
     def select_core(pncores,ignore_sel_cores,min_stren):
@@ -1497,7 +1515,7 @@ class HighCov(object):
     def pack2(fs,d):
         if CM.__vdebug__:
             assert all(isinstance(f,tuple) for f in fs),fs
-            assert all(f in d and PNCore.is_expr(d[f])
+            assert all(f in d and z3.is_expr(d[f])
                        for f in fs), (fs, d)
         fs_ = []
         packed = set()
@@ -1520,7 +1538,8 @@ class HighCov(object):
     @staticmethod
     def pack(d):
         """
-        Pack elements that have no conflicts together.
+        Pack together elements that have no conflicts.
+        The results are {tuple -> z3expr}
         It's good to first prune them (call prune()).
         """
         if CM.__vdebug__:
@@ -1537,20 +1556,31 @@ class HighCov(object):
         fs = set(fs_)
         return dict((f,d[f]) for f in d if f in fs_)
 
-    
     @staticmethod
-    def str_of_pack(packed_core):
+    def str_of_pack(pack):
         #c is a tuple
         f = lambda x: x.vstr if isinstance(x,PNCore) else str(x)
-        return '({})'.format('; '.join(map(f,packed_core)))
-    
+        return '({})'.format('; '.join(map(f,pack)))
+
+    @staticmethod
+    def gen_configs(d,dom):
+        """
+        Use an SMT solver to generate |d| configurations
+        """
+        if CM.__vdebug__:
+            assert all(isinstance(k,tuple) and
+                       z3.is_expr(v) for k,v in d.itertiems()),d
+        
+        z3db = dom.z3db
+        
+        
     def get_min_configs(self,remain_covs,configs_d,dom):
         """
         """
         if CM.__vdebug__:
             assert remain_covs and is_cov(remain_covs), remain_covs
             assert configs_d and isinstance(configs_d,Configs_d), configs_d
-            assert isinstance(dom,Dom), dom
+            assert isinstance(dom,Dom),dom
 
         z3db = dom.z3db
         
