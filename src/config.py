@@ -1396,20 +1396,10 @@ class HighCov(object):
     Use interactions to generate high cov configs
 
     Utils
-    1. true
-    2. a
-    3. b
-    4. a & b
-    5. b | c
-    6. a & b & (c|d)
-    7. b & c
-    8. a | b 
-
     >>> from z3 import And,Or,Bools,Not
     >>> a,b,c,d,e,f = Bools('a b c d e f')
     
-    >>> exprs_d = {'true': None, \
-    'a':a,\
+    >>> exprs_d = {'a':a,\
     'b':b,\
     'a & b': z3.And(a,b),\
     'b | c': z3.Or(b,c),\
@@ -1419,7 +1409,7 @@ class HighCov(object):
     'e & !a': z3.And(e,Not(a)),\
     'f & a': z3.And(f,a)}
     
-    >>> print '\\n'.join(map(str,sorted(exprs_d)))
+    >>> print '\\n'.join(map(str,sorted(map(str,exprs_d))))
     a
     a & b
     a & b & (c|d)
@@ -1429,7 +1419,6 @@ class HighCov(object):
     d | b
     e & !a
     f & a
-    true
     
     >>> exprs_d = HighCov.prune(exprs_d)
     >>> print '\\n'.join(map(str,sorted(exprs_d)))
@@ -1437,13 +1426,24 @@ class HighCov(object):
     b & c
     e & !a
     f & a
-    true
     
     >>> fs = HighCov.pack(exprs_d)
     >>> print '\\n'.join(sorted(map(HighCov.str_of_pack,fs)))
-    (b & c; a & b & (c|d); f & a)
+    (a & b & (c|d); b & c; f & a)
     (e & !a)
-    """        
+
+
+    >>> HighCov.prune({'a':None})
+    Traceback (most recent call last):
+    ...
+    AssertionError: {'a': None}
+
+    >>> HighCov.pack({'a':None})
+    Traceback (most recent call last):
+    ...
+    AssertionError: {'a': None}
+    """
+    
     @staticmethod
 
     def prune(d):
@@ -1452,7 +1452,7 @@ class HighCov(object):
         """
         if CM.__vdebug__:
             assert (d and isinstance(d,dict) and
-                    all(PNCore.is_expr(v) for v in d.itervalues())), d
+                    all(z3.is_expr(v) for v in d.itervalues())), d
         
         def _len(e):
             #simply heuristic to try most restrict conjs first
@@ -1472,14 +1472,9 @@ class HighCov(object):
                     logger.warn("f:{} has 0 children".format(e))
                     return 1
 
-        
+        #sort by most restrict conj, also remove None ("true")
         fs = sorted([f for f in d if d[f]],
                     key=lambda f: _len(d[f]),reverse=True)
-
-        #if only None in fs, then return
-        #otherwise, ignore None (i.e., everything implies true)        
-        if not fs: 
-            return d
 
         implied = set()
         for f in fs:
@@ -1493,10 +1488,10 @@ class HighCov(object):
                 is_implied = z3util.is_tautology(e)
                 if is_implied:
                     implied.add(g)
-                print "{} => {} {}".format(f,g,is_implied)
+                #print "{} => {} {}".format(f,g,is_implied)
                 
                 
-        return dict((f,d[f]) for f in d if f not in implied)
+        return dict((f,d[f]) for f in fs if f not in implied)
 
     @staticmethod
     def pack2(fs,d):
@@ -1529,13 +1524,10 @@ class HighCov(object):
         It's good to first prune them (call prune()).
         """
         if CM.__vdebug__:
-            assert all(PNCore.is_expr(v)
-                       for v in d.itervalues()), d
-
+            assert all(z3.is_expr(v) for v in d.itervalues()), d
+                       
         #change format, results are tuple(elems)
-        #also remove "true"
-        d = dict((tuple([f]),d[f]) for f in d
-                       if d[f])
+        d = dict((tuple([f]),d[f]) for f in d)
         fs = d.keys()
         fs_ = HighCov.pack2(fs,d)        
         while len(fs_) < len(fs):
