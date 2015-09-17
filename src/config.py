@@ -1445,26 +1445,57 @@ class HighCov(object):
     (e & !a)
     """        
     @staticmethod
+
     def prune(d):
         """
         Ret the strongest elements by removing those implied by others
         """
-        assert all(PNCore.is_expr(v)
-                   for v in d.itervalues()), d
+        if CM.__vdebug__:
+            assert (d and isinstance(d,dict) and
+                    all(PNCore.is_expr(v) for v in d.itervalues())), d
         
+        def _len(e):
+            #simply heuristic to try most restrict conjs first
+            if z3util.is_expr_var(e):  #variables such as x,y
+                return 1
+            else: #conj/disj
+                nchildren = len(e.children())
+                if nchildren:
+                    if z3.is_app_of(e,z3.Z3_OP_OR):
+                        return 1.0 / nchildren
+                    else:
+                        if not z3.is_app_of(e,z3.Z3_OP_AND):
+                            logger.warn(
+                                "f:{} is not var,AND, or OR".format(e))
+                        return nchildren
+                else:
+                    logger.warn("f:{} has 0 children".format(e))
+                    return 1
+
+        
+        fs = sorted([f for f in d if d[f]],
+                    key=lambda f: _len(d[f]),reverse=True)
+
+        #if only None in fs, then return
+        #otherwise, ignore None (i.e., everything implies true)        
+        if not fs: 
+            return d
+
         implied = set()
-        for f in d:
-            if f in implied or d[f] is None:
+        for f in fs:
+            if f in implied:
                 continue
             
-            for g in d:
-                if f is g or g in implied or d[g] is None:
+            for g in fs:
+                if f is g or g in implied:
                     continue
-
                 e = z3.Implies(d[f],d[g])
-                if z3util.is_tautology(e):
+                is_implied = z3util.is_tautology(e)
+                if is_implied:
                     implied.add(g)
-
+                print "{} => {} {}".format(f,g,is_implied)
+                
+                
         return dict((f,d[f]) for f in d if f not in implied)
 
     @staticmethod
