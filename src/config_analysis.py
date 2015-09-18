@@ -57,10 +57,10 @@ class Analysis(object):
         """
         Replay execution info from saved info in dir_
         """
-        seed,dom,dts,pp_cores_d,itime_total = Analysis.load_dir(dir_)
-
-        #print info
         logger.info("replay dir: '{}'".format(dir_))
+        
+        seed,dom,dts,pp_cores_d,itime_total = Analysis.load_dir(dir_)
+        #print info
         logger.info('seed: {}'.format(seed))
         logger.debug(dom.__str__())
         
@@ -88,7 +88,7 @@ class Analysis(object):
 
         if do_min_configs:
             #reconstruct information
-            from config import Configs_d
+            from config import Configs_d, HighCov
             configs_d = Configs_d()
             covs = set()
             for dt in dts:
@@ -98,7 +98,8 @@ class Analysis(object):
                 for sid in dt.new_covs:
                     covs.add(sid)
 
-            min_configs = mcores_d.get_min_configs(covs,configs_d,dom)
+            min_configs = HighCov.get_min_configs(
+                mcores_d,covs,configs_d,dom)
             n_min_configs = len(min_configs)
         else:
             n_min_configs = 0
