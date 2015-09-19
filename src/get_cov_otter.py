@@ -3,10 +3,7 @@ import random
 import os
 import vu_common as CM
 
-from config_analysis import Analysis
-from config import (Dom,Config,
-                    Configs_d,Cores_d,Covs_d,
-                    Infer,Analysis,DTrace)
+from config import (Dom,Config,Configs_d,Cores_d,Covs_d,Infer)
 import config as CF
 
 logger = CM.VLog('otter')
@@ -60,6 +57,8 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
 
     seed=0
     logger.info("seed: {} default, tmpdir: {}".format(seed,tmpdir))
+
+    from config_analysis import Analysis,DTrace    
     analysis = Analysis(tmpdir)
     analysis.save_pre(seed,dom)
     if n:
