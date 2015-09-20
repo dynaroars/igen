@@ -935,7 +935,7 @@ class Cores_d(CustDict):
                              format(sid,old_c,new_c))
 
         cores_d = Cores_d()                
-        logger.info("analyze interactions for {} sids".format(len(self)))
+        logger.info("analyze results for {} sids".format(len(self)))
 
         if covs_d:
             logger.debug("verify ...")
@@ -1191,7 +1191,7 @@ class IGen(object):
         self.get_cov = get_cov
         self.config_default = config_default
 
-    def go(self,seed=None,rand_n=None,tmpdir=None):
+    def go(self,seed=None,rand_n=None,existing_results=None,tmpdir=None):
         """
         rand_n = None: use default interative mode
         rand_n = 0  : use init configs
@@ -1200,8 +1200,8 @@ class IGen(object):
         """
         if CM.__vdebug__:
             assert isinstance(tmpdir,str) and os.path.isdir(tmpdir), tmpdir
-            
-        seed = seed if seed is not None else round(time(),2)
+            assert seed is None or isinstance(seed,float)
+
         random.seed(seed)
         logger.info("seed: {}, tmpdir: {}".format(seed,tmpdir))
         analysis = Analysis(tmpdir)
@@ -1292,16 +1292,24 @@ class IGen(object):
         logger.info(Analysis.str_of_summary(
             seed,cur_iter,itime_total,xtime_total,
             len(configs_d),len(covs_d),tmpdir))
-        logger.info("Done (seed {}, test {})".format(seed,random.randrange(100)))
+        logger.info("Done (seed {}, test {})"
+                    .format(seed,random.randrange(100)))
         analysis.save_post(pp_cores_d,itime_total)
         
         return pp_cores_d,cores_d,configs_d,covs_d,self.dom
 
     #Shortcuts
     def go_full(self,tmpdir=None):
-        return self.go(seed=None,rand_n=-1,tmpdir=tmpdir)
+        return self.go(seed=None,rand_n=-1,
+                       existing_results=None,tmpdir=tmpdir)
+
     def go_rand(self,rand_n,seed=None,tmpdir=None):
-        return self.go(seed=seed,rand_n=rand_n,tmpdir=tmpdir)
+        return self.go(seed=seed,rand_n=rand_n,
+                       existing_results=None,tmpdir=tmpdir)
+
+    def go_minconfigs(self,seed,existing_results,tmpdir=None):
+        return self.go(seed=seed,rand_n=None,
+                       existing_results=existing_results,tmpdir=tmpdir)
 
     #Helper functions
     def eval_configs(self,configs):
