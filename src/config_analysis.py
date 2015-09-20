@@ -102,6 +102,10 @@ class Analysis(object):
     def replay(dir_,show_iters,do_min_configs):
         """
         Replay execution info from saved info in dir_
+        do_min_configs has 3 possible values
+        1. None: don't find min configs
+        2. f: (callable(f)) find min configs using f
+        3. anything else: find min configs using existing configs
         """
         logger.info("replay dir: '{}'".format(dir_))
         seed,dom,dts,pp_cores_d,itime_total = Analysis.load_dir(dir_)
@@ -114,7 +118,6 @@ class Analysis(object):
                 dt.show()
                 logger.debug("evol score: {}".format(
                     Metrics.score_cores_d(dt.cores_d,dom)))
-
 
         if hasattr(pp_cores_d.values()[0],'vstr'):
             mcores_d = pp_cores_d.merge(show_detail=True)            
@@ -132,34 +135,36 @@ class Analysis(object):
         logger.info(Analysis.str_of_summary(
             seed,len(dts),itime_total,xtime_total,nconfigs,ncovs,dir_))
 
-        if do_min_configs:
+        evol_pts = [Metrics.score_cores_d(dt.cores_d,dom) for dt in dts]
+        evol_pts = [(i,a,a-b) for i,(a,b) in
+                       enumerate(zip(evol_pts,[0]+evol_pts))]
+        evol_pts = ' -> '.join(map(str,evol_pts))
+        logger.info("evol pts (iter, pts, diff): {}".format(evol_pts))
+        
+        if not do_min_configs: #None
+            n_min_configs = 0
+        elif callable(do_min_configs):
+            f = do_min_configs
+            min_configs = HighCov.get_minset_f(
+                mcores_d,set(pp_cores_d),f,dom)
+            n_min_configs = len(min_configs)            
+        else:
             #reconstruct information
             from config import Configs_d
             configs_d = Configs_d()
-            covs = set()
             for dt in dts:
                 for c in dt.cconfigs_d:
                     configs_d[c] = dt.cconfigs_d[c]
-                    
-                for sid in dt.new_covs:
-                    covs.add(sid)
 
-            min_configs = HighCov.get_min_configs(
-                mcores_d,covs,configs_d,dom)
+            min_configs = HighCov.get_minset_configs_d(
+                mcores_d,set(pp_cores_d),configs_d,dom)
             n_min_configs = len(min_configs)
-        else:
-            n_min_configs = 0
 
-            
-        evol_scores = [Metrics.score_cores_d(dt.cores_d,dom) for dt in dts]
-        evol_scores = [(i,a,a-b) for i,(a,b) in enumerate(zip(evol_scores,[0]+evol_scores))]
-        logger.info("evol scores: {}".format(evol_scores))
-        
         return (len(dts),len(mcores_d),
                 itime_total,xtime_total,
                 nconfigs,ncovs,
                 n_min_configs,
-                evol_scores,
+                evol_pts,
                 mcores_d.strens,mcores_d.strens_str,mcores_d.vtyps)
 
     @staticmethod
@@ -194,7 +199,7 @@ class Analysis(object):
             rs = Analysis.replay(rdir,show_iters,do_min_configs)
             (niters,nresults,itime,xtime,
              nconfigs,ncovs,n_min_configs,
-             evol_scores,
+             evol_pts,
              strens,strens_str,ntyps) = rs
             niters_total += niters
             nresults_total += nresults
@@ -248,11 +253,6 @@ class Analysis(object):
                   "nminconfigs {}".format(Analysis.siqr(nminconfigs_arr)),                  
                   "covs {}".format(Analysis.siqr(ncovs_arr))]
         logger.info("STATS of {} runs (SIQR)   : {}".format(nruns_total,', '.join(ssSIQR)))
-
-
-        # def str_of_strens(strens):
-        #     return ', '.join("({}, {}, {})".format(siz,ncores,ncov)
-        #                      for siz,ncores,ncov in strens)
 
         sres = {}
         for i,(strens,strens_str) in enumerate(zip(strens_s,strens_str_s)):
@@ -502,41 +502,14 @@ class HighCov(object):
         return dict((f,d[f]) for f in d if f in fs_)
 
     @staticmethod
-    def str_of_pack(pack):
-        #c is a tuple
-        def f(c):
-            try:
-                return c.vstr
-            except Exception:
-                return str(c)
-
-        return '({})'.format('; '.join(map(f,pack)))
-
-    @staticmethod
-    def gen_configs(d,dom):
+    def indep(fs,dom):
         """
-        Use an SMT solver to generate |d| configurations
-        """
-        if CM.__vdebug__:
-            assert all(isinstance(k,tuple) and
-                       z3.is_expr(v) for k,v in d.itertiems()),d
-        
-        z3db = dom.z3db
-
-    @staticmethod
-    def get_min_configs(mcores_d,remain_covs,configs_d,dom):
-        """
-        Use interactions to generate a min set of configs 
-        from configs_d that cover *all* remain_covs locations.
-
-        This essentially reuse generated configs. 
-        If use packed elems then could be slow because
-        have to check that all generated configs satisfy packed elem
+        Apply prune and pack on fs
         """
         z3db = dom.z3db
 
         #prune
-        d = dict((c,c.z3expr(z3db,dom)) for c in mcores_d)
+        d = dict((c,c.z3expr(z3db,dom)) for c in fs)
         d = HighCov.prune(d)
         logger.debug("prune: {} indep cores".format(len(d)))
         logger.detail("\n{}".format('\n'.join(
@@ -551,18 +524,72 @@ class HighCov(object):
             for i,c in enumerate(d))))
 
         assert all(v for v in d.itervalues())
-        
-        #some init setup
-        exprs_d = [(c,c.z3expr(z3db)) for c in configs_d] #slow
-        exprs_d = exprs_d + d.items()
-        exprs_d = dict(exprs_d)
+        return d,z3db
+    
+    @staticmethod
+    def str_of_pack(pack):
+        #c is a tuple
+        def f(c):
+            try:
+                return c.vstr
+            except Exception:
+                return str(c)
 
+        return '({})'.format('; '.join(map(f,pack)))
+
+    
+    @staticmethod
+    def get_minset_f(mcores_d,remain_covs,f,dom):
+        d,z3db = HighCov.indep(mcores_d.keys(),dom)
+
+        st = time()
+        ncovs = len(remain_covs)  #orig covs
+
+        from config import Configs_d
+        minset_d = Configs_d()  #results
+        
+        for pack,expr in d.iteritems():
+            #Todo: and not one of the existing ones
+            nexpr = z3util.myOr(minset_d)            
+            configs = dom.gen_configs_exprs([expr],[nexpr],k=1)
+            if not configs:
+                logger.warn("Cannot create configs from {}"
+                            .format(HighCov.str_of_pack(pack)))
+            else:
+                config = configs[0]
+                covs,xtime = f(config)
+                remain_covs = remain_covs - covs
+                minset_d[config]=covs
+                
+        logger.debug("minset: {} configs cover {}/{} sids (time {}s)"
+                     .format(len(minset_d),
+                             ncovs-len(remain_covs),ncovs,time()-st))
+        logger.detail('\n{}'.format(minset_d))                
+        return minset_d.keys()
+        
+    
+    @staticmethod
+    def get_minset_configs_d(mcores_d,remain_covs,configs_d,dom):
+        """
+        Use interactions to generate a min set of configs 
+        from configs_d that cover remain_covs locations.
+
+        This essentially reuse generated configs. 
+        If use packed elems then could be slow because
+        have to check that all generated configs satisfy packed elem
+        """
+        d,z3db = HighCov.indep(mcores_d.keys(),dom)
         packs = set(d)  #{(pack,expr)}
         ncovs = len(remain_covs)  #orig covs
         remain_configs = set(configs_d)
 
         from config import Configs_d
         minset_d = Configs_d()  #results
+        
+        #some init setup
+        exprs_d = [(c,c.z3expr(z3db)) for c in configs_d] #slow
+        exprs_d = exprs_d + d.items()
+        exprs_d = dict(exprs_d)
 
         def _f(pack,covs):
             covs_ = set.union(*(mcores_d[c] for c in pack))
@@ -609,7 +636,8 @@ class HighCov(object):
             minset_d[config]=configs_d[config]
             remain_covs = remain_covs - configs_d[config]
             remain_configs = [c for c in remain_configs
-                              if len(remain_covs - configs_d[c]) != len(remain_covs)]
+                              if len(remain_covs - configs_d[c])
+                              != len(remain_covs)]
 
             
         logger.debug("minset: {} configs cover {}/{} sids (time {}s)"
