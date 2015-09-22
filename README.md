@@ -32,10 +32,9 @@ Download and unpack coreutils-8.23.tar.bj2 (other versions probably should work 
     6. rm -rf *.gcda
 
     Now let's tests to see that it works
-    7. run the test suite,  e.g.,  ./echo**
-    This creates gcov data file echo.gcda -- *make sure that it does*, if not then it doesn't work !
-     8. cd ../../src  (src dir containing src)
-     9. gcov echo.c -o ../obj-gcov/src  #reads the echo.gcda in obj-gcov and generates human readable format
+    7. run the test suite,  e.g.,  ./echo** #this creates gcov data file echo.gcda -- *make sure that it does*, if not then it doesn't work !
+    8. cd ../../src  (src dir containing src)
+    9. gcov echo.c -o ../obj-gcov/src  #reads the echo.gcda in obj-gcov and generates human readable format
 
     For example,
     $ gcov echo.c -o ../obj-gcov/src/
