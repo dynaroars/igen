@@ -186,7 +186,6 @@ if __name__ == "__main__":
         if do_min_configs and do_min_configs != 'use_existing':
             _,get_cov_f = get_run_f(do_min_configs,args)
             do_min_configs = get_cov_f
-            print 'gh'
             
         analysis_f(args.inp,show_iters=args.show_iters,
                    do_min_configs=do_min_configs)
