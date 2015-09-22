@@ -21,31 +21,30 @@ Setup Z3 using its own build instruction. Make sure Z3 is setup correctly so tha
 
 *GNU Coreutils*: we use *gcov* to obtain coverage information for coreutils commands. Below lists the instructions.
 
-First download and unpack coreutils-8.23.tar.bj2 (other versions probably should work too), then cd to coreutils-8.23 dir.
+Download and unpack coreutils-8.23.tar.bj2 (other versions probably should work too), then cd to coreutils-8.23 dir.
 
-1. mkdir obj-gcov/
-2. cd obj-gcov
-3. ../configure --disable-nls CFLAGS="-g -fprofile-arcs -ftest-coverage"
-make sure that configure worked ...
-4. make
-make sure that make works
-5. cd src  (obj-gcov/src dir contains binary programs)
-6. rm -rf *.gcda
+    1. mkdir obj-gcov/
+    2. cd obj-gcov
+    3. ../configure --disable-nls CFLAGS="-g -fprofile-arcs -ftest-coverage"
+    #make sure no error
+    4. make  #make sure  no error
+    5. cd src  #obj-gcov/src dir contains binary programs
+    6. rm -rf *.gcda
 
-Now let's tests to see that it works
-7. run the test suite,  e.g.,  ./echo**
-This creates gcov data file echo.gcda -- *make sure that it does*, if not then it doesn't work !
-8. cd ../../src  (src dir containing src)
-9. gcov echo.c -o ../obj-gcov/src
-This reads the echo.gcda in obj-gcov and generates human readable format
+    Now let's tests to see that it works
+    7. run the test suite,  e.g.,  ./echo**
+    This creates gcov data file echo.gcda -- *make sure that it does*, if not then it doesn't work !
+     8. cd ../../src  (src dir containing src)
+     9. gcov echo.c -o ../obj-gcov/src  #reads the echo.gcda in obj-gcov and generates human readable format
 
-For example,
-$ gcov echo.c -o ../obj-gcov/src/
-File '../src/echo.c'
-Lines executed:22.02% of 109
-Creating 'echo.c.gcov'
+    For example,
+    $ gcov echo.c -o ../obj-gcov/src/
+    File '../src/echo.c'
+    Lines executed:22.02% of 109
+    Creating 'echo.c.gcov'
 
-File '../src/system.h'
-Lines executed:0.00% of 10
-Creating 'system.h.gcov'
-Analyze echo.c.gcov file and system.h.gcov
+    File '../src/system.h'
+    Lines executed:0.00% of 10
+    Creating 'system.h.gcov'
+
+Now we can analyze echo.c.gcov file and system.h.gcov. iGen will take care of this task
