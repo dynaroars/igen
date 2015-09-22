@@ -1025,7 +1025,8 @@ class Infer(object):
         Approximation in *conjunctive* form
         """
         if CM.__vdebug__:
-            assert all(isinstance(c,Config) for c in configs) and configs, configs
+            assert (all(isinstance(c,Config) for c in configs)
+                    and configs), configs
             assert Core.is_maybe_core(core),core
             assert isinstance(dom,Dom),dom
 
@@ -1052,7 +1053,8 @@ class Infer(object):
     def infer_cache(core,configs,dom,cache):
         if CM.__vdebug__:
             assert core is None or isinstance(core,Core),core
-            assert all(isinstance(c,Config) for c in configs) and configs, configs
+            assert (all(isinstance(c,Config) for c in configs)
+                    and configs), configs
             assert isinstance(dom,Dom),dom
             assert isinstance(cache,dict),cache
 

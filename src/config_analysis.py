@@ -51,7 +51,6 @@ class DTrace(object):
         logger.info("strens: {}".format(mcores_d.strens_str))
 
 
-
 class Analysis(object):
     def __init__(self,tmpdir):
         self.tmpdir = tmpdir
@@ -116,7 +115,7 @@ class Analysis(object):
         if show_iters:
             for dt in dts:
                 dt.show()
-                logger.debug("evol score: {}".format(
+                logger.debug("evol pts: {}".format(
                     Metrics.score_cores_d(dt.cores_d,dom)))
 
         if hasattr(pp_cores_d.values()[0],'vstr'):
@@ -135,12 +134,17 @@ class Analysis(object):
         logger.info(Analysis.str_of_summary(
             seed,len(dts),itime_total,xtime_total,nconfigs,ncovs,dir_))
 
+        #evol points
         evol_pts = [Metrics.score_cores_d(dt.cores_d,dom) for dt in dts]
         evol_pts = [(i,a,a-b) for i,(a,b) in
                        enumerate(zip(evol_pts,[0]+evol_pts))]
-        evol_pts = ' -> '.join(map(str,evol_pts))
-        logger.info("evol pts (iter, pts, diff): {}".format(evol_pts))
-        
+        logger.info("evol pts (iter, pts, diff): {}".format(
+            ' -> '.join(map(str,evol_pts))))
+
+        #influential points
+        influence_d = Influence.influence(mcores_d,dom)
+
+        #min config
         if not do_min_configs: #None
             n_min_configs = 0
         elif callable(do_min_configs):
@@ -165,7 +169,9 @@ class Analysis(object):
                 nconfigs,ncovs,
                 n_min_configs,
                 evol_pts,
-                mcores_d.strens,mcores_d.strens_str,mcores_d.vtyps)
+                mcores_d.strens,
+                mcores_d.strens_str,
+                mcores_d.vtyps)
 
     @staticmethod
     def replay_dirs(dir_,show_iters,do_min_configs,do_metrics):
@@ -511,14 +517,14 @@ class HighCov(object):
         #prune
         d = dict((c,c.z3expr(z3db,dom)) for c in fs)
         d = HighCov.prune(d)
-        logger.debug("prune: {} indep cores".format(len(d)))
+        logger.debug("prune: {} remains".format(len(d)))
         logger.detail("\n{}".format('\n'.join(
             "{}. {}".format(i+1,str(c)) for i,c
             in enumerate(sorted(d)))))
 
         #pack
         d = HighCov.pack(d)
-        logger.debug("{} packed cores".format(len(d)))
+        logger.debug("pack: {} remains".format(len(d)))
         logger.detail("\n{}".format('\n'.join(
             "{}. {}".format(i+1,HighCov.str_of_pack(c))
             for i,c in enumerate(d))))
@@ -647,8 +653,7 @@ class HighCov(object):
 
         return minset_d.keys()
         
-
-
+    
 class Metrics(object):
     @staticmethod
     def score_core(core,dom):
@@ -674,4 +679,44 @@ class Metrics(object):
 
     
     
+class Influence(object):
+    @staticmethod
+    def influence(mcores_d,dom,do_settings=True):
+        if CM.__vdebug__:
+            assert isinstance(mcores_d,Mcores_d) and mcores_d, mcores_d
+
+        if do_settings:
+            f = lambda d: set((k,v) for k,vs in d.iteritems() for v in vs)
+            ks = f(dom)
+            def g(core):
+                core = (c for c in core if c)
+                return set(s for c in core for s in f(c))
+
+            from config import str_of_setting            
+            _str = str_of_setting
+
+        else:
+            ks = dom.keys()
+            def g(core):
+                core = (c for c in core if c)
+                return set(s for c in core for s in c)
+            _str = str
         
+        d = {}
+        for k in ks:
+            d[k] = 0
+            for pncore in mcores_d:
+                if k in g(pncore):
+                    d[k] = d[k] + len(mcores_d[pncore])
+
+        vs = sorted(d,key= lambda k:d[k],reverse=True)
+
+        logger.debug("influencial opts {}"
+                     .format(', '.join(map(
+                         lambda k: "{} {}"
+                         .format(_str(k),d[k]),vs))))
+        return d
+
+                    
+            
+                
