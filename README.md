@@ -19,9 +19,7 @@ Setup Z3 using its own build instruction. Make sure Z3 is setup correctly so tha
 
 ### Experiments ###
 
-*GNU Coreutils*: we use *gcov* to obtain coverage information for coreutils commands. Below lists the instructions.
-
-Download and unpack coreutils-8.23.tar.bj2 (other versions probably should work too), then cd to coreutils-8.23 dir.
+*GNU Coreutils*: we use *gcov* to obtain coverage information for coreutils commands. Download and unpack coreutils-8.23.tar.bj2 (other versions probably should work too), then cd to coreutils-8.23 dir.
 
     1. mkdir obj-gcov/
     2. cd obj-gcov
