@@ -19,7 +19,9 @@ Setup Z3 using its own build instruction. Make sure Z3 is setup correctly so tha
 
 ### Experiments ###
 
-*GNU Coreutils*: we use *gcov* to obtain coverage information for coreutils commands. Download and unpack coreutils-8.23.tar.bj2 (other versions probably should work too), then cd to coreutils-8.23 dir.
+*GNU Coreutils*: we use *gcov* to obtain coverage information for coreutils commands. Download and unpack coreutils-8.23.tar.bj2 (other versions probably should work too), then cd to coreutils-8.23 dir.  
+
+*NOTE*: if you move this directory to a different location,  it's best to recompile everything again using the below instruction.  
 
     1. mkdir obj-gcov/
     2. cd obj-gcov
@@ -44,4 +46,5 @@ Setup Z3 using its own build instruction. Make sure Z3 is setup correctly so tha
     Lines executed:0.00% of 10
     Creating 'system.h.gcov'
 
-    10. Now we can analyze echo.c.gcov file and system.h.gcov. iGen will take care of this task
+    Now we can analyze echo.c.gcov file and system.h.gcov, butiGen will take care of this task
+    10. Finally, edit config_setup.py in src (where igen.py is) so that coreutils_dir points to the coreutils-8.23 dir
