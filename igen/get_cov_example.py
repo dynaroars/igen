@@ -10,7 +10,7 @@ logger.level = CF.logger.level
 
 db = {'ex': 'ex', 'ex1':'ex'}
 
-from config_settings import examples_dir
+from igen_settings import examples_dir
 
 def prepare(prog_name):
     if CM.__vdebug__:

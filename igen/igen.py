@@ -170,7 +170,7 @@ if __name__ == "__main__":
         config.analyze_outps = True
 
     def _tmpdir(prog):
-        from config_settings import tmp_dir    
+        from igen_settings import tmp_dir    
         import getpass
         d_prefix = "{}_bm_{}_".format(getpass.getuser(),prog)
         tdir = tempfile.mkdtemp(dir=tmp_dir,prefix=d_prefix)

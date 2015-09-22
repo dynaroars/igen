@@ -8,7 +8,7 @@ import get_cov as GC
 logger = CM.VLog('coreutils')
 logger.level = CF.logger.level
 
-from config_settings import coreutils_dir
+from igen_settings import coreutils_dir
 
 def prepare(prog_name,do_perl):
     if CM.__vdebug__:
