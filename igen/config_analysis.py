@@ -517,15 +517,15 @@ class HighCov(object):
         #prune
         d = dict((c,c.z3expr(z3db,dom)) for c in fs)
         d = HighCov.prune(d)
-        logger.debug("prune: {} remains".format(len(d)))
-        logger.detail("\n{}".format('\n'.join(
+        logger.info("prune: {} remains".format(len(d)))
+        logger.debug("\n{}".format('\n'.join(
             "{}. {}".format(i+1,str(c)) for i,c
             in enumerate(sorted(d)))))
 
         #pack
         d = HighCov.pack(d)
-        logger.debug("pack: {} remains".format(len(d)))
-        logger.detail("\n{}".format('\n'.join(
+        logger.info("pack: {} remains".format(len(d)))
+        logger.debug("\n{}".format('\n'.join(
             "{}. {}".format(i+1,HighCov.str_of_pack(c))
             for i,c in enumerate(d))))
 
@@ -567,10 +567,10 @@ class HighCov(object):
                 remain_covs = remain_covs - covs
                 minset_d[config]=covs
                 
-        logger.debug("minset: {} configs cover {}/{} sids (time {}s)"
+        logger.info("minset: {} configs cover {}/{} sids (time {}s)"
                      .format(len(minset_d),
                              ncovs-len(remain_covs),ncovs,time()-st))
-        logger.detail('\n{}'.format(minset_d))                
+        logger.debug('\n{}'.format(minset_d))                
         return minset_d.keys()
         
     

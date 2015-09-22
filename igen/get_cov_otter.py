@@ -10,7 +10,7 @@ logger = CM.VLog('otter')
 logger.level = CF.logger.level
 
 db = {"vsftpd":None,"ngircd":None}
-from config_settings import otter_dir
+from igen_settings import otter_dir
 
 
 def prepare(prog):
