@@ -15,10 +15,7 @@ iGen has been tested using the following setup:
 * Python 2.7.x
 * Microsoft Z3 SMT solver 4.x
 
-
-First, setup Z3 using its own build instruction (make sure to do "make install" at the end).
-Now you should be able to do something like "import z3" in a python interpreter
-Finally, setup the SAGE environment as follows.
+Setup Z3 using its own build instruction. Make sure Z3 is setup correctly so that you can do "import z3" in a Python interpreter
 
 ### Experiments ###
 
