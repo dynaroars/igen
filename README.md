@@ -47,4 +47,4 @@ Download and unpack coreutils-8.23.tar.bj2 (other versions probably should work 
     Lines executed:0.00% of 10
     Creating 'system.h.gcov'
 
-Now we can analyze echo.c.gcov file and system.h.gcov. iGen will take care of this task
+    10. Now we can analyze echo.c.gcov file and system.h.gcov. iGen will take care of this task
