@@ -178,7 +178,6 @@ if __name__ == "__main__":
     
     if args.replay or args.replay_dirs: #analyze results
         import config_analysis as analysis
-        analysis.logger.level = args.logger_level
         analysis_f = (analysis.Analysis.replay if args.replay else
                       analysis.Analysis.replay_dirs)
 

@@ -872,8 +872,8 @@ class Infer(object):
     def infer_cache(core,configs,dom,cache):
         if CM.__vdebug__:
             assert core is None or isinstance(core,Core),core
-            assert (all(isinstance(c,Config) for c in configs)
-                    and configs), configs
+            assert (configs and
+                    all(isinstance(c,Config) for c in configs)), configs
             assert isinstance(dom,Dom),dom
             assert isinstance(cache,dict),cache
 
@@ -888,7 +888,8 @@ class Infer(object):
         if CM.__vdebug__:
             assert isinstance(sid,str),sid
             assert isinstance(core,PNCore),core
-            assert isinstance(cconfigs_d,CC.Configs_d) and cconfigs_d,cconfigs_d
+            assert (cconfigs_d and
+                    isinstance(cconfigs_d,CC.Configs_d)),cconfigs_d
             assert isinstance(configs_d,CC.Configs_d),configs_d
             assert isinstance(covs_d,CC.Covs_d),covs_d
             assert isinstance(dom,Dom),dom        
@@ -994,8 +995,8 @@ class IGen(object):
 
         random.seed(seed)
         logger.info("seed: {}, tmpdir: {}".format(seed,tmpdir))
+
         from config_analysis import Analysis
-        
         analysis = Analysis(tmpdir)
         analysis.save_pre(seed,self.dom)
 
