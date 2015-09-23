@@ -95,7 +95,7 @@ class Analysis(object):
             seed,len(dts),itime_total,xtime_total,nconfigs,ncovs,dir_))
 
         evol_scores = Metrics.get_evol_scores(dts,dom,cmp_gt)
-        influence_d = Influence.get_influence(mcores_d,ncovs,dom)
+        influence_scores = Influence.get_influence(mcores_d,ncovs,dom)
 
         #min config
         if not do_min_configs: #None
@@ -121,6 +121,7 @@ class Analysis(object):
                 nconfigs,ncovs,
                 n_min_configs,
                 evol_scores,
+                influence_scores,
                 mcores_d.strens,
                 mcores_d.strens_str,
                 mcores_d.vtyps)
@@ -157,7 +158,7 @@ class Analysis(object):
             rs = Analysis.replay(rdir,show_iters,do_min_configs)
             (niters,nresults,itime,xtime,
              nconfigs,ncovs,n_min_configs,
-             evol_pts,
+             evol_scores,influence_scores,
              strens,strens_str,ntyps) = rs
             niters_total += niters
             nresults_total += nresults
