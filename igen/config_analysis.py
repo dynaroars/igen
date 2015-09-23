@@ -71,7 +71,7 @@ class Analysis(object):
         logger.info('seed: {}'.format(seed))
         logger.debug(dom.__str__())
 
-        dts = sorted(dts,key=lambda dt : dt.citer)        
+        dts = sorted(dts,key=lambda dt: dt.citer)        
         if show_iters:
             for dt in dts:
                 dt.show()
@@ -94,16 +94,8 @@ class Analysis(object):
         logger.info(Analysis.str_of_summary(
             seed,len(dts),itime_total,xtime_total,nconfigs,ncovs,dir_))
 
-        #evol points
         evol_scores = Metrics.get_evol_scores(dts,dom,cmp_gt)
-        # evol_pts = [Metrics.score_cores_d(dt.cores_d,dom) for dt in dts]
-        # evol_pts = [(i,a,a-b) for i,(a,b) in
-        #                enumerate(zip(evol_pts,[0]+evol_pts))]
-        # logger.info("evol pts (iter, pts, diff): {}".format(
-        #     ' -> '.join(map(str,evol_pts))))
-
-        #influential points
-        influence_d = Influence.influence(mcores_d,dom)
+        influence_d = Influence.get_influence(mcores_d,ncovs,dom)
 
         #min config
         if not do_min_configs: #None
@@ -735,13 +727,9 @@ class Metrics(object):
         if CM.__vdebug__:
             assert all(isinstance(t,CF.DTrace) for t in dts), dts
             assert isinstance(dom,CF.Dom), dom
-            assert (cmp_with_gt is None
-                    or isinstance(cmp_gt,str)), cmp_gt
+            assert (cmp_gt is None or isinstance(cmp_gt,str)), cmp_gt
 
-        if cmp_gt is None:
-            evol_scores = [Metrics.score_cores_d(dt.cores_d,dom)
-                           for dt in dts]
-        else:
+        if cmp_gt:
             assert os.path.isdir(cmp_gt),cmp_gt
             gt_dir = cmp_gt
             logger.debug("load gt dir '{}'".format(gt_dir))
@@ -750,35 +738,50 @@ class Metrics(object):
             _,_,gt_dts,_,_ = Analysis.load_dir(gt_dir)
             assert len(gt_dts)==1
             gt_cores_d = gt_dts[0].cores_d
-            
-            evol_scores = [
-                Metrics.fscore_cores_d(dt.cores_d,gt_cores_d,dom)
-                for dt in dts]
 
-        evol_scores = [(i,a,a-b) for i,(a,b) in
-                       enumerate(zip(evol_scores,[0]+evol_scores))]
+            _f = lambda cores_d: Metrics.fscore_cores_d(
+                cores_d,gt_cores_d,dom)
+        else:
+            _f = lambda _: 1
+
+        scores = [(dt.citer,
+                   Metrics.score_cores_d(dt.cores_d,dom),
+                   _f(dt.cores_d),
+                   len(dt.cores_d))
+                  for dt in dts]
+
         if CM.__vdebug__:
-            assert all(x >0 and y>=0 for _,x,y in evol_scores), evol_scores
-            
-        logger.info("evol scores (iter, scores, diff): {}".format(
-            ' -> '.join(map(str,evol_scores))))
-        
-        return evol_scores
+            assert all(v >= 0 and f>=0 and c >= 0
+                       for _,v,f,c in scores), scores
+
+        logger.info("evol scores (iter, vscore, fscore, configs): {}".format(
+            ' -> '.join(map(str,scores))))
+        return scores
     
 class Influence(object):
     @staticmethod
-    def influence(mcores_d,dom,do_settings=True):
+    def get_influence(mcores_d,ncovs,dom,do_settings=True):
         if CM.__vdebug__:
             assert (mcores_d and
                     isinstance(mcores_d,CF.Mcores_d)), mcores_d
+            assert isinstance(dom,CF.Dom), dom            
 
         if do_settings:
-            f = lambda d: set((k,v)
-                              for k,vs in d.iteritems() for v in vs)
-            ks = f(dom)
+            ks = set((k,v) for k,vs in dom.iteritems() for v in vs)
             def g(core):
-                core = (c for c in core if c)
-                return set(s for c in core for s in f(c))
+                pc,pd,nc,nd = core
+                settings = []
+                if pc:
+                    settings.extend(pc.settings)
+                if pd:
+                    settings.extend(pc.neg(dom).settings)
+                #nd | neg(nc) 
+                if nc:
+                    settings.extend(nc.neg(dom).settings)
+                if nd:
+                    settings.extend(nd.settings)
+
+                return set(settings)
 
             _str = CC.str_of_setting
 
@@ -788,21 +791,22 @@ class Influence(object):
                 core = (c for c in core if c)
                 return set(s for c in core for s in c)
             _str = str
-        
-        d = {}
+
+
+        g_d = dict((pncore,g(pncore)) for pncore in mcores_d)
+        rs = []
         for k in ks:
-            d[k] = 0
-            for pncore in mcores_d:
-                if k in g(pncore):
-                    d[k] = d[k] + len(mcores_d[pncore])
-
-        vs = sorted(d,key= lambda k:d[k],reverse=True)
-
-        logger.debug("influential opts {}"
+            v = sum(len(mcores_d[pncore])
+                    for pncore in g_d if k in g_d[pncore])
+            rs.append((k,v))
+            
+        rs = sorted(rs,key=lambda (k,v):(v,k),reverse=True)
+        rs = [(k,v,float(v)/ncovs) for k,v in rs]
+        logger.debug("influence opts (opts, uniq, %) {}"
                      .format(', '.join(map(
-                         lambda k: "{} {}"
-                         .format(_str(k),d[k]),vs))))
-        return d
+                         lambda (k,v,p): "({}, {}, {})"
+                         .format(_str(k),v,p),rs))))
+        return rs
 
                     
             

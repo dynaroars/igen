@@ -503,7 +503,7 @@ class PNCore(MCore):
 
         #neg traces => nc & neg(nd)
         #pos traces => neg(nc & neg(nd))
-        #post traces => nd | neg(nc) 
+        #pos traces => nd | neg(nc) 
         if nc and not nd:
             nc_n = nc.neg(dom)
             if not all(c.d_implies(nc_n) for c in configs):
