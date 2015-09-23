@@ -5,51 +5,9 @@ import itertools
 from time import time
 
 logger = CM.VLog('analysis')
-logger.level = CM.VLog.DEBUG
+from config import logger as clogger
+logger.level = clogger.level
 CM.VLog.PRINT_TIME = True
-
-class DTrace(object):
-    """
-    Object for saving information (for later analysis)
-    """
-    def __init__(self,citer,itime,xtime,
-                 nconfigs,ncovs,ncores,
-                 cconfigs_d,new_covs,new_cores,
-                 sel_core,cores_d):
-
-        self.citer = citer
-        self.itime = itime
-        self.xtime = xtime
-        self.nconfigs = nconfigs
-        self.ncovs = ncovs
-        self.ncores = ncores
-        self.cconfigs_d = cconfigs_d
-        self.new_covs = new_covs
-        self.new_cores = new_cores
-        self.sel_core = sel_core
-        self.cores_d = cores_d
-        
-    def show(self):
-        logger.info("ITER {}, ".format(self.citer) +
-                    "{}s, ".format(self.itime) +
-                    "{}s eval, ".format(self.xtime) +
-                    "total: {} configs, {} covs, {} cores, "
-                    .format(self.nconfigs,self.ncovs,self.ncores) +
-                    "new: {} configs, {} covs, {} updated cores, "
-                    .format(len(self.cconfigs_d),
-                            len(self.new_covs),len(self.new_cores)) +
-                    "{}".format("** progress **"
-                                if self.new_covs or self.new_cores else ""))
-
-        logger.debug('select core: ({}) {}'.format(self.sel_core.sstren,
-                                                   self.sel_core))
-        logger.debug('create {} configs'.format(len(self.cconfigs_d)))
-        logger.detail("\n"+str(self.cconfigs_d))
-        mcores_d = self.cores_d.merge()
-        logger.debug("infer {} interactions".format(len(mcores_d)))
-        logger.detail('\n{}'.format(mcores_d))
-        logger.info("strens: {}".format(mcores_d.strens_str))
-
 
 class Analysis(object):
     def __init__(self,tmpdir):
@@ -154,7 +112,7 @@ class Analysis(object):
             n_min_configs = len(min_configs)            
         else:
             #reconstruct information
-            from config import Configs_d
+            from config_common import Configs_d
             configs_d = Configs_d()
             for dt in dts:
                 for c in dt.cconfigs_d:
@@ -551,7 +509,7 @@ class HighCov(object):
         st = time()
         ncovs = len(remain_covs)  #orig covs
 
-        from config import Configs_d
+        from config_common import Configs_d
         minset_d = Configs_d()  #results
         
         for pack,expr in d.iteritems():
@@ -589,7 +547,7 @@ class HighCov(object):
         ncovs = len(remain_covs)  #orig covs
         remain_configs = set(configs_d)
 
-        from config import Configs_d
+        from config_common import Configs_d
         minset_d = Configs_d()  #results
         
         #some init setup
@@ -692,7 +650,7 @@ class Influence(object):
                 core = (c for c in core if c)
                 return set(s for c in core for s in f(c))
 
-            from config import str_of_setting            
+            from config_common import str_of_setting            
             _str = str_of_setting
 
         else:

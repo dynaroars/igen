@@ -1,15 +1,15 @@
 import abc
-from vu_common import HDict
-import vu_common as CM
+import itertools
+import random
 import os.path
 from collections import OrderedDict, MutableMapping
+
+from vu_common import HDict
+import vu_common as CM
 
 import z3
 import z3util
 
-logger = CM.VLog('config_common')
-logger.level = CM.VLog.DEBUG
-CM.VLog.PRINT_TIME = True
 CM.__vdebug__ = True  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
 
 show_cov = True
@@ -111,12 +111,6 @@ class Dom(OrderedDict):
     x=2 y=1 z=0 w=a
     x=1 y=1 z=0 w=a
     x=1 y=1 z=2 w=c
-
-    >>> configs = dom.gen_configs_tcover1()
-    >>> print "\\n".join(map(str,configs))
-    x=1 y=1 z=2 w=b
-    x=2 y=1 z=1 w=c
-    x=2 y=1 z=0 w=a
 
     >>> assert len(dom.z3db) == len(dom) and set(dom.z3db) == set(dom)
 
@@ -265,3 +259,7 @@ class Configs_d(CustDict):
         return '\n'.join("{}. {}".format(i+1,s) for i,s in enumerate(ss))
     
     
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+

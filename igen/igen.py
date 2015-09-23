@@ -159,9 +159,9 @@ if __name__ == "__main__":
                          action="store_true")
 
     args = aparser.parse_args()
-    config.logger.level = args.logger_level
     CM.__vdebug__ = args.debug
-
+    config.logger.level = args.logger_level
+    
     if args.allows_known_errors:
         config.allows_known_errors = True
     if args.noshow_cov:

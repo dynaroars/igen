@@ -2,29 +2,43 @@ import abc
 import tempfile
 from time import time
 import os.path
-import itertools
 import random
-from collections import OrderedDict, MutableMapping
+from collections import OrderedDict
 
 import z3
 import z3util
 from vu_common import HDict
+
 import vu_common as CM
-from config_common import (CustDict,show_cov, is_cov, str_of_cov, is_setting, str_of_setting,
-                           is_valset, str_of_valset, is_csetting, str_of_csetting, Covs_d, Configs_d)
 import config_common as CC
-from config_analysis import Analysis, DTrace
+from config_common import Configs_d #need this to read in existing exp results
 
 logger = CM.VLog('config')
 logger.level = CM.VLog.DEBUG
 CM.VLog.PRINT_TIME = True
 CM.__vdebug__ = True  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
 
+
 allows_known_errors = False
 analyze_outps = False
 
 #Data Structures
 class Dom(CC.Dom):
+    """
+    >>> dom = Dom([('x',frozenset(['1','2'])),\
+    ('y',frozenset(['1'])),\
+    ('z',frozenset(['0','1','2'])),\
+    ('w',frozenset(['a','b','c']))\
+    ])
+    >>> assert dom.siz == len(dom.gen_configs_full()) == 18
+    >>> random.seed(0)
+    >>> configs = dom.gen_configs_tcover1()
+    >>> print "\\n".join(map(str,configs))
+    x=2 y=1 z=0 w=a
+    x=1 y=1 z=2 w=c
+    x=1 y=1 z=1 w=b
+
+    """
     def gen_configs_tcover1(self):
         """
         Return a set of tcover array of stren 1
@@ -268,11 +282,12 @@ class Core(HDict):
         HDict.__init__(self,core)
         
         if CM.__vdebug__:
-            assert all(is_csetting(s) for s in self.iteritems()), self
+            assert all(CC.is_csetting(s)
+                       for s in self.iteritems()), self
 
     def __str__(self,delim=' '):
         if self:
-            return delim.join(map(str_of_csetting,self.iteritems()))
+            return delim.join(map(CC.str_of_csetting,self.iteritems()))
         else:
             return 'true'
         
@@ -644,7 +659,7 @@ class PNCore(MCore):
         #not None => z3expr
         return expr is None or z3.is_expr(expr)
     
-class Cores_d(CustDict):
+class Cores_d(CC.CustDict):
     """
     rare case when diff c1 and c2 became equiv after simplification
 
@@ -674,7 +689,7 @@ class Cores_d(CustDict):
     2. (2) pc: b=1; pd: a=0; nc: true; nd: true: (1) L2
 
     >>> dom = Dom([('a',frozenset(['0','1'])),('b',frozenset(['0','1']))])
-    >>> covs_d = Covs_d()
+    >>> covs_d = CC.Covs_d()
     >>> config = Config([('a', '1'), ('b', '1')])
     >>> covs_d.add('L1',config)
     >>> covs_d.add('L2',config)
@@ -729,7 +744,7 @@ class Cores_d(CustDict):
         """
         if CM.__vdebug__:
             if covs_d is not None:
-                assert isinstance(covs_d,Covs_d) and covs_d, covs_d
+                assert isinstance(covs_d,CC.Covs_d) and covs_d, covs_d
                 assert len(self) == len(covs_d), (len(self),len(covs_d))
             assert isinstance(dom,Dom), dom
 
@@ -772,7 +787,7 @@ class Cores_d(CustDict):
 
         return cores_d
     
-class Mcores_d(CustDict):
+class Mcores_d(CC.CustDict):
     """
     A mapping from core -> {sids}
     """
@@ -786,7 +801,7 @@ class Mcores_d(CustDict):
         mc = sorted(self.iteritems(),
                     key=lambda (core,cov): (core.sstren,core.vstren,len(cov)))
         ss = ("{}. ({}) {}: {}"
-              .format(i+1,core.sstren,core,str_of_cov(cov))
+              .format(i+1,core.sstren,core,CC.str_of_cov(cov))
               for i,(core,cov) in enumerate(mc))
         return '\n'.join(ss)
 
@@ -873,9 +888,9 @@ class Infer(object):
         if CM.__vdebug__:
             assert isinstance(sid,str),sid
             assert isinstance(core,PNCore),core
-            assert isinstance(cconfigs_d,Configs_d) and cconfigs_d,cconfigs_d
-            assert isinstance(configs_d,Configs_d),configs_d
-            assert isinstance(covs_d,Covs_d),covs_d
+            assert isinstance(cconfigs_d,CC.Configs_d) and cconfigs_d,cconfigs_d
+            assert isinstance(configs_d,CC.Configs_d),configs_d
+            assert isinstance(covs_d,CC.Covs_d),covs_d
             assert isinstance(dom,Dom),dom        
             assert isinstance(cache,dict),cache
 
@@ -916,10 +931,10 @@ class Infer(object):
     def infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom):
         if CM.__vdebug__:
             assert isinstance(cores_d,Cores_d),cores_d
-            assert isinstance(cconfigs_d,Configs_d) and cconfigs_d,cconfigs_d
-            assert isinstance(configs_d,Configs_d),configs_d        
+            assert isinstance(cconfigs_d,CC.Configs_d) and cconfigs_d,cconfigs_d
+            assert isinstance(configs_d,CC.Configs_d),configs_d        
             assert all(c not in configs_d for c in cconfigs_d),cconfigs_d
-            assert isinstance(covs_d,Covs_d),covs_d
+            assert isinstance(covs_d,CC.Covs_d),covs_d
             assert isinstance(dom,Dom),dom
 
         sids = set(cores_d.keys())
@@ -979,6 +994,8 @@ class IGen(object):
 
         random.seed(seed)
         logger.info("seed: {}, tmpdir: {}".format(seed,tmpdir))
+        from config_analysis import Analysis
+        
         analysis = Analysis(tmpdir)
         analysis.save_pre(seed,self.dom)
 
@@ -989,7 +1006,7 @@ class IGen(object):
         cur_stuck = 0
         max_stuck = 3
         do_perturb = True #set this to True will not do any perturbing
-        cores_d,configs_d,covs_d = Cores_d(),Configs_d(),Covs_d()
+        cores_d,configs_d,covs_d = Cores_d(),CC.Configs_d(),CC.Covs_d()
         sel_core = SCore.mk_default()
         ignore_sel_cores = set()
 
@@ -1009,12 +1026,13 @@ class IGen(object):
                                               configs_d,covs_d,self.dom)
         while True:
             ct_ = time();itime = ct_ - ct;ct = ct_
-            dtrace = DTrace(cur_iter,itime,xtime,
-                            len(configs_d),len(covs_d),len(cores_d),
-                            cconfigs_d,
-                            new_covs,new_cores,
-                            sel_core,
-                            cores_d)
+            dtrace = DTrace(
+                cur_iter,itime,xtime,
+                len(configs_d),len(covs_d),len(cores_d),
+                cconfigs_d,
+                new_covs,new_cores,
+                sel_core,
+                cores_d)
             dtrace.show()
             analysis.save_iter(cur_iter,dtrace)
 
@@ -1093,7 +1111,7 @@ class IGen(object):
                     all(isinstance(c,Config) for c in configs)
                     and configs), configs
         st = time()
-        cconfigs_d = Configs_d()
+        cconfigs_d = CC.Configs_d()
         for c in configs:
             if c in cconfigs_d: #skip
                 continue
@@ -1127,7 +1145,7 @@ class IGen(object):
             assert (isinstance(ignore_sel_cores,set) and 
                     all(isinstance(c,SCore) for c in ignore_sel_cores)),\
                     ignore_sel_cores
-            assert isinstance(configs_d,Configs_d),configs_d
+            assert isinstance(configs_d,CC.Configs_d),configs_d
 
         configs = []
         while True:
@@ -1193,15 +1211,49 @@ class IGen(object):
 
         return sel_core
 
+class DTrace(object):
+    """
+    Object for saving information (for later analysis)
+    """
+    def __init__(self,citer,itime,xtime,
+                 nconfigs,ncovs,ncores,
+                 cconfigs_d,new_covs,new_cores,
+                 sel_core,cores_d):
 
+        self.citer = citer
+        self.itime = itime
+        self.xtime = xtime
+        self.nconfigs = nconfigs
+        self.ncovs = ncovs
+        self.ncores = ncores
+        self.cconfigs_d = cconfigs_d
+        self.new_covs = new_covs
+        self.new_cores = new_cores
+        self.sel_core = sel_core
+        self.cores_d = cores_d
+        
+    def show(self):
+        logger.info("ITER {}, ".format(self.citer) +
+                    "{}s, ".format(self.itime) +
+                    "{}s eval, ".format(self.xtime) +
+                    "total: {} configs, {} covs, {} cores, "
+                    .format(self.nconfigs,self.ncovs,self.ncores) +
+                    "new: {} configs, {} covs, {} updated cores, "
+                    .format(len(self.cconfigs_d),
+                            len(self.new_covs),len(self.new_cores)) +
+                    "{}".format("** progress **"
+                                if self.new_covs or self.new_cores else ""))
+
+        logger.debug('select core: ({}) {}'.format(self.sel_core.sstren,
+                                                   self.sel_core))
+        logger.debug('create {} configs'.format(len(self.cconfigs_d)))
+        logger.detail("\n"+str(self.cconfigs_d))
+        mcores_d = self.cores_d.merge()
+        logger.debug("infer {} interactions".format(len(mcores_d)))
+        logger.detail('\n{}'.format(mcores_d))
+        logger.info("strens: {}".format(mcores_d.strens_str))
+
+        
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-
-
-
-
-
-
-
-
