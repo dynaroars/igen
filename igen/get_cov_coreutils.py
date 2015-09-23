@@ -1,7 +1,7 @@
 import abc 
 import os.path
 import vu_common as CM
-from config import (Dom,Config)
+
 import config as CF
 import get_cov as GC
 
@@ -20,7 +20,7 @@ def prepare(prog_name,do_perl):
     if do_perl:
         prog_dir = os.path.join(main_dir,'coreutils_perl')
         dir_ = os.path.join(main_dir,'ppt')
-        prog_exe = "@@@"+prog_name
+        prog_exe = "@@@" + prog_name
         get_cov_f = get_cov_perl
         dom_file = os.path.join(main_dir,"doms_perl","{}.dom".format(prog_name))
     else:
@@ -35,7 +35,7 @@ def prepare(prog_name,do_perl):
         dom_file = os.path.join(main_dir,"doms","{}.dom".format(prog_name))
 
     dom_file = CM.getpath(dom_file)
-    dom,_ = Dom.get_dom(dom_file)
+    dom,_ = CF.Dom.get_dom(dom_file)
     logger.info("dom_file '{}': {}".format(dom_file,dom))
     
     assert all(len(vs) >= 2 and "off" in vs 
@@ -87,7 +87,7 @@ def get_ts_data(config,data):
 
 def get_cov_perl(config,data):
     if CM.__vdebug__:
-        assert isinstance(config,Config),config
+        assert isinstance(config,CF.Config),config
         check_data(data)
 
     #run perlCoverage.pl script
@@ -102,7 +102,7 @@ def get_cov_perl(config,data):
 
 def get_cov_gcov(config,data):
     if CM.__vdebug__:
-        assert isinstance(config,Config),config        
+        assert isinstance(config,CF.Config),config        
         check_data(data)
         
     #cleanup

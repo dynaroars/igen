@@ -1,15 +1,14 @@
 #Motivation/Simple examples
-from config import (Config,Dom)
+import os.path
+import vu_common as CM
+
 import config as CF
 import get_cov as GC
-import vu_common as CM
-import os.path
 
 logger = CM.VLog('motiv')
-logger.level = CF.logger.level
+#logger.level = CF.logger.level
 
 db = {'ex': 'ex', 'ex1':'ex'}
-
 from igen_settings import examples_dir
 
 def prepare(prog_name):
@@ -20,7 +19,7 @@ def prepare(prog_name):
     dir_ = CM.getpath(examples_dir)
     dom_file = db[prog_name]
     dom_file = CM.getpath(os.path.join(dir_,'{}.dom'.format(dom_file)))
-    dom,_ = Dom.get_dom(dom_file)
+    dom,_ = CF.Dom.get_dom(dom_file)
     logger.info("dom_file '{}': {}".format(dom_file,dom))
     prog_exe = CM.getpath(os.path.join(dir_,'{}.{}.exe'
                                     .format(prog_name,platform.system())))
@@ -43,7 +42,7 @@ def get_cov(config,data):
     Traces read from stdin
     """
     if CM.__vdebug__:
-        assert isinstance(config,Config),config
+        assert isinstance(config,CF.Config),config
         GC.check_data(data)
         
     tmpdir = '/var/tmp/'

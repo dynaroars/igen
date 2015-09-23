@@ -1,9 +1,8 @@
 from time import time
 import random
-import os
+import os.path
 import vu_common as CM
 
-from config import (Dom,Config,Configs_d,Cores_d,Covs_d,Infer)
 import config as CF
 
 logger = CM.VLog('otter')
@@ -20,7 +19,7 @@ def prepare(prog):
     assert os.path.isfile(dom_file),dom_file
     assert os.path.isfile(pathconds_d_file),pathconds_d_file
     
-    dom,_ = Dom.get_dom(dom_file)
+    dom,_ = CF.Dom.get_dom(dom_file)
     logger.info("dom_file '{}': {}".format(dom_file,dom))
     
     st = time()
@@ -34,7 +33,7 @@ def prepare(prog):
 
 def get_cov(config,args):
     if CM.__vdebug__:
-        assert isinstance(config,Config),config
+        assert isinstance(config,CF.Config),config
         assert isinstance(args,dict) and 'pathconds_d' in args, args
         
     sids = set()        
@@ -58,7 +57,7 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     seed=0
     logger.info("seed: {} default, tmpdir: {}".format(seed,tmpdir))
 
-    from config_analysis import Analysis,DTrace    
+    from config_analysis import Analysis
     analysis = Analysis(tmpdir)
     analysis.save_pre(seed,dom)
     if n:
@@ -67,10 +66,10 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     else:
         rs = pathconds_d.itervalues()
 
-    cconfigs_d = Configs_d()
+    cconfigs_d = CF.Configs_d()
     for covs,configs in rs:
         for c in configs:
-            c = Config(c)
+            c = CF.Config(c)
             if c not in cconfigs_d:
                 cconfigs_d[c]=set(covs)
             else:
@@ -80,8 +79,9 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
             
     logger.info("use {} configs".format(len(cconfigs_d)))
     st = time()
-    cores_d,configs_d,covs_d = Cores_d(),Configs_d(),Covs_d()
-    new_covs,new_cores = Infer.infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom)
+    cores_d,configs_d,covs_d = CF.Cores_d(),CF.Configs_d(),CF.Covs_d()
+    new_covs,new_cores = CF.Infer.infer_covs(
+        cores_d,cconfigs_d,configs_d,covs_d,dom)
     pp_cores_d = cores_d.analyze(dom,covs_d)
     mcores_d = pp_cores_d.merge(show_detail=True)    
     itime_total = time() - st
@@ -90,12 +90,12 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     logger.info(Analysis.str_of_summary(
         0,1,itime_total,0,len(configs_d),len(pp_cores_d),tmpdir))
 
-    dtrace = DTrace(1,itime_total,0,
-                    len(configs_d),len(covs_d),len(cores_d),
-                    cconfigs_d,
-                    new_covs,new_cores,
-                    CF.SCore.mk_default(), #sel_core
-                    cores_d)
+    dtrace = CF.DTrace(1,itime_total,0,
+                       len(configs_d),len(covs_d),len(cores_d),
+                       cconfigs_d,
+                       new_covs,new_cores,
+                       CF.SCore.mk_default(), #sel_core
+                       cores_d)
     analysis.save_iter(1,dtrace)
     
     analysis.save_post(pp_cores_d,itime_total)
