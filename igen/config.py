@@ -264,6 +264,9 @@ class Core(HDict):
     >>> print c
     x=2 y=1 z=0,1
 
+    >>> print ', '.join(map(CC.str_of_setting,c.settings))
+    x=2, y=1, z=1, z=0
+
     >>> dom = Dom([('x',frozenset(['1','2'])),\
     ('y',frozenset(['1'])),\
     ('z',frozenset(['0','1','2'])),\
@@ -290,6 +293,10 @@ class Core(HDict):
             return delim.join(map(CC.str_of_csetting,self.iteritems()))
         else:
             return 'true'
+
+    @property
+    def settings(self):
+        return [(k,v) for k,vs in self.iteritems() for v in vs]
         
     def neg(self,dom):
         try:
@@ -301,9 +308,6 @@ class Core(HDict):
             self._neg = Core([(k,vs) for k,vs in ncore if vs])
             return self._neg
         
-    @staticmethod
-    def is_maybe_core(c): return c is None or isinstance(c,Core)
-
     def z3expr(self,z3db,myf):
         f = []
         for vn,vs in self.iteritems():
@@ -311,6 +315,10 @@ class Core(HDict):
             f.append(z3util.myOr([vn_ == vs_[v] for v in vs]))
 
         return myf(f)
+    
+    @staticmethod
+    def is_maybe_core(c): return c is None or isinstance(c,Core)
+
     
 class MCore(tuple):
     """
@@ -901,6 +909,7 @@ class Infer(object):
                 new_cc = Infer.infer_cache(cc,configs,dom,cache)
                 
             if new_cc:
+                print [type(c) for c in _b()]
                 configs_ = [c for c in _b() if c.c_implies(new_cc)]
                 if configs_:
                     new_cd = Infer.infer_cache(cd,configs_,dom,cache)
@@ -1129,10 +1138,10 @@ class IGen(object):
             configs = self.dom.gen_configs_tcover1()
             logger.info("gen {} configs using tcover 1".format(len(configs)))
         elif rand_n > 0 and rand_n < self.dom.siz:        
-            configs = self.dom.gen_configs_rand(rand_n)
+            configs = self.dom.gen_configs_rand(rand_n,config_cls=Config)
             logger.info("gen {} rand configs".format(len(configs)))
         else:
-            configs = self.dom.gen_configs_full()
+            configs = self.dom.gen_configs_full(config_cls=Config)
             logger.info("gen all {} configs".format(len(configs)))
 
         configs = list(set(configs))

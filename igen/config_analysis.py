@@ -58,7 +58,7 @@ class Analysis(object):
         return seed,dom,dts,pp_cores_d,itime_total
         
     @staticmethod
-    def replay(dir_,show_iters,do_min_configs):
+    def replay(dir_,show_iters,do_min_configs,cmp_gt):
         """
         Replay execution info from saved info in dir_
         do_min_configs has 3 possible values
@@ -95,11 +95,12 @@ class Analysis(object):
             seed,len(dts),itime_total,xtime_total,nconfigs,ncovs,dir_))
 
         #evol points
-        evol_pts = [Metrics.score_cores_d(dt.cores_d,dom) for dt in dts]
-        evol_pts = [(i,a,a-b) for i,(a,b) in
-                       enumerate(zip(evol_pts,[0]+evol_pts))]
-        logger.info("evol pts (iter, pts, diff): {}".format(
-            ' -> '.join(map(str,evol_pts))))
+        evol_scores = Metrics.get_evol_scores(dts,dom,cmp_gt)
+        # evol_pts = [Metrics.score_cores_d(dt.cores_d,dom) for dt in dts]
+        # evol_pts = [(i,a,a-b) for i,(a,b) in
+        #                enumerate(zip(evol_pts,[0]+evol_pts))]
+        # logger.info("evol pts (iter, pts, diff): {}".format(
+        #     ' -> '.join(map(str,evol_pts))))
 
         #influential points
         influence_d = Influence.influence(mcores_d,dom)
@@ -127,13 +128,13 @@ class Analysis(object):
                 itime_total,xtime_total,
                 nconfigs,ncovs,
                 n_min_configs,
-                evol_pts,
+                evol_scores,
                 mcores_d.strens,
                 mcores_d.strens_str,
                 mcores_d.vtyps)
 
     @staticmethod
-    def replay_dirs(dir_,show_iters,do_min_configs,do_metrics):
+    def replay_dirs(dir_,show_iters,do_min_configs,cmp_gt):
         dir_ = CM.getpath(dir_)
         logger.info("replay_dirs '{}'".format(dir_))
         
@@ -611,19 +612,14 @@ class HighCov(object):
 class Metrics(object):
     @staticmethod
     def score_core(core,dom):
-        vs = []
-        for k in dom:
-            if k in core:
-                vs.append(len(core[k]))
-            else:
-                vs.append(len(dom[k]))
-
+        vs = (len(core[k] if k in core else dom[k]) for k in dom)
         return sum(vs)
 
     @staticmethod
     def score_pncore(pncore,dom):
         #"is not None" is correct because empty Core is valid and in fact has max score
-        vs = [Metrics.score_core(c,dom) for c in pncore if c is not None] 
+        vs = [Metrics.score_core(c,dom) for c in pncore
+              if c is not None] 
         return sum(vs)
 
     @staticmethod
@@ -631,16 +627,154 @@ class Metrics(object):
         vs = [Metrics.score_pncore(c,dom) for c in cores_d.itervalues()]
         return sum(vs)
 
+    #f-score    
+    @staticmethod
+    def get_settings(c,dom):
+        """
+        If a var k is not in c, then that means k = all_poss_of_k
+        """
+        if c is None:
+            settings = set()
+        elif isinstance(c,CF.Core):
+            #if a Core is empty then it will have max settings
+            rs = [k for k in dom if k not in c]
+            rs = [(k,v) for k in rs for v in dom[k]]
+            settings = set(c.settings + rs)
+        else:
+            settings = c
+        return settings
     
+    @staticmethod
+    def fscore(me,gt):
+        """
+        #false pos: in me but not in gt
+        #true pos: in me that in gt
+        #false neg: in gt but not in me
+        #true neg: in gt and also not in me
+        """
+        if CM.__vdebug__:
+            assert me is not None,me
+            assert gt is not None,gt
+
+        tp = len([s for s in me if s in gt])
+        fp = len([s for s in me if s not in gt])
+        fn = len([s for s in gt if s not in me])
+        return tp,fp,fn
+    
+    @staticmethod
+    def fscore_core(me,gt,dom):
+        me = Metrics.get_settings(me,dom)
+        gt = Metrics.get_settings(gt,dom)
+        return Metrics.fscore(me,gt)
+
+    @staticmethod
+    def fscore_pncore(me,gt,dom):
+        rs = [Metrics.fscore_core(m,g,dom) for m,g in zip(me,gt)]
+        tp = sum(x for x,_,_ in rs)
+        fp = sum(x for _,x,_ in rs)
+        fn = sum(x for _,_,x in rs)
+        return tp,fp,fn
+
+    @staticmethod
+    def fscore_cores_d(me,gt,dom):
+        """
+        Precision(p) = tp / (tp+fp)
+        Recall(r) = tp / (tp+fn)
+        F-score(f) = 2*p*r / (p+r) 1: identical ... 0 completely diff
+        
+
+        >>> pn1=["a","b"]
+        >>> pd1=["c"]
+        >>> nc1=[]
+        >>> nd1=[]
+        
+        >>> pn2=["c"]
+        >>> pd2=["d","e", "f"]
+        >>> nc2=[]
+        >>> nd2=[]
+   
+        >>> pn3=["a","b", "c"]
+        >>> pd3=["c"]
+        >>> nc3=[]
+        >>> nd3=[]
+        
+        >>> pn4=["c"]
+        >>> pd4=["d","e"]
+        >>> nc4=[]
+        >>> nd4=[]
+        
+        >>> pn5=["c","a"]
+        >>> pd5=["d"]
+        >>> nc5=["f"]
+        >>> nd5=["g"]
+        
+        >>> pn6=["a"]
+        >>> pd6=["e"]
+        >>> nc6=["u"]
+        >>> nd6=["v"]
+
+        >>> me = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2], 'l5': [pn5,pd5,nc5,nd5]}
+        >>> gt={'l1': [pn3,pd3,nc3,nd3], 'l2': [pn4,pd4,nc4,nd4], 'l6': [pn6,pd6,nc6,nd6]}
+        >>> Metrics.fscore_cores_d(me,gt,{})
+        0.5714285714285714
+        """
+
+        rs = [Metrics.fscore_pncore(me[k],gt[k],dom)
+              for k in gt if k in me]
+
+        f_sum = 0.0        
+        for tp,fp,fn in rs:
+            p=0.0 if (tp+fp)==0 else (float(tp)/(tp+fp))
+            r=0.0 if (tp+fn)==0 else (float(tp)/(tp+fn))
+            f=0.0 if (r+p)==0 else float(2*r*p)/(r+p)
+            f_sum += f
+        return f_sum/len(gt)
+
+    @staticmethod
+    def get_evol_scores(dts,dom,cmp_gt):
+        if CM.__vdebug__:
+            assert all(isinstance(t,CF.DTrace) for t in dts), dts
+            assert isinstance(dom,CF.Dom), dom
+            assert (cmp_with_gt is None
+                    or isinstance(cmp_gt,str)), cmp_gt
+
+        if cmp_gt is None:
+            evol_scores = [Metrics.score_cores_d(dt.cores_d,dom)
+                           for dt in dts]
+        else:
+            assert os.path.isdir(cmp_gt),cmp_gt
+            gt_dir = cmp_gt
+            logger.debug("load gt dir '{}'".format(gt_dir))
+            #Note: I actually want to compare against cores_d before
+            #postprocessing
+            _,_,gt_dts,_,_ = Analysis.load_dir(gt_dir)
+            assert len(gt_dts)==1
+            gt_cores_d = gt_dts[0].cores_d
+            
+            evol_scores = [
+                Metrics.fscore_cores_d(dt.cores_d,gt_cores_d,dom)
+                for dt in dts]
+
+        evol_scores = [(i,a,a-b) for i,(a,b) in
+                       enumerate(zip(evol_scores,[0]+evol_scores))]
+        if CM.__vdebug__:
+            assert all(x >0 and y>=0 for _,x,y in evol_scores), evol_scores
+            
+        logger.info("evol scores (iter, scores, diff): {}".format(
+            ' -> '.join(map(str,evol_scores))))
+        
+        return evol_scores
     
 class Influence(object):
     @staticmethod
     def influence(mcores_d,dom,do_settings=True):
         if CM.__vdebug__:
-            assert isinstance(mcores_d,Mcores_d) and mcores_d, mcores_d
+            assert (mcores_d and
+                    isinstance(mcores_d,CF.Mcores_d)), mcores_d
 
         if do_settings:
-            f = lambda d: set((k,v) for k,vs in d.iteritems() for v in vs)
+            f = lambda d: set((k,v)
+                              for k,vs in d.iteritems() for v in vs)
             ks = f(dom)
             def g(core):
                 core = (c for c in core if c)
@@ -664,7 +798,7 @@ class Influence(object):
 
         vs = sorted(d,key= lambda k:d[k],reverse=True)
 
-        logger.debug("influencial opts {}"
+        logger.debug("influential opts {}"
                      .format(', '.join(map(
                          lambda k: "{} {}"
                          .format(_str(k),d[k]),vs))))
@@ -672,4 +806,7 @@ class Influence(object):
 
                     
             
-                
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
+    
