@@ -5,8 +5,8 @@ import vu_common as CM
 import config as CF
 import get_cov as GC
 
-logger = CM.VLog('motiv')
-#logger.level = CF.logger.level
+logger = CM.VLog('example')
+logger.level = CF.logger.level
 
 db = {'ex': 'ex', 'ex1':'ex'}
 from igen_settings import examples_dir

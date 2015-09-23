@@ -1,12 +1,14 @@
 import os.path
 import numpy
-import vu_common as CM
 import itertools
 from time import time
+import vu_common as CM
+
+import config_common as CC
+import config as CF
 
 logger = CM.VLog('analysis')
-from config import logger as clogger
-logger.level = clogger.level
+logger.level = CF.logger.level
 CM.VLog.PRINT_TIME = True
 
 class Analysis(object):
@@ -112,8 +114,7 @@ class Analysis(object):
             n_min_configs = len(min_configs)            
         else:
             #reconstruct information
-            from config_common import Configs_d
-            configs_d = Configs_d()
+            configs_d = CC.Configs_d()
             for dt in dts:
                 for c in dt.cconfigs_d:
                     configs_d[c] = dt.cconfigs_d[c]
@@ -313,7 +314,6 @@ class Analysis(object):
         logger.info(cconfigs_d)
 
 
-        
 import z3
 import z3util        
 class HighCov(object):
@@ -508,9 +508,7 @@ class HighCov(object):
 
         st = time()
         ncovs = len(remain_covs)  #orig covs
-
-        from config_common import Configs_d
-        minset_d = Configs_d()  #results
+        minset_d = CC.Configs_d()  #results
         
         for pack,expr in d.iteritems():
             #Todo: and not one of the existing ones
@@ -546,9 +544,7 @@ class HighCov(object):
         packs = set(d)  #{(pack,expr)}
         ncovs = len(remain_covs)  #orig covs
         remain_configs = set(configs_d)
-
-        from config_common import Configs_d
-        minset_d = Configs_d()  #results
+        minset_d = CC.Configs_d()  #results
         
         #some init setup
         exprs_d = [(c,c.z3expr(z3db)) for c in configs_d] #slow
@@ -650,8 +646,7 @@ class Influence(object):
                 core = (c for c in core if c)
                 return set(s for c in core for s in f(c))
 
-            from config_common import str_of_setting            
-            _str = str_of_setting
+            _str = CC.str_of_setting
 
         else:
             ks = dom.keys()
