@@ -1,4 +1,4 @@
-tmp_dir = "/var/tmp"
+tmp_dir = "/var/tmp/test1"
 
 examples_dir = "../examples"
 otter_dir = "~/igen_exps/otter"
