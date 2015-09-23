@@ -155,7 +155,8 @@ class Analysis(object):
 
         for rdir in sorted(os.listdir(dir_)):
             rdir = os.path.join(dir_,rdir)
-            rs = Analysis.replay(rdir,show_iters,do_min_configs)
+            rs = Analysis.replay(rdir,show_iters,do_min_configs,cmp_gt)
+            
             (niters,nresults,itime,xtime,
              nconfigs,ncovs,n_min_configs,
              evol_scores,influence_scores,
