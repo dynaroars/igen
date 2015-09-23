@@ -119,7 +119,8 @@ class Dom(OrderedDict):
         OrderedDict.__init__(self,dom)
         
         if CM.__vdebug__:
-            assert self and all(is_csetting(s) for s in self.iteritems()), self
+            assert (self and all(is_csetting(s)
+                                 for s in self.iteritems())), self
 
     def __str__(self):
         """
@@ -169,17 +170,23 @@ class Dom(OrderedDict):
         return dom,config_default
 
     #Methods to generate configurations
-    def gen_configs_full(self):
+    def gen_configs_full(self,config_cls=None):
+        if config_cls is None:
+            config_cls = Config
+        
         ns,vs = itertools.izip(*self.iteritems())
-        configs = [Config(zip(ns,c)) for c in itertools.product(*vs)]
+        configs = [config_cls(zip(ns,c)) for c in itertools.product(*vs)]
         return configs
 
-    def gen_configs_rand(self,rand_n):
+    def gen_configs_rand(self,rand_n,config_cls=None):
         if CM.__vdebug__:
             assert 0 < rand_n < self.siz, (rand_n,self.siz)
 
+        if config_cls is None:
+            config_cls = Config
+            
         rgen = lambda: [(k,random.choice(list(self[k]))) for k in self]
-        configs = list(set(Config(rgen()) for _ in range(rand_n)))
+        configs = list(set(config_cls(rgen()) for _ in range(rand_n)))
         return configs
 
     

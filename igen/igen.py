@@ -112,6 +112,12 @@ if __name__ == "__main__":
                          const='use_existing',
                          default=None,
                          type=str)
+
+    aparser.add_argument("--cmp_gt", "-cmp_gt",
+                         help="for use with replay, cmp results against ground truth",
+                         action="store",
+                         default=None,
+                         type=str)
     
     aparser.add_argument("--seed", "-seed",
                          type=float,
@@ -185,9 +191,11 @@ if __name__ == "__main__":
         if do_min_configs and do_min_configs != 'use_existing':
             _,get_cov_f = get_run_f(do_min_configs,args)
             do_min_configs = get_cov_f
-            
+
+        print args.cmp_gt
         analysis_f(args.inp,show_iters=args.show_iters,
-                   do_min_configs=do_min_configs)
+                   do_min_configs=do_min_configs,
+                   cmp_gt=args.cmp_gt)
             
     else: #run iGen
         prog = args.inp
