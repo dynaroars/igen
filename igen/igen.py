@@ -28,11 +28,14 @@ def get_run_f(prog,args):
         get_cov_f = lambda config: runscript_get_cov(config,run_script)
         igen = config.IGen(dom,get_cov_f,config_default=config_default)
 
-        if args.rand_n:
+        if args.do_full:
+            _f = lambda seed,tdir: igen.go_full(tmpdir=tdir)
+        if args.rand_n is None:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
-            _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
-                                                seed=seed,tmpdir=tdir)
+            _f = lambda seed,tdir: igen.go_rand(
+                rand_n=args.rand_n,seed=seed,tmpdir=tdir)
+                
     elif prog in Otter.db:
         dom,get_cov_f,pathconds_d=Otter.prepare(prog)
         igen = config.IGen(dom,get_cov_f,config_default=None)
