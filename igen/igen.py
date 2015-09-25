@@ -37,35 +37,29 @@ def get_run_f(prog,args):
             _f = lambda seed,tdir: igen.go_rand(
                 rand_n=args.rand_n,seed=seed,tmpdir=tdir)
 
-    elif args.dom_file:  #general way to run program using a runscript
-        dom,config_default = config.Dom.get_dom(
-            os.path.realpath(args.dom_file))
-        run_script = os.path.realpath(args.run_script)
-        assert os.path.isfile(run_script)
-        get_cov_f = lambda config: runscript_get_cov(config,run_script)
-        igen = config.IGen(dom,get_cov_f,config_default=config_default)
-
-        if args.do_full:
-            _f = lambda seed,tdir: igen.go_full(tmpdir=tdir)
-        if args.rand_n is None:
-            _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
-        else:
-            _f = lambda seed,tdir: igen.go_rand(
-                rand_n=args.rand_n,seed=seed,tmpdir=tdir)
-                
     else:
-        import get_cov_example as Example
-        import get_cov_coreutils as Coreutils
-        
-        if prog in Example.db:
-            dom,get_cov_f=Example.prepare(prog)
-            
-        elif prog in Coreutils.db:
-            dom,get_cov_f=Coreutils.prepare(prog,do_perl=args.do_perl)
-        else:
-            raise AssertionError("unrecognized prog '{}'".format(prog))
+        if args.dom_file:  #general way to run prog using a runscript
+            dom,config_default = config.Dom.get_dom(
+                os.path.realpath(args.dom_file))
+            run_script = os.path.realpath(args.run_script)
+            assert os.path.isfile(run_script)
+            get_cov_f = lambda config: runscript_get_cov(config,run_script)
+            igen = config.IGen(dom,get_cov_f,config_default=config_default)
 
-        igen = config.IGen(dom,get_cov_f,config_default=None)
+        else:
+            import get_cov_example as Example
+            import get_cov_coreutils as Coreutils
+
+            if prog in Example.db:
+                dom,get_cov_f=Example.prepare(prog)
+
+            elif prog in Coreutils.db:
+                dom,get_cov_f=Coreutils.prepare(prog,do_perl=args.do_perl)
+            else:
+                raise AssertionError("unrecognized prog '{}'".format(prog))
+
+            igen = config.IGen(dom,get_cov_f,config_default=None)
+
         if args.do_full:
             _f = lambda _,tdir: igen.go_full(tmpdir=tdir)
         elif args.rand_n is None:
