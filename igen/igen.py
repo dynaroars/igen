@@ -87,32 +87,6 @@ if __name__ == "__main__":
                          type=int, 
                          choices=range(5),
                          default = 4)    
-
-    aparser.add_argument("--replay", "-replay",
-                         help="replay info from run dir",
-                         action="store_true")
-
-    aparser.add_argument("--replay_dirs", "-replay_dirs",
-                         help="replay info from adir containing multiple run dirs",
-                         action="store_true")
-
-    aparser.add_argument("--show_iters", "-show_iters",
-                         help="for use with replay, show stats of all iters",
-                         action="store_true")
-
-    aparser.add_argument("--do_min_configs", "-do_min_configs",
-                         help="for use with replay, compute a set of min configs",
-                         action="store",
-                         nargs='?',
-                         const='use_existing',
-                         default=None,
-                         type=str)
-
-    aparser.add_argument("--cmp_gt", "-cmp_gt",
-                         help="for use with replay, cmp results against ground truth",
-                         action="store",
-                         default=None,
-                         type=str)
     
     aparser.add_argument("--seed", "-seed",
                          type=float,
@@ -159,6 +133,39 @@ if __name__ == "__main__":
                          help="do coretutils written in perl",
                          action="store_true")
 
+    #replay options
+    aparser.add_argument("--replay", "-replay",
+                         help="replay info from run dir",
+                         action="store_true")
+
+    aparser.add_argument("--replay_dirs", "-replay_dirs",
+                         help="replay info from adir containing multiple run dirs",
+                         action="store_true")
+
+    aparser.add_argument("--show_iters", "-show_iters",
+                         help="for use with replay, show stats of all iters",
+                         action="store_true")
+
+    aparser.add_argument("--do_min_configs", "-do_min_configs",
+                         help="for use with replay, compute a set of min configs",
+                         action="store",
+                         nargs='?',
+                         const='use_existing',
+                         default=None,
+                         type=str)
+
+    aparser.add_argument("--cmp_rand", "-cmp_rand",
+                         help="for use with replay, cmp results against rand configs",
+                         action="store",
+                         default=None,
+                         type=str)
+    
+    aparser.add_argument("--cmp_gt", "-cmp_gt",
+                         help="for use with replay, cmp results against ground truth",
+                         action="store",
+                         default=None,
+                         type=str)
+
     args = aparser.parse_args()
     CM.__vdebug__ = args.debug
     config.logger.level = args.logger_level
@@ -182,12 +189,17 @@ if __name__ == "__main__":
         analysis_f = (analysis.Analysis.replay if args.replay else
                       analysis.Analysis.replay_dirs)
 
-        do_min_configs = args.do_min_configs
-        if do_min_configs and do_min_configs != 'use_existing':
-            _,get_cov_f = get_run_f(do_min_configs,args)
+        prog = args.do_min_configs  
+        if prog and prog != 'use_existing':
+            _,get_cov_f = get_run_f(prog,args)
             do_min_configs = get_cov_f
 
-        print args.cmp_gt
+        prog = args.cmp_rand
+        if prog:
+            #TODO:  use the return igen.go_rand(...)
+            _,get_cov_f = get_run_f(prog,args)
+            cmp_rand = get_cov_f
+            
         analysis_f(args.inp,show_iters=args.show_iters,
                    do_min_configs=do_min_configs,
                    cmp_gt=args.cmp_gt)
