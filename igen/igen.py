@@ -20,7 +20,24 @@ def get_run_f(prog,args):
     """
     import get_cov_otter as Otter
         
-    if args.dom_file:  #general way to run program using a runscript
+    if prog in Otter.db:
+        dom,get_cov_f,pathconds_d=Otter.prepare(prog)
+        igen = config.IGen(dom,get_cov_f,config_default=None)
+        if args.do_full:
+            if args.rand_n:
+                _f = lambda _,tdir: Otter.do_full(
+                    dom,pathconds_d,tmpdir=tdir,n=args.rand_n)
+            else:
+                _f = lambda _,tdir: Otter.do_full(
+                    dom,pathconds_d,tmpdir=tdir,n=None)
+                                                  
+        elif args.rand_n is None:
+            _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
+        else:
+            _f = lambda seed,tdir: igen.go_rand(
+                rand_n=args.rand_n,seed=seed,tmpdir=tdir)
+
+    elif args.dom_file:  #general way to run program using a runscript
         dom,config_default = config.Dom.get_dom(
             os.path.realpath(args.dom_file))
         run_script = os.path.realpath(args.run_script)
@@ -36,22 +53,6 @@ def get_run_f(prog,args):
             _f = lambda seed,tdir: igen.go_rand(
                 rand_n=args.rand_n,seed=seed,tmpdir=tdir)
                 
-    elif prog in Otter.db:
-        dom,get_cov_f,pathconds_d=Otter.prepare(prog)
-        igen = config.IGen(dom,get_cov_f,config_default=None)
-        if args.do_full:
-            if args.rand_n:
-                _f = lambda _,tdir: Otter.do_full(
-                    dom,pathconds_d,tmpdir=tdir,n=args.rand_n)
-            else:
-                _f = lambda _,tdir: Otter.do_full(
-                    dom,pathconds_d,tmpdir=tdir,n=None)
-                                                  
-        elif args.rand_n is None:
-            _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
-        else:
-            _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
-                                                seed=seed,tmpdir=tdir)
     else:
         import get_cov_example as Example
         import get_cov_coreutils as Coreutils
@@ -70,8 +71,9 @@ def get_run_f(prog,args):
         elif args.rand_n is None:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
-            _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
-                                                seed=seed,tmpdir=tdir)
+            _f = lambda seed,tdir: igen.go_rand(
+                rand_n=args.rand_n,seed=seed,tmpdir=tdir)
+                
     return _f,get_cov_f
 
 if __name__ == "__main__":
