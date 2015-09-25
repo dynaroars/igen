@@ -29,25 +29,25 @@ def get_run_f(prog,args):
         igen = config.IGen(dom,get_cov_f,config_default=config_default)
 
         if args.rand_n:
-            _f = lambda seed,_,tdir: igen.go(seed=seed,tmpdir=tdir)
+            _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
-            _f = lambda seed,_,tdir: igen.go_rand(rand_n=args.rand_n,
+            _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
                                                 seed=seed,tmpdir=tdir)
     elif prog in Otter.db:
         dom,get_cov_f,pathconds_d=Otter.prepare(prog)
         igen = config.IGen(dom,get_cov_f,config_default=None)
         if args.do_full:
             if args.rand_n:
-                _f = lambda _,__,tdir: Otter.do_full(
+                _f = lambda _,tdir: Otter.do_full(
                     dom,pathconds_d,tmpdir=tdir,n=args.rand_n)
             else:
-                _f = lambda _,__,tdir: Otter.do_full(
+                _f = lambda _,tdir: Otter.do_full(
                     dom,pathconds_d,tmpdir=tdir,n=None)
                                                   
         elif args.rand_n is None:
-            _f = lambda seed,_,tdir: igen.go(seed=seed,tmpdir=tdir)
+            _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
-            _f = lambda seed,_,tdir: igen.go_rand(rand_n=args.rand_n,
+            _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
                                                 seed=seed,tmpdir=tdir)
     else:
         import get_cov_example as Example
@@ -63,16 +63,11 @@ def get_run_f(prog,args):
 
         igen = config.IGen(dom,get_cov_f,config_default=None)
         if args.do_full:
-            _f = lambda _,__,tdir: igen.go_full(tmpdir=tdir)
-        # elif args.do_min_configs_from:
-        #     _f = lambda seed,existing_results,tdir:\
-        #          igen.go_minconfigs(seed=seed,
-        #                             existing_results=existing_results,
-        #                             tmpdir=tdir)
+            _f = lambda _,tdir: igen.go_full(tmpdir=tdir)
         elif args.rand_n is None:
-            _f = lambda seed,_,tdir: igen.go(seed=seed,tmpdir=tdir)
+            _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
-            _f = lambda seed,_,tdir: igen.go_rand(rand_n=args.rand_n,
+            _f = lambda seed,tdir: igen.go_rand(rand_n=args.rand_n,
                                                 seed=seed,tmpdir=tdir)
     return _f,get_cov_f
 
@@ -212,7 +207,7 @@ if __name__ == "__main__":
             seed_ = seed + i
             tdir_ = tempfile.mkdtemp(dir=tdir,prefix="run{}_".format(i))
             print("*run {}/{}".format(i+1,args.benchmark))
-            _ = _f(seed_,None,tdir_)
+            _ = _f(seed_,tdir_)
             print("*run {}, seed {}, time {}s, '{}'".format(i+1,seed_,time()-st_,tdir_))
 
         print("** done benchmark '{}', {} runs, seed {}, time {}, results in '{}'"
