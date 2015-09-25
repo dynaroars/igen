@@ -742,7 +742,7 @@ class Cores_d(CC.CustDict):
         if show_detail:
             logger.debug("mcores_d has {} items\n{}"
                          .format(len(mcores_d),mcores_d))
-            logger.info("mcores_d strens: {}".format(mcores_d.strens_str))
+            logger.info("mcores_d strens (stren, nresults, nsids): {}".format(mcores_d.strens_str))
             
         return mcores_d
 
@@ -909,7 +909,6 @@ class Infer(object):
                 new_cc = Infer.infer_cache(cc,configs,dom,cache)
                 
             if new_cc:
-                print [type(c) for c in _b()]
                 configs_ = [c for c in _b() if c.c_implies(new_cc)]
                 if configs_:
                     new_cd = Infer.infer_cache(cd,configs_,dom,cache)
