@@ -4,15 +4,6 @@ from time import time
 import vu_common as CM
 import config
 
-def runscript_get_cov(config, run_script):
-
-    inputs = ' , '.join(['{} {}'.format(vname,vval) for
-                         vname,vval in config.iteritems()])
-
-    import get_cov
-    cov = get_cov.run_runscript(run_script,inputs)
-    return cov,[]
-
 def get_run_f(prog,args):
     """
     Ret f that takes inputs seed,existing_results,tmpdir 
@@ -42,8 +33,10 @@ def get_run_f(prog,args):
             dom,config_default = config.Dom.get_dom(
                 os.path.realpath(args.dom_file))
             run_script = os.path.realpath(args.run_script)
-            assert os.path.isfile(run_script)
-            get_cov_f = lambda config: runscript_get_cov(config,run_script)
+            
+            import get_cov
+            get_cov_f = lambda config: get_cov.runscript_get_cov(
+                config,run_script)
             igen = config.IGen(dom,get_cov_f,config_default=config_default)
 
         else:

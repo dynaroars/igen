@@ -13,7 +13,7 @@ def run_single(cmd):
         if rs_outp:
             logger.detail("outp: {}".format(rs_outp))
         
-        #IMPORTANT, command out the below allows
+        #IMPORTANT, comment out the below allows
         #erroneous test runs, which can be helpful
         #to detect incorrect configs
         #assert len(rs_err) == 0, rs_err
@@ -38,6 +38,17 @@ def run_single(cmd):
         raise AssertionError("cmd '{}' fails, raise error: {}".format(cmd,e))
 
 
+def runscript_get_cov(config,run_script):
+    """
+    Get cov from config (a dict with {var -> val} mapping)
+    """
+    assert os.path.isfile(run_script), run_script
+    
+    inputs = ' , '.join(['{} {}'.format(vname,vval) for
+                         vname,vval in config.iteritems()])
+    cov = run_runscript(run_script,inputs)
+    return cov,[]
+    
 def run_runscript(run_script,arg):
     """
     Exec runscript on arg and return a single line representing the cov file
