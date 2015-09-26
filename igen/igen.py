@@ -59,8 +59,12 @@ def get_run_f(prog,args):
         elif args.rand_n is None:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
-            _f = lambda seed,tdir: igen.go_rand(
-                rand_n=args.rand_n,seed=seed,tmpdir=tdir)
+            if args.cmp_rand:
+                _f = lambda seed,tdir,rand_n: igen.go_rand(
+                    rand_n=rand_n,seed=seed,tmpdir=tdir)
+            else:
+                _f = lambda seed,tdir: igen.go_rand(
+                    rand_n=args.rand_n,seed=seed,tmpdir=tdir)
                 
     return _f,get_cov_f
 
@@ -179,6 +183,8 @@ if __name__ == "__main__":
     if args.analyze_outps:
         config.analyze_outps = True
 
+    seed = round(time(),2) if args.seed is None else float(args.seed)
+
     def _tmpdir(prog):
         from igen_settings import tmp_dir    
         import getpass
@@ -198,8 +204,9 @@ if __name__ == "__main__":
 
         prog = args.cmp_rand
         if prog:
-            #TODO:  use the return igen.go_rand(...)
-            _,get_cov_f = get_run_f(prog,args)
+            _f,_ = get_run_f(prog,args)
+            tdir = _tmpdir(prog+"_cmp_rand")
+            _f = lambda rand_n: _f(seed,tdir)
             cmp_rand = get_cov_f
             
         analysis_f(args.inp,show_iters=args.show_iters,
@@ -211,7 +218,6 @@ if __name__ == "__main__":
         _f,_ = get_run_f(prog,args)
         tdir = _tmpdir(prog)
         
-        seed = round(time(),2) if args.seed is None else float(args.seed)
         print("* benchmark '{}',  {} runs, seed {}, results in '{}'"
               .format(prog,args.benchmark,seed,tdir))
 
