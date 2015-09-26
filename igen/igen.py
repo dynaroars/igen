@@ -37,7 +37,6 @@ def get_run_f(prog,args):
             import get_cov
             get_cov_f = lambda config: get_cov.runscript_get_cov(
                 config,run_script)
-            igen = config.IGen(dom,get_cov_f,config_default=config_default)
 
         else:
             import get_cov_example as Example
@@ -50,8 +49,10 @@ def get_run_f(prog,args):
                 dom,get_cov_f=Coreutils.prepare(prog,do_perl=args.do_perl)
             else:
                 raise AssertionError("unrecognized prog '{}'".format(prog))
-
-            igen = config.IGen(dom,get_cov_f,config_default=None)
+            config_default = None  #no config default for these
+            
+        igen = config.IGen(
+            dom,get_cov_f,config_default=config_default)
 
         if args.do_full:
             _f = lambda _,tdir: igen.go_full(tmpdir=tdir)
@@ -64,7 +65,16 @@ def get_run_f(prog,args):
     return _f,get_cov_f
 
 if __name__ == "__main__":
-
+    def _check(v,min_n=None,max_n=None):
+        v = int(v)
+        if min_n and v < min_n:
+            raise argparse.ArgumentTypeError(
+                "must be >= {} (inp: {})".format(min_n,v))
+        if max_n and v > max_n:
+            raise argparse.ArgumentTypeError(
+                "must be <= {} (inpt: {})".format(max_n,v))
+        return v
+    
     import argparse
     aparser = argparse.ArgumentParser()
     aparser.add_argument("inp", help="inp")
@@ -85,7 +95,7 @@ if __name__ == "__main__":
                          help="use this seed")
 
     aparser.add_argument("--rand_n", "-rand_n", 
-                         type=int,
+                         type=lambda v:_check(v,min_n=1),
                          help="rand_n is an integer")
 
     aparser.add_argument("--do_full", "-do_ful",
@@ -106,7 +116,7 @@ if __name__ == "__main__":
     
     aparser.add_argument("--benchmark", "-benchmark",
                          type=int,
-                         default=1,
+                         default=lambda v:_check(v,min_n=1),
                          help="run benchmark program n times")
 
     aparser.add_argument("--dom_file", "-dom_file",
