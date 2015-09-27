@@ -766,6 +766,7 @@ class Influence(object):
         if CM.__vdebug__:
             assert (mcores_d and
                     isinstance(mcores_d,CF.Mcores_d)), mcores_d
+            assert ncovs > 0, ncovs
             assert isinstance(dom,CF.Dom), dom            
 
         if do_settings:
@@ -776,7 +777,7 @@ class Influence(object):
                 if pc:
                     settings.extend(pc.settings)
                 if pd:
-                    settings.extend(pc.neg(dom).settings)
+                    settings.extend(pd.neg(dom).settings)
                 #nd | neg(nc) 
                 if nc:
                     settings.extend(nc.neg(dom).settings)

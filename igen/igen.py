@@ -119,8 +119,8 @@ if __name__ == "__main__":
                          action="store_true")
     
     aparser.add_argument("--benchmark", "-benchmark",
-                         type=int,
-                         default=lambda v:_check(v,min_n=1),
+                         type=lambda v:_check(v,min_n=1),
+                         default=1,
                          help="run benchmark program n times")
 
     aparser.add_argument("--dom_file", "-dom_file",
@@ -197,17 +197,17 @@ if __name__ == "__main__":
         analysis_f = (analysis.Analysis.replay if args.replay else
                       analysis.Analysis.replay_dirs)
 
-        prog = args.do_min_configs  
-        if prog and prog != 'use_existing':
-            _,get_cov_f = get_run_f(prog,args)
+        do_min_configs = args.do_min_configs  
+        if do_min_configs and do_min_configs != 'use_existing':
+            _,get_cov_f = get_run_f(do_min_configs,args)
             do_min_configs = get_cov_f
 
-        prog = args.cmp_rand
-        if prog:
-            _f,_ = get_run_f(prog,args)
-            tdir = _tmpdir(prog+"_cmp_rand")
+        cmp_rand = args.cmp_rand
+        if cmp_rand:
+            _f,_ = get_run_f(cmp_rand,args)
+            tdir = _tmpdir(cmp_rand+"_cmp_rand")
             _f = lambda rand_n: _f(seed,tdir)
-            cmp_rand = get_cov_f
+            cmp_rand = _f
             
         analysis_f(args.inp,show_iters=args.show_iters,
                    do_min_configs=do_min_configs,
@@ -220,7 +220,6 @@ if __name__ == "__main__":
         
         print("* benchmark '{}',  {} runs, seed {}, results in '{}'"
               .format(prog,args.benchmark,seed,tdir))
-
         st = time()
         for i in range(args.benchmark):        
             st_ = time()
