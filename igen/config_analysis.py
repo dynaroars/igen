@@ -30,7 +30,7 @@ Results = namedtuple("Results",' '.join(fields))
                      
 class Analysis(object):
     @staticmethod
-    def check_pp_cores_d(pp_cores_d):
+    def check_pp_cores_d(pp_cores_d,dom):
         if not hasattr(pp_cores_d.values()[0],'vstr'):
             logger.warn("Old format, has no vstr .. re-analyze")
             return pp_cores_d.analyze(dom,covs_d=None)
@@ -62,7 +62,7 @@ class Analysis(object):
             for dt in dts:
                 dt.show()
 
-        pp_cores_d = Analysis.check_pp_cores_d(pp_cores_d)
+        pp_cores_d = Analysis.check_pp_cores_d(pp_cores_d,dom)
         mcores_d = pp_cores_d.merge(show_detail=True)
         
         #print summary
@@ -737,7 +737,7 @@ class Metrics(object):
             gt_dir = cmp_gt
             logger.debug("load gt dir '{}'".format(gt_dir))            
             _,_,gt_dts,gt_pp_cores_d,_ = CF.DTrace.load_dir(gt_dir)
-            assert len(gt_dts)==1, "is this the gt dir ??"
+            assert len(gt_dts)==1, "is this the ground truth dir ??"
             _f = lambda cores_d: Metrics.fscore_cores_d(
                 cores_d,gt_pp_cores_d,dom)
 
@@ -819,10 +819,10 @@ class Influence(object):
             
         rs = sorted(rs,key=lambda (k,v):(v,k),reverse=True)
         rs = [(k,v,float(v)/ncovs) for k,v in rs]
-        logger.debug("influence opts (opts, uniq, %) {}"
-                     .format(', '.join(map(
-                         lambda (k,v,p): "({}, {}, {})"
-                         .format(_str(k),v,p),rs))))
+        logger.info("influence opts (opts, uniq, %) {}"
+                    .format(', '.join(map(
+                        lambda (k,v,p): "({}, {}, {})"
+                        .format(_str(k),v,p),rs))))
         return rs
 
                     
