@@ -1,5 +1,4 @@
 import abc 
-import tempfile
 from time import time
 import os.path
 import random
@@ -37,7 +36,19 @@ class Dom(CC.Dom):
     x=2 y=1 z=0 w=a
     x=1 y=1 z=2 w=c
     x=1 y=1 z=1 w=b
+    
+    >>> random.seed(0)
+    >>> configs = dom.gen_configs_rand_smt(5)
+    >>> print "\\n".join(map(str,configs))
+    x=2 y=1 z=0 w=a
+    x=1 y=1 z=0 w=b
+    x=2 y=1 z=1 w=a
+    x=2 y=1 z=2 w=a
+    x=1 y=1 z=0 w=a
 
+    >>> configs = dom.gen_configs_rand_smt(dom.siz)
+    >>> assert len(configs) == dom.siz
+    
     """
     def gen_configs_tcover1(self):
         """
@@ -65,7 +76,8 @@ class Dom(CC.Dom):
 
     """
     Create configs using an SMT solver
-    """   
+    """
+    
     def config_of_model(self,model):
         """
         Ret a config from a model
@@ -199,15 +211,36 @@ class Dom(CC.Dom):
             config=configs_[0]
             if CM.__vdebug__:
                 assert config.c_implies(changed_core)
-
-            if config in existing_configs:
-                logger.error("ERR: gen existing config {}"
-                             .format(config))
-                
+                assert config not in existing_configs, \
+                    ("ERR: gen existing config {}".format(config))
+                     
             configs.append(config)
             e_configs.append(config.z3expr(z3db))
 
         return configs
+
+    def gen_configs_rand_smt(self,rand_n):
+        """
+        Create rand_n configs
+        """
+        if CM.__vdebug__:
+            assert 0 < rand_n <= self.siz, (rand_n,self.siz)
+            
+        z3db = self.z3db
+        configs = self.gen_configs_rand(1,config_cls=Config)
+        assert len(configs) == 1, configs
+        config = configs[0]
+        e_configs = []
+
+        for _ in range(rand_n-1):
+            e_configs.append(config.z3expr(z3db))
+            nexpr = z3util.myOr(e_configs)
+            configs_ = self.gen_configs_exprs([],[nexpr],1)
+            assert len(configs_) == 1, configs_
+            config = configs_[0]            
+            configs.append(config)
+            
+        return configs    
 
 class Config(CC.Config):
     """
@@ -253,7 +286,6 @@ class Config(CC.Config):
 
         return (not core or
                 any(k in self and self[k] in core[k] for k in core))
-
 
 class Core(HDict):
     """

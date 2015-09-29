@@ -180,7 +180,7 @@ class Dom(OrderedDict):
 
     def gen_configs_rand(self,rand_n,config_cls=None):
         if CM.__vdebug__:
-            assert 0 < rand_n < self.siz, (rand_n,self.siz)
+            assert 0 < rand_n <= self.siz, (rand_n,self.siz)
 
         if config_cls is None:
             config_cls = Config
