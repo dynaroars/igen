@@ -8,7 +8,7 @@ import get_cov as GC
 logger = CM.VLog('example')
 logger.level = CF.logger.level
 
-db = {'ex': 'ex', 'ex1':'ex'}
+db = {'ex': 'ex', 'ex1':'ex', 'ex0':'ex0'}
 from igen_settings import examples_dir
 
 def prepare(prog_name):

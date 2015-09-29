@@ -57,9 +57,7 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     seed=0
     logger.info("seed: {} default, tmpdir: {}".format(seed,tmpdir))
 
-    from config_analysis import Analysis
-    analysis = Analysis(tmpdir)
-    analysis.save_pre(seed,dom)
+    CF.DTrace.save_pre(seed,dom,tmpdir)
     if n:
         logger.info('select {} rand'.format(n))
         rs = random.sample(pathconds_d.values(),n)
@@ -87,7 +85,7 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     itime_total = time() - st
     assert len(pp_cores_d) == len(covs_d), (len(pp_cores_d),len(covs_d))
     
-    logger.info(Analysis.str_of_summary(
+    logger.info(DTrace.str_of_summary(
         0,1,itime_total,0,len(configs_d),len(pp_cores_d),tmpdir))
 
     dtrace = CF.DTrace(1,itime_total,0,
@@ -96,8 +94,7 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
                        new_covs,new_cores,
                        CF.SCore.mk_default(), #sel_core
                        cores_d)
-    analysis.save_iter(1,dtrace)
-    
-    analysis.save_post(pp_cores_d,itime_total)
+    CF.DTrace.save_iter(1,dtrace,tmpdir)
+    CF.DTrace.save_post(pp_cores_d,itime_total,tmpdir)
     
     return pp_cores_d,cores_d,configs_d,covs_d,dom

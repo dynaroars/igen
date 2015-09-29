@@ -39,6 +39,7 @@ def get_run_f(prog,args):
                 config,run_script)
 
         else:
+            
             import get_cov_example as Example
             import get_cov_coreutils as Coreutils
 
@@ -54,17 +55,16 @@ def get_run_f(prog,args):
         igen = config.IGen(
             dom,get_cov_f,config_default=config_default)
 
-        if args.do_full:
+        if args.cmp_rand:
+            _f = lambda seed,tdir,rand_n: igen.go_rand(
+                rand_n=rand_n,seed=seed,tmpdir=tdir)
+        elif args.do_full:
             _f = lambda _,tdir: igen.go_full(tmpdir=tdir)
         elif args.rand_n is None:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
-            if args.cmp_rand:
-                _f = lambda seed,tdir,rand_n: igen.go_rand(
-                    rand_n=rand_n,seed=seed,tmpdir=tdir)
-            else:
-                _f = lambda seed,tdir: igen.go_rand(
-                    rand_n=args.rand_n,seed=seed,tmpdir=tdir)
+            _f = lambda seed,tdir: igen.go_rand(
+                rand_n=args.rand_n,seed=seed,tmpdir=tdir)
                 
     return _f,get_cov_f
 
@@ -102,7 +102,7 @@ if __name__ == "__main__":
                          type=lambda v:_check(v,min_n=1),
                          help="rand_n is an integer")
 
-    aparser.add_argument("--do_full", "-do_ful",
+    aparser.add_argument("--do_full", "-do_full",
                          help="use all possible configs",
                          action="store_true")
 
@@ -206,12 +206,12 @@ if __name__ == "__main__":
         if cmp_rand:
             _f,_ = get_run_f(cmp_rand,args)
             tdir = _tmpdir(cmp_rand+"_cmp_rand")
-            _f = lambda rand_n: _f(seed,tdir)
-            cmp_rand = _f
+            cmp_rand = lambda rand_n: _f(seed,tdir,rand_n)
             
         analysis_f(args.inp,show_iters=args.show_iters,
                    do_min_configs=do_min_configs,
-                   cmp_gt=args.cmp_gt)
+                   cmp_gt=args.cmp_gt,
+                   cmp_rand=cmp_rand)
             
     else: #run iGen
         prog = args.inp
