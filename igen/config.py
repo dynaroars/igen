@@ -1169,7 +1169,7 @@ class IGen(object):
             configs = self.dom.gen_configs_tcover1()
             logger.info("gen {} configs using tcover 1".format(len(configs)))
         elif rand_n > 0 and rand_n < self.dom.siz:        
-            configs = self.dom.gen_configs_rand(rand_n,config_cls=Config)
+            configs = self.dom.gen_configs_rand_smt(rand_n)
             logger.info("gen {} rand configs".format(len(configs)))
         else:
             configs = self.dom.gen_configs_full(config_cls=Config)
