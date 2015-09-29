@@ -12,53 +12,17 @@ logger.level = CF.logger.level
 CM.VLog.PRINT_TIME = True
 
 class Analysis(object):
-    def __init__(self,tmpdir):
-        self.tmpdir = tmpdir
-
-    def save_pre(self,seed,dom):
-        CM.vsave(os.path.join(self.tmpdir,'pre'),(seed,dom))
-    def save_post(self,pp_cores_d,itime_total):
-        CM.vsave(os.path.join(self.tmpdir,'post'),(pp_cores_d,itime_total))
-    def save_iter(self,cur_iter,dtrace):
-        CM.vsave(os.path.join(self.tmpdir,'{}.tvn'.format(cur_iter)),dtrace)
 
     @staticmethod
-    def load_pre(dir_):
-        seed,dom = CM.vload(os.path.join(dir_,'pre'))
-        return seed,dom
+    def check_pp_cores_d(pp_cores_d):
+        if not hasattr(pp_cores_d.values()[0],'vstr'):
+            logger.warn("Old format, has no vstr .. re-analyze")
+            return pp_cores_d.analyze(dom,covs_d=None)
+        else:
+            return pp_cores_d
+            
     @staticmethod
-    def load_post(dir_):
-        pp_cores_d,itime_total = CM.vload(os.path.join(dir_,'post'))
-        return pp_cores_d,itime_total
-    @staticmethod
-    def load_iter(dir_,f):
-        dtrace =CM.vload(os.path.join(dir_,f))
-        return dtrace
-    
-    @staticmethod
-    def str_of_summary(seed,iters,itime,xtime,nconfigs,ncovs,tmpdir):
-        ss = ["Seed {}".format(seed),
-              "Iters {}".format(iters),
-              "Time ({}s, {}s)".format(itime,xtime),
-              "Configs {}".format(nconfigs),
-              "Covs {}".format(ncovs),
-              "Tmpdir {}".format(tmpdir)]
-        return "Summary: " + ', '.join(ss)
-
-    @staticmethod
-    def load_dir(dir_):
-        seed,dom = Analysis.load_pre(dir_)
-        dts = [Analysis.load_iter(dir_,f)
-               for f in os.listdir(dir_) if f.endswith('.tvn')]
-        try:
-            pp_cores_d,itime_total = Analysis.load_post(dir_)
-        except IOError:
-            logger.error("post info not avail")
-            pp_cores_d,itime_total = None,None
-        return seed,dom,dts,pp_cores_d,itime_total
-        
-    @staticmethod
-    def replay(dir_,show_iters,do_min_configs,cmp_gt):
+    def replay(dir_,show_iters,do_min_configs,cmp_gt,cmp_rand):
         """
         Replay execution info from saved info in dir_
         do_min_configs has 3 possible values
@@ -66,8 +30,14 @@ class Analysis(object):
         2. f: (callable(f)) find min configs using f
         3. anything else: find min configs using existing configs
         """
+        if CM.__vdebug__:
+            assert isinstance(dir_,str), dir_
+            assert isinstance(show_iters,bool),show_iters
+            assert cmp_gt is None or isinstance(cmp_gt,str), cmp_gt
+            assert cmp_rand is None or callable(cmp_rand), cmp_rand
+        
         logger.info("replay dir: '{}'".format(dir_))
-        seed,dom,dts,pp_cores_d,itime_total = Analysis.load_dir(dir_)
+        seed,dom,dts,pp_cores_d,itime_total = CF.DTrace.load_dir(dir_)
         logger.info('seed: {}'.format(seed))
         logger.debug(dom.__str__())
 
@@ -75,27 +45,18 @@ class Analysis(object):
         if show_iters:
             for dt in dts:
                 dt.show()
-                logger.debug("evol pts: {}".format(
-                    Metrics.score_cores_d(dt.cores_d,dom)))
 
-        if hasattr(pp_cores_d.values()[0],'vstr'):
-            mcores_d = pp_cores_d.merge(show_detail=True)            
-        else:
-            logger.warn("Old format, has no vstr .. re-analyze")
-            pp_cores_d = pp_cores_d.analyze(dom,covs_d=None)
-            mcores_d = pp_cores_d.merge(show_detail=True)
-            
+        pp_cores_d = Analysis.check_pp_cores_d(pp_cores_d)
+        mcores_d = pp_cores_d.merge(show_detail=True)
+        
         #print summary
         xtime_total = itime_total - sum(dt.xtime for dt in dts)
         last_dt = max(dts,key=lambda dt: dt.citer) #last iteration
         nconfigs = last_dt.nconfigs
         ncovs = last_dt.ncovs
         
-        logger.info(Analysis.str_of_summary(
+        logger.info(CF.DTrace.str_of_summary(
             seed,len(dts),itime_total,xtime_total,nconfigs,ncovs,dir_))
-
-        evol_scores = Metrics.get_evol_scores(dts,dom,cmp_gt)
-        influence_scores = Influence.get_influence(mcores_d,ncovs,dom)
 
         #min config
         if not do_min_configs: #None
@@ -116,18 +77,83 @@ class Analysis(object):
                 mcores_d,set(pp_cores_d),configs_d,dom)
             n_min_configs = len(min_configs)
 
+        #Additional analysis
+        #Influential settings
+        influence_scores = Influence.get_influence(mcores_d,ncovs,dom)
+        
+        #Evol scores
+        
+        #Using f-score when ground truth is avail
+        #Note here we use analyzed pp_cores_d instead of just cores_d
+        if cmp_gt:
+            gt_dir = cmp_gt
+            logger.debug("load gt dir '{}'".format(gt_dir))            
+            _,_,gt_dts,gt_pp_cores_d,_ = CF.DTrace.load_dir(gt_dir)
+            assert len(gt_dts)==1, "is this the gt dir ??"
+            _f = lambda cores_d: Metrics.fscore_cores_d(
+                cores_d,gt_pp_cores_d,dom)
+
+            #get pp_cores_d at each iteration
+            pp_cores_ds = []
+            for dt in dts:
+                configs_ds = [dt_.cconfigs_d for dt_ in dts
+                              if dt_.citer <= dt.citer]
+                covs_d = CC.Covs_d()
+                for configs_d in configs_ds:
+                    for config,cov in configs_d.iteritems():
+                        for sid in cov:
+                            covs_d.add(sid,config)
+
+                pp_cores_d = dt.cores_d.analyze(dom,covs_d)
+                pp_cores_ds.append(pp_cores_d)
+            fscores = [(dt.citer,
+                        Metrics.fscore_cores_d(pp_cores_d,gt_pp_cores_d,dom),
+                        dt.nconfigs)
+                       for dt, pp_cores_d in zip(dts,pp_cores_ds)]
+            logger.info("fscores (iter, fscore, configs): {}".format(
+            ' -> '.join(map(str,fscores))))
+        else:
+            fscores = None
+            
+        #Using  a simple metrics that just gives more pts for more
+        #info (new cov or new results). Note here we use cores_d
+        vscores = [(dt.citer,
+                    Metrics.vscore_cores_d(dt.cores_d,dom),dt.nconfigs)
+                   for dt in dts]
+        logger.info("vscores (iter, vscore, configs): {}".format(
+            ' -> '.join(map(str,vscores))))
+
+        #rand search
+        r_f = cmp_rand
+        if callable(r_f):
+            r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = r_f(last_dt.nconfigs)
+            logger.info("rand : {} configs cov {}"
+                        .format(len(r_configs_d),len(r_covs_d)))
+
+            if cmp_gt:
+                r_fscore = Metrics.fscore_cores_d(r_pp_cores_d,gt_pp_cores_d,dom)
+            else:
+                r_fscore = None
+                
+            r_vscore = Metrics.vscore_cores_d(r_cores_d,dom)
+            logger.info("fscore {} vscore {}".format(r_fscore, r_vscore))
+            rscores = (r_fscore,r_vscore)
+
+        else:
+            rscores = None
+
         return (len(dts),len(mcores_d),
                 itime_total,xtime_total,
                 nconfigs,ncovs,
                 n_min_configs,
-                evol_scores,
+                vscores,
                 influence_scores,
                 mcores_d.strens,
                 mcores_d.strens_str,
                 mcores_d.vtyps)
 
     @staticmethod
-    def replay_dirs(dir_,show_iters,do_min_configs,cmp_gt):
+    def replay_dirs(dir_,show_iters,do_min_configs,cmp_gt,cmp_rand):
         dir_ = CM.getpath(dir_)
         logger.info("replay_dirs '{}'".format(dir_))
         
@@ -155,7 +181,9 @@ class Analysis(object):
 
         for rdir in sorted(os.listdir(dir_)):
             rdir = os.path.join(dir_,rdir)
-            rs = Analysis.replay(rdir,show_iters,do_min_configs,cmp_gt)
+            rs = Analysis.replay(
+                rdir,show_iters,do_min_configs,cmp_gt,cmp_rand)
+                
             
             (niters,nresults,itime,xtime,
              nconfigs,ncovs,n_min_configs,
@@ -602,23 +630,25 @@ class HighCov(object):
 
         return minset_d.keys()
         
-    
 class Metrics(object):
     @staticmethod
-    def score_core(core,dom):
-        vs = (len(core[k] if k in core else dom[k]) for k in dom)
+    def vscore_core(core,dom):
+        vs = [len(core[k] if k in core else dom[k]) for k in dom]
+        #print core,vs,sum(vs)
         return sum(vs)
 
     @staticmethod
-    def score_pncore(pncore,dom):
-        #"is not None" is correct because empty Core is valid and in fact has max score
-        vs = [Metrics.score_core(c,dom) for c in pncore
-              if c is not None] 
+    def vscore_pncore(pncore,dom):
+        #"is not None" is correct because empty Core is valid
+        #and in fact has max score
+        vs = [Metrics.vscore_core(c,dom) for c in pncore
+              if c is not None]
+        #print "pncore nnew", pncore, sum(vs)
         return sum(vs)
 
     @staticmethod
-    def score_cores_d(cores_d,dom):
-        vs = [Metrics.score_pncore(c,dom) for c in cores_d.itervalues()]
+    def vscore_cores_d(cores_d,dom):
+        vs = [Metrics.vscore_pncore(c,dom) for c in cores_d.itervalues()]
         return sum(vs)
 
     #f-score    
@@ -712,45 +742,47 @@ class Metrics(object):
         >>> Metrics.fscore_cores_d(me,gt,{})
         0.5714285714285714
         """
-
         rs = [Metrics.fscore_pncore(me[k],gt[k],dom)
               for k in gt if k in me]
-
         f_sum = 0.0        
         for tp,fp,fn in rs:
-            p=0.0 if (tp+fp)==0 else (float(tp)/(tp+fp))
-            r=0.0 if (tp+fn)==0 else (float(tp)/(tp+fn))
-            f=0.0 if (r+p)==0 else float(2*r*p)/(r+p)
+            if fp==fn==0:  #if these are 0 then me = gt
+                f=1.0
+            else:
+                p=0.0 if (tp+fp)==0 else (float(tp)/(tp+fp))
+                r=0.0 if (tp+fn)==0 else (float(tp)/(tp+fn))
+                f=0.0 if (r+p)==0 else float(2*r*p)/(r+p)
             f_sum += f
         return f_sum/len(gt)
 
     @staticmethod
     def get_evol_scores(dts,dom,cmp_gt):
         if CM.__vdebug__:
-            assert all(isinstance(t,CF.DTrace) for t in dts), dts
+            assert all(isinstance(dt,CF.DTrace) for dt in dts), dts
             assert isinstance(dom,CF.Dom), dom
             assert (cmp_gt is None or isinstance(cmp_gt,str)), cmp_gt
 
-        if cmp_gt:
-            assert os.path.isdir(cmp_gt),cmp_gt
-            gt_dir = cmp_gt
-            logger.debug("load gt dir '{}'".format(gt_dir))
-            #Note: I actually want to compare against cores_d before
-            #postprocessing
-            _,_,gt_dts,_,_ = Analysis.load_dir(gt_dir)
-            assert len(gt_dts)==1
-            gt_cores_d = gt_dts[0].cores_d
+        #analyze
+        pp_cores_ds = []
+        for dt in dts:
+            configs_ds = [dt_.cconfigs_d for dt_ in dts
+                          if dt_.citer <= dt.citer]
+            covs_d = CC.Covs_d()
+            for configs_d in configs_ds:
+                for config,cov in configs_d.iteritems():
+                    for sid in cov:
+                        covs_d.add(sid,config)
 
-            _f = lambda cores_d: Metrics.fscore_cores_d(
-                cores_d,gt_cores_d,dom)
-        else:
-            _f = lambda _: 1
+            pp_cores_d = dt.cores_d.analyze(dom,covs_d)
+            pp_cores_ds.append((dt.citer,pp_cores_d))
 
-        scores = [(dt.citer,
-                   Metrics.score_cores_d(dt.cores_d,dom),
-                   _f(dt.cores_d),
-                   len(dt.cores_d))
-                  for dt in dts]
+        _f = Metrics.get_f_score_f(dom,cmp_gt)
+        
+        scores = [(citer,
+                   Metrics.score_cores_d(cores_d,dom),
+                   _f(cores_d),
+                   len(cores_d))
+                  for citer,cores_d in pp_cores_ds]
 
         if CM.__vdebug__:
             assert all(v >= 0 and f>=0 and c >= 0
@@ -759,6 +791,26 @@ class Metrics(object):
         logger.info("evol scores (iter, vscore, fscore, configs): {}".format(
             ' -> '.join(map(str,scores))))
         return scores
+
+    @staticmethod
+    def get_f_score_f(dom,cmp_gt):
+        if cmp_gt:
+            assert os.path.isdir(cmp_gt),cmp_gt
+            gt_dir = cmp_gt
+            
+            #Note: I actually want to compare against cores_d before
+            #postprocessing
+            _,_,gt_dts,gt_pp_cores_d,_ = CF.DTrace.load_dir(gt_dir)
+            assert len(gt_dts)==1
+            logger.info("gt has vscore {}"
+                        .format(Metrics.score_cores_d(gt_pp_cores_d,dom)))
+            _f = lambda cores_d: Metrics.fscore_cores_d(
+                cores_d,gt_pp_cores_d,dom)
+        else:
+            _f = lambda _: 0
+
+        return _f
+        
     
 class Influence(object):
     @staticmethod

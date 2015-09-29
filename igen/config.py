@@ -907,7 +907,9 @@ class Infer(object):
             new_cc,new_cd = cc,cd
             if configs:
                 new_cc = Infer.infer_cache(cc,configs,dom,cache)
-                
+
+            #TODO: this might be a bug, if new_cc is empty,
+            #then new_cd won't be updated
             if new_cc:
                 configs_ = [c for c in _b() if c.c_implies(new_cc)]
                 if configs_:
@@ -966,7 +968,7 @@ class Infer(object):
                 new_covs.add(sid)
 
             core_ = Infer.infer_sid(sid,core,cconfigs_d,
-                                         configs_d,covs_d,dom,cache)
+                                    configs_d,covs_d,dom,cache)
             if not core_ == core: #progress
                 new_cores.add(sid)
                 cores_d[sid] = core_
@@ -1004,9 +1006,7 @@ class IGen(object):
         random.seed(seed)
         logger.info("seed: {}, tmpdir: {}".format(seed,tmpdir))
 
-        from config_analysis import Analysis
-        analysis = Analysis(tmpdir)
-        analysis.save_pre(seed,self.dom)
+        DTrace.save_pre(seed,self.dom,tmpdir)
 
         #some settings
         cur_iter = 1
@@ -1043,7 +1043,7 @@ class IGen(object):
                 sel_core,
                 cores_d)
             dtrace.show()
-            analysis.save_iter(cur_iter,dtrace)
+            DTrace.save_iter(cur_iter,dtrace,tmpdir)
 
             if rand_n is not None:
                 break
@@ -1091,12 +1091,12 @@ class IGen(object):
         mcores_d = pp_cores_d.merge(show_detail=True)
         itime_total = time() - st
         
-        logger.info(Analysis.str_of_summary(
+        logger.info(DTrace.str_of_summary(
             seed,cur_iter,itime_total,xtime_total,
             len(configs_d),len(covs_d),tmpdir))
         logger.info("Done (seed {}, test {})"
                     .format(seed,random.randrange(100)))
-        analysis.save_post(pp_cores_d,itime_total)
+        DTrace.save_post(pp_cores_d,itime_total,tmpdir)
         
         return pp_cores_d,cores_d,configs_d,covs_d,self.dom
 
@@ -1262,7 +1262,54 @@ class DTrace(object):
         logger.detail('\n{}'.format(mcores_d))
         logger.info("strens: {}".format(mcores_d.strens_str))
 
-        
+    @staticmethod
+    def save_pre(seed,dom,tmpdir):
+        CM.vsave(os.path.join(tmpdir,'pre'),(seed,dom))
+
+    @staticmethod
+    def save_post(pp_cores_d,itime_total,tmpdir):
+        CM.vsave(os.path.join(tmpdir,'post'),(pp_cores_d,itime_total))
+
+    @staticmethod
+    def save_iter(cur_iter,dtrace,tmpdir):
+        CM.vsave(os.path.join(tmpdir,'{}.tvn'.format(cur_iter)),dtrace)
+
+
+    @staticmethod
+    def load_pre(dir_):
+        seed,dom = CM.vload(os.path.join(dir_,'pre'))
+        return seed,dom
+    @staticmethod
+    def load_post(dir_):
+        pp_cores_d,itime_total = CM.vload(os.path.join(dir_,'post'))
+        return pp_cores_d,itime_total
+    @staticmethod
+    def load_iter(dir_,f):
+        dtrace =CM.vload(os.path.join(dir_,f))
+        return dtrace
+
+    @staticmethod
+    def str_of_summary(seed,iters,itime,xtime,nconfigs,ncovs,tmpdir):
+        ss = ["Seed {}".format(seed),
+              "Iters {}".format(iters),
+              "Time ({}s, {}s)".format(itime,xtime),
+              "Configs {}".format(nconfigs),
+              "Covs {}".format(ncovs),
+              "Tmpdir {}".format(tmpdir)]
+        return "Summary: " + ', '.join(ss)    
+
+    @staticmethod
+    def load_dir(dir_):
+        seed,dom = DTrace.load_pre(dir_)
+        dts = [DTrace.load_iter(dir_,f)
+               for f in os.listdir(dir_) if f.endswith('.tvn')]
+        try:
+            pp_cores_d,itime_total = DTrace.load_post(dir_)
+        except IOError:
+            logger.error("post info not avail")
+            pp_cores_d,itime_total = None,None
+        return seed,dom,dts,pp_cores_d,itime_total
+    
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
