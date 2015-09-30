@@ -31,7 +31,6 @@ def get_run_f(prog,args,mod):
                 rand_n=args.rand_n,seed=seed,tmpdir=tdir)
 
     else:
-        import igen_settings
         if args.dom_file:  #general way to run prog using a runscript
             dom,config_default = mod.Dom.get_dom(
                 os.path.realpath(args.dom_file))
@@ -42,21 +41,20 @@ def get_run_f(prog,args,mod):
                 config,run_script)
 
         else:
+            import igen_settings            
             import get_cov_example as Example
             import get_cov_coreutils as Coreutils
-
-            if prog in Example.db:
-                dom,get_cov_f=Example.prepare(prog,mod.Dom.get_dom,
-                                              igen_settings.examples_dir)
-
-            elif prog in Coreutils.db:
+            
+            if prog in Coreutils.db:
                 dom,get_cov_f=Coreutils.prepare(
                     prog,
                     mod.Dom.get_dom,
                     igen_settings.coreutils_dir,
                     do_perl=args.do_perl)
             else:
-                raise AssertionError("unrecognized prog '{}'".format(prog))
+                dom,get_cov_f=Example.prepare(
+                    prog,mod.Dom.get_dom,igen_settings.examples_dir)
+                    
             config_default = None  #no config default for these
             
         igen = mod.IGen(
@@ -203,12 +201,11 @@ if __name__ == "__main__":
     if args.analyze_outps:
         CC.analyze_outps = True
 
-    #import here so that settings in CC
-    import config as IC
-    from igen_analysis import Analysis
-    import igen_settings
+    #import here so that settings in CC take effect
+    from igen_settings import tmp_dir
 
     if args.replay or args.replay_dirs: #analyze results
+        from igen_analysis import Analysis        
         analysis_f = (Analysis.replay if args.replay else
                       Analysis.replay_dirs)
 
@@ -220,7 +217,7 @@ if __name__ == "__main__":
         cmp_rand = args.cmp_rand
         if cmp_rand:
             _f,_ = get_run_f(cmp_rand,args,IC)
-            tdir = _tmpdir(igen_settings.tmp_dir,
+            tdir = _tmpdir(tmp_dir,
                            cmp_rand+"_cmp_rand")
             cmp_rand = lambda rand_n: _f(seed,tdir,rand_n)
             
@@ -230,9 +227,10 @@ if __name__ == "__main__":
                    cmp_rand=cmp_rand)
             
     else: #run iGen
+        import config as IC
         prog = args.inp
         _f,_ = get_run_f(prog,args,IC)
-        tdir = _tmpdir(igen_settings.tmp_dir,prog)
+        tdir = _tmpdir(tmp_dir,prog)
         
         print("* benchmark '{}',  {} runs, seed {}, results in '{}'"
               .format(prog,args.benchmark,seed,tdir))
