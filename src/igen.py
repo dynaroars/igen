@@ -2,15 +2,16 @@ import os.path
 import tempfile
 from time import time
 import vu_common as CM
-import config as CF
+import config as CF  #this needs to be here for settings in common_settings to take effect
 
 def get_run_f(prog,args):
     """
     Ret f that takes inputs seed,existing_results,tmpdir 
     and call appropriate iGen function on those inputs
     """
+
+
     import get_cov_otter as Otter
-        
     if prog in Otter.db:
         dom,get_cov_f,pathconds_d=Otter.prepare(prog,CF.Dom.get_dom)
         igen = CF.IGen(dom,get_cov_f,config_default=None)
@@ -177,18 +178,19 @@ if __name__ == "__main__":
                          type=str)
 
     args = aparser.parse_args()
-
-    import config_settings as CS    
-    CM.__vdebug__ = args.debug    
-    CS.logger_level = args.logger_level
+    CM.__vdebug__ = args.debug
+    print CM.__vdebug__
+    CM.pause()
+    import config_common as CC
+    CC.logger_level = args.logger_level
     seed = round(time(),2) if args.seed is None else float(args.seed)
     
     if args.allows_known_errors:
-        CS.allows_known_errors = True
+        CC.allows_known_errors = True
     if args.noshow_cov:
-        CS.show_cov = False
+        CC.show_cov = False
     if args.analyze_outps:
-        CS.analyze_outps = True
+        CC.analyze_outps = True
 
 
     def _tmpdir(prog):

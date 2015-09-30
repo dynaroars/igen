@@ -13,7 +13,11 @@ import z3util
 
 CM.__vdebug__ = True  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
 
+logger_level = CM.VLog.DEBUG
+allows_known_errors = False
 show_cov = True
+analyze_outps = False
+
 
 #Data Structures
 class CustDict(MutableMapping):

@@ -11,10 +11,9 @@ from vu_common import HDict
 import vu_common as CM
 import config_common as CC
 from config_common import Configs_d #do not del, nec to read existing results
-import config_settings as CS
 
 logger = CM.VLog('config')
-logger.level = CS.logger_level
+logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
 CM.__vdebug__ = True  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
 
@@ -1154,7 +1153,7 @@ class IGen(object):
             if c in cconfigs_d: #skip
                 continue
             sids,outps = self.get_cov(c)
-            cconfigs_d[c]= (outps if CS.analyze_outps else sids)
+            cconfigs_d[c]= (outps if CC.analyze_outps else sids)
         return cconfigs_d,time() - st
 
     def gen_configs_init(self,rand_n,seed):

@@ -3,11 +3,11 @@ import random
 import os.path
 import vu_common as CM
 
+import config_common as CC
 import config as CF
-import config_settings as CS
 
 logger = CM.VLog('otter')
-logger.level = CS.logger_level
+logger.level = CC.logger_level
 
 db = {"vsftpd":None,"ngircd":None}
 from igen_settings import otter_dir
