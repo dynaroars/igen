@@ -2,15 +2,16 @@ import os.path
 import tempfile
 from time import time
 import vu_common as CM
+import config_common as CC
 import config as CF  #this needs to be here for settings in common_settings to take effect
+import config_analysis as analysis
+
 
 def get_run_f(prog,args):
     """
     Ret f that takes inputs seed,existing_results,tmpdir 
     and call appropriate iGen function on those inputs
     """
-
-
     import get_cov_otter as Otter
     if prog in Otter.db:
         dom,get_cov_f,pathconds_d=Otter.prepare(prog,CF.Dom.get_dom)
@@ -72,6 +73,16 @@ def get_run_f(prog,args):
                 rand_n=args.rand_n,seed=seed,tmpdir=tdir)
                 
     return _f,get_cov_f
+        
+
+def _tmpdir(prog):
+    from igen_settings import tmp_dir    
+    import getpass
+    d_prefix = "{}_bm_{}_".format(getpass.getuser(),prog)
+    tdir = tempfile.mkdtemp(dir=tmp_dir,prefix=d_prefix)
+    return tdir
+
+
 
 if __name__ == "__main__":
     def _check(v,min_n=None,max_n=None):
@@ -179,9 +190,6 @@ if __name__ == "__main__":
 
     args = aparser.parse_args()
     CM.__vdebug__ = args.debug
-    print CM.__vdebug__
-    CM.pause()
-    import config_common as CC
     CC.logger_level = args.logger_level
     seed = round(time(),2) if args.seed is None else float(args.seed)
     
@@ -192,16 +200,7 @@ if __name__ == "__main__":
     if args.analyze_outps:
         CC.analyze_outps = True
 
-
-    def _tmpdir(prog):
-        from igen_settings import tmp_dir    
-        import getpass
-        d_prefix = "{}_bm_{}_".format(getpass.getuser(),prog)
-        tdir = tempfile.mkdtemp(dir=tmp_dir,prefix=d_prefix)
-        return tdir
-    
     if args.replay or args.replay_dirs: #analyze results
-        import config_analysis as analysis
         analysis_f = (analysis.Analysis.replay if args.replay else
                       analysis.Analysis.replay_dirs)
 
@@ -239,4 +238,5 @@ if __name__ == "__main__":
 
         print("** done benchmark '{}', {} runs, seed {}, time {}, results in '{}'"
               .format(prog,args.benchmark,seed,time()-st,tdir))
+
 
