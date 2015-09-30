@@ -2,18 +2,19 @@ import abc
 import os.path
 import vu_common as CM
 
-import config as CF
+import config_settings as CS
 import get_cov as GC
 
 logger = CM.VLog('coreutils')
-logger.level = CF.logger.level
+logger.level = CS.logger_level
 
 from igen_settings import coreutils_dir
 
-def prepare(prog_name,do_perl):
+def prepare(prog_name,get_dom_f,do_perl):
     if CM.__vdebug__:
         assert isinstance(prog_name,str),prog_name
         assert isinstance(do_perl,bool), do_perl
+        assert callable(get_dom_f),get_dom_f
         
     main_dir = CM.getpath(coreutils_dir)
 
@@ -35,7 +36,7 @@ def prepare(prog_name,do_perl):
         dom_file = os.path.join(main_dir,"doms","{}.dom".format(prog_name))
 
     dom_file = CM.getpath(dom_file)
-    dom,_ = CF.Dom.get_dom(dom_file)
+    dom,_ = get_dom_f(dom_file)
     logger.info("dom_file '{}': {}".format(dom_file,dom))
     
     assert all(len(vs) >= 2 and "off" in vs 
@@ -87,7 +88,7 @@ def get_ts_data(config,data):
 
 def get_cov_perl(config,data):
     if CM.__vdebug__:
-        assert isinstance(config,CF.Config),config
+        assert isinstance(config,CC.Config),config
         check_data(data)
 
     #run perlCoverage.pl script
@@ -102,7 +103,7 @@ def get_cov_perl(config,data):
 
 def get_cov_gcov(config,data):
     if CM.__vdebug__:
-        assert isinstance(config,CF.Config),config        
+        assert isinstance(config,CC.Config),config        
         check_data(data)
         
     #cleanup

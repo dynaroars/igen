@@ -4,22 +4,27 @@ import os.path
 import vu_common as CM
 
 import config as CF
+import config_settings as CS
 
 logger = CM.VLog('otter')
-logger.level = CF.logger.level
+logger.level = CS.logger_level
 
 db = {"vsftpd":None,"ngircd":None}
 from igen_settings import otter_dir
 
 
-def prepare(prog):
-    dir_ = CM.getpath(os.path.join(otter_dir,prog))
+def prepare(prog_name,get_dom_f):
+    if CM.__vdebug__:
+        assert isinstance(prog_name,str),prog_name
+        assert callable(get_dom_f),get_dom_f
+    
+    dir_ = CM.getpath(os.path.join(otter_dir,prog_name))
     dom_file = os.path.join(dir_,'possibleValues.txt')
     pathconds_d_file = os.path.join(dir_,'{}.tvn'.format('pathconds_d'))
     assert os.path.isfile(dom_file),dom_file
     assert os.path.isfile(pathconds_d_file),pathconds_d_file
     
-    dom,_ = CF.Dom.get_dom(dom_file)
+    dom,_ = get_dom_f(dom_file)
     logger.info("dom_file '{}': {}".format(dom_file,dom))
     
     st = time()

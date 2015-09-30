@@ -3,6 +3,7 @@ import itertools
 import random
 import os.path
 from collections import OrderedDict, MutableMapping
+from time import time
 
 from vu_common import HDict
 import vu_common as CM
@@ -264,7 +265,8 @@ class Configs_d(CustDict):
     def __str__(self):
         ss = (c.__str__(self[c]) for c in self.__dict__)
         return '\n'.join("{}. {}".format(i+1,s) for i,s in enumerate(ss))
-    
+
+   
     
 if __name__ == "__main__":
     import doctest
