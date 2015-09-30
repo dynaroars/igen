@@ -10,16 +10,13 @@ from vu_common import HDict
 
 import vu_common as CM
 import config_common as CC
-from config_common import Configs_d #need this to read in existing exp results
+from config_common import Configs_d #do not del, nec to read existing results
+import config_settings as CS
 
 logger = CM.VLog('config')
-logger.level = CM.VLog.DEBUG
+logger.level = CS.logger_level
 CM.VLog.PRINT_TIME = True
 CM.__vdebug__ = True  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
-
-
-allows_known_errors = False
-analyze_outps = False
 
 #Data Structures
 class Dom(CC.Dom):
@@ -1024,7 +1021,7 @@ class IGen(object):
         self.get_cov = get_cov
         self.config_default = config_default
 
-    def go(self,seed=None,rand_n=None,existing_results=None,tmpdir=None):
+    def go(self,seed,rand_n=None,existing_results=None,tmpdir=None):
         """
         rand_n = None: use default interative mode
         rand_n = 0  : use init configs
@@ -1033,7 +1030,7 @@ class IGen(object):
         """
         if CM.__vdebug__:
             assert isinstance(tmpdir,str) and os.path.isdir(tmpdir), tmpdir
-            assert seed is None or isinstance(seed,float)
+            assert isinstance(seed,float)
 
         random.seed(seed)
         logger.info("seed: {}, tmpdir: {}".format(seed,tmpdir))
@@ -1134,7 +1131,7 @@ class IGen(object):
 
     #Shortcuts
     def go_full(self,tmpdir=None):
-        return self.go(seed=None,rand_n=-1,
+        return self.go(seed=0,rand_n=-1,
                        existing_results=None,tmpdir=tmpdir)
 
     def go_rand(self,rand_n,seed=None,tmpdir=None):
@@ -1156,12 +1153,8 @@ class IGen(object):
         for c in configs:
             if c in cconfigs_d: #skip
                 continue
-
             sids,outps = self.get_cov(c)
-            if analyze_outps:
-                cconfigs_d[c]=outps
-            else:
-                cconfigs_d[c]=sids
+            cconfigs_d[c]= (outps if CS.analyze_outps else sids)
         return cconfigs_d,time() - st
 
     def gen_configs_init(self,rand_n,seed):

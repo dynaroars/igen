@@ -1,10 +1,10 @@
 import os.path
 import vu_common as CM
-import config as CF
+import config_settings as CS
 
 logger = CM.VLog('get_cov')
-logger.level = CF.logger.level
-    
+logger.level = CS.logger_level
+
 # Real executions
 def run_single(cmd):
     logger.detail(cmd)
@@ -28,14 +28,15 @@ def run_single(cmd):
             if any(serr in rs_err for serr in serious_errors): 
                 raise AssertionError("Check this serious error !")
 
-            if not CF.allows_known_errors:
+            if not CS.allows_known_errors:
                 if any(kerr in rs_err for kerr in known_errors):
                     raise AssertionError("Check this known error!")
                     
         return (rs_outp,rs_err)
     
     except Exception as e:
-        raise AssertionError("cmd '{}' fails, raise error: {}".format(cmd,e))
+        raise AssertionError("cmd '{}' fails, raise error: {}"
+                             .format(cmd,e))
 
 
 def runscript_get_cov(config,run_script):

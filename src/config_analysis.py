@@ -5,10 +5,11 @@ from time import time
 import vu_common as CM
 
 import config_common as CC
+import config_settings as CS
 import config as CF
 
 logger = CM.VLog('analysis')
-logger.level = CF.logger.level
+logger.level = CS.logger_level
 CM.VLog.PRINT_TIME = True
 
 from collections import namedtuple

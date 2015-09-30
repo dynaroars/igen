@@ -2,7 +2,7 @@ import os.path
 import tempfile
 from time import time
 import vu_common as CM
-import config
+import config as CF
 
 def get_run_f(prog,args):
     """
@@ -12,16 +12,19 @@ def get_run_f(prog,args):
     import get_cov_otter as Otter
         
     if prog in Otter.db:
-        dom,get_cov_f,pathconds_d=Otter.prepare(prog)
-        igen = config.IGen(dom,get_cov_f,config_default=None)
-        if args.do_full:
+        dom,get_cov_f,pathconds_d=Otter.prepare(prog,CF.Dom.get_dom)
+        igen = CF.IGen(dom,get_cov_f,config_default=None)
+
+        if args.cmp_rand:
+            _f = lambda seed,tdir,rand_n: igen.go_rand(
+                rand_n=rand_n,seed=seed,tempdir=tdir)
+        elif args.do_full:
             if args.rand_n:
                 _f = lambda _,tdir: Otter.do_full(
                     dom,pathconds_d,tmpdir=tdir,n=args.rand_n)
             else:
                 _f = lambda _,tdir: Otter.do_full(
                     dom,pathconds_d,tmpdir=tdir,n=None)
-                                                  
         elif args.rand_n is None:
             _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
         else:
@@ -30,7 +33,7 @@ def get_run_f(prog,args):
 
     else:
         if args.dom_file:  #general way to run prog using a runscript
-            dom,config_default = config.Dom.get_dom(
+            dom,config_default = CF.Dom.get_dom(
                 os.path.realpath(args.dom_file))
             run_script = os.path.realpath(args.run_script)
             
@@ -44,15 +47,16 @@ def get_run_f(prog,args):
             import get_cov_coreutils as Coreutils
 
             if prog in Example.db:
-                dom,get_cov_f=Example.prepare(prog)
+                dom,get_cov_f=Example.prepare(prog,CF.Dom.get_dom)
 
             elif prog in Coreutils.db:
-                dom,get_cov_f=Coreutils.prepare(prog,do_perl=args.do_perl)
+                dom,get_cov_f=Coreutils.prepare(
+                    prog,CF.Dom.get_dom,do_perl=args.do_perl)
             else:
                 raise AssertionError("unrecognized prog '{}'".format(prog))
             config_default = None  #no config default for these
             
-        igen = config.IGen(
+        igen = CF.IGen(
             dom,get_cov_f,config_default=config_default)
 
         if args.cmp_rand:
@@ -173,17 +177,19 @@ if __name__ == "__main__":
                          type=str)
 
     args = aparser.parse_args()
-    CM.__vdebug__ = args.debug
-    config.logger.level = args.logger_level
+
+    import config_settings as CS    
+    CM.__vdebug__ = args.debug    
+    CS.logger_level = args.logger_level
+    seed = round(time(),2) if args.seed is None else float(args.seed)
     
     if args.allows_known_errors:
-        config.allows_known_errors = True
+        CS.allows_known_errors = True
     if args.noshow_cov:
-        config.show_cov = False
+        CS.show_cov = False
     if args.analyze_outps:
-        config.analyze_outps = True
+        CS.analyze_outps = True
 
-    seed = round(time(),2) if args.seed is None else float(args.seed)
 
     def _tmpdir(prog):
         from igen_settings import tmp_dir    
