@@ -3,11 +3,10 @@ import os.path
 import vu_common as CM
 
 import config_common as CC
-import config_settings as CS
 import get_cov as GC
 
 logger = CM.VLog('example')
-logger.level = CS.logger_level
+logger.level = CC.logger_level
 
 db = {'ex': 'ex', 'ex1':'ex', 'ex0':'ex0'}
 from igen_settings import examples_dir

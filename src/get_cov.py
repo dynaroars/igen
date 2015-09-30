@@ -1,9 +1,9 @@
 import os.path
 import vu_common as CM
-import config_settings as CS
+import config_common as CC
 
 logger = CM.VLog('get_cov')
-logger.level = CS.logger_level
+logger.level = CC.logger_level
 
 # Real executions
 def run_single(cmd):
@@ -28,7 +28,7 @@ def run_single(cmd):
             if any(serr in rs_err for serr in serious_errors): 
                 raise AssertionError("Check this serious error !")
 
-            if not CS.allows_known_errors:
+            if not CC.allows_known_errors:
                 if any(kerr in rs_err for kerr in known_errors):
                     raise AssertionError("Check this known error!")
                     

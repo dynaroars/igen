@@ -2,11 +2,11 @@ import abc
 import os.path
 import vu_common as CM
 
-import config_settings as CS
+import config_common as CC
 import get_cov as GC
 
 logger = CM.VLog('coreutils')
-logger.level = CS.logger_level
+logger.level = CC.logger_level
 
 from igen_settings import coreutils_dir
 
