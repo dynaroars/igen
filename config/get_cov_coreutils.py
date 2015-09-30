@@ -8,15 +8,13 @@ import get_cov as GC
 logger = CM.VLog('coreutils')
 logger.level = CC.logger_level
 
-from igen_settings import coreutils_dir
-
-def prepare(prog_name,get_dom_f,do_perl):
+def prepare(prog_name,get_dom_f,main_dir,do_perl):
     if CM.__vdebug__:
         assert isinstance(prog_name,str),prog_name
         assert isinstance(do_perl,bool), do_perl
         assert callable(get_dom_f),get_dom_f
         
-    main_dir = CM.getpath(coreutils_dir)
+    main_dir = CM.getpath(main_dir)
 
     if do_perl:
         prog_dir = os.path.join(main_dir,'coreutils_perl')

@@ -4,7 +4,7 @@ import os.path
 import vu_common as CM
 
 import config_common as CC
-import config as CF
+import config as IC
 
 logger = CM.VLog('otter')
 logger.level = CC.logger_level
@@ -38,7 +38,7 @@ def prepare(prog_name,get_dom_f):
 
 def get_cov(config,args):
     if CM.__vdebug__:
-        assert isinstance(config,CF.Config),config
+        assert isinstance(config,IC.Config),config
         assert isinstance(args,dict) and 'pathconds_d' in args, args
         
     sids = set()        
@@ -62,17 +62,17 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     seed=0
     logger.info("seed: {} default, tmpdir: {}".format(seed,tmpdir))
 
-    CF.DTrace.save_pre(seed,dom,tmpdir)
+    IC.DTrace.save_pre(seed,dom,tmpdir)
     if n:
         logger.info('select {} rand'.format(n))
         rs = random.sample(pathconds_d.values(),n)
     else:
         rs = pathconds_d.itervalues()
 
-    cconfigs_d = CF.Configs_d()
+    cconfigs_d = IC.Configs_d()
     for covs,configs in rs:
         for c in configs:
-            c = CF.Config(c)
+            c = IC.Config(c)
             if c not in cconfigs_d:
                 cconfigs_d[c]=set(covs)
             else:
@@ -82,8 +82,8 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
             
     logger.info("use {} configs".format(len(cconfigs_d)))
     st = time()
-    cores_d,configs_d,covs_d = CF.Cores_d(),CF.Configs_d(),CF.Covs_d()
-    new_covs,new_cores = CF.Infer.infer_covs(
+    cores_d,configs_d,covs_d = IC.Cores_d(),IC.Configs_d(),IC.Covs_d()
+    new_covs,new_cores = IC.Infer.infer_covs(
         cores_d,cconfigs_d,configs_d,covs_d,dom)
     pp_cores_d = cores_d.analyze(dom,covs_d)
     mcores_d = pp_cores_d.merge(show_detail=True)    
@@ -93,13 +93,13 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     logger.info(DTrace.str_of_summary(
         0,1,itime_total,0,len(configs_d),len(pp_cores_d),tmpdir))
 
-    dtrace = CF.DTrace(1,itime_total,0,
+    dtrace = IC.DTrace(1,itime_total,0,
                        len(configs_d),len(covs_d),len(cores_d),
                        cconfigs_d,
                        new_covs,new_cores,
-                       CF.SCore.mk_default(), #sel_core
+                       IC.SCore.mk_default(), #sel_core
                        cores_d)
-    CF.DTrace.save_iter(1,dtrace,tmpdir)
-    CF.DTrace.save_post(pp_cores_d,itime_total,tmpdir)
+    IC.DTrace.save_iter(1,dtrace,tmpdir)
+    IC.DTrace.save_post(pp_cores_d,itime_total,tmpdir)
     
     return pp_cores_d,cores_d,configs_d,covs_d,dom
