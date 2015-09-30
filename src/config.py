@@ -2,7 +2,6 @@ import abc
 from time import time
 import os.path
 import random
-from collections import OrderedDict
 
 import z3
 import z3util
@@ -770,7 +769,8 @@ class Cores_d(CC.CustDict):
         if show_detail:
             logger.debug("mcores_d has {} items\n{}"
                          .format(len(mcores_d),mcores_d))
-            logger.info("mcores_d strens (stren, nresults, nsids): {}".format(mcores_d.strens_str))
+            logger.info("mcores_d strens (stren, nresults, nsids): {}"
+                        .format(mcores_d.strens_str))
             
         return mcores_d
 
@@ -1030,7 +1030,7 @@ class IGen(object):
         if CM.__vdebug__:
             assert isinstance(tmpdir,str) and os.path.isdir(tmpdir), tmpdir
             assert isinstance(seed,float)
-
+            
         random.seed(seed)
         logger.info("seed: {}, tmpdir: {}".format(seed,tmpdir))
 
