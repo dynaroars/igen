@@ -8,17 +8,15 @@ import get_cov as GC
 logger = CM.VLog('example')
 logger.level = CC.logger_level
 
-db = {'ex': 'ex', 'ex1':'ex', 'ex0':'ex0'}
-
 def prepare(prog_name,get_dom_f,dir_):
     if CM.__vdebug__:
         assert isinstance(prog_name,str),prog_name
         assert callable(get_dom_f),get_dom_f
+        assert isinstance(dir_,str),dir_
         
     import platform
     dir_ = CM.getpath(dir_)
-    dom_file = db[prog_name]
-    dom_file = CM.getpath(os.path.join(dir_,'{}.dom'.format(dom_file)))
+    dom_file = CM.getpath(os.path.join(dir_,'{}.dom'.format(prog_name)))
     dom,_ = get_dom_f(dom_file)
     logger.info("dom_file '{}': {}".format(dom_file,dom))
     prog_exe = CM.getpath(os.path.join(dir_,'{}.{}.exe'
