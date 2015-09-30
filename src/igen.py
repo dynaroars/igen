@@ -3,19 +3,16 @@ import tempfile
 from time import time
 import vu_common as CM
 import config_common as CC
-import config as CF  #this needs to be here for settings in common_settings to take effect
-import config_analysis as analysis
 
-
-def get_run_f(prog,args):
+def get_run_f(prog,args,mod):
     """
     Ret f that takes inputs seed,existing_results,tmpdir 
     and call appropriate iGen function on those inputs
     """
     import get_cov_otter as Otter
     if prog in Otter.db:
-        dom,get_cov_f,pathconds_d=Otter.prepare(prog,CF.Dom.get_dom)
-        igen = CF.IGen(dom,get_cov_f,config_default=None)
+        dom,get_cov_f,pathconds_d=Otter.prepare(prog,mod.Dom.get_dom)
+        igen = mod.IGen(dom,get_cov_f,config_default=None)
 
         if args.cmp_rand:
             _f = lambda seed,tdir,rand_n: igen.go_rand(
@@ -34,8 +31,9 @@ def get_run_f(prog,args):
                 rand_n=args.rand_n,seed=seed,tmpdir=tdir)
 
     else:
+        import igen_settings
         if args.dom_file:  #general way to run prog using a runscript
-            dom,config_default = CF.Dom.get_dom(
+            dom,config_default = mod.Dom.get_dom(
                 os.path.realpath(args.dom_file))
             run_script = os.path.realpath(args.run_script)
             
@@ -44,21 +42,24 @@ def get_run_f(prog,args):
                 config,run_script)
 
         else:
-            
             import get_cov_example as Example
             import get_cov_coreutils as Coreutils
 
             if prog in Example.db:
-                dom,get_cov_f=Example.prepare(prog,CF.Dom.get_dom)
+                dom,get_cov_f=Example.prepare(prog,mod.Dom.get_dom,
+                                              igen_settings.examples_dir)
 
             elif prog in Coreutils.db:
                 dom,get_cov_f=Coreutils.prepare(
-                    prog,CF.Dom.get_dom,do_perl=args.do_perl)
+                    prog,
+                    mod.Dom.get_dom,
+                    igen_settings.coreutils_dir,
+                    do_perl=args.do_perl)
             else:
                 raise AssertionError("unrecognized prog '{}'".format(prog))
             config_default = None  #no config default for these
             
-        igen = CF.IGen(
+        igen = mod.IGen(
             dom,get_cov_f,config_default=config_default)
 
         if args.cmp_rand:
@@ -75,8 +76,7 @@ def get_run_f(prog,args):
     return _f,get_cov_f
         
 
-def _tmpdir(prog):
-    from igen_settings import tmp_dir    
+def _tmpdir(tmp_dir,prog):
     import getpass
     d_prefix = "{}_bm_{}_".format(getpass.getuser(),prog)
     tdir = tempfile.mkdtemp(dir=tmp_dir,prefix=d_prefix)
@@ -169,7 +169,8 @@ if __name__ == "__main__":
                          action="store_true")
 
     aparser.add_argument("--do_min_configs", "-do_min_configs",
-                         help="for use with replay, compute a set of min configs",
+                         help=("for use with replay, "
+                               "compute a set of min configs"),
                          action="store",
                          nargs='?',
                          const='use_existing',
@@ -177,13 +178,15 @@ if __name__ == "__main__":
                          type=str)
 
     aparser.add_argument("--cmp_rand", "-cmp_rand",
-                         help="for use with replay, cmp results against rand configs",
+                         help=("for use with replay, "
+                               "cmp results against rand configs"),
                          action="store",
                          default=None,
                          type=str)
     
     aparser.add_argument("--cmp_gt", "-cmp_gt",
-                         help="for use with replay, cmp results against ground truth",
+                         help=("for use with replay, "
+                               "cmp results against ground truth"),
                          action="store",
                          default=None,
                          type=str)
@@ -200,19 +203,25 @@ if __name__ == "__main__":
     if args.analyze_outps:
         CC.analyze_outps = True
 
+    #import here so that settings in CC
+    import config as IC
+    from igen_analysis import Analysis
+    import igen_settings
+
     if args.replay or args.replay_dirs: #analyze results
-        analysis_f = (analysis.Analysis.replay if args.replay else
-                      analysis.Analysis.replay_dirs)
+        analysis_f = (Analysis.replay if args.replay else
+                      Analysis.replay_dirs)
 
         do_min_configs = args.do_min_configs  
         if do_min_configs and do_min_configs != 'use_existing':
-            _,get_cov_f = get_run_f(do_min_configs,args)
+            _,get_cov_f = get_run_f(do_min_configs,args,IC)
             do_min_configs = get_cov_f
 
         cmp_rand = args.cmp_rand
         if cmp_rand:
-            _f,_ = get_run_f(cmp_rand,args)
-            tdir = _tmpdir(cmp_rand+"_cmp_rand")
+            _f,_ = get_run_f(cmp_rand,args,IC)
+            tdir = _tmpdir(igen_settings.tmp_dir,
+                           cmp_rand+"_cmp_rand")
             cmp_rand = lambda rand_n: _f(seed,tdir,rand_n)
             
         analysis_f(args.inp,show_iters=args.show_iters,
@@ -222,8 +231,8 @@ if __name__ == "__main__":
             
     else: #run iGen
         prog = args.inp
-        _f,_ = get_run_f(prog,args)
-        tdir = _tmpdir(prog)
+        _f,_ = get_run_f(prog,args,IC)
+        tdir = _tmpdir(igen_settings.tmp_dir,prog)
         
         print("* benchmark '{}',  {} runs, seed {}, results in '{}'"
               .format(prog,args.benchmark,seed,tdir))
@@ -234,7 +243,8 @@ if __name__ == "__main__":
             tdir_ = tempfile.mkdtemp(dir=tdir,prefix="run{}_".format(i))
             print("*run {}/{}".format(i+1,args.benchmark))
             _ = _f(seed_,tdir_)
-            print("*run {}, seed {}, time {}s, '{}'".format(i+1,seed_,time()-st_,tdir_))
+            print("*run {}, seed {}, time {}s, '{}'".format(
+                i+1,seed_,time()-st_,tdir_))
 
         print("** done benchmark '{}', {} runs, seed {}, time {}, results in '{}'"
               .format(prog,args.benchmark,seed,time()-st,tdir))

@@ -9,15 +9,14 @@ logger = CM.VLog('example')
 logger.level = CC.logger_level
 
 db = {'ex': 'ex', 'ex1':'ex', 'ex0':'ex0'}
-from igen_settings import examples_dir
 
-def prepare(prog_name,get_dom_f):
+def prepare(prog_name,get_dom_f,dir_):
     if CM.__vdebug__:
         assert isinstance(prog_name,str),prog_name
         assert callable(get_dom_f),get_dom_f
         
     import platform
-    dir_ = CM.getpath(examples_dir)
+    dir_ = CM.getpath(dir_)
     dom_file = db[prog_name]
     dom_file = CM.getpath(os.path.join(dir_,'{}.dom'.format(dom_file)))
     dom,_ = get_dom_f(dom_file)
