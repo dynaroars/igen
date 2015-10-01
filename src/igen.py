@@ -73,14 +73,11 @@ def get_run_f(prog,args,mod):
                 
     return _f,get_cov_f
         
-
 def _tmpdir(tmp_dir,prog):
     import getpass
     d_prefix = "{}_bm_{}_".format(getpass.getuser(),prog)
     tdir = tempfile.mkdtemp(dir=tmp_dir,prefix=d_prefix)
     return tdir
-
-
 
 if __name__ == "__main__":
     def _check(v,min_n=None,max_n=None):
@@ -202,6 +199,7 @@ if __name__ == "__main__":
         CC.analyze_outps = True
 
     #import here so that settings in CC take effect
+    import config as IC    
     from igen_settings import tmp_dir
 
     if args.replay or args.replay_dirs: #analyze results
@@ -227,7 +225,6 @@ if __name__ == "__main__":
                    cmp_rand=cmp_rand)
             
     else: #run iGen
-        import config as IC
         prog = args.inp
         _f,_ = get_run_f(prog,args,IC)
         tdir = _tmpdir(tmp_dir,prog)

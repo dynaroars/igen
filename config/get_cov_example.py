@@ -23,14 +23,11 @@ def prepare(prog_name,get_dom_f,dir_):
                                     .format(prog_name,platform.system())))
     logger.info("prog_exe: '{}'".format(prog_exe))
 
-    gcno_file = CM.getpath(os.path.join(dir_,"{}.gcno".format(prog_name)))
-    get_cov_f = get_cov_gcov if os.path.isfile(gcno_file) else get_cov
-
     data = {'var_names':dom.keys(),
             'prog_name':prog_name,
             'prog_exe':prog_exe,
             'dir_':dir_,
-            'get_cov_f':get_cov_f}
+            'get_cov_f':get_cov}
 
     get_cov_f = lambda config: GC.get_cov_wrapper(config,data)
     return dom,get_cov_f

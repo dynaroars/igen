@@ -25,12 +25,6 @@ class Dom(CC.Dom):
     ('w',frozenset(['a','b','c']))\
     ])
     >>> assert dom.siz == len(dom.gen_configs_full()) == 18
-    >>> random.seed(0)
-    >>> configs = dom.gen_configs_tcover1()
-    >>> print "\\n".join(map(str,configs))
-    x=2 y=1 z=0 w=a
-    x=1 y=1 z=2 w=c
-    x=1 y=1 z=1 w=b
     
     >>> random.seed(0)
     >>> configs = dom.gen_configs_rand_smt(5)
@@ -43,31 +37,8 @@ class Dom(CC.Dom):
 
     >>> configs = dom.gen_configs_rand_smt(dom.siz)
     >>> assert len(configs) == dom.siz
-    
     """
-    def gen_configs_tcover1(self):
-        """
-        Return a set of tcover array of stren 1
-        """
-        dom_used = dict((k,set(self[k])) for k in self)
 
-        def mk():
-            config = []
-            for k in self:
-                if k in dom_used:
-                    v = random.choice(list(dom_used[k]))
-                    dom_used[k].remove(v)
-                    if not dom_used[k]:
-                        dom_used.pop(k)
-                else:
-                    v = random.choice(list(self[k]))
-
-                config.append((k,v))
-            return Config(config)
-
-        configs = []
-        while dom_used: configs.append(mk())
-        return configs
 
     """
     Create configs using an SMT solver
@@ -1158,7 +1129,7 @@ class IGen(object):
 
     def gen_configs_init(self,rand_n,seed):
         if not rand_n: #None or 0
-            configs = self.dom.gen_configs_tcover1()
+            configs = self.dom.gen_configs_tcover1(config_cls=Config)
             logger.info("gen {} configs using tcover 1".format(len(configs)))
         elif rand_n > 0 and rand_n < self.dom.siz:        
             configs = self.dom.gen_configs_rand_smt(rand_n)

@@ -117,6 +117,14 @@ class Dom(OrderedDict):
     x=1 y=1 z=0 w=a
     x=1 y=1 z=2 w=c
 
+    >>> random.seed(0)
+    >>> configs = dom.gen_configs_tcover1()
+    >>> print "\\n".join(map(str,configs))
+    x=2 y=1 z=0 w=a
+    x=1 y=1 z=2 w=c
+    x=1 y=1 z=1 w=b
+
+
     >>> assert len(dom.z3db) == len(dom) and set(dom.z3db) == set(dom)
 
     """
@@ -194,7 +202,31 @@ class Dom(OrderedDict):
         configs = list(set(config_cls(rgen()) for _ in range(rand_n)))
         return configs
 
-    
+    def gen_configs_tcover1(self,config_cls=None):
+        """
+        Return a set of tcover array of stren 1
+        """
+        if config_cls is None:
+            config_cls = Config
+        dom_used = dict((k,set(self[k])) for k in self)
+
+        def mk():
+            config = []
+            for k in self:
+                if k in dom_used:
+                    v = random.choice(list(dom_used[k]))
+                    dom_used[k].remove(v)
+                    if not dom_used[k]:
+                        dom_used.pop(k)
+                else:
+                    v = random.choice(list(self[k]))
+
+                config.append((k,v))
+            return config_cls(config)
+
+        configs = []
+        while dom_used: configs.append(mk())
+        return configs    
 
 
 class Config(HDict):
