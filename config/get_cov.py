@@ -113,5 +113,3 @@ def get_cov_wrapper(config,data):
     except:
         os.chdir(cur_dir)
         raise
-
-        
