@@ -999,7 +999,7 @@ class IGen(object):
         """
         if CM.__vdebug__:
             assert isinstance(tmpdir,str) and os.path.isdir(tmpdir), tmpdir
-            assert isinstance(seed,float)
+            assert isinstance(seed,(float,int)), seed
             
         random.seed(seed)
         logger.info("seed: {}, tmpdir: {}".format(seed,tmpdir))
