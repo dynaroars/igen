@@ -86,7 +86,7 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     new_covs,new_cores = IC.Infer.infer_covs(
         cores_d,cconfigs_d,configs_d,covs_d,dom)
     pp_cores_d = cores_d.analyze(dom,covs_d)
-    mcores_d = pp_cores_d.merge(show_detail=True)    
+    _ = pp_cores_d.merge(show_detail=True)    
     itime_total = time() - st
     assert len(pp_cores_d) == len(covs_d), (len(pp_cores_d),len(covs_d))
     

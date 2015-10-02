@@ -738,8 +738,6 @@ class Metrics(object):
             logger.debug("load gt dir '{}'".format(gt_dir))            
             _,_,gt_dts,gt_pp_cores_d,_ = IC.DTrace.load_dir(gt_dir)
             assert len(gt_dts)==1, "is this the ground truth dir ??"
-            _f = lambda cores_d: Metrics.fscore_cores_d(
-                cores_d,gt_pp_cores_d,dom)
 
             #get pp_cores_d at each iteration
             pp_cores_ds = []
@@ -754,10 +752,11 @@ class Metrics(object):
 
                 pp_cores_d = dt.cores_d.analyze(dom,covs_d)
                 pp_cores_ds.append(pp_cores_d)
-            fscores = [(dt.citer,
-                        Metrics.fscore_cores_d(pp_cores_d,gt_pp_cores_d,dom),
-                        dt.nconfigs)
-                       for dt, pp_cores_d in zip(dts,pp_cores_ds)]
+            fscores = [
+                (dt.citer,
+                 Metrics.fscore_cores_d(pp_cores_d,gt_pp_cores_d,dom),
+                 dt.nconfigs)
+                for dt, pp_cores_d in zip(dts,pp_cores_ds)]
             logger.info("fscores (iter, fscore, configs): {}".format(
             ' -> '.join(map(str,fscores))))
         else:
