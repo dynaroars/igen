@@ -16,7 +16,7 @@ iGen has been tested using the following setup:
 * Python 2.7.x
 * Microsoft Z3 SMT solver 4.x
 
-Setup Z3 using its own build instruction. Make sure Z3 is setup correctly so that you can do "import z3" in a Python interpreter
+Setup Z3 using its own build instruction. Make sure Z3 is setup correctly so that you can do "import z3" in a Python interpreter.
 
 ### Experiments ###
 
