@@ -123,9 +123,9 @@ class Dom(CC.Dom):
         """
         if CM.__vdebug__:
             assert all(e is None or z3.is_expr(e)
-                       for e in yexprs),exprs
+                       for e in yexprs),yexprs
             assert all(e is None or z3.is_expr(e)
-                       for e in nexprs),exprs
+                       for e in nexprs),nexprs
             assert k > 0, k
 
         yexprs = [e for e in yexprs if e]
