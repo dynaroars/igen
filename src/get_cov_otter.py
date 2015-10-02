@@ -82,7 +82,7 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
             
     logger.info("use {} configs".format(len(cconfigs_d)))
     st = time()
-    cores_d,configs_d,covs_d = IC.Cores_d(),IC.Configs_d(),IC.Covs_d()
+    cores_d,configs_d,covs_d = IC.Cores_d(),CC.Configs_d(),CC.Covs_d()
     new_covs,new_cores = IC.Infer.infer_covs(
         cores_d,cconfigs_d,configs_d,covs_d,dom)
     pp_cores_d = cores_d.analyze(dom,covs_d)
@@ -90,7 +90,7 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     itime_total = time() - st
     assert len(pp_cores_d) == len(covs_d), (len(pp_cores_d),len(covs_d))
     
-    logger.info(DTrace.str_of_summary(
+    logger.info(IC.DTrace.str_of_summary(
         0,1,itime_total,0,len(configs_d),len(pp_cores_d),tmpdir))
 
     dtrace = IC.DTrace(1,itime_total,0,
