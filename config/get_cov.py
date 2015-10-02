@@ -4,6 +4,7 @@ import config_common as CC
 
 logger = CM.VLog('get_cov')
 logger.level = CC.logger_level
+if __debug__: print("DEBUG MODE ON. Can be slow !")
 
 # Real executions
 def run_single(cmd):
@@ -79,7 +80,7 @@ def run(cmds,msg=''):
 
 from gcovparse import gcovparse
 def parse_gcov(gcov_file):
-    if CM.__vdebug__:
+    if __debug__:
         assert os.path.isfile(gcov_file)
 
     gcov_obj = gcovparse(CM.vread(gcov_file))
@@ -101,7 +102,7 @@ def get_cov_wrapper(config,data):
     """
     If anything happens, return to current directory
     """
-    if CM.__vdebug__:
+    if __debug__:
         check_data(data)
         
     cur_dir = os.getcwd()

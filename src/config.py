@@ -13,7 +13,8 @@ from config_common import Configs_d #do not del, nec to read existing results
 logger = CM.VLog('config')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
-CM.__vdebug__ = True  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
+
+if __debug__: logger.warn("DEBUG MODE ON. Can be slow !")
 
 #Data Structures
 class Dom(CC.Dom):
@@ -47,7 +48,7 @@ class Dom(CC.Dom):
         """
         Ret a config from a model
         """
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(model,dict),model
 
         _f = lambda k: (model[k] if k in model
@@ -56,7 +57,7 @@ class Dom(CC.Dom):
         return config
     
     def gen_configs_expr(self,expr,k):
-        if CM.__vdebug__:
+        if __debug__:
             assert z3.is_expr(expr),expr
             assert k>0,k
 
@@ -120,7 +121,7 @@ class Dom(CC.Dom):
         a=1 b=1 c=2
 
         """
-        if CM.__vdebug__:
+        if __debug__:
             assert all(e is None or z3.is_expr(e)
                        for e in yexprs),yexprs
             assert all(e is None or z3.is_expr(e)
@@ -142,7 +143,7 @@ class Dom(CC.Dom):
         x=0,y=1  =>  [x=0,y=0,z=rand;x=0,y=2,z=rand;x=1,y=1;z=rand]
         """
         
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(sel_core,SCore),sel_core 
         
         configs = []            
@@ -174,7 +175,7 @@ class Dom(CC.Dom):
             if not configs_:
                 continue
             config=configs_[0]
-            if CM.__vdebug__:
+            if __debug__:
                 assert config.c_implies(changed_core)
                 assert config not in existing_configs, \
                     ("ERR: gen existing config {}".format(config))
@@ -188,7 +189,7 @@ class Dom(CC.Dom):
         """
         Create rand_n configs
         """
-        if CM.__vdebug__:
+        if __debug__:
             assert 0 < rand_n <= self.siz, (rand_n,self.siz)
             
         z3db = self.z3db
@@ -236,7 +237,7 @@ class Config(CC.Config):
         x=0&y=1 => x=0,y=1
         not(x=0&z=1 => x=0,y=1)
         """
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(core,Core),(core)
 
         return (not core or
@@ -246,7 +247,7 @@ class Config(CC.Config):
         """
         self => disj core
         """
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(core,Core),core
 
         return (not core or
@@ -281,7 +282,7 @@ class Core(HDict):
     def __init__(self,core=HDict()):
         HDict.__init__(self,core)
         
-        if CM.__vdebug__:
+        if __debug__:
             assert all(CC.is_csetting(s)
                        for s in self.iteritems()), self
 
@@ -299,7 +300,7 @@ class Core(HDict):
         try:
             return self._neg
         except AttributeError:
-            if CM.__vdebug__:
+            if __debug__:
                 assert isinstance(dom,Dom),dom
             ncore = ((k,dom[k]-self[k]) for k in self)
             self._neg = Core([(k,vs) for k,vs in ncore if vs])
@@ -324,7 +325,7 @@ class MCore(tuple):
     def __init__(self,cores):
         tuple.__init__(self,cores)
 
-        if CM.__vdebug__:
+        if __debug__:
             assert len(self) == 2 or len(self) == 4, self
             assert all(Core.is_maybe_core(c) for c in self), self
 
@@ -353,7 +354,7 @@ class SCore(MCore):
         """
         super(SCore,self).__init__((mc,sc))
         #additional assertion
-        if CM.__vdebug__:
+        if __debug__:
             assert mc is None or isinstance(mc,Core) and mc, mc
             #sc is not None => ...
             assert not sc or all(k not in mc for k in sc), sc
@@ -452,7 +453,7 @@ class PNCore(MCore):
     def vtyp(self): return self._vtyp
     @vtyp.setter
     def vtyp(self,vt):
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(vt,str) and \
                 vt in 'conj disj mix'.split(), vt
         self._vtyp = vt
@@ -462,7 +463,7 @@ class PNCore(MCore):
     
     @vstr.setter
     def vstr(self,vs):
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(vs,str) and vs, vs
         self._vstr = vs
 
@@ -478,7 +479,7 @@ class PNCore(MCore):
             return '; '.join(ss)
 
     def verify(self,configs,dom):
-        if CM.__vdebug__:
+        if __debug__:
             assert self.pc is not None, self.pc #this never happens
             #nc is None => pd is None
             assert self.nc is not None or self.pd is None, (self.nc,self.nd)
@@ -488,7 +489,7 @@ class PNCore(MCore):
         pc,pd,nc,nd = self
 
         #traces => pc & neg(pd)
-        if CM.__vdebug__:
+        if __debug__:
             if pc:
                 assert all(c.c_implies(pc) for c in configs), pc
 
@@ -577,7 +578,7 @@ class PNCore(MCore):
         inv1 = pc & not(pd)
         inv2 = not(nc & not(nd)) = nd | not(nc)
         """
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(dom,Dom),dom
 
             if do_firsttime:
@@ -604,7 +605,7 @@ class PNCore(MCore):
             pexpr,pvstr = PNCore._get_expr_str(pc,pd,dom,z3db,is_and=True)
             nexpr,nvstr = PNCore._get_expr_str(nd,nc,dom,z3db,is_and=False)
             
-            if CM.__vdebug__:
+            if __debug__:
                 assert pexpr is not None
                 assert nexpr is not None
 
@@ -710,7 +711,7 @@ class Cores_d(CC.CustDict):
 
     """
     def __setitem__(self,sid,pncore):
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(sid,str),sid
             assert isinstance(pncore,PNCore),pncore
         self.__dict__[sid]=pncore
@@ -748,7 +749,7 @@ class Cores_d(CC.CustDict):
         """
         Simplify cores. If covs_d then also check that cores are valid invs
         """
-        if CM.__vdebug__:
+        if __debug__:
             if covs_d is not None:
                 assert isinstance(covs_d,CC.Covs_d) and covs_d, covs_d
                 assert len(self) == len(covs_d), (len(self),len(covs_d))
@@ -798,7 +799,7 @@ class Mcores_d(CC.CustDict):
     A mapping from core -> {sids}
     """
     def add(self,core,sid):
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(core,PNCore),core
             assert isinstance(sid,str),str
         super(Mcores_d,self).add_set(core,sid)
@@ -849,7 +850,7 @@ class Infer(object):
         """
         Approximation in *conjunctive* form
         """
-        if CM.__vdebug__:
+        if __debug__:
             assert (all(isinstance(c,Config) for c in configs)
                     and configs), configs
             assert Core.is_maybe_core(core),core
@@ -876,7 +877,7 @@ class Infer(object):
 
     @staticmethod
     def infer_cache(core,configs,dom,cache):
-        if CM.__vdebug__:
+        if __debug__:
             assert core is None or isinstance(core,Core),core
             assert (configs and
                     all(isinstance(c,Config) for c in configs)), configs
@@ -891,7 +892,7 @@ class Infer(object):
 
     @staticmethod
     def infer_sid(sid,core,cconfigs_d,configs_d,covs_d,dom,cache):
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(sid,str),sid
             assert isinstance(core,PNCore),core
             assert (cconfigs_d and
@@ -938,7 +939,7 @@ class Infer(object):
 
     @staticmethod
     def infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom):
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(cores_d,Cores_d),cores_d
             assert isinstance(cconfigs_d,CC.Configs_d) and cconfigs_d,cconfigs_d
             assert isinstance(configs_d,CC.Configs_d),configs_d        
@@ -979,7 +980,7 @@ class IGen(object):
     Main algorithm
     """
     def __init__(self,dom,get_cov,config_default=None):
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(dom,Dom),dom
             assert callable(get_cov),get_cov
             assert (config_default is None or
@@ -997,7 +998,7 @@ class IGen(object):
         rand_n > 0  : use rand_n configs
         rand_n < 0  : use all possible configs
         """
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(tmpdir,str) and os.path.isdir(tmpdir), tmpdir
             assert isinstance(seed,(float,int)), seed
             
@@ -1113,7 +1114,7 @@ class IGen(object):
 
     #Helper functions
     def eval_configs(self,configs):
-        if CM.__vdebug__:
+        if __debug__:
             assert (isinstance(configs,list) and
                     all(isinstance(c,Config) for c in configs)
                     and configs), configs
@@ -1142,7 +1143,7 @@ class IGen(object):
         return configs
         
     def gen_configs_iter(self,cores,ignore_sel_cores,min_stren,configs_d):
-        if CM.__vdebug__:
+        if __debug__:
             assert (isinstance(cores,set) and 
                     all(isinstance(c,PNCore) for c in cores)), cores
             assert (isinstance(ignore_sel_cores,set) and 
@@ -1166,7 +1167,7 @@ class IGen(object):
                              .format(sel_core))
 
         #self_core -> configs
-        if CM.__vdebug__:
+        if __debug__:
             assert not sel_core or configs, (sel_core,configs)
             assert all(c not in configs_d for c in configs), configs
 
@@ -1177,7 +1178,7 @@ class IGen(object):
         """
         Returns either None or SCore
         """
-        if CM.__vdebug__:
+        if __debug__:
             assert all(isinstance(c,PNCore) for c in pncores) and pncores,pncores
             assert (isinstance(ignore_sel_cores,set) and
                     all(isinstance(c,SCore) for c in ignore_sel_cores)),\
