@@ -5,7 +5,7 @@ iGen (Interaction Generator) is a dynamic analysis tool that discovers interacti
 
 ## Setup ##
 
-The source code of iGen is released under the BSD license and can be downloaded using the command "hg clone https://nguyenthanhvuh@bitbucket.org/nguyenthanhvuh/config/"
+The source code of iGen is released under the BSD license and can be downloaded using the command "hg clone https://nguyenthanhvuh@bitbucket.org/nguyenthanhvuh/igen/"
 
 iGen uses Python. Some operations, e.g., verifying candidate interactions, require a recent SMT solver.  
 
