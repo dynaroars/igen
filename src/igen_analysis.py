@@ -40,7 +40,7 @@ class Analysis(object):
     @staticmethod
     def replay(dir_,show_iters,do_min_configs,cmp_gt,cmp_rand):
         """
-        Replay execution info from saved info in dir_
+        Replay and analyze execution info from saved info in dir_
         do_min_configs has 3 possible values
         1. None: don't find min configs
         2. f: (callable(f)) find min configs using f
@@ -100,17 +100,21 @@ class Analysis(object):
         #rand search
         r_f = cmp_rand
         if callable(r_f):
-            r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = r_f(last_dt.nconfigs)
-            logger.info("rand : {} configs cov {}"
-                        .format(len(r_configs_d),len(r_covs_d)))
-
+            r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = r_f(nconfigs)
             if gt_pp_cores_d:
                 r_fscore = Metrics.fscore_cores_d(r_pp_cores_d,gt_pp_cores_d,dom)
             else:
                 r_fscore = None
                 
             r_vscore = Metrics.vscore_cores_d(r_cores_d,dom)
-            logger.info("fscore {} vscore {}".format(r_fscore, r_vscore))
+            logger.info("rand: configs {} cov {} vscore {} fscore {}"
+                        .format(len(r_configs_d),len(r_covs_d),
+                                r_vscore,r_fscore))
+            last_elem_f = lambda l: l[-1][1] if l and len(l) > 0 else None
+            logger.info("cegir: configs {} cov {} vscore {} fscore {}"
+                        .format(nconfigs,ncovs,
+                                last_elem_f(vscores),last_elem_f(fscores)))
+
             r_fvscores = (r_fscore,r_vscore)
         else:
             r_fvscores = None
@@ -129,9 +133,7 @@ class Analysis(object):
                      m_strens=mcores_d.strens,
                      m_strens_str=mcores_d.strens_str,
                      m_vtyps=mcores_d.vtyps)
-                      
         return rs
-
 
     @staticmethod
     def replay_dirs(dir_,show_iters,do_min_configs,cmp_gt,cmp_rand):
@@ -766,7 +768,8 @@ class Metrics(object):
         #Using  a simple metrics that just gives more pts for more
         #info (new cov or new results). Note here we use cores_d
         vscores = [(dt.citer,
-                    Metrics.vscore_cores_d(dt.cores_d,dom),dt.nconfigs)
+                    Metrics.vscore_cores_d(dt.cores_d,dom),
+                    dt.nconfigs)
                    for dt in dts]
         logger.info("vscores (iter, vscore, configs): {}".format(
             ' -> '.join(map(str,vscores))))
