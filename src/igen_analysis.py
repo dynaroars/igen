@@ -46,7 +46,7 @@ class Analysis(object):
         2. f: (callable(f)) find min configs using f
         3. anything else: find min configs using existing configs
         """
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(dir_,str), dir_
             assert isinstance(show_iters,bool),show_iters
             assert cmp_gt is None or isinstance(cmp_gt,str), cmp_gt
@@ -378,7 +378,7 @@ class HighCov(object):
         """
         Ret the strongest elements by removing those implied by others
         """
-        if CM.__vdebug__:
+        if __debug__:
             assert (d and isinstance(d,dict) and
                     all(z3.is_expr(v) for v in d.itervalues())), d
         
@@ -425,7 +425,7 @@ class HighCov(object):
 
     @staticmethod
     def pack2(fs,d):
-        if CM.__vdebug__:
+        if __debug__:
             assert all(isinstance(f,tuple) for f in fs),fs
             assert all(f in d and z3.is_expr(d[f])
                        for f in fs), (fs, d)
@@ -454,7 +454,7 @@ class HighCov(object):
         The results are {tuple -> z3expr}
         It's good to first prune them (call prune()).
         """
-        if CM.__vdebug__:
+        if __debug__:
             assert all(z3.is_expr(v) for v in d.itervalues()), d
                        
         #change format, results are tuple(elems)
@@ -779,7 +779,7 @@ class Metrics(object):
 class Influence(object):
     @staticmethod
     def get_influence(mcores_d,ncovs,dom,do_settings=True):
-        if CM.__vdebug__:
+        if __debug__:
             assert (mcores_d and
                     isinstance(mcores_d,IC.Mcores_d)), mcores_d
             assert ncovs > 0, ncovs

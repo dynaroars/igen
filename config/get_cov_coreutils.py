@@ -8,8 +8,10 @@ import get_cov as GC
 logger = CM.VLog('coreutils')
 logger.level = CC.logger_level
 
+if __debug__: print("DEBUG MODE ON. Can be slow !")
+
 def prepare(prog_name,get_dom_f,main_dir,do_perl):
-    if CM.__vdebug__:
+    if __debug__:
         assert isinstance(prog_name,str),prog_name
         assert isinstance(do_perl,bool), do_perl
         assert callable(get_dom_f),get_dom_f
@@ -85,7 +87,7 @@ def get_ts_data(config,data):
             'tdir':os.path.join(data['main_dir'],'testfiles',data['prog_name'])}
 
 def get_cov_perl(config,data):
-    if CM.__vdebug__:
+    if __debug__:
         assert isinstance(config,CC.Config),config
         check_data(data)
 
@@ -100,7 +102,7 @@ def get_cov_perl(config,data):
     return sids,[]
 
 def get_cov_gcov(config,data):
-    if CM.__vdebug__:
+    if __debug__:
         assert isinstance(config,CC.Config),config        
         check_data(data)
         
@@ -136,7 +138,7 @@ def check_ts_data(data):
 class TestSuite_COREUTILS(object):
     __metaclass__ = abc.ABCMeta
     def __init__(self,data):
-        if CM.__vdebug__:
+        if __debug__:
             check_ts_data(data),data
 
         self.prog = data['prog']

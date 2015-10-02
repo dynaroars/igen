@@ -94,10 +94,6 @@ if __name__ == "__main__":
     aparser = argparse.ArgumentParser()
     aparser.add_argument("inp", help="inp")
     
-    aparser.add_argument("--debug","-debug",
-                         help="set debug on (can be slow)",
-                         action="store_true")
-    
     #0 Error #1 Warn #2 Info #3 Debug #4 Detail
     aparser.add_argument("--logger_level", "-logger_level",
                          help="set logger info",
@@ -187,7 +183,6 @@ if __name__ == "__main__":
                          type=str)
 
     args = aparser.parse_args()
-    CM.__vdebug__ = args.debug
     CC.logger_level = args.logger_level
     seed = round(time(),2) if args.seed is None else float(args.seed)
     

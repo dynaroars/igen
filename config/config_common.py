@@ -10,13 +10,12 @@ import vu_common as CM
 import z3
 import z3util
 
-CM.__vdebug__ = True  #IMPORTANT: TURN OFF WHEN DO REAL RUN!!
-
 logger_level = CM.VLog.DEBUG
 allows_known_errors = False
 show_cov = True
 analyze_outps = False
 
+if __debug__: print("DEBUG MODE ON. Can be slow !")
 
 #Data Structures
 class CustDict(MutableMapping):
@@ -44,7 +43,7 @@ def str_of_cov(cov):
     """
     >>> assert str_of_cov(set("L2 L1 L3".split())) == '(3) L1,L2,L3'
     """
-    if CM.__vdebug__:
+    if __debug__:
         assert is_cov(cov),cov
 
     s = "({})".format(len(cov))
@@ -59,7 +58,7 @@ def str_of_setting((k,v)):
     >>> print str_of_setting(('x','1'))
     x=1
     """
-    if CM.__vdebug__:
+    if __debug__:
         assert is_setting((k,v)), (k,v)
         
     return '{}={}'.format(k,v)
@@ -84,7 +83,7 @@ def str_of_csetting((k,vs)):
     >>> print str_of_csetting(('x',frozenset(['3','1'])))
     x=1,3
     """
-    if CM.__vdebug__:
+    if __debug__:
         assert is_csetting((k,vs)), (k,vs)
     
     return '{}={}'.format(k,str_of_valset(vs))
@@ -130,7 +129,7 @@ class Dom(OrderedDict):
     def __init__(self,dom):
         OrderedDict.__init__(self,dom)
         
-        if CM.__vdebug__:
+        if __debug__:
             assert (self and all(is_csetting(s)
                                  for s in self.iteritems())), self
 
@@ -163,7 +162,7 @@ class Dom(OrderedDict):
         """
         Read domain info from a file
         """
-        if CM.__vdebug__:
+        if __debug__:
             assert os.path.isfile(dom_file), dom_file
 
         def get_lines(lines):
@@ -191,7 +190,7 @@ class Dom(OrderedDict):
         return configs
 
     def gen_configs_rand(self,rand_n,config_cls=None):
-        if CM.__vdebug__:
+        if __debug__:
             assert 0 < rand_n <= self.siz, (rand_n,self.siz)
 
         if config_cls is None:
@@ -243,11 +242,11 @@ class Config(HDict):
     def __init__(self,config=HDict()):
         HDict.__init__(self,config)
         
-        if CM.__vdebug__:
+        if __debug__:
             assert all(is_setting(s) for s in self.iteritems()), self
 
     def __str__(self,cov=None):
-        if CM.__vdebug__:
+        if __debug__:
             assert cov is None or is_cov(cov), cov
 
         s =  ' '.join(map(str_of_setting,self.iteritems()))
@@ -256,7 +255,7 @@ class Config(HDict):
         return s
 
     def z3expr(self,z3db):
-        if CM.__vdebug__:
+        if __debug__:
             
             #assert len(self) == len(z3db), (len(self), len(z3db))
             #not true when using partial config from Otter
@@ -285,14 +284,14 @@ class Covs_d(CustDict):
     """
 
     def add(self,sid,config):
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(sid,str),sid
             assert isinstance(config,Config),config
         super(Covs_d,self).add_set(sid,config)
 
 class Configs_d(CustDict):
     def __setitem__(self,config,cov):
-        if CM.__vdebug__:
+        if __debug__:
             assert isinstance(config,Config),config
             assert is_cov(cov),cov
         self.__dict__[config] = cov

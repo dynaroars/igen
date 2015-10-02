@@ -9,12 +9,13 @@ import config as IC
 logger = CM.VLog('otter')
 logger.level = CC.logger_level
 
+if __debug__: logger.warn("DEBUG MODE ON. Can be slow !")
+
 db = {"vsftpd":None,"ngircd":None}
 from igen_settings import otter_dir
 
-
 def prepare(prog_name,get_dom_f):
-    if CM.__vdebug__:
+    if __debug__:
         assert isinstance(prog_name,str),prog_name
         assert callable(get_dom_f),get_dom_f
     
@@ -37,7 +38,7 @@ def prepare(prog_name,get_dom_f):
     return dom,get_cov_f,pathconds_d
 
 def get_cov(config,args):
-    if CM.__vdebug__:
+    if __debug__:
         assert isinstance(config,IC.Config),config
         assert isinstance(args,dict) and 'pathconds_d' in args, args
         
@@ -53,11 +54,9 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
     """
     Obtain interactions using Otter's pathconds
     """
-    if CM.__vdebug__:
+    if __debug__:
         assert n is None or 0 <= n <= len(pathconds_d), n
         assert isinstance(tmpdir,str) and os.path.isdir(tmpdir), tmpdir
-        
-        logger.warn("DEBUG MODE ON. Can be slow !")
 
     seed=0
     logger.info("seed: {} default, tmpdir: {}".format(seed,tmpdir))
