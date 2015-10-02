@@ -1,4 +1,3 @@
-import abc 
 from time import time
 import os.path
 import random
@@ -25,7 +24,7 @@ class Dom(CC.Dom):
     ('w',frozenset(['a','b','c']))\
     ])
     >>> assert dom.siz == len(dom.gen_configs_full()) == 18
-    
+
     >>> random.seed(0)
     >>> configs = dom.gen_configs_rand_smt(5)
     >>> print "\\n".join(map(str,configs))
@@ -1087,7 +1086,7 @@ class IGen(object):
 
         #postprocess
         pp_cores_d = cores_d.analyze(self.dom,covs_d)
-        mcores_d = pp_cores_d.merge(show_detail=True)
+        _ = pp_cores_d.merge(show_detail=True)
         itime_total = time() - st
         
         logger.info(DTrace.str_of_summary(

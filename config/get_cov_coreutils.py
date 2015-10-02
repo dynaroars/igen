@@ -114,7 +114,6 @@ def get_cov_gcov(config,data):
 
     #read traces from gcov
     #/path/prog.Linux.exe -> prog
-    src_dir = os.path.join(data['dir_'],'src')
     cmd = "gcov {} -o {}".format(data['prog_name'],data['prog_dir'])
     _ = GC.run(cmd,'gcov')
     

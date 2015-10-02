@@ -3,7 +3,6 @@ import itertools
 import random
 import os.path
 from collections import OrderedDict, MutableMapping
-from time import time
 
 from vu_common import HDict
 import vu_common as CM
