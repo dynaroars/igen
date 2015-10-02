@@ -117,15 +117,15 @@ if __name__ == "__main__":
                          help="use all possible configs",
                          action="store_true")
 
-    aparser.add_argument("--noshow_cov",
+    aparser.add_argument("--noshow_cov", "-noshow_cov",
                          help="show coverage info",
                          action="store_true")
 
-    aparser.add_argument("--analyze_outps",
+    aparser.add_argument("--analyze_outps", "-analyze_outps",
                          help="analyze outputs instead of coverage",
                          action="store_true")
 
-    aparser.add_argument("--allows_known_errors",
+    aparser.add_argument("--allows_known_errors", "-allows_known_errors",
                          help="allows for potentially no coverage exec",
                          action="store_true")
     
