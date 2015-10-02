@@ -18,6 +18,18 @@ iGen has been tested using the following setup:
 
 Setup Z3 using its own build instruction. Make sure Z3 is setup correctly so that you can do "import z3" in a Python interpreter.
 
+Then in ~/.bash_profile, have something like this 
+
+
+```
+#!script
+
+export DROPBOX=$HOME/Dropbox
+export CONFIG=$DROPBOX/git/igen/config
+export PYTHONPATH=$DROPBOX/git/common_python:/fs/buzz/ukoc/z3/z3/build/:$CONFIG
+export PATH
+```
+
 ### Experiments ###
 
 *GNU Coreutils*: we use *gcov* to obtain coverage information for coreutils commands. Download and unpack coreutils-8.23.tar.bj2 (other versions probably should work too), then cd to coreutils-8.23 dir.  
