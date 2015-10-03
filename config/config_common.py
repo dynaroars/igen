@@ -105,6 +105,7 @@ class Dom(OrderedDict):
     4. w: (3) a,b,c
 
     >>> assert dom.siz == len(dom.gen_configs_full()) == 18
+    >>> assert dom.max_fsiz ==  3
 
     >>> random.seed(0)
     >>> configs = dom.gen_configs_rand(5)
@@ -145,6 +146,13 @@ class Dom(OrderedDict):
 
     @property
     def siz(self): return CM.vmul(len(vs) for vs in self.itervalues())
+
+    @property
+    def max_fsiz(self):
+        """
+        Size of the largest finite domain
+        """
+        return max(len(vs) for vs in self.itervalues())
     
     @property
     def z3db(self):
