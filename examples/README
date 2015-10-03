@@ -6,14 +6,14 @@ $gcc ex.c -o ex.Linux.exe  #if running on Mac, change Linux to Darwin (note that
 Several methods to find intractions of ex.c
 
 1. Using the DB
-Simply run iGen given the program name, e.g., python igen.py "ex"
+Simply run iGen given the program name, e.g., python -O igen.py "ex"
 
 2. Using a runscript
 
 1. Assume the program is compiled as ex.Linux.exe (if not, then edit run_script to change this)
 2. Test that the example run_script works
 
-$ ./run_script "s 0, t 1, u 1, v 1, x 0, y 1, z 1"
+$ ../examples/run_script "s 0, t 1, u 1, v 1, x 0, y 1, z 1"
 /var/tmp/tvn.out
 
 $ less /var/tmp/tvn.out
@@ -35,7 +35,7 @@ z 0 1 2 3
 
 3. You run igen.py as follow
 
-$python igen.py --dom_file ex.dom --run_script run_script "progname" --benchmark N --seed X 
+python igen.py --dom_file ../examples/ex.dom -run_script ../examples/run_script "prog" --seed 3
 
 where
 * "progname" is just some string, e.g., "exam motiv", that I use to identify your program

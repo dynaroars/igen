@@ -94,8 +94,8 @@ def do_full(dom,pathconds_d,tmpdir,n=None):
 
     dtrace = IC.DTrace(1,itime_total,0,
                        len(configs_d),len(covs_d),len(cores_d),
-                       cconfigs_d,
-                       new_covs,new_cores,
+                       cconfigs_d,  #these savings take time
+                       new_covs,new_cores,  #savings take time
                        IC.SCore.mk_default(), #sel_core
                        cores_d)
     IC.DTrace.save_iter(1,dtrace,tmpdir)
