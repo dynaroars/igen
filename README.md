@@ -59,5 +59,5 @@ export PATH
     Lines executed:0.00% of 10
     Creating 'system.h.gcov'
 
-    Now we can analyze echo.c.gcov file and system.h.gcov, butiGen will take care of this task
+    iGen uses the generated echo.c.gcov and system.h.gcov files for coverage.
     10. Finally, edit config_setup.py in src (where igen.py is) so that coreutils_dir points to the coreutils-8.23 dir
