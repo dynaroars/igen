@@ -4,12 +4,16 @@ iGen (Interaction Generator) is a dynamic analysis tool that discovers interacti
 
 ## Setup ##
 
-The source code of iGen is released under the BSD license and can be downloaded using the command
-"hg clone https://nguyenthanhvuh@bitbucket.org/nguyenthanhvuh/igen/" and "hg clone https://nguyenthanhvuh@bitbucket.org/nguyenthanhvuh/common_python/"
+The source code of iGen is released under the BSD license and can be downloaded using the commands
 
-iGen uses Python. Some operations, e.g., verifying candidate interactions, require a recent SMT solver.  
+```
+#!shell
 
-iGen has been tested using the following setup:
+hg clone https://nguyenthanhvuh@bitbucket.org/nguyenthanhvuh/igen/ 
+hg clone https://nguyenthanhvuh@bitbucket.org/nguyenthanhvuh/common_python/
+```
+
+iGen uses Python and uses a SMT solving to verify candidte interactions.  The tool has been tested using the following setup: 
 
 * Debian Linux 7 (Wheezy)
 * Python 2.7.x
@@ -24,12 +28,12 @@ Then in ~/.bash_profile, have something like this
 
 export IGEN=$IGEN_DIR/git/igen/
 export CONFIG=$IGEN_DIR/config
-export PYTHONPATH=$/COMMON_PYTHON_DIR/:/Z3_DIR/build/:$CONFIG
+export PYTHONPATH=$COMMON_PYTHON_DIR/:/Z3_DIR/build/:$CONFIG
 export PATH
 ```
 
 ### Running iGen ###
-We can now try to run iGen to generate interactions using a simple example `$IGEN_DIR/example/ex.c`.  
+We can now run iGen to generate interactions using a simple example `$IGEN_DIR/example/ex.c`.  
 
 ```
 #!c
@@ -71,7 +75,7 @@ int main(int argc, char **argv){
 }
 ```
 
-Here we want to use iGen to automatically generate the interactions annotated next to different program locations, e.g., `x & y & (z=0|3|4)` at `L4`.  For the impatient, we can invoke iGen as follows
+Here we want to use iGen to automatically generate the interactions annotated next to different program locations, e.g., `x & y & (z=0|3|4)` at `L4`.  For the impatiensts, we invoke iGen as follows
 ```
 #!shell
 
