@@ -32,7 +32,7 @@ export PATH
 
 ### Experiments ###
 
-*GNU Coreutils*: We use gcc and gcov to obtain coverage information for coreutil commands. To get start, let's download coreutils-8-23 from http://ftp.gnu.org/gnu/coreutils/coreutils-8.23.tar.xz.  Then unpack and cd to the coreutils-8.23 dir.  Next we'll compile these programs as follows.
+*GNU Coreutils*: We use `gcc` and `gcov` to obtain coverage information for coreutil commands. First, download coreutils-8-23 from http://ftp.gnu.org/gnu/coreutils/coreutils-8.23.tar.xz.  Then unpack and cd to the coreutils-8.23 dir.  Next we'll compile these programs as follows.
 
 *NOTE*: if you move this directory to a different location,  it's best to recompile everything again.
 
