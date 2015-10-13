@@ -13,8 +13,7 @@ hg clone https://nguyenthanhvuh@bitbucket.org/nguyenthanhvuh/igen/
 hg clone https://nguyenthanhvuh@bitbucket.org/nguyenthanhvuh/common_python/
 ```
 
-iGen uses Python and uses a SMT solving to verify candidte interactions.  The tool has been tested using the following setup: 
-
+iGen uses Python and uses a SMT solving to verify some results.  The tool has been tested using:
 * Debian Linux 7 (Wheezy)
 * Python 2.7.x
 * Microsoft Z3 SMT solver 4.x
@@ -32,16 +31,14 @@ export PYTHONPATH=$COMMON_PYTHON_DIR/:/Z3_DIR/build/:$CONFIG
 export PATH
 ```
 
-### Running iGen ###
+### Run iGen ###
 We can now run iGen to generate interactions using a simple example `$IGEN_DIR/example/ex.c`.  
 
 ```
 #!c
 
 int main(int argc, char **argv){
-
   // options: s,t,u,v, x,y,z                                                                                                       
-
   int s = atoi(argv[1]);
   int t = atoi(argv[2]);
   int u = atoi(argv[3]);
@@ -75,7 +72,8 @@ int main(int argc, char **argv){
 }
 ```
 
-Here we want to use iGen to automatically generate the interactions annotated next to different program locations, e.g., `x & y & (z=0|3|4)` at `L4`.  For the impatiensts, we invoke iGen as follows
+Here we want to use iGen to automatically generate the interactions annotated next to different program locations, e.g., `x & y & (z=0|3|4)` at `L4`.  For the impatients, we invoke iGen as follows
+
 ```
 #!shell
 
