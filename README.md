@@ -1,6 +1,5 @@
 # README #
 
-
 iGen (Interaction Generator) is a dynamic analysis tool that discovers interactions among configurable options from traces. iGen employs a stochastic search method to iteratively search for a small and "good" set of configurations to find desired interactions.  Igen performs trace partitioning on both positive and negative traces to generate expressive interactions, e.g., combination of both conjunctive and disjunctive formulae. Preliminary results show that Intgen is highly efficient and effective on a set of benchmarks consisting of highly-configurable software, e.g., apache httpd, mysql.
 
 ## Setup ##
@@ -20,17 +19,80 @@ Setup Z3 using its own build instruction. Make sure Z3 is setup correctly so tha
 
 Then in ~/.bash_profile, have something like this 
 
-
 ```
 #!script
 
-export DROPBOX=$HOME/Dropbox
-export CONFIG=$DROPBOX/git/igen/config
-export PYTHONPATH=$DROPBOX/git/common_python:/fs/buzz/ukoc/z3/z3/build/:$CONFIG
+export IGEN=$IGEN_DIR/git/igen/
+export CONFIG=$IGEN_DIR/config
+export PYTHONPATH=$/COMMON_PYTHON_DIR/:/Z3_DIR/build/:$CONFIG
 export PATH
 ```
 
+### Running iGen ###
+We can now try to run iGen to generate interactions using a simple example `$IGEN_DIR/example/ex.c`.  
+
+```
+#!c
+
+int main(int argc, char **argv){
+
+  // options: s,t,u,v, x,y,z                                                                                                       
+
+  int s = atoi(argv[1]);
+  int t = atoi(argv[2]);
+  int u = atoi(argv[3]);
+  int v = atoi(argv[4]);
+
+  int x = atoi(argv[5]);
+  int y = atoi(argv[6]);
+  int z = atoi(argv[7]);
+
+  int max_z = 3;
+
+  if (x&&y){
+    printf("L0\n"); //x & y                                                                                                        
+    if (!(0 < z && z < max_z)){
+      printf("L1\n"); //x & y & (z=0|3|4)                                                                                          
+    }
+  }
+  else{
+    printf("L2\n"); // !x|!y                                                                                                       
+    printf("L2a\n"); // !x|!y                                                                                                      
+  }
+
+  printf("L3\n"); // true                                                                                                          
+  if(u&&v){
+    printf("L4\n"); //u&v                                                                                                          
+    if(s||t){
+      printf("L5\n");  // (s|t) & (u&v)                                                                                            
+    }
+  }
+  return 0;
+}
+```
+
+Here we want to use iGen to automatically generate the interactions annotated next to different program locations, e.g., `x & y & (z=0|3|4)` at `L4`.  For the impatient, we can invoke iGen as follows
+```
+#!shell
+
+$ cd igen/examples
+$ gcc ex.c -o ex.Linux.exe  #compile `ex.c`
+$ python -O ../src/igen.py --dom_file ex.dom -run_script run_script "prog" --seed 0  #call iGen 
+
+# which produces the results
+...
+
+1. (0) true (conj): (1) L3
+2. (2) (u=1 & v=1) (conj): (1) L4
+3. (2) (x=1 & y=1) (conj): (1) L0
+4. (2) (x=0 | y=0) (disj): (2) L2,L2a
+5. (3) (x=1 & y=1 & z=0,3,4) (conj): (1) L1
+6. (4) (s=1 | t=1) & (u=1 & v=1) (mix): (1) L5
+
+```
+
 ### Experiments ###
+We describe steps to reproduce some more complex experiments 
 
 *GNU Coreutils*: We use `gcc` and `gcov` to obtain coverage information for coreutil commands. First, download coreutils-8-23 from http://ftp.gnu.org/gnu/coreutils/coreutils-8.23.tar.xz.  Then unpack and cd to the coreutils-8.23 dir.  Next we'll compile these programs as follows.
 
