@@ -14,13 +14,14 @@ hg clone https://nguyenthanhvuh@bitbucket.org/nguyenthanhvuh/common_python/
 ```
 
 iGen uses Python and uses a SMT solving to verify some results.  The tool has been tested using:
+
 * Debian Linux 7 (Wheezy)
 * Python 2.7.x
 * Microsoft Z3 SMT solver 4.x
 
-Setup Z3 using its own build instruction. Make sure Z3 is setup correctly so that you can do "import z3" in a Python interpreter.
+Setup Z3 using its own build instruction. Make sure Z3 is setup correctly so that you can do `import z3` in a Python interpreter.
 
-Then in ~/.bash_profile, have something like this 
+Then have something like this in `~/.bash_profile`
 
 ```
 #!script
