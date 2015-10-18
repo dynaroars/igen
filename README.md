@@ -13,7 +13,7 @@ hg clone https://nguyenthanhvuh@bitbucket.org/nguyenthanhvuh/igen/
 hg clone https://nguyenthanhvuh@bitbucket.org/nguyenthanhvuh/common_python/
 ```
 
-iGen uses Python and uses a SMT solving to verify some results.  The tool has been tested using:
+iGen uses Python and uses SMT solving to check some results.  The tool has been tested using:
 
 * Debian Linux 7 (Wheezy)
 * Python 2.7.x
