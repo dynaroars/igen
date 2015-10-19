@@ -993,7 +993,7 @@ class IGen(object):
 
     def go(self,seed,rand_n=None,existing_results=None,tmpdir=None):
         """
-        rand_n = None: use default interative mode
+        rand_n = None: use default CEGIR mode
         rand_n = 0  : use init configs
         rand_n > 0  : use rand_n configs
         rand_n < 0  : use all possible configs
