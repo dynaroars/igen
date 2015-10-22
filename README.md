@@ -1,14 +1,12 @@
 # README #
 
-iGen (Interaction Generator) is a dynamic analysis tool that discovers interactions among configurable options from traces. iGen employs a stochastic search method to iteratively search for a small and "good" set of configurations to find desired interactions.  Igen performs trace partitioning on both positive and negative traces to generate expressive interactions, e.g., combination of both conjunctive and disjunctive formulae. Preliminary results show that Intgen is highly efficient and effective on a set of benchmarks consisting of highly-configurable software, e.g., apache httpd, mysql.
+iGen (Interaction Generator) is a dynamic analysis tool that discovers interactions among configurable options from traces. iGen employs a stochastic method to iteratively search for a small and "good" set of configurations to find desired interactions.  iGen performs trace partitioning on both positive and negative traces to generate expressive interactions, e.g., combination of both conjunctive and disjunctive formulae. Preliminary results show that the tool is highly efficient and effective on a set of benchmarks consisting of highly-configurable software, e.g., apache httpd, mysql.
 
-## Setup ##
+## SETUP ##
 
 The source code of iGen is released under the BSD license and can be downloaded using the commands
 
 ```
-#!shell
-
 hg clone https://nguyenthanhvuh@bitbucket.org/nguyenthanhvuh/igen/ 
 hg clone https://nguyenthanhvuh@bitbucket.org/nguyenthanhvuh/common_python/
 ```
@@ -24,22 +22,21 @@ Setup Z3 using its own build instruction. Make sure Z3 is setup correctly so tha
 Then have something like this in `~/.bash_profile`
 
 ```
-#!script
-
-export IGEN=$IGEN_DIR/git/igen/
-export CONFIG=$IGEN_DIR/config
+export $IGEN=/PATH/TO/IGEN
+export CONFIG=$IGEN/config
 export PYTHONPATH=$COMMON_PYTHON_DIR/:/Z3_DIR/build/:$CONFIG
 export PATH
 ```
 
-### Run iGen ###
-We can now run iGen to generate interactions using a simple example `$IGEN_DIR/example/ex.c`.  
+## RUN ##
+We can now run iGen to generate interactions using a simple example `$IGEN/example/ex.c`.  
 
 ```
 #!c
 
 int main(int argc, char **argv){
-  // options: s,t,u,v, x,y,z                                                                                                       
+  // options: s,t,u,v,x,y,z.
+  // Option z can take values 0-4 while others are bools
   int s = atoi(argv[1]);
   int t = atoi(argv[2]);
   int u = atoi(argv[3]);
@@ -73,14 +70,12 @@ int main(int argc, char **argv){
 }
 ```
 
-Here we want to use iGen to automatically generate the interactions annotated next to different program locations, e.g., `x & y & (z=0|3|4)` at `L4`.  For the impatients, we invoke iGen as follows
-
+We use iGen to automatically generate the interactions annotated next to different program locations, e.g., `x & y & (z=0|3|4)` at `L4`.
+ 
 ```
-#!shell
-
-$ cd igen/examples
+$ cd $igen/examples
 $ gcc ex.c -o ex.Linux.exe  #compile `ex.c`
-$ python -O ../src/igen.py --dom_file ex.dom -run_script run_script "prog" --seed 0  #call iGen 
+$ python -O $IGEN/src/igen.py --dom_file ex.dom -run_script run_script "prog" --seed 0  #call iGen 
 
 # which produces the results
 ...
@@ -94,28 +89,35 @@ $ python -O ../src/igen.py --dom_file ex.dom -run_script run_script "prog" --see
 
 ```
 
+Thus in its most basic form iGen requires a `dom_file` that contains the domains of the interested options e.g., `z` has 4 possible values, and a `run_script` to obtain program coverage, e.g., running `ex` on `s=1 t=1 ... z=1` covers lines `L1, L3, L4, L5`.
+
+
+
+
+## ADVANCED USAGE ##
+This section lists more advanced usages of iGen.
+
+
 ### Experiments ###
 We describe steps to reproduce some more complex experiments 
 
-*GNU Coreutils*: We use `gcc` and `gcov` to obtain coverage information for coreutil commands. First, download coreutils-8-23 from http://ftp.gnu.org/gnu/coreutils/coreutils-8.23.tar.xz.  Then unpack and cd to the coreutils-8.23 dir.  Next we'll compile these programs as follows.
+**GNU Coreutils**: We use `gcc` and `gcov` to obtain coverage information for `coreutil` commands. First, download `coreutils-8-23` from http://ftp.gnu.org/gnu/coreutils/coreutils-8.23.tar.xz. Then
+```
+$ mkdir mycoreutils; cd mycoreutils; tar xf /PATH/TO/coreutils-8.23.tar.xz; ln -sf coreutils-8.23 coreutils; cd coreutils
+```
 
-*NOTE*: if you move this directory to a different location,  it's best to recompile everything again.
+Next compile these programs as follows
+```
+    $ mkdir obj-gcov/; cd obj-gcov
+    $ ../configure --disable-nls CFLAGS="-g -fprofile-arcs -ftest-coverage" #make sure no error
+    $ make  #make sure  no error
+    $ cd src  #obj-gcov/src dir contains binary programs
+    $rm -rf *.gcda
 
-    1. mkdir obj-gcov/
-    2. cd obj-gcov
-    3. ../configure --disable-nls CFLAGS="-g -fprofile-arcs -ftest-coverage"
-    #make sure no error
-    4. make  #make sure  no error
-    5. cd src  #obj-gcov/src dir contains binary programs
-    6. rm -rf *.gcda
-
-    Now let's tests to see that it works
-    7. run the test suite,  e.g.,  ./echo** #this creates gcov data file echo.gcda -- *make sure that it does*, if not then it doesn't work !
-    8. cd ../../src  (src dir containing src)
-    9. gcov echo.c -o ../obj-gcov/src  #reads the echo.gcda in obj-gcov and generates human readable format
-
-    For example,
-    $ gcov echo.c -o ../obj-gcov/src/
+    #Let's tests to see that it works
+    $ ./echo** #this creates gcov data file echo.gcda -- *make sure that it does*, if not then it doesn't work !
+    $ cd ../../src  (src dir containing src)
+    $ gcov echo.c -o ../obj-gcov/src  #reads the echo.gcda in obj-gcov and generates human readable format
     File '../src/echo.c'
     Lines executed:22.02% of 109
     Creating 'echo.c.gcov'
@@ -123,6 +125,32 @@ We describe steps to reproduce some more complex experiments
     File '../src/system.h'
     Lines executed:0.00% of 10
     Creating 'system.h.gcov'
+    #you should see some lines like above saying "lines executed ... X% of Y
+    #iGen uses the generated echo.c.gcov and system.h.gcov files for coverage.    
+```
 
-    iGen uses the generated echo.c.gcov and system.h.gcov files for coverage.
-    10. Finally, edit config_setup.py in src (where igen.py is) so that coreutils_dir points to the coreutils-8.23 dir
+Finally, edit `$IGEN/src/igen_settings.py` so that coreutils_dir points to `mycoreutils` directory. 
+*NOTE*: if you move the above directories (e.g., `mycoreutils`) to different locations,  it's best to recompile everything again.
+
+
+If everything is done correctly, we can now run iGen for `coreutils` command
+
+```
+# Generate interactions for the `uname` command 
+# notice that iGen already contains the necessary runscripts and dom files for `coreutils`
+$ python -O $IGEN/src/igen.py uname
+...
+
+
+```
+
+### Analysing ###
+iGen can analyzes the resulting interactions to learn more about program properties.
+
+
+**min configs**
+```
+$ python-O $IGEN/igen.py  --replay ~/igen_exps/data_dirs/uname_cegir_data/run0_n3vGQD/  --do_min_configs "uname"
+```
+
+
