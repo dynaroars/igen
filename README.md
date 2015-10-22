@@ -73,13 +73,13 @@ int main(int argc, char **argv){
 We use iGen to automatically generate the interactions annotated next to different program locations, e.g., `x & y & (z=0|3|4)` at `L4`.
  
 ```
+#!shell
 $ cd $igen/examples
 $ gcc ex.c -o ex.Linux.exe  #compile `ex.c`
 $ python -O $IGEN/src/igen.py --dom_file ex.dom -run_script run_script "prog" --seed 0  #call iGen 
 
 # which produces the results
 ...
-
 1. (0) true (conj): (1) L3
 2. (2) (u=1 & v=1) (conj): (1) L4
 3. (2) (x=1 & y=1) (conj): (1) L0
@@ -101,13 +101,14 @@ This section lists more advanced usages of iGen.
 ### Experiments ###
 We describe steps to reproduce some more complex experiments 
 
-**GNU Coreutils**: We use `gcc` and `gcov` to obtain coverage information for `coreutil` commands. First, download `coreutils-8-23` from http://ftp.gnu.org/gnu/coreutils/coreutils-8.23.tar.xz. Then
+*GNU Coreutils*: We use `gcc` and `gcov` to obtain coverage information for `coreutil` commands. First, download `coreutils-8-23` from http://ftp.gnu.org/gnu/coreutils/coreutils-8.23.tar.xz. Then
 ```
 $ mkdir mycoreutils; cd mycoreutils; tar xf /PATH/TO/coreutils-8.23.tar.xz; ln -sf coreutils-8.23 coreutils; cd coreutils
 ```
 
 Next compile these programs as follows
 ```
+#!shell
     $ mkdir obj-gcov/; cd obj-gcov
     $ ../configure --disable-nls CFLAGS="-g -fprofile-arcs -ftest-coverage" #make sure no error
     $ make  #make sure  no error
@@ -148,9 +149,10 @@ $ python -O $IGEN/src/igen.py uname
 iGen can analyzes the resulting interactions to learn more about program properties.
 
 
-**min configs**
+*min configs*
 ```
-$ python-O $IGEN/igen.py  --replay ~/igen_exps/data_dirs/uname_cegir_data/run0_n3vGQD/  --do_min_configs "uname"
+#!shell
+$ python -O $IGEN/igen.py  --replay uname_cegir/run0_n3vGQD/  --do_min_configs uname
 ```
 
 
