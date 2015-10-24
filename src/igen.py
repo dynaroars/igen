@@ -4,7 +4,7 @@ from time import time
 import vu_common as CM
 import config_common as CC
 
-def get_run_f(prog,args,mod):
+def get_run_f(prog, args ,mod):
     """
     Ret f that takes inputs seed,existing_results,tmpdir 
     and call appropriate iGen function on those inputs
@@ -52,8 +52,8 @@ def get_run_f(prog,args,mod):
                     igen_settings.coreutils_dir,
                     do_perl=args.do_perl)
             else:
-                dom,get_cov_f=Example.prepare(
-                    prog,mod.Dom.get_dom,igen_settings.examples_dir)
+                dom, get_cov_f = Example.prepare(
+                    prog, mod.Dom.get_dom, igen_settings.examples_dir)
                     
             config_default = None  #no config default for these
             
@@ -80,19 +80,20 @@ def _tmpdir(tmp_dir,prog):
     return tdir
 
 if __name__ == "__main__":
-    def _check(v,min_n=None,max_n=None):
+    import argparse
+    
+    def _check(v,min_n=None, max_n=None):
         v = int(v)
         if min_n and v < min_n:
             raise argparse.ArgumentTypeError(
-                "must be >= {} (inp: {})".format(min_n,v))
+                "must be >= {} (inp: {})".format(min_n, v))
         if max_n and v > max_n:
             raise argparse.ArgumentTypeError(
-                "must be <= {} (inpt: {})".format(max_n,v))
+                "must be <= {} (inpt: {})".format(max_n, v))
         return v
     
-    import argparse
     aparser = argparse.ArgumentParser()
-    aparser.add_argument("inp", help="inp")
+    aparser.add_argument("inp", help="inp",nargs='?') 
     
     #0 Error #1 Warn #2 Info #3 Debug #4 Detail
     aparser.add_argument("--logger_level", "-logger_level",
@@ -204,24 +205,25 @@ if __name__ == "__main__":
 
         do_min_configs = args.do_min_configs  
         if do_min_configs and do_min_configs != 'use_existing':
-            _,get_cov_f = get_run_f(do_min_configs,args,IC)
+            _,get_cov_f = get_run_f(do_min_configs, args, IC)
             do_min_configs = get_cov_f
 
         cmp_rand = args.cmp_rand
         if cmp_rand:
-            _f,_ = get_run_f(cmp_rand,args,IC)
+            _f,_ = get_run_f(cmp_rand,args, IC)
             tdir = _tmpdir(tmp_dir,
                            cmp_rand+"_cmp_rand")
-            cmp_rand = lambda rand_n: _f(seed,tdir,rand_n)
+            cmp_rand = lambda rand_n: _f(seed, tdir, rand_n)
             
-        analysis_f(args.inp,show_iters=args.show_iters,
+        analysis_f(args.inp,
+                   show_iters=args.show_iters,
                    do_min_configs=do_min_configs,
                    cmp_gt=args.cmp_gt,
                    cmp_rand=cmp_rand)
             
     else: #run iGen
         prog = args.inp
-        _f,_ = get_run_f(prog,args,IC)
+        _f, _ = get_run_f(prog, args, IC)
         tdir = _tmpdir(tmp_dir,prog)
         
         print("* benchmark '{}',  {} runs, seed {}, results in '{}'"
