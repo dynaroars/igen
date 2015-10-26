@@ -39,14 +39,13 @@ def get_run_f(prog, args ,mod):
             import get_cov
             get_cov_f = lambda config: get_cov.runscript_get_cov(
                 config,run_script)
-
         else:
             import igen_settings            
             import get_cov_example as Example
             import get_cov_coreutils as Coreutils
             
             if prog in Coreutils.db:
-                dom,get_cov_f=Coreutils.prepare(
+                dom, get_cov_f = Coreutils.prepare(
                     prog,
                     mod.Dom.get_dom,
                     igen_settings.coreutils_dir,
@@ -91,9 +90,21 @@ if __name__ == "__main__":
             raise argparse.ArgumentTypeError(
                 "must be <= {} (inpt: {})".format(max_n, v))
         return v
-    
-    aparser = argparse.ArgumentParser()
-    aparser.add_argument("inp", help="inp",nargs='?') 
+
+    def _check_inps(args):
+        t1 = args.run_script and args.dom_file
+        t2 = args.run_script is None and args.dom_file is None
+        #either t1 or t2
+        if not (not t2 or args.inp):
+            raise argparse.ArgumentTypeError("need some input")
+        
+        if not (t1 or t2):
+            raise argparse.ArgumentTypeError(
+                "req valid inp or use the options -run_script -dom together")
+        #t2 => args.inp 
+        
+    aparser = argparse.ArgumentParser("iGen (dynamic interaction generator)")
+    aparser.add_argument("inp", help="inp", nargs='?') 
     
     #0 Error #1 Warn #2 Info #3 Debug #4 Detail
     aparser.add_argument("--logger_level", "-logger_level",
@@ -149,19 +160,19 @@ if __name__ == "__main__":
 
     #replay options
     aparser.add_argument("--replay", "-replay",
-                         help="replay info from run dir",
+                         help="replay info from run dir (DEPRECATED)",
                          action="store_true")
 
     aparser.add_argument("--replay_dirs", "-replay_dirs",
-                         help="replay info from adir containing multiple run dirs",
+                         help="replay info from adir containing multiple run dirs (DEPRECATED)",
                          action="store_true")
 
     aparser.add_argument("--show_iters", "-show_iters",
-                         help="for use with replay, show stats of all iters",
+                         help="for use with analysis, show stats of all iters",
                          action="store_true")
 
     aparser.add_argument("--do_min_configs", "-do_min_configs",
-                         help=("for use with replay, "
+                         help=("for use with analysis, "
                                "compute a set of min configs"),
                          action="store",
                          nargs='?',
@@ -170,20 +181,22 @@ if __name__ == "__main__":
                          type=str)
 
     aparser.add_argument("--cmp_rand", "-cmp_rand",
-                         help=("for use with replay, "
+                         help=("for use with analysis, "
                                "cmp results against rand configs"),
                          action="store",
                          default=None,
                          type=str)
     
     aparser.add_argument("--cmp_gt", "-cmp_gt",
-                         help=("for use with replay, "
+                         help=("for use with analysis, "
                                "cmp results against ground truth"),
                          action="store",
                          default=None,
                          type=str)
 
     args = aparser.parse_args()
+    _check_inps(args)
+    
     CC.logger_level = args.logger_level
     seed = round(time(),2) if args.seed is None else float(args.seed)
     
@@ -225,7 +238,7 @@ if __name__ == "__main__":
               .format(prog, args.benchmark, seed, time() - st, tdir))
 
     else: #run analysis
-        analysis_f = Analysis.replay if is_run_dir else  Analysis.replay_dirs
+        analysis_f = Analysis.replay if is_run_dir else Analysis.replay_dirs
 
         do_min_configs = args.do_min_configs  
         if do_min_configs and do_min_configs != 'use_existing':
@@ -244,4 +257,3 @@ if __name__ == "__main__":
                    do_min_configs=do_min_configs,
                    cmp_gt=args.cmp_gt,
                    cmp_rand=cmp_rand)
-            
