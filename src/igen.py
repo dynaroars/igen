@@ -16,19 +16,19 @@ def get_run_f(prog, args ,mod):
 
         if args.cmp_rand:
             _f = lambda seed,tdir,rand_n: igen.go_rand(
-                rand_n=rand_n,seed=seed,tempdir=tdir)
+                rand_n=rand_n, seed=seed, tmpdir=tdir)
         elif args.do_full:
             if args.rand_n:
                 _f = lambda _,tdir: Otter.do_full(
-                    dom,pathconds_d,tmpdir=tdir,n=args.rand_n)
+                    dom, pathconds_d, tmpdir=tdir, n=args.rand_n)
             else:
                 _f = lambda _,tdir: Otter.do_full(
-                    dom,pathconds_d,tmpdir=tdir,n=None)
+                    dom, pathconds_d, tmpdir=tdir, n=None)
         elif args.rand_n is None:
-            _f = lambda seed,tdir: igen.go(seed=seed,tmpdir=tdir)
+            _f = lambda seed,tdir: igen.go(seed=seed, tmpdir=tdir)
         else:
             _f = lambda seed,tdir: igen.go_rand(
-                rand_n=args.rand_n,seed=seed,tmpdir=tdir)
+                rand_n=args.rand_n, seed=seed, tmpdir=tdir)
 
     else:
         if args.dom_file:  #general way to run prog using a runscript
@@ -248,8 +248,7 @@ if __name__ == "__main__":
         cmp_rand = args.cmp_rand
         if cmp_rand:
             _f,_ = get_run_f(cmp_rand,args, IC)
-            tdir = _tmpdir(tmp_dir,
-                           cmp_rand+"_cmp_rand")
+            tdir = _tmpdir(tmp_dir,  cmp_rand+"_cmp_rand")
             cmp_rand = lambda rand_n: _f(seed, tdir, rand_n)
             
         analysis_f(args.inp,
