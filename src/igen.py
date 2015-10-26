@@ -17,6 +17,7 @@ def get_run_f(prog, args ,mod):
         if args.cmp_rand:
             _f = lambda seed,tdir,rand_n: igen.go_rand(
                 rand_n=rand_n, seed=seed, tmpdir=tdir)
+
         elif args.do_full:
             if args.rand_n:
                 _f = lambda _,tdir: Otter.do_full(
@@ -24,6 +25,7 @@ def get_run_f(prog, args ,mod):
             else:
                 _f = lambda _,tdir: Otter.do_full(
                     dom, pathconds_d, tmpdir=tdir, n=None)
+                
         elif args.rand_n is None:
             _f = lambda seed,tdir: igen.go(seed=seed, tmpdir=tdir)
         else:

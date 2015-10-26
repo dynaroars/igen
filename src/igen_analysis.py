@@ -19,6 +19,7 @@ fields = ['niters',
           'ncovs',          
           'nconfigs',
           'n_min_configs',
+          'min_ncovs',
           'vscores',
           'fscores',
           'r_fvscores',
@@ -99,9 +100,10 @@ class Analysis(object):
         #min config
         if not do_min_configs: #None
             n_min_configs = 0
+            min_ncovs = 0
         elif callable(do_min_configs):
             f = do_min_configs
-            min_configs = HighCov.get_minset_f(
+            min_configs, min_ncovs = HighCov.get_minset_f(
                 mcores_d,set(pp_cores_d),f,dom)
             n_min_configs = len(min_configs)            
         else:
@@ -111,7 +113,7 @@ class Analysis(object):
                 for c in dt.cconfigs_d:
                     configs_d[c] = dt.cconfigs_d[c]
 
-            min_configs = HighCov.get_minset_configs_d(
+            min_configs, min_ncovs = HighCov.get_minset_configs_d(
                 mcores_d,set(pp_cores_d),configs_d,dom)
             n_min_configs = len(min_configs)
 
@@ -148,6 +150,7 @@ class Analysis(object):
                      ncovs=ncovs,
                      nconfigs=nconfigs,
                      n_min_configs=n_min_configs,
+                     min_ncovs=min_ncovs,
                      vscores=vscores,
                      fscores=fscores,
                      r_fvscores=r_fvscores,
@@ -169,6 +172,7 @@ class Analysis(object):
         nconfigs_total = 0
         ncovs_total = 0
         nminconfigs_total = 0
+        min_ncovs_total = 0        
         strens_s = []
         strens_str_s = []
         vtyps_s = []
@@ -181,6 +185,7 @@ class Analysis(object):
         nconfigs_arr = []
         ncovs_arr = []
         nminconfigs_arr = []
+        min_ncovs_arr = []        
         counter = 0
         csv_arr = []
 
@@ -195,6 +200,7 @@ class Analysis(object):
             nxtime_total += rs.xtime
             ncovs_total += rs.ncovs            
             nconfigs_total += rs.nconfigs
+            min_ncovs_total += rs.min_ncovs
             nminconfigs_total += rs.n_min_configs
             strens_s.append(rs.m_strens)
             strens_str_s.append(rs.m_strens_str)
@@ -206,10 +212,11 @@ class Analysis(object):
             nxtime_arr.append(rs.xtime)
             nconfigs_arr.append(rs.nconfigs)
             ncovs_arr.append(rs.ncovs)
+            min_ncovs_arr.append(rs.min_ncovs)
             nminconfigs_arr.append(rs.n_min_configs)
-            csv_arr.append("{},{},{},{},{},{},{},{},{},{}".format(
+            csv_arr.append("{},{},{},{},{},{},{},{},{},{},{}".format(
                 counter,rs.niters,rs.ncores,rs.itime,rs.xtime,
-                rs.nconfigs,rs.ncovs,rs.n_min_configs,
+                rs.nconfigs,rs.ncovs,rs.n_min_configs,rs.min_ncovs,
                 ','.join(map(str, rs.m_vtyps)),
                 ','.join(map(str, rs.m_strens))))
             counter += 1
@@ -547,12 +554,13 @@ class HighCov(object):
                 covs,xtime = f(config)
                 remain_covs = remain_covs - covs
                 minset_d[config]=covs
-                
+
+        minset_ncovs = ncovs-len(remain_covs)
         logger.info("minset: {} configs cover {}/{} sids (time {}s)"
                      .format(len(minset_d),
-                             ncovs-len(remain_covs),ncovs,time()-st))
+                             minset_ncovs,ncovs,time()-st))
         logger.debug('\n{}'.format(minset_d))                
-        return minset_d.keys()
+        return minset_d.keys(), minset_ncovs
         
     
     @staticmethod
@@ -624,13 +632,13 @@ class HighCov(object):
                               if len(remain_covs - configs_d[c])
                               != len(remain_covs)]
 
-            
+        minset_ncovs = ncovs - len(remain_covs)
         logger.debug("minset: {} configs cover {}/{} sids (time {}s)"
                      .format(len(minset_d),
-                             ncovs-len(remain_covs),ncovs,time()-st))
+                             minset_ncovs, ncovs, time()-st))
         logger.detail('\n{}'.format(minset_d))
 
-        return minset_d.keys()
+        return minset_d.keys(), minset_ncovs
         
 class Metrics(object):
     @staticmethod
