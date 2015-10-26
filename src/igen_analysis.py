@@ -30,6 +30,28 @@ Results = namedtuple("Results",' '.join(fields))
                      
 class Analysis(object):
     @staticmethod
+    def is_run_dir(d):
+        """
+        ret True if d is a run_dir that consists of *.tvn, pre, post files
+        ret False if d is a benchmark dir that consists of run_dirs
+        ret None otherwise
+        """
+        if __debug__:
+            assert os.path.isdir(d), d
+            
+        fs = os.listdir(d)
+        if (fs.count('pre') == 1 and fs.count('post') == 1 and
+            any(f.endswith('.tvn') for f in fs)):
+            return True
+        else:
+            ds = [os.path.join(d,f) for f in fs]
+            if (ds and all(os.path.isdir(d_) and
+                           Analysis.is_run_dir(d_) for d_ in ds)):
+                return False
+            else:
+                return None
+
+    @staticmethod
     def check_pp_cores_d(pp_cores_d,dom):
         if not hasattr(pp_cores_d.values()[0],'vstr'):
             logger.warn("Old format, has no vstr .. re-analyze")
