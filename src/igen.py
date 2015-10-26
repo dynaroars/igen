@@ -197,11 +197,35 @@ if __name__ == "__main__":
     #import here so that settings in CC take effect
     import config as IC    
     from igen_settings import tmp_dir
+    from igen_analysis import Analysis
+    
+    if args.inp and os.path.isdir(args.inp):
+        is_run_dir = Analysis.is_run_dir(args.inp)
+    else:
+        is_run_dir = None
 
-    if args.replay or args.replay_dirs: #analyze results
-        from igen_analysis import Analysis
-        analysis_f = (Analysis.replay if args.replay else
-                      Analysis.replay_dirs)
+    if is_run_dir is None: #run iGen
+        prog = args.inp
+        _f, _ = get_run_f(prog, args, IC)
+        tdir = _tmpdir(tmp_dir,prog)
+        
+        print("* benchmark '{}',  {} runs, seed {}, results in '{}'"
+              .format(prog,args.benchmark,seed,tdir))
+        st = time()
+        for i in range(args.benchmark):        
+            st_ = time()
+            seed_ = seed + i
+            tdir_ = tempfile.mkdtemp(dir=tdir,prefix="run{}_".format(i))
+            print("*run {}/{}".format(i+1,args.benchmark))
+            _ = _f(seed_,tdir_)
+            print("*run {}, seed {}, time {}s, '{}'".format(
+                i+1,seed_,time()-st_,tdir_))
+
+        print("** done benchmark '{}', {} runs, seed {}, time {}, results in '{}'"
+              .format(prog, args.benchmark, seed, time() - st, tdir))
+
+    else: #run analysis
+        analysis_f = Analysis.replay if is_run_dir else  Analysis.replay_dirs
 
         do_min_configs = args.do_min_configs  
         if do_min_configs and do_min_configs != 'use_existing':
@@ -221,24 +245,3 @@ if __name__ == "__main__":
                    cmp_gt=args.cmp_gt,
                    cmp_rand=cmp_rand)
             
-    else: #run iGen
-        prog = args.inp
-        _f, _ = get_run_f(prog, args, IC)
-        tdir = _tmpdir(tmp_dir,prog)
-        
-        print("* benchmark '{}',  {} runs, seed {}, results in '{}'"
-              .format(prog,args.benchmark,seed,tdir))
-        st = time()
-        for i in range(args.benchmark):        
-            st_ = time()
-            seed_ = seed + i
-            tdir_ = tempfile.mkdtemp(dir=tdir,prefix="run{}_".format(i))
-            print("*run {}/{}".format(i+1,args.benchmark))
-            _ = _f(seed_,tdir_)
-            print("*run {}, seed {}, time {}s, '{}'".format(
-                i+1,seed_,time()-st_,tdir_))
-
-        print("** done benchmark '{}', {} runs, seed {}, time {}, results in '{}'"
-              .format(prog,args.benchmark,seed,time()-st,tdir))
-
-
