@@ -199,7 +199,7 @@ if __name__ == "__main__":
     from igen_settings import tmp_dir
 
     if args.replay or args.replay_dirs: #analyze results
-        from igen_analysis import Analysis        
+        from igen_analysis import Analysis
         analysis_f = (Analysis.replay if args.replay else
                       Analysis.replay_dirs)
 
