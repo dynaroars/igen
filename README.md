@@ -24,7 +24,7 @@ Then have something like this in `~/.bash_profile`
 ```
 export $IGEN=/PATH/TO/IGEN
 export CONFIG=$IGEN/config
-export PYTHONPATH=$COMMON_PYTHON_DIR/:/Z3_DIR/build/:$CONFIG
+export PYTHONPATH=$COMMON_PYTHON_DIR/:$CONFIG:/Z3_DIR/build/
 export PATH
 ```
 
