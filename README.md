@@ -30,7 +30,6 @@ export PATH
 
 ## RUN ##
 We can now run iGen to generate interactions using a simple example `$IGEN/example/ex.c`.  
-
 ```
 #!c
 
@@ -116,25 +115,26 @@ Next compile these programs as follows
     $rm -rf *.gcda
 
     #Let's tests to see that it works
-    $ ./echo** #this creates gcov data file echo.gcda -- *make sure that it does*, if not then it doesn't work !
+    $ uname #this creates gcov data file uname.gcda -- *make sure that it does*, if not then it doesn't work !
     $ cd ../../src  (src dir containing src)
-    $ gcov echo.c -o ../obj-gcov/src  #reads the echo.gcda in obj-gcov and generates human readable format
-    File '../src/echo.c'
-    Lines executed:22.02% of 109
-    Creating 'echo.c.gcov'
+    $ gcov uname.c -o ../obj-gcov/src  #reads the echo.gcda in obj-gcov and generates human readable format
+    File '../src/uname.c'
+    Lines executed:37.50% of 88
+    Creating 'uname.c.gcov'
 
     File '../src/system.h'
     Lines executed:0.00% of 10
     Creating 'system.h.gcov'
+
     #you should see some lines like above saying "lines executed ... X% of Y
-    #iGen uses the generated echo.c.gcov and system.h.gcov files for coverage.    
+    #iGen uses the generated uname.c.gcov and system.h.gcov files for coverage.    
 ```
 
 Finally, edit `$IGEN/src/igen_settings.py` so that coreutils_dir points to `mycoreutils` directory. 
 *NOTE*: if you move the above directories (e.g., `mycoreutils`) to different locations,  it's best to recompile everything again.
 
 
-If everything is done correctly, we can now run iGen for `coreutils` command
+If everything is done correctly, we can now run iGen for `coreutils` commands (supported commands include `uname, cat, cp, date, hostname, id, join, ln, ls, mv, sort`)
 
 ```
 # Generate interactions for the `uname` command 
@@ -154,5 +154,3 @@ iGen can analyzes the resulting interactions to learn more about program propert
 #!shell
 $ python -O $IGEN/igen.py  --replay uname_cegir/run0_n3vGQD/  --do_min_configs uname
 ```
-
-
