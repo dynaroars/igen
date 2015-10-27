@@ -50,7 +50,8 @@ def get_run_f(prog, args ,mod):
                 dom, get_cov_f = Coreutils.prepare(
                     prog,
                     mod.Dom.get_dom,
-                    igen_settings.coreutils_dir,
+                    igen_settings.coreutils_build_dir,
+                    igen_settings.coreutils_doms_dir,
                     do_perl=args.do_perl)
             else:
                 dom, get_cov_f = Example.prepare(
