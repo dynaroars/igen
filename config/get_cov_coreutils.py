@@ -10,20 +10,23 @@ logger.level = CC.logger_level
 
 if __debug__: print("DEBUG MODE ON. Can be slow !")
 
-def prepare(prog_name,get_dom_f,main_dir,do_perl):
+def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
     if __debug__:
-        assert isinstance(prog_name,str),prog_name
+        assert isinstance(prog_name,str), prog_name
         assert isinstance(do_perl,bool), do_perl
-        assert callable(get_dom_f),get_dom_f
+        assert callable(get_dom_f), get_dom_f
         
     main_dir = CM.getpath(main_dir)
+    dom_dir = CM.getpath(doms_dir)    
 
     if do_perl:
         prog_dir = os.path.join(main_dir,'coreutils_perl')
         dir_ = os.path.join(main_dir,'ppt')
         prog_exe = "@@@" + prog_name
         get_cov_f = get_cov_perl
-        dom_file = os.path.join(main_dir,"doms_perl","{}.dom".format(prog_name))
+        dom_file = os.path.join(
+            doms_dir, "doms_ppt_coreutils","{}.dom".format(prog_name))
+            
     else:
         bdir = os.path.join(main_dir,'coreutils')
         prog_dir = os.path.join(bdir,'obj-gcov','src')
@@ -33,15 +36,15 @@ def prepare(prog_name,get_dom_f,main_dir,do_perl):
         assert os.path.isfile(prog_exe),prog_exe
         logger.info("prog_exe: '{}'".format(prog_exe))
         get_cov_f = get_cov_gcov
-        dom_file = os.path.join(main_dir,"doms","{}.dom".format(prog_name))
-
+        dom_file = os.path.join(
+            doms_dir, "doms_gnu_coreutils", "{}.dom".format(prog_name))
+            
     dom_file = CM.getpath(dom_file)
     dom,_ = get_dom_f(dom_file)
     logger.info("dom_file '{}': {}".format(dom_file,dom))
     
     assert all(len(vs) >= 2 and "off" in vs 
                for vs in dom.itervalues()),"incorrect format"
-
 
     data = {'var_names':dom.keys(),
             'prog_name':prog_name,
