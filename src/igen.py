@@ -211,7 +211,7 @@ if __name__ == "__main__":
         CC.analyze_outps = True
 
     #import here so that settings in CC take effect
-    import config as IC    
+    import igen_alg as IA    
     from igen_settings import tmp_dir
     from igen_analysis import Analysis
     
@@ -222,8 +222,8 @@ if __name__ == "__main__":
 
     if is_run_dir is None: #run iGen
         prog = args.inp
-        _f, _ = get_run_f(prog, args, IC)
-        tdir = _tmpdir(tmp_dir,prog)
+        _f, _ = get_run_f(prog, args, IA)
+        tdir = _tmpdir(tmp_dir, prog)
         
         print("* benchmark '{}',  {} runs, seed {}, results in '{}'"
               .format(prog,args.benchmark,seed,tdir))
@@ -245,12 +245,12 @@ if __name__ == "__main__":
 
         do_min_configs = args.do_min_configs  
         if do_min_configs and do_min_configs != 'use_existing':
-            _,get_cov_f = get_run_f(do_min_configs, args, IC)
+            _,get_cov_f = get_run_f(do_min_configs, args, IA)
             do_min_configs = get_cov_f
 
         cmp_rand = args.cmp_rand
         if cmp_rand:
-            _f,_ = get_run_f(cmp_rand,args, IC)
+            _f,_ = get_run_f(cmp_rand,args, IA)
             tdir = _tmpdir(tmp_dir,  cmp_rand+"_cmp_rand")
             cmp_rand = lambda rand_n: _f(seed, tdir, rand_n)
             
