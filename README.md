@@ -75,7 +75,7 @@ We use iGen to automatically generate the interactions annotated next to differe
 #!shell
 $ cd $igen/examples
 $ gcc ex.c -o ex.Linux.exe  #compile `ex.c`
-$ python -O $IGEN/src/igen.py --dom_file ex.dom -run_script run_script "prog" --seed 0  #call iGen 
+$ python -O $IGEN/src/igen.py --dom_file ex.dom -run_script run_script --seed 0  #call iGen 
 
 # which produces the results
 ...
@@ -91,7 +91,18 @@ $ python -O $IGEN/src/igen.py --dom_file ex.dom -run_script run_script "prog" --
 Thus in its most basic form iGen requires a `dom_file` that contains the domains of the interested options e.g., `z` has 4 possible values, and a `run_script` to obtain program coverage, e.g., running `ex` on `s=1 t=1 ... z=1` covers lines `L1, L3, L4, L5`.
 
 
+### Options ###
+iGen accepts several options to generate interactions.  By default (no option given), iGen uses the CEGIR process that finds interactions and iterative refines interactions.  Other options are illustrated below.
 
+```
+#!shell
+
+# analyze *all* possible configurations (thus only applicable to programs having small numbers of configurations)
+$ python -O $IGEN/src/igen.py --dom_file ex.dom -run_script run_script -do_full 
+
+# analyze only `N` randomly generated configurations
+$ python -O $IGEN/src/igen.py --dom_file ex.dom -run_script run_script -rand_n N
+```
 
 ## ADVANCED USAGE ##
 This section lists more advanced usages of iGen.
@@ -145,15 +156,7 @@ $ python -O $IGEN/src/igen.py uname
 
 ```
 
-### Options ###
-iGen accepts several options to generate interactions.  By default (no option given), iGen uses the CEGIR process that finds and iterative refines interactions.  Other options are illustrated below.
 
-```
-#!shell
-$ python -O $IGEN/src/igen.py uname -do_full:  analyze *all* possible configurations (thus only applicable to program with relative small configuration space such as `uname`, which as 1024 possible configurations)
-
-$ python -O $IGEN/src/igen.py uname -rand_n N : analyze only `N` randomly generated configurations
-```
 
 
 iGen can analyzes the resulting interactions to learn more about program properties.
