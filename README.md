@@ -145,7 +145,17 @@ $ python -O $IGEN/src/igen.py uname
 
 ```
 
-### Analysing ###
+### Options ###
+iGen accepts several options to generate interactions.  By default (no option given), iGen uses the CEGIR process that finds and iterative refines interactions.  Other options are illustrated below.
+
+```
+#!shell
+$ python -O $IGEN/src/igen.py uname -do_full:  analyze *all* possible configurations (thus only applicable to program with relative small configuration space such as `uname`, which as 1024 possible configurations)
+
+$ python -O $IGEN/src/igen.py uname -rand_n N : analyze only `N` randomly generated configurations
+```
+
+
 iGen can analyzes the resulting interactions to learn more about program properties.
 
 
