@@ -92,7 +92,7 @@ Thus in its most basic form iGen requires a `dom_file` that contains the domains
 
 
 ### Options ###
-iGen accepts several options to generate interactions.  By default (no option given), iGen uses the CEGIR process that finds interactions and iterative refines interactions.  Other options are illustrated below.
+iGen accepts several options to generate interactions.  By default, the tool uses the CEGIR process that finds interactions and iterative refines them.  Other options include:
 
 ```
 #!shell
