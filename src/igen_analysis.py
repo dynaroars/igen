@@ -5,7 +5,7 @@ from time import time
 import vu_common as CM
 
 import config_common as CC
-import config as IC
+import config as IA
 
 logger = CM.VLog('analysis')
 logger.level = CC.logger_level
@@ -76,7 +76,7 @@ class Analysis(object):
             assert cmp_rand is None or callable(cmp_rand), cmp_rand
         
         logger.info("replay dir: '{}'".format(dir_))
-        seed,dom,dts,pp_cores_d,itime_total = IC.DTrace.load_dir(dir_)
+        seed,dom,dts,pp_cores_d,itime_total = IA.DTrace.load_dir(dir_)
         logger.info('seed: {}'.format(seed))
         logger.debug(dom.__str__())
 
@@ -94,7 +94,7 @@ class Analysis(object):
         nconfigs = last_dt.nconfigs
         ncovs = last_dt.ncovs
         
-        logger.info(IC.DTrace.str_of_summary(
+        logger.info(IA.DTrace.str_of_summary(
             seed,len(dts),itime_total,xtime_total,nconfigs,ncovs,dir_))
 
         #min config
@@ -669,7 +669,7 @@ class Metrics(object):
         """
         if c is None:
             settings = set()
-        elif isinstance(c,IC.Core):
+        elif isinstance(c,IA.Core):
             #if a Core is empty then it will have max settings
             rs = [k for k in dom if k not in c]
             rs = [(k,v) for k in rs for v in dom[k]]
@@ -768,7 +768,7 @@ class Metrics(object):
         if cmp_gt:
             gt_dir = cmp_gt
             logger.debug("load gt dir '{}'".format(gt_dir))            
-            _,_,gt_dts,gt_pp_cores_d,_ = IC.DTrace.load_dir(gt_dir)
+            _,_,gt_dts,gt_pp_cores_d,_ = IA.DTrace.load_dir(gt_dir)
             assert len(gt_dts)==1, "is this the ground truth dir ??"
 
             #get pp_cores_d at each iteration
@@ -811,9 +811,9 @@ class Influence(object):
     def get_influence(mcores_d,ncovs,dom,do_settings=True):
         if __debug__:
             assert (mcores_d and
-                    isinstance(mcores_d,IC.Mcores_d)), mcores_d
+                    isinstance(mcores_d,IA.Mcores_d)), mcores_d
             assert ncovs > 0, ncovs
-            assert isinstance(dom,IC.Dom), dom            
+            assert isinstance(dom,IA.Dom), dom            
 
         if do_settings:
             ks = set((k,v) for k,vs in dom.iteritems() for v in vs)
