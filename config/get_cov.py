@@ -78,12 +78,12 @@ def run(cmds,msg=''):
     outp = hash(outp)
     return set([str(outp)])
 
-from gcovparse import gcovparse
+import gcovparse
 def parse_gcov(gcov_file):
     if __debug__:
         assert os.path.isfile(gcov_file)
 
-    gcov_obj = gcovparse(CM.vread(gcov_file))
+    gcov_obj = gcovparse.gcovparse(CM.vread(gcov_file))
     assert len(gcov_obj) == 1, gcov_obj
     gcov_obj = gcov_obj[0]
     sids = (d['line'] for d in gcov_obj['lines'] if d['hit'] > 0)

@@ -17,7 +17,7 @@ def get_run_f(prog, args, mod):
     """
     import get_cov_otter as Otter
     if prog in Otter.db:
-        dom,get_cov_f,pathconds_d = Otter.prepare(prog, mod.Dom.get_dom)
+        dom, get_cov_f, pathconds_d = Otter.prepare(prog, mod.Dom.get_dom)
         igen = mod.IGen(dom, get_cov_f, config_default=None)
 
         if args.cmp_rand:
@@ -68,14 +68,17 @@ def get_run_f(prog, args, mod):
             
         igen = mod.IGen(dom, get_cov_f, config_default=config_default)
         if args.cmp_rand:
-            _f = lambda seed,tdir,rand_n: igen.go_rand(
+            _f = lambda seed, tdir, rand_n: igen.go_rand(
                 rand_n=rand_n, seed=seed, tmpdir=tdir)
+            
         elif args.do_full:
             _f = lambda _,tdir: igen.go_full(tmpdir=tdir)
+            
         elif args.rand_n is None:
-            _f = lambda seed,tdir: igen.go(seed=seed, tmpdir=tdir)
+            _f = lambda seed, tdir: igen.go(seed=seed, tmpdir=tdir)
+            
         else:
-            _f = lambda seed,tdir: igen.go_rand(
+            _f = lambda seed, tdir: igen.go_rand(
                 rand_n=args.rand_n, seed=seed, tmpdir=tdir)
                 
     return _f, get_cov_f
@@ -210,7 +213,7 @@ if __name__ == "__main__":
         CC.analyze_outps = True
 
     #import here so that settings in CC take effect
-    import igen_alg as IA    
+    import config as IA    
     from igen_settings import tmp_dir
     from igen_analysis import Analysis
 
