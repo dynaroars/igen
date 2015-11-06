@@ -23,7 +23,7 @@ if __name__ == "__main__":
     varnames,varvals = zip(*parts)
     assert len(varnames) == len(varvals)
 
-    prog = os.path.abspath("ex.Linux.exe")    
+    prog = os.path.abspath("ex.Darwin.exe")    
     prog_inp = ' '.join(varvals) #"0 1 0"
     prog_out = "/var/tmp/tvn.out"
     cmd = "{} {} > {}".format(prog,prog_inp,prog_out)

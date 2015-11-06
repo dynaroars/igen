@@ -4,7 +4,7 @@ import os.path
 import vu_common as CM
 
 import config_common as CC
-import igen_alg as IA
+import config as IA
 
 logger = CM.VLog('otter')
 logger.level = CC.logger_level
