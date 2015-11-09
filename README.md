@@ -167,7 +167,42 @@ iGen can analyzes the resulting interactions to learn more about program propert
 ### Perl Power Tools ###
 
 Perl Power Tools (PPT), are the perl implementation of some coreutil commands.
-In the experiments we used PPT version 0.14. You can obtain it from [here](http://search.cpan.org/dist/ppt). We get the coverage insformation, we used [Devel::Cover](http://search.cpan.org/~pjcj/Devel-Cover-1.21/lib/Devel/Cover.pm)
+In the experiments we used PPT version 0.14. You can obtain it from [here](http://search.cpan.org/dist/ppt). We get the coverage insformation, we used [Devel::Cover](http://search.cpan.org/~pjcj/Devel-Cover-1.21/lib/Devel/Cover.pm). Install `Devel::Cover` as follows:
+
+#!shell
+$ sudo cpan install Devel::Cover
+```
+
+Now you can test `Devel::Cover` as follows:
+#!shell
+$ cd into/ppt/directory
+$ perl -MDevel::Cover bin/date
+Devel::Cover 1.21: Collecting coverage data for branch, condition, statement, subroutine and time.
+    Pod coverage is unavailable.  Please install Pod::Coverage from CPAN.
+Selecting packages matching:
+Ignoring packages matching:
+    /Devel/Cover[./]
+Ignoring packages in:
+    /etc/perl
+    /usr/local/lib/perl/5.18.2
+    /usr/local/share/perl/5.18.2
+    /usr/lib/perl5
+    /usr/share/perl5
+    /usr/lib/perl/5.18.2
+    /usr/share/perl/5.18.2
+Mon Nov  9 13:57:01 PST 2015
+Devel::Cover: Writing coverage database to /home/ugur/Downloads/ppt-0.14/cover_db/runs/1447106221.3912.02250
+----------------------------------- ------ ------ ------ ------ ------ ------
+File                                  stmt   bran   cond    sub   time  total
+----------------------------------- ------ ------ ------ ------ ------ ------
+bin/date                              78.7   50.0   33.3   88.8  100.0   65.5
+Total                                 78.7   50.0   33.3   88.8  100.0   65.5
+----------------------------------- ------ ------ ------ ------ ------ ------
+
+
+```
+
+
 
 ### Other Apps ###
 
