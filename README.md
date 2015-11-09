@@ -222,11 +222,11 @@ It will output the name of coverage file if everything works fine.
 Finally, domain files for PPT programs are located under benchmarks/doms and igen already know about them.
 There is no need to change these domain files.
 
-Now to run igen on `PPT` programs, you need to use `--do_perl` option. For example `PPT date` can be run as follows:
+Now to run igen on `PPT` programs, you need to use `-do_perl` option. For example `PPT date` can be run as follows:
 
 ```
 #!shell
-$ python -O $IGEN/src/igen.py date --do_perl
+$ python -O $IGEN/src/igen.py date -do_perl
 ```
 
 
