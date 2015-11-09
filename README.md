@@ -172,6 +172,7 @@ In the experiments we used PPT version 0.14. You can obtain it from [here](http:
 
 #!shell
 $ sudo cpan install Devel::Cover
+
 ```
 
 Now you can test `Devel::Cover` as follows:
