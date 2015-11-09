@@ -230,6 +230,18 @@ $ python -O $IGEN/src/igen.py date --do_perl
 ```
 
 
+### Apache Httpd ###
+
+Apache Httpd is a webserver. In our experiments we used `httpd 2.2.29`. To run igen on for httpd, `-run_script` and `-dom_file` options are needed to be used as follows:
+
+```
+#!shell
+$ python -O $IGEN/src/igen.py "httpd" -run_script `-run_script` /path/to/run_script `-dom_file` /path/to/domain_file
+```
+
+run_script for httpd is under scripts directory: `run_httpd.pl` and domain file is under benchmarks/doms/dom_httpd directory: `config_space_model.dom`.
+
+In `run_httpd.pl`, the variable `$SUT_DIR` should be updated accordingly.
 
 ### Other Apps ###
 
