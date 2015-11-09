@@ -167,7 +167,7 @@ iGen can analyzes the resulting interactions to learn more about program propert
 ### Perl Power Tools ###
 
 Perl Power Tools (PPT), are the perl implementation of some coreutil commands.
-In the experiments we used [`PPT version 0.14`](http://search.cpan.org/dist/ppt. To get the coverage inaformation, we used [`Devel::Cover`](http://search.cpan.org/~pjcj/Devel-Cover-1.21/lib/Devel/Cover.pm). Install `Devel::Cover` as follows:
+In the experiments we used [`PPT version 0.14`](http://search.cpan.org/dist/ppt). To get the coverage inaformation, we used [`Devel::Cover`](http://search.cpan.org/~pjcj/Devel-Cover-1.21/lib/Devel/Cover.pm). Install `Devel::Cover` as follows:
 
 ```
 #!shell
