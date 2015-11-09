@@ -40,7 +40,8 @@ def get_run_f(prog, args, mod):
                 rand_n=args.rand_n, seed=seed, tmpdir=tdir)
 
     else:
-        if args.dom_file:  #general way to run prog using a runscript
+        #general way to run prog using a runscript
+        if args.dom_file:  
             dom,config_default = mod.Dom.get_dom(
                 os.path.realpath(args.dom_file))
             run_script = os.path.realpath(args.run_script)
@@ -148,7 +149,7 @@ if __name__ == "__main__":
                          help="run benchmark program n times")
 
     aparser.add_argument("--dom_file", "-dom_file",
-                         help="the domain file",
+                         help="file containing config domains",
                          action="store")
 
     aparser.add_argument("--run_script", "-run_script",
