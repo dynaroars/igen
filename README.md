@@ -232,7 +232,7 @@ $ python -O $IGEN/src/igen.py date --do_perl
 
 ### Apache Httpd ###
 
-Apache Httpd is a webserver. In our experiments we used `httpd 2.2.29`. To run igen on for httpd, `-run_script` and `-dom_file` options are needed to be used as follows:
+Apache Httpd is a webserver. In our experiments we used [`httpd 2.2.29`](http://archive.apache.org/dist/httpd/). To run igen for httpd, `-run_script` and `-dom_file` options are needed to be used as follows:
 
 ```
 #!shell
