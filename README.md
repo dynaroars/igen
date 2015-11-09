@@ -108,10 +108,12 @@ $ python -O $IGEN/src/igen.py --dom_file ex.dom -run_script run_script -rand_n N
 This section lists more advanced usages of iGen.
 
 
-### Experiments ###
+## Experiments ##
 We describe steps to reproduce some more complex experiments 
 
-*GNU Coreutils*: We use `gcc` and `gcov` to obtain coverage information for `coreutil` commands. First, download `coreutils-8-23` from http://ftp.gnu.org/gnu/coreutils/coreutils-8.23.tar.xz. Then
+### GNU Coreutils ### 
+
+We use `gcc` and `gcov` to obtain coverage information for `coreutil` commands. First, download `coreutils-8-23` from http://ftp.gnu.org/gnu/coreutils/coreutils-8.23.tar.xz. Then
 ```
 $ mkdir mycoreutils; cd mycoreutils; tar xf /PATH/TO/coreutils-8.23.tar.xz; ln -sf coreutils-8.23 coreutils; cd coreutils
 ```
@@ -160,6 +162,13 @@ $ python -O $IGEN/src/igen.py uname
 
 
 iGen can analyzes the resulting interactions to learn more about program properties.
+
+
+### Perl Powertools Coreutils ###
+
+
+### Other Apps ###
+
 
 
 *min configs*
