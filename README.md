@@ -174,6 +174,7 @@ $ sudo cpan install Devel::Cover
 ```
 
 Now you can test `Devel::Cover` as follows:
+
 #!shell
 $ cd into/ppt/directory
 $ perl -MDevel::Cover bin/date
