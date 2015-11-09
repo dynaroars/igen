@@ -111,7 +111,7 @@ This section lists more advanced usages of iGen.
 ## Experiments ##
 We describe steps to reproduce some more complex experiments 
 
-### GNU Coreutils ### 
+### GNU Coreutils ###
 
 We use `gcc` and `gcov` to obtain coverage information for `coreutil` commands. First, download `coreutils-8-23` from http://ftp.gnu.org/gnu/coreutils/coreutils-8.23.tar.xz. Then
 ```
