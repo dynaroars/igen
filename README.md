@@ -236,7 +236,7 @@ Apache Httpd is a webserver. In our experiments we used [`httpd 2.2.29`](http://
 
 ```
 #!shell
-$ python -O $IGEN/src/igen.py "httpd" -run_script `-run_script` /path/to/run_script `-dom_file` /path/to/domain_file
+$ python -O $IGEN/src/igen.py "httpd" `-run_script` /path/to/run_script `-dom_file` /path/to/domain_file
 ```
 
 run_script for httpd is under scripts directory: `run_httpd.pl` and domain file is under benchmarks/doms/dom_httpd directory: `config_space_model.dom`.
