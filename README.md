@@ -172,7 +172,6 @@ In the experiments we used PPT version 0.14. You can obtain it from [here](http:
 Now, test `Devel::Cover` as follows:
 
 #!shell
-$ sudo cpan install Devel::Cover
 $ cd into/ppt/directory
 $ perl -MDevel::Cover bin/date
 Devel::Cover 1.21: Collecting coverage data for branch, condition, statement, subroutine and time.
