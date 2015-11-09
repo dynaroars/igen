@@ -206,6 +206,29 @@ Total                                 78.7   50.0   33.3   88.8  100.0   65.5
 
 ```
 
+If you see a coverage report similar to above one, `Devel::Cover` works fine.
+
+Now, modify the run script for PPT. It is unders scripts directory; `pptCoverageHelper.pl`.
+In this script, update `$SUT_DIR` variable according to your environment. 
+Test `pptCoverageHelper.pl` script as follows:
+
+```
+#!shell
+$ cd into/ppt/directory
+$ ./pptCoverageHelper.pl "@@@date" 
+```
+It will output the name of coverage file if everything works fine.
+
+Finally, domain files for PPT programs are located under benchmarks/doms and igen already know about them.
+There is no need to change these domain files.
+
+Now to run igen on `PPT` programs, you need to use `--do_perl` option. For example `PPT date` can be run as follows:
+
+```
+#!shell
+$ python -O $IGEN/src/igen.py date --do_perl
+```
+
 
 
 ### Other Apps ###
