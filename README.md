@@ -164,8 +164,10 @@ $ python -O $IGEN/src/igen.py uname
 iGen can analyzes the resulting interactions to learn more about program properties.
 
 
-### Perl Powertools Coreutils ###
+### Perl Power Tools ###
 
+Perl Power Tools (PPT), are the perl implementation of some coreutil commands.
+In the experiments we used PPT version 0.14. You can obtain it from [here](http://search.cpan.org/dist/ppt). We get the coverage insformation, we used [Devel::Cover](http://search.cpan.org/~pjcj/Devel-Cover-1.21/lib/Devel/Cover.pm)
 
 ### Other Apps ###
 
