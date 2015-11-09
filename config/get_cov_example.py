@@ -34,12 +34,12 @@ def prepare(prog_name,get_dom_f,dir_):
     get_cov_f = lambda config: GC.get_cov_wrapper(config,data)
     return dom,get_cov_f
 
-def get_cov(config,data):
+def get_cov(config, data):
     """
     Traces read from stdin
     """
     if __debug__:
-        assert isinstance(config,CC.Config),config
+        assert isinstance(config, CC.Config),config
         GC.check_data(data)
         
     tmpdir = '/var/tmp/'
