@@ -108,7 +108,7 @@ $ python -O $IGEN/src/igen.py -dom_file ex.dom -run_script run_script -rand_n N
 This section lists more advanced usages of iGen.
 
 
-## Experiments ##
+## EXPERIMENTS ##
 We describe steps to reproduce some more complex experiments 
 
 ### GNU Coreutils ###
