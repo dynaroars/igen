@@ -23,10 +23,11 @@ if __name__ == "__main__":
     varnames,varvals = zip(*parts)
     assert len(varnames) == len(varvals)
 
-    prog = os.path.abspath("ex.Darwin.exe")    
+    import platform
+    prog_exe = os.path.abspath("ex.{}.exe".format(platform.system()))
     prog_inp = ' '.join(varvals) #"0 1 0"
     prog_out = "/var/tmp/tvn.out"
-    cmd = "{} {} > {}".format(prog,prog_inp,prog_out)
+    cmd = "{} {} > {}".format(prog_exe, prog_inp, prog_out)
     try:
         _,rs_err = CM.vcmd(cmd)
         assert len(rs_err) == 0, rs_err
