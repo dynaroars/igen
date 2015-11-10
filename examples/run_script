@@ -1,7 +1,7 @@
 #!/usr/bin/env python2.7
 
 """
-This is a run_script example that run a program call "prog.exe" , which 
+This is a run_script example that run a program call "ex.[Linux|Darwin].exe" , which 
 takes as input a list of varname and value and 
 returns to stdout (the terminal screen) the name of the file consisting of covered lines
 
