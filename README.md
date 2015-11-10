@@ -245,7 +245,7 @@ In `run_httpd.pl`, the variable `$SUT_DIR` should be updated accordingly.
 
 ### Ack and Cloc ###
 
-Ack is a grep-like search tool for developers and cloc is line of code counter. They both are in perl.
+[`Ack`](http://search.cpan.org/dist/ack/ack) is a grep-like search tool for developers and [`cloc`](http://cloc.sourceforge.net/) is line of code counter. They both are in perl.
 To run igen on either of them you need to use `-run_script` and `-dom_file` options (as in httpd).
 Run scripts for them are located under scripts directory, and the domain files are under benchmarks/doms directory.
 
