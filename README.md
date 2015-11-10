@@ -29,7 +29,7 @@ export PYTHONPATH=$COMMON_PYTHON/:$CONFIG:/Z3_DIR/build/
 ```
 
 ## RUN ##
-We can now run iGen to generate interactions using a simple example `$IGEN/examples/igen/ex.c`.  
+We demonstrate iGen's usage a simple example `$IGEN/examples/igen/ex.c`.  
 ```
 #!c
 
