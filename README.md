@@ -22,9 +22,10 @@ Setup Z3 using its own build instruction. Make sure Z3 is setup correctly so tha
 Then have something like this in `~/.bash_profile`
 
 ```
-export IGEN=/PATH/TO/IGEN
+export COMMON_PYTHON=/PATH/TO/common_python
+export IGEN=/PATH/TO/igen
 export CONFIG=$IGEN/config
-export PYTHONPATH=$COMMON_PYTHON_DIR/:$CONFIG:/Z3_DIR/build/
+export PYTHONPATH=$COMMON_PYTHON/:$CONFIG:/Z3_DIR/build/
 ```
 
 ## RUN ##
