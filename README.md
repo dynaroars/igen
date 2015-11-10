@@ -249,8 +249,17 @@ In `run_httpd.pl`, the variable `$SUT_DIR` should be updated accordingly.
 To run igen on either of them you need to use `-run_script` and `-dom_file` options (as in httpd).
 Run scripts for them are located under scripts directory, and the domain files are under benchmarks/doms directory.
 
+For `ack`:
+```
+#!shell
+$ python -O $IGEN/igen.py "ack" -run_script /path/to/run_script -dom_file /path/to/domain_file
+```
 
-
+And for `cloc`:
+```
+#!shell
+$ python -O $IGEN/igen.py "cloc" -run_script /path/to/run_script -dom_file /path/to/domain_file
+```
 ### Other Apps ###
 
 
