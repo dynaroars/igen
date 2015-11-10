@@ -4,41 +4,20 @@ from time import time
 import vu_common as CM
 import config_common as CC
 
-def get_cfg(prog,dir_,mod):
-    import os.path
-    dir_ = CM.getpath(dir_)
-    cfg = CM.getpath(os.path.join(dir_,"{}.cfg".format(prog)))
-    cfg = mod.CFG.mk_from_lines(CM.iread_strip(cfg))
-    return cfg
     
 def get_run_f(prog, args, mod):
-    print args.dom_file, os.path.realpath(args.dom_file)
-    print args.cfg_file, os.path.realpath(args.cfg_file)
-
-    
     dom,config_default = mod.Dom.get_dom(
         os.path.realpath(args.dom_file))
     run_script = os.path.realpath(args.run_script)
-    cfg = mod.CFG.mk_from_lines(
-        os.path.realpath(args.cfg_file))
-    
+    cfg = mod.CFG.mk_from_lines(CM.iread_strip(
+        os.path.realpath(args.cfg_file)))
     import get_cov
-    get_cov_f = lambda config: get_cov.runscript_get_cov(
-        config,run_script)
-    
-
-    import iga_settings
-    # import get_cov_example as Example
-    # import get_cov_coreutils as Coreutils
-
-    # dom,get_cov_f = Example.prepare(
-    #     prog,mod.Dom.get_dom,iga_settings.examples_dir)
-    #cfg = get_cfg(prog, iga_settings.examples_dir, mod)
-
-    iga = mod.IGa(dom,cfg,get_cov_f)
-    sids = set([args.sid]) if args.sid else iga.sids
-    _f = lambda seed, tdir: iga.go(seed=seed, sids=sids, tmpdir=tdir)
+    get_cov_f = lambda config: get_cov.runscript_get_cov(config,run_script)
         
+    iga = mod.IGa(dom, cfg, get_cov_f)
+    sids = set([args.sid]) if args.sid else iga.sids
+    sids = [sid for sid in sids if 'fake' not in sid]
+    _f = lambda seed, tdir: iga.go(seed=seed, sids=sids, tmpdir=tdir)
     return _f, get_cov_f
 
 def _tmpdir(tmp_dir,prog):
@@ -47,12 +26,12 @@ def _tmpdir(tmp_dir,prog):
     tdir = tempfile.mkdtemp(dir=tmp_dir,prefix=d_prefix)
     return tdir
 
-
 if __name__ == "__main__":
     import argparse
-    aparser = argparse.ArgumentParser()
+    aparser = argparse.ArgumentParser(
+        "iGA (configuration generation using Gentic Algorithm)")
     aparser.add_argument("inp", help="inp", nargs='?')
-    
+
     #0 Error #1 Warn #2 Info #3 Debug #4 Detail
     aparser.add_argument("--logger_level", "-logger_level",
                          help="set logger info",

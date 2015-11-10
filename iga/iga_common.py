@@ -117,10 +117,10 @@ class CFG(OrderedDict):
 
         return CFG(prevs)
     
-    def compute_paths(self,max_loop=0):
+    def compute_paths(self, max_loop=0):
         self.paths = OrderedDict()
 
-        paths = [(sid,CFG.get_paths(sid,self,{},20,max_loop)) for sid in self]
+        paths = [(sid, CFG.get_paths(sid,self,{},20,max_loop)) for sid in self]
         invalids,paths = CM.vpartition(paths,lambda (s,p): len(p)>0)
         self.paths = OrderedDict(paths)
 
@@ -168,9 +168,12 @@ class CFG(OrderedDict):
             visited[sid] += 1
             if visited[sid] > max_loop:
                 return [[None]]
+
+        try:
+            preds = preds_d[sid]
+        except KeyError:
+            preds = []
             
-        preds = preds_d[sid]
-        
         if len(preds) == 0:
             return [[sid]]
         else:
@@ -589,7 +592,7 @@ class IGa(object):
         return config_s, cov_s
 
 
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
+# if __name__ == "__main__":
+#     import doctest
+#     doctest.testmod()
     

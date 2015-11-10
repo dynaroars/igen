@@ -63,7 +63,8 @@ def run_runscript(run_script, arg):
     assert len(cov_filename) == 1, (cmd,rs_outp,cov_filename)
     cov_filename = cov_filename[0]
     cov = set(CM.iread_strip(cov_filename))
-    print "cmd {}, read {} covs from '{}'".format(cmd,len(cov),cov_filename)
+    logger.detail("cmd {}, read {} covs from '{}'"
+                  .format(cmd,len(cov),cov_filename))
     return cov
 
 def run(cmds, msg=''):

@@ -322,7 +322,6 @@ def stmt_of_fun(cfg, fun, do_fst):
     b = (_fst if do_fst else _lst)(blocks)
     return stmt_of_block(cfg, fun, b, do_fst)
     
-        
 def compute_preds(cfg):
     preds = []
     
@@ -400,18 +399,23 @@ def compute_preds(cfg):
 
     return preds_d
 
-
-def write_preds(filename,preds_d):
+def write_preds(filename, preds_d):
     if __debug__:
-        assert isinstance(filename,str), filename
-        assert isinstance(preds_d,dict), preds_d
+        assert isinstance(filename, str), filename
+        assert isinstance(preds_d, dict), preds_d
         
     strs = '\n'.join("{} {}".format(sid, ' '.join(map(str, preds)))
                      for sid,preds in sorted(preds_d.iteritems(),
-                                             key=lambda (sid,preds): sid))
-    filename_preds = "{}.preds".format(filename)
-    print "write to '{}'".format(filename_preds)
-    CM.vwrite(filename_preds, strs)
+                                             key=lambda (sid, preds): sid))
+
+    print "write to '{}'".format(filename)
+    CM.vwrite(filename, strs)
+
+def cfg2preds(filename):
+    filename = os.path.realpath(os.path.expanduser(filename))
+    cfg = parse_cfg_file(filename)
+    preds = compute_preds(cfg)
+    write_preds("{}.preds".format(filename)    , preds)
     
 # if __name__ == '__main__':
 #     # import doctest
@@ -420,7 +424,7 @@ def write_preds(filename,preds_d):
 #     #print sys.argv, len(sys.argv)
 
 #     filename = sys.argv[1]
-#     cfg = parse_cfg(filename)
+#     cfg = parse_cfg_file(filename)
 #     #print cfg
 #     preds_d = compute_preds(cfg)
     
