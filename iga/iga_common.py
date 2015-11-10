@@ -120,10 +120,6 @@ class CFG(OrderedDict):
     def compute_paths(self, max_loop=0):
         self.paths = OrderedDict()
 
-        for sid in self:
-            print sid
-            CFG.get_paths(sid,self,{},20,max_loop)
-        
         paths = [(sid, CFG.get_paths(sid,self,{},20,max_loop)) for sid in self]
         invalids,paths = CM.vpartition(paths,lambda (s,p): len(p)>0)
         self.paths = OrderedDict(paths)
