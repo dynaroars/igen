@@ -73,7 +73,7 @@ We use iGen to automatically generate the interactions annotated next to differe
  
 ```
 #!shell
-$ cd $igen/examples
+$ cd $igen/examples/igen
 $ gcc ex.c -o ex.Linux.exe  #compile `ex.c`
 $ python -O $IGEN/src/igen.py -dom_file ex.dom -run_script run_script -seed 0  #call iGen 
 
