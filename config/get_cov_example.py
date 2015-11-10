@@ -45,8 +45,8 @@ def get_cov(config, data):
     tmpdir = '/var/tmp/'
     opts = ' '.join(config[vname] for vname in data['var_names'])
     traces = os.path.join(tmpdir,'t.out')
-    cmd = "{} {} > {}".format(data['prog_exe'],opts,traces)
+    cmd = "{} {} > {}".format(data['prog_exe'], opts, traces)
     outps = GC.run(cmd)
     sids = set(CM.iread_strip(traces))
-    return sids,outps
+    return sids, outps
 

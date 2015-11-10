@@ -51,7 +51,7 @@ def runscript_get_cov(config,run_script):
     cov = run_runscript(run_script,inputs)
     return cov,[]
     
-def run_runscript(run_script,arg):
+def run_runscript(run_script, arg):
     """
     Exec runscript on arg and return a single line representing the cov file
     E.g., ./runscript.sh "args"
@@ -66,8 +66,7 @@ def run_runscript(run_script,arg):
     print "cmd {}, read {} covs from '{}'".format(cmd,len(cov),cov_filename)
     return cov
 
-
-def run(cmds,msg=''):
+def run(cmds, msg=''):
     "just exec command, does not return anything"
     assert cmds, cmds
     
@@ -98,7 +97,7 @@ def check_data(data):
     assert 'dir_' in data  #where execute prog_exe from
     assert 'get_cov_f' in data
                          
-def get_cov_wrapper(config,data):
+def get_cov_wrapper(config, data):
     """
     If anything happens, return to current directory
     """
