@@ -92,20 +92,22 @@ Thus in its most basic form iGen requires a `dom_file` that contains the domains
 
 
 ### Options ###
-iGen accepts several options to generate interactions.  By default, the tool uses the CEGIR process that finds interactions and iterative refines them.  Other options include:
+iGen accepts several options to generate interactions.  By default, the tool uses the CEGIR process that generate configurations to find interactions and iterative generate more configurations to refine interactions.  Other options include:
 
 ```
 #!shell
 
-# analyze *all* possible configurations (thus only applicable to programs having small numbers of configurations)
+# use *all* possible configurations (thus only applicable to programs having small numbers of configurations)
 $ python -O $IGEN/src/igen.py -dom_file ex.dom -run_script run_script -do_full 
 
-# analyze only `N` randomly generated configurations
+# use only `N` randomly generated configurations
 $ python -O $IGEN/src/igen.py -dom_file ex.dom -run_script run_script -rand_n N
 ```
 
 ## ADVANCED USAGE ##
 This section lists more advanced usages of iGen.
+
+iGen can analyzes the resulting interactions to learn more about program properties.
 
 
 ## EXPERIMENTS ##
@@ -154,14 +156,7 @@ If everything is done correctly, we can now run iGen for `coreutils` commands (s
 # notice that iGen already contains the necessary runscripts and dom files for `coreutils`
 $ python -O $IGEN/src/igen.py uname
 ...
-
-
 ```
-
-
-
-
-iGen can analyzes the resulting interactions to learn more about program properties.
 
 
 ### Perl Power Tools ###
