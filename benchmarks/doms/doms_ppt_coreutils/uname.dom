@@ -1,0 +1,19 @@
+# -a, --all, print all information, in the following order, except omit -p and -i if unknown:
+-a on off
+
+# -s, --kernel-name, print the kernel name
+
+-s on off
+
+# -n, --nodename, print the network node hostname
+-n on off
+
+# -r, --kernel-release, print the kernel release
+-r on off
+
+# -v, --kernel-version, print the kernel version
+-v on off
+
+# -m, --machine, print the machine hardware name
+-m on off
+
