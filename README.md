@@ -29,7 +29,7 @@ export PATH
 ```
 
 ## RUN ##
-We can now run iGen to generate interactions using a simple example `$IGEN/example/ex.c`.  
+We can now run iGen to generate interactions using a simple example `$IGEN/examples/igen/ex.c`.  
 ```
 #!c
 
