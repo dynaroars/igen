@@ -16,8 +16,7 @@ def get_run_f(prog, args, mod):
         
     iga = mod.IGa(dom, cfg, get_cov_f)
     sids = set([args.sid]) if args.sid else iga.sids
-    print iga.sids
-    CM.pause()
+    sids = [sid for sid in sids if 'fake' not in sid]
     _f = lambda seed, tdir: iga.go(seed=seed, sids=sids, tmpdir=tdir)
     return _f, get_cov_f
 
@@ -26,7 +25,6 @@ def _tmpdir(tmp_dir,prog):
     d_prefix = "{}_bm_{}_".format(getpass.getuser(),prog)
     tdir = tempfile.mkdtemp(dir=tmp_dir,prefix=d_prefix)
     return tdir
-
 
 if __name__ == "__main__":
     import argparse
