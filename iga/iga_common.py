@@ -173,6 +173,11 @@ class CFG(OrderedDict):
             if visited[sid] > max_loop:
                 return [[None]]
 
+        try:
+            preds = preds_d[sid]
+        except KeyError:
+            preds = []
+            
         if len(preds) == 0:
             return [[sid]]
         else:
