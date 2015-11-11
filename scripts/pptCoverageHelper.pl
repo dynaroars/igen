@@ -9,7 +9,8 @@ no warnings;
 no warnings "all";
 
 my $igenIn=$ARGV[0];
-my $SUT_DIR="/fs/buzz/ukoc/ppt";
+#my $SUT_DIR="/fs/buzz/ukoc/ppt";
+my $SUT_DIR="/home/tnguyen/igen_exps/ppt/";
 
 #To extract program name
 my($prog_name) = $igenIn =~ m/@@@(.*)\s/;
