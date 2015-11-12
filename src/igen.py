@@ -6,7 +6,7 @@ import config_common as CC
 
 def get_run_f(prog, args, mod):
     """
-    Ret f that takes inputs seed,existing_results,tmpdir 
+    Ret f that takes inputs seed, tmpdir 
     and call appropriate iGen function on those inputs
     """
     import get_cov_otter as Otter
@@ -146,23 +146,11 @@ if __name__ == "__main__":
                          help="a script running the subject program",
                          action="store")
     
-    aparser.add_argument("--from_outfile", 
-                         help="cov output to a file (DEPRECATED)",
-                         action="store_true")
-    
     aparser.add_argument("--do_perl", "-do_perl",
                          help="do coretutils written in perl",
                          action="store_true")
 
     #replay options
-    aparser.add_argument("--replay", "-replay",
-                         help="replay info from run dir (DEPRECATED)",
-                         action="store_true")
-
-    aparser.add_argument("--replay_dirs", "-replay_dirs",
-                         help="replay info from adir containing multiple run dirs (DEPRECATED)",
-                         action="store_true")
-
     aparser.add_argument("--show_iters", "-show_iters",
                          help="for use with analysis, show stats of all iters",
                          action="store_true")
@@ -240,11 +228,11 @@ if __name__ == "__main__":
         for i in range(args.benchmark):        
             st_ = time()
             seed_ = seed + i
-            tdir_ = tempfile.mkdtemp(dir=tdir,prefix="run{}_".format(i))
-            logger.debug("*run {}/{}".format(i+1,args.benchmark))
-            _ = _f(seed_,tdir_)
+            tdir_ = tempfile.mkdtemp(dir=tdir, prefix="run{}_".format(i))
+            logger.debug("*run {}/{}".format(i+1, args.benchmark))
+            _ = _f(seed_, tdir_)
             logger.debug("*run {}, seed {}, time {}s, '{}'".format(
-                i+1,seed_,time()-st_,tdir_))
+                i+1, seed_, time() - st_, tdir_))
 
         logger.debug("** done benchmark '{}' {} runs, seed {}, "
                      "time {}, results in '{}'"
