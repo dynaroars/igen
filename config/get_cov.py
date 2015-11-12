@@ -4,7 +4,6 @@ import config_common as CC
 
 logger = CM.VLog('get_cov')
 logger.level = CC.logger_level
-if __debug__: print("DEBUG MODE ON. Can be slow !")
 
 # Real executions
 def run_single(cmd):

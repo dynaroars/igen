@@ -9,9 +9,7 @@ import config as IA
 logger = CM.VLog('otter')
 logger.level = CC.logger_level
 
-if __debug__: logger.warn("DEBUG MODE ON. Can be slow !")
-
-db = {"vsftpd":None,"ngircd":None}
+db = {"vsftpd":None, "ngircd":None}
 from igen_settings import otter_dir
 
 def prepare(prog_name,get_dom_f):

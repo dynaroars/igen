@@ -16,8 +16,6 @@ allows_known_errors = False
 show_cov = True
 analyze_outps = False
 
-if __debug__: print("DEBUG MODE ON. Can be slow !")
-
 def mk_tmpdir(tmp_dir, prefix):
     import getpass
     prefix = "{}_{}_".format(getpass.getuser(), prefix)
