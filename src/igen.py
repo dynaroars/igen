@@ -217,13 +217,13 @@ if __name__ == "__main__":
         _f, _ = get_run_f(prog, args, IA)
 
         prog_name = prog if prog else 'noname'
-        prefix = "{}_{}_{}".format(
+        prefix = "igen_{}_{}_{}".format(
             args.benchmark,
             'full' if args.do_full else 'normal',
             prog_name)
-        tdir = CC.mk_tmpdir(tmp_dir, "igen_" + prefix)
+        tdir = tempfile.mkdtemp(dir=tmp_dir, prefix=prefix)
 
-        logger.debug("* benchmark '{}',  {} runs, seed {}, results in '{}'"
+        logger.debug("* benchmark '{}', {} runs, seed {}, results in '{}'"
                      .format(prog_name, args.benchmark, seed, tdir))
         st = time()
         for i in range(args.benchmark):        
@@ -241,14 +241,15 @@ if __name__ == "__main__":
                             
     else: #run analysis
         do_min_configs = args.do_min_configs  
-        if do_min_configs and do_min_configs != 'use_existing':
+        if do_min_configs and (do_min_configs != 'use_existing' or args.dom_file):
             _,get_cov_f = get_run_f(do_min_configs, args, IA)
             do_min_configs = get_cov_f
 
         cmp_rand = args.cmp_rand
         if cmp_rand:
             _f,_ = get_run_f(cmp_rand, args, IA)
-            tdir = CC.mk_tmpdir(tmp_dir, cmp_rand + "igen_cmp_rand")
+            tdir = tempfile.mkdtemp(dir=tmp_dir,
+                                    prefix=cmp_rand + "igen_cmp_rand")
             cmp_rand = lambda rand_n: _f(seed, tdir, rand_n)
 
         analysis_f(args.inp,
