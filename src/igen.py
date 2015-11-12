@@ -4,12 +4,6 @@ from time import time
 import vu_common as CM
 import config_common as CC
 
-def _tmpdir(tmp_dir, prefix):
-    import getpass
-    prefix = "{}_bm_{}_".format(getpass.getuser(), prefix)
-    tdir = tempfile.mkdtemp(dir=tmp_dir, prefix=prefix)
-    return tdir
-    
 def get_run_f(prog, args, mod):
     """
     Ret f that takes inputs seed,existing_results,tmpdir 
@@ -38,17 +32,15 @@ def get_run_f(prog, args, mod):
         else:
             _f = lambda seed,tdir: igen.go_rand(
                 rand_n=args.rand_n, seed=seed, tmpdir=tdir)
-
-    else:
-        #general way to run prog using a runscript
-        if args.dom_file:  
-            dom,config_default = mod.Dom.get_dom(
-                os.path.realpath(args.dom_file))
-            run_script = os.path.realpath(args.run_script)
+    else:        
+        if args.dom_file:
+            #general way to run prog using dom_file/runscript
+            dom, config_default = mod.Dom.get_dom(CM.getpath(args.dom_file))
+            run_script = CM.getpath(args.run_script)
             
             import get_cov
             get_cov_f = lambda config: get_cov.runscript_get_cov(
-                config,run_script)
+                config, run_script)
         else:
             import igen_settings
             import get_cov_coreutils as Coreutils            
@@ -58,7 +50,7 @@ def get_run_f(prog, args, mod):
                 dom, get_cov_f = Coreutils.prepare(
                     prog,
                     mod.Dom.get_dom,
-                    igen_settings.coreutils_build_dir,
+                    igen_settings.coreutils_main_dir,
                     igen_settings.coreutils_doms_dir,
                     do_perl=args.do_perl)
             else:
@@ -238,7 +230,7 @@ if __name__ == "__main__":
             args.benchmark,
             'full' if args.do_full else 'normal',
             prog_name)
-        tdir = _tmpdir(tmp_dir, prefix)
+        tdir = CC.mk_tmpdir(tmp_dir, "igen_" + prefix)
 
         print("* benchmark '{}',  {} runs, seed {}, results in '{}'"
               .format(prog_name, args.benchmark, seed, tdir))
@@ -266,7 +258,7 @@ if __name__ == "__main__":
         cmp_rand = args.cmp_rand
         if cmp_rand:
             _f,_ = get_run_f(cmp_rand,args, IA)
-            tdir = _tmpdir(tmp_dir, cmp_rand + "_cmp_rand")
+            tdir = CC.mk_tmpdir(tmp_dir, cmp_rand + "igen_cmp_rand")
             cmp_rand = lambda rand_n: _f(seed, tdir, rand_n)
 
         analysis_f(args.inp,
