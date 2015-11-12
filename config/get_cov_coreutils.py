@@ -12,9 +12,10 @@ if __debug__: print("DEBUG MODE ON. Can be slow !")
 
 def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
     if __debug__:
-        assert isinstance(prog_name,str), prog_name
-        assert isinstance(do_perl,bool), do_perl
+        assert isinstance(prog_name, str), prog_name
+        assert isinstance(main_dir, str), main_dir        
         assert callable(get_dom_f), get_dom_f
+        assert isinstance(do_perl, bool), do_perl
         
     main_dir = CM.getpath(main_dir)
     dom_dir = CM.getpath(doms_dir)    
@@ -28,12 +29,12 @@ def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
             doms_dir, "doms_ppt_coreutils","{}.dom".format(prog_name))
             
     else:
-        bdir = os.path.join(main_dir,'coreutils')
-        prog_dir = os.path.join(bdir,'obj-gcov','src')
-        dir_ = os.path.join(bdir,'src')
+        bdir = os.path.join(main_dir, 'coreutils')
+        prog_dir = os.path.join(bdir, 'obj-gcov', 'src')
+        dir_ = os.path.join(bdir, 'src')
         assert os.path.isdir(dir_), dir_
-        prog_exe = os.path.join(prog_dir,prog_name)        
-        assert os.path.isfile(prog_exe),prog_exe
+        prog_exe = os.path.join(prog_dir, prog_name)        
+        assert os.path.isfile(prog_exe), prog_exe
         logger.info("prog_exe: '{}'".format(prog_exe))
         get_cov_f = get_cov_gcov
         dom_file = os.path.join(
