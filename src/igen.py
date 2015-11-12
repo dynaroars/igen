@@ -196,7 +196,8 @@ if __name__ == "__main__":
         CC.analyze_outps = True
 
     #import here so that settings in CC take effect
-    import config as IA    
+    #import config as IA
+    import igen_alg as IA
     from igen_settings import tmp_dir
     from igen_analysis import Analysis
 

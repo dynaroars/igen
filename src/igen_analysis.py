@@ -5,7 +5,7 @@ from time import time
 import vu_common as CM
 
 import config_common as CC
-import config as IA
+import igen_alg as IA
 
 logger = CM.VLog('analysis')
 logger.level = CC.logger_level
