@@ -1,29 +1,39 @@
-import os.path
-import tempfile
 from time import time
 import vu_common as CM
 import config_common as CC
 
 def get_run_f(prog, args, mod):
-    dom, config_default = mod.Dom.get_dom(
-        os.path.realpath(args.dom_file))
-    run_script = os.path.realpath(args.run_script)
-    cfg = mod.CFG.mk_from_lines(CM.iread_strip(
-        os.path.realpath(args.cfg_file)))
-    import get_cov
-    get_cov_f = lambda config: get_cov.runscript_get_cov(config, run_script)
-        
+    
+    if args.dom_file:
+        #general way to run prog using dom_file/runscript
+        dom, config_default = mod.Dom.get_dom(CM.getpath(args.dom_file))
+        run_script = CM.getpath(args.run_script)
+        import get_cov
+        get_cov_f = lambda config: get_cov.runscript_get_cov(config, run_script)
+        cfg_file = args.cfg_file
+    else:
+        import iga_settings
+        import get_cov_coreutils as Coreutils
+        if prog in Coreutils.db:
+            dom, get_cov_f = Coreutils.prepare(
+                prog,
+                mod.Dom.get_dom,
+                iga_settings.coreutils_main_dir,
+                iga_settings.coreutils_doms_dir,
+                do_perl=False)
+
+            import os.path
+            cfg_file = os.path.join(iga_settings.coreutils_main_dir,
+                                    'coreutils','obj-gcov', 'src',
+                                    '{}.c.011t.cfg.preds'.format(prog))
+            cfg_file = CM.getpath(cfg_file)
+
+    cfg = mod.CFG.mk_from_lines(CM.iread_strip(CM.getpath(cfg_file)))
     iga = mod.IGa(dom, cfg, get_cov_f)
     sids = set([args.sid]) if args.sid else iga.sids
     sids = [sid for sid in sids if 'fake' not in sid]
     _f = lambda seed, tdir: iga.go(seed=seed, sids=sids, tmpdir=tdir)
     return _f, get_cov_f
-
-def _tmpdir(tmp_dir, prog):
-    import getpass
-    d_prefix = "{}_bm_{}_".format(getpass.getuser(), prog)
-    tdir = tempfile.mkdtemp(dir=tmp_dir, prefix=d_prefix)
-    return tdir
 
 if __name__ == "__main__":
     import argparse
@@ -81,5 +91,5 @@ if __name__ == "__main__":
     _f,_ = get_run_f(prog, args, GO)
 
     prog_name = prog if prog else 'noname'
-    tdir = _tmpdir(tmp_dir, prog_name)
+    tdir = CC.mk_tmpdir(tmp_dir, "iga_" + prog_name)
     _ = _f(seed,tdir)

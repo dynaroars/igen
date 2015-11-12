@@ -77,8 +77,11 @@ def get_run_f(prog, args, mod):
     return _f, get_cov_f
 
 if __name__ == "__main__":
-    import argparse
+    me_file = __file__
+    me_name = os.path.basename(me_file)
+    me_dir = os.path.dirname(me_file)
     
+    import argparse
     def _check(v, min_n=None, max_n=None):
         v = int(v)
         if min_n and v < min_n:
@@ -196,6 +199,9 @@ if __name__ == "__main__":
     _check_inps(args)
     
     CC.logger_level = args.logger_level
+    logger = CM.VLog(me_name)
+    logger.level = CC.logger_level
+    
     seed = round(time(), 2) if args.seed is None else float(args.seed)
     
     if args.allows_known_errors:
@@ -232,22 +238,22 @@ if __name__ == "__main__":
             prog_name)
         tdir = CC.mk_tmpdir(tmp_dir, "igen_" + prefix)
 
-        print("* benchmark '{}',  {} runs, seed {}, results in '{}'"
-              .format(prog_name, args.benchmark, seed, tdir))
+        logger.debug("* benchmark '{}',  {} runs, seed {}, results in '{}'"
+                     .format(prog_name, args.benchmark, seed, tdir))
         st = time()
         for i in range(args.benchmark):        
             st_ = time()
             seed_ = seed + i
             tdir_ = tempfile.mkdtemp(dir=tdir,prefix="run{}_".format(i))
-            print("*run {}/{}".format(i+1,args.benchmark))
+            logger.debug("*run {}/{}".format(i+1,args.benchmark))
             _ = _f(seed_,tdir_)
-            print("*run {}, seed {}, time {}s, '{}'".format(
+            logger.debug("*run {}, seed {}, time {}s, '{}'".format(
                 i+1,seed_,time()-st_,tdir_))
 
-        print("** done benchmark '{}' {} runs, seed {}, "
-              "time {}, results in '{}'"
-              .format(prog_name, args.benchmark,
-                      seed, time() - st, tdir))
+        logger.debug("** done benchmark '{}' {} runs, seed {}, "
+                     "time {}, results in '{}'"
+                     .format(prog_name, args.benchmark,
+                             seed, time() - st, tdir))
 
     else: #run analysis
         do_min_configs = args.do_min_configs  

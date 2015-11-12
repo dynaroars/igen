@@ -2,6 +2,7 @@ import abc
 import itertools
 import random
 import os.path
+import tempfile
 from collections import OrderedDict, MutableMapping
 
 from vu_common import HDict
@@ -16,6 +17,12 @@ show_cov = True
 analyze_outps = False
 
 if __debug__: print("DEBUG MODE ON. Can be slow !")
+
+def mk_tmpdir(tmp_dir, prefix):
+    import getpass
+    prefix = "{}_{}_".format(getpass.getuser(), prefix)
+    tdir = tempfile.mkdtemp(dir=tmp_dir, prefix=prefix)
+    return tdir
 
 #Data Structures
 class CustDict(MutableMapping):
@@ -308,7 +315,8 @@ class Configs_d(CustDict):
         ss = (c.__str__(self[c]) for c in self.__dict__)
         return '\n'.join("{}. {}".format(i+1,s) for i,s in enumerate(ss))
 
-   
+
+    
     
 if __name__ == "__main__":
     import doctest

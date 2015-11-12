@@ -1,18 +1,15 @@
+from collections import OrderedDict
+from time import time
 import os.path
 import random
 import math
-from time import time
 
 import vu_common as CM
 import config_common as CC
-from collections import OrderedDict
 
-logger = CM.VLog('GAO')
+logger = CM.VLog('GA')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
-
-class Dom(CC.Dom):
-    pass
 
 class CFG(OrderedDict):
     """
@@ -87,7 +84,7 @@ class CFG(OrderedDict):
         if __debug__:
             assert self, 'empty cfg'
 
-    def __str__(self,as_lines=False):
+    def __str__(self, as_lines=False):
         if as_lines:
             lines = ['{} {}'.format(loc,CM.str_of_list(prevs,' '))
                      for loc,prevs in self.iteritems()]
@@ -133,7 +130,7 @@ class CFG(OrderedDict):
                            
 
     @staticmethod
-    def get_paths(sid,preds_d,visited,recur_call,max_loop):
+    def get_paths(sid, preds_d, visited, recur_call, max_loop):
         """
         compute coverage paths from predecessors
         'max_loop' sets the maximum number of loop unrolling.
@@ -188,11 +185,93 @@ class CFG(OrderedDict):
             return rs
 
 
+class Dom(CC.Dom):
+    pass
+
 class Config(CC.Config):
+
+    def get_mincover(self,sids):
+        """
+        Greedy method to get a subset of self that covers sids.
+        Return min cover and its coverage.
+
+        sage: random.seed(1)
+
+        sage: p = Pop([Config.mk([('x',1)],cov=[1,4,5]), Config.mk([('x',2)],cov=[1,2,4,5]),Config.mk([('x',3)],cov=[1,2,3,4])])
+
+        sage: m,s = p.get_mincover(set([1,2,3,4,5])); print m; print s
+        1. x=1, cov (3): 1, 4, 5
+        2. x=3, cov (4): 1, 2, 3, 4
+        set([])
+
+        sage: m,s = p.get_mincover(set([3,5])); print m; print s
+        1. x=1, cov (3): 1, 4, 5
+        2. x=3, cov (4): 1, 2, 3, 4
+        set([])
+
+        sage: m,s = p.get_mincover(set([1,2,5,7,8])); print m; print s
+        1. x=2, cov (4): 1, 2, 4, 5
+        set([8, 7])
+
+        sage: m,s = p.get_mincover(set([8])); print m; print s
+        None
+        set([8])
+
+        sage: p = Pop([Config.mk([('x',1)],cov=[1,2,4,5]),Config.mk([('x',2)],cov=[1,2,4,5]),Config.mk([('x',3)],cov=[1,2,3,4])])
+        sage: m,s = p.get_mincover(set([1,2,3,4,5])); print m; print s
+        1. x=1, cov (4): 1, 2, 4, 5
+        2. x=3, cov (4): 1, 2, 3, 4
+        set([])
+
+        sage: p = Pop([Config.mk([('x',1)],cov=[1,2,3]),Config.mk([('x',2)],cov=[1,2,4,5]),Config.mk([('x',3)],cov=[1,2,3,4])])
+        sage: m,s = p.get_mincover(set([1,2,3,4,5])); print m; print s
+        1. x=3, cov (4): 1, 2, 3, 4
+        2. x=2, cov (4): 1, 2, 4, 5
+        set([])
+
+        sage: p = Pop([Config.mk([('x',1)],cov=[1,4,5]), Config.mk([('x',2)],cov=[2,4,6]),Config.mk([('x',3)],cov=[1,3,4,7])])
+        sage: m,s = p.get_mincover(set([1,2,3,4,5,6,7,8])); print m; print s
+        1. x=1, cov (3): 1, 4, 5
+        2. x=3, cov (4): 1, 3, 4, 7
+        3. x=2, cov (3): 2, 4, 6
+        set([8])
+
+
+        """
+        
+        if __debug__:
+            assert isinstance(sids,set)
+
+        cs = set(self) #make a copy
+        mincover = set()
+
+        while sids:
+            #greedy
+            cs_ = [(c,len(sids-c.cov)) for c in cs]
+            if len(cs_) == 0: #used everything
+                break
+
+            config,n_uncovers = min(cs_, key=lambda (_,n_uncovers): n_uncovers)
+
+            if n_uncovers == len(sids):  #nothing contributes
+                break
+
+            mincover.add(config)
+            cs.remove(config)
+            sids = sids - config.cov
+        
+        if mincover:
+            mincover = Pop(mincover)
+            return mincover,sids
+        else:
+            return None,sids
+
+
+class Configs_d(CC.Configs_d):
     pass
 
 class Fits_d(CC.CustDict):
-    def __setitem__(self,config,fits):
+    def __setitem__(self, config, fits):
         if __debug__:
             assert isinstance(config,Config),config
             assert config not in self.__dict__,config
@@ -213,11 +292,11 @@ class IGa(object):
     """
     Main algorithm
     """
-    def __init__(self,dom,cfg,get_cov):
+    def __init__(self, dom, cfg, get_cov):
         if __debug__:
-            assert isinstance(dom,Dom),dom
-            assert isinstance(cfg,CFG),dom
-            assert callable(get_cov),get_cov
+            assert isinstance(dom, Dom), dom
+            assert isinstance(cfg, CFG), cfg
+            assert callable(get_cov), get_cov
         
         self.dom = dom
         self.cfg = cfg
@@ -228,7 +307,7 @@ class IGa(object):
         logger.info("cfg {}, sids {}"
                     .format(len(self.cfg),len(self.sids)))
 
-    def compute_covs(self,configs,configs_d):
+    def compute_covs(self, configs, configs_d):
         """
         It's OK for duplicatins in configs (similar individuals in pop)
         """
@@ -244,50 +323,7 @@ class IGa(object):
             configs_d[c]= sids
         return time() - st
 
-    @staticmethod
-    def get_fscore(cov,path):
-        if cov == path:
-            return 1.0
-        else:
-            tp = len([s for s in cov if s in path])
-            fp = len([s for s in cov if s not in path])
-            fn = len([s for s in path if s not in cov])
-            if fp == fn == 0:  #identical
-                return 1.0
-            else:
-                p=0.0 if (tp+fp)==0 else (float(tp)/(tp+fp))
-                r=0.0 if (tp+fn)==0 else (float(tp)/(tp+fn))
-                f=0.0 if (r+p)==0 else float(2*r*p)/(r+p)
-                return f
-
-    @staticmethod
-    def compute_fits(sid, paths, configs, configs_d, fits_d):
-        """
-        Compute fitness (store results in fits_d)
-        it's OK for duplicatins in configs (similar individuals in pop)
-        """
-        if __debug__:
-            assert isinstance(sid,str), sid
-            assert paths, paths
-            assert (configs and
-                    all(isinstance(c,Config) for c in configs)), configs
-            assert configs_d and isinstance(configs_d,  CC.Configs_d), configs
-            assert isinstance(fits_d, Fits_d), fits_d
-
-        for c in configs:
-            if c in fits_d and sid in fits_d[c]:
-                continue
-            cov = configs_d[c]
-            fit = max(IGa.get_fscore(cov,path) for path in paths)
-            if c not in fits_d:
-                fits_d[c] = {sid:fit}
-            else:
-                if __debug__:
-                    assert sid not in fits_d[c], (sid, fits_d[c])
-                fits_d[c][sid] = fit
-
-
-    def go(self,seed,sids,tmpdir):
+    def go(self, seed, sids, tmpdir):
         if __debug__:
             assert isinstance(seed,float), seed
             assert (sids and isinstance(sids, set) and
@@ -297,7 +333,7 @@ class IGa(object):
         random.seed(seed)
         logger.info("seed: {}, tmpdir: {}".format(seed,tmpdir))        
 
-        configs_d  = CC.Configs_d()
+        configs_d  = Configs_d()
         fits_d = Fits_d()
         covs_s = set()
 
@@ -334,6 +370,140 @@ class IGa(object):
                             len(configs_d), self.dom.siz))
 
         return is_success,len(solved),len(configs_d)
+        
+    def go_sid(self, sid, configs_d, fits_d):
+        if __debug__:
+            assert isinstance(sid,str), sid
+            assert isinstance(configs_d, Configs_d), configs_d
+            assert isinstance(fits_d,Fits_d), fits_d
+
+        def cache(configs,config_s,cov_s):
+            for c in configs:
+                config_s.add(c)
+                for s in configs_d[c]:
+                    if s not in cov_s:
+                        cov_s.add(s)
+
+        max_stuck = 3
+        cur_stuck = 0
+        max_exploit = 0.7
+        cur_exploit = max_exploit
+        cur_iter = 0
+        xtime_total = 0.0
+        config_s = set()
+        cov_s = set()
+        config_siz = None
+        paths = None
+        
+        #begin
+        st = time()
+        while sid not in cov_s and cur_stuck <= max_stuck:
+            cur_iter += 1
+            logger.debug("sid '{}' iter {} stuck {} exploit {}"
+                         .format(sid,cur_iter,cur_stuck,cur_exploit))
+
+            if cur_iter == 1:
+                configs = self.dom.gen_configs_tcover1(config_cls=Config)
+                xtime = self.compute_covs(configs, configs_d)
+                xtime_total += xtime        
+                cache(configs,config_s,cov_s)
+                continue
+
+            if cur_iter == 2:
+                config_siz = max(len(self.dom),self.dom.max_fsiz)
+                paths = self.cfg.paths[sid]
+                IGa.compute_fits(sid, paths, configs, configs_d, fits_d)
+            
+            cur_best_fit, cur_best = IGa.get_best(sid, configs, fits_d)
+            cur_avg_fit = IGa.get_avg(sid, configs, fits_d)
+            cur_ncovs = len(cov_s)
+            
+            logger.debug("configs {} fit best {} avg {} "
+                         .format(len(configs_d), cur_best_fit, cur_avg_fit))
+            
+            #gen new configs
+            freqs = IGa.get_freqs(sid, configs, fits_d, self.dom)
+            configs = [IGa.tourn_sel(freqs, cur_exploit)
+                       for _ in range(config_siz)]
+            if __debug__:
+                assert len(configs) == config_siz, \
+                    (len(configs), config_siz)
+
+            xtime = self.compute_covs(configs, configs_d)
+            xtime_total += xtime
+            cache(configs,config_s,cov_s)            
+            IGa.compute_fits(sid, paths, configs, configs_d, fits_d)
+
+            #elitism
+            if cur_best not in configs:
+                configs.append(cur_best)
+                
+            best_fit, _ = IGa.get_best(sid, configs, fits_d)
+            avg_fit = IGa.get_avg(sid, configs, fits_d)
+            better_best = best_fit > cur_best_fit
+            better_avg = avg_fit > cur_avg_fit
+            better_cov = len(cov_s) > cur_ncovs
+            
+            if better_cov or better_best or better_avg:
+                cur_stuck = 0
+                cur_exploit = max_exploit
+            else:
+                cur_stuck += 1
+                cur_exploit -= max_exploit / max_stuck
+
+                if cur_exploit < 0:
+                    cur_exploit = 0
+
+        if sid in cov_s:
+            config = CM.find_first(config_s, lambda c: sid in configs_d[sid])
+            print config
+        
+        logger.debug("sid '{}': {} ({}s), iters {}, configs {}, covs {}"
+                     .format(sid,
+                             'found' if sid in cov_s else 'not found',
+                             time() - st,
+                             cur_iter,
+                             len(config_s),
+                             len(cov_s)))
+
+        return config_s, cov_s
+
+
+    @staticmethod
+    def get_tourn_siz(sample_siz,exploit_rate):
+        """
+        >>> [IGa.get_tourn_siz(x,y) for x,y in [(10,.8),(10,.9),(3,.8),(3,.5)]]
+        [8, 9, 3, 2]
+        """
+        if __debug__:
+            assert sample_siz >= 1, sample_siz
+        siz = int(math.ceil(sample_siz*exploit_rate))
+        if siz > sample_siz:
+            siz = sample_siz
+        if siz < 1:
+            siz = 1
+        return siz
+    
+    @staticmethod
+    def tourn_sel(rls,exploit_rate):
+        def sample_f(rl,tourn_siz):
+            if __debug__:
+                assert isinstance(rl[0],tuple) and len(rl[0])==2
+                #rl = [('val', score)]            
+            s = (random.choice(rl) for _ in range(tourn_siz))
+            return s
+        
+        settings = []
+        for name,ranked_list in rls:
+            assert len(ranked_list) >= 1
+            
+            tourn_siz = IGa.get_tourn_siz(len(ranked_list),exploit_rate)
+            sample = sample_f(ranked_list,tourn_siz)
+            val,_ = max(sample,key=lambda (val,rank):rank)
+            settings.append((name,val))
+
+        c = Config(settings)
+        return c
 
     @staticmethod
     def get_best(sid, configs, fits_d):
@@ -463,135 +633,49 @@ class IGa(object):
         return freqs
 
     @staticmethod
-    def get_tourn_siz(sample_siz,exploit_rate):
-        """
-        >>> [IGa.get_tourn_siz(x,y) for x,y in [(10,.8),(10,.9),(3,.8),(3,.5)]]
-        [8, 9, 3, 2]
-        """
-        if __debug__:
-            assert sample_siz >= 1, sample_siz
-        siz = int(math.ceil(sample_siz*exploit_rate))
-        if siz > sample_siz:
-            siz = sample_siz
-        if siz < 1:
-            siz = 1
-        return siz
-    
-    @staticmethod
-    def tourn_sel(rls,exploit_rate):
-        def sample_f(rl,tourn_siz):
-            if __debug__:
-                assert isinstance(rl[0],tuple) and len(rl[0])==2
-                #rl = [('val', score)]            
-            s = (random.choice(rl) for _ in range(tourn_siz))
-            return s
-        
-        settings = []
-        for name,ranked_list in rls:
-            assert len(ranked_list) >= 1
-            
-            tourn_siz = IGa.get_tourn_siz(len(ranked_list),exploit_rate)
-            sample = sample_f(ranked_list,tourn_siz)
-            val,_ = max(sample,key=lambda (val,rank):rank)
-            settings.append((name,val))
+    def get_fscore(cov,path):
+        if cov == path:
+            return 1.0
+        else:
+            tp = len([s for s in cov if s in path])
+            fp = len([s for s in cov if s not in path])
+            fn = len([s for s in path if s not in cov])
+            if fp == fn == 0:  #identical
+                return 1.0
+            else:
+                p=0.0 if (tp+fp)==0 else (float(tp)/(tp+fp))
+                r=0.0 if (tp+fn)==0 else (float(tp)/(tp+fn))
+                f=0.0 if (r+p)==0 else float(2*r*p)/(r+p)
+                return f
 
-        c = Config(settings)
-        return c
-        
-    def go_sid(self, sid, configs_d, fits_d):
+    @staticmethod
+    def compute_fits(sid, paths, configs, configs_d, fits_d):
+        """
+        Compute fitness (store results in fits_d)
+        it's OK for duplicatins in configs (similar individuals in pop)
+        """
         if __debug__:
             assert isinstance(sid,str), sid
-            assert isinstance(configs_d, CC.Configs_d), configs_d
-            assert isinstance(fits_d,Fits_d), fits_d
+            assert paths, paths
+            assert (configs and
+                    all(isinstance(c,Config) for c in configs)), configs
+            assert configs_d and isinstance(configs_d,  Configs_d), configs
+            assert isinstance(fits_d, Fits_d), fits_d
 
-        def cache(configs,config_s,cov_s):
-            for c in configs:
-                config_s.add(c)
-                for s in configs_d[c]:
-                    if s not in cov_s:
-                        cov_s.add(s)
-
-        max_stuck = 3
-        cur_stuck = 0
-        max_exploit = 0.7
-        cur_exploit = max_exploit
-        cur_iter = 0
-        xtime_total = 0.0
-        config_s = set()
-        cov_s = set()
-        config_siz = None
-        paths = None
-        
-        #begin
-        st = time()
-        while sid not in cov_s and cur_stuck <= max_stuck:
-            cur_iter += 1
-            logger.debug("sid '{}' iter {} stuck {} exploit {}"
-                         .format(sid,cur_iter,cur_stuck,cur_exploit))
-
-            if cur_iter == 1:
-                configs = self.dom.gen_configs_tcover1(config_cls=Config)
-                xtime = self.compute_covs(configs, configs_d)
-                xtime_total += xtime        
-                cache(configs,config_s,cov_s)
+        for c in configs:
+            if c in fits_d and sid in fits_d[c]:
                 continue
-
-            if cur_iter == 2:
-                config_siz = max(len(self.dom),self.dom.max_fsiz)
-                paths = self.cfg.paths[sid]
-                IGa.compute_fits(sid, paths, configs, configs_d, fits_d)
-            
-            cur_best_fit, cur_best = IGa.get_best(sid, configs, fits_d)
-            cur_avg_fit = IGa.get_avg(sid, configs, fits_d)
-            cur_ncovs = len(cov_s)
-            
-            logger.debug("configs {} fit best {} avg {} "
-                         .format(len(configs_d), cur_best_fit, cur_avg_fit))
-            
-            #gen new configs
-            freqs = IGa.get_freqs(sid, configs, fits_d, self.dom)
-            configs = [IGa.tourn_sel(freqs, cur_exploit)
-                       for _ in range(config_siz)]
-            if __debug__:
-                assert len(configs) == config_siz, \
-                    (len(configs), config_siz)
-
-            xtime = self.compute_covs(configs, configs_d)
-            xtime_total += xtime
-            cache(configs,config_s,cov_s)            
-            IGa.compute_fits(sid, paths, configs, configs_d, fits_d)
-
-            #elitism
-            if cur_best not in configs:
-                configs.append(cur_best)
-                
-            best_fit, _ = IGa.get_best(sid, configs, fits_d)
-            avg_fit = IGa.get_avg(sid, configs, fits_d)
-            better_best = best_fit > cur_best_fit
-            better_avg = avg_fit > cur_avg_fit
-            better_cov = len(cov_s) > cur_ncovs
-            
-            if better_cov or better_best or better_avg:
-                cur_stuck = 0
-                cur_exploit = max_exploit
+            cov = configs_d[c]
+            fit = max(IGa.get_fscore(cov,path) for path in paths)
+            if c not in fits_d:
+                fits_d[c] = {sid:fit}
             else:
-                cur_stuck += 1
-                cur_exploit -= max_exploit / max_stuck
-
-                if cur_exploit < 0:
-                    cur_exploit = 0
-
-        logger.debug("sid '{}': {} ({}s), iters {}, configs {}, covs {}"
-                     .format(sid,
-                             'found' if sid in cov_s else 'not found',
-                             time() - st,
-                             cur_iter,
-                             len(config_s),
-                             len(cov_s)))
-
-        return config_s, cov_s
+                if __debug__:
+                    assert sid not in fits_d[c], (sid, fits_d[c])
+                fits_d[c][sid] = fit
 
 
+                
 # if __name__ == "__main__":
 #     import doctest
 #     doctest.testmod()
