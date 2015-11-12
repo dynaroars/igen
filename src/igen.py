@@ -77,10 +77,10 @@ def get_run_f(prog, args, mod):
     return _f, get_cov_f
 
 if __name__ == "__main__":
-    me_file = __file__
-    me_name = os.path.basename(me_file)
-    me_dir = os.path.dirname(me_file)
-    
+    igen_file = CM.getpath(__file__)
+    igen_name = os.path.basename(igen_file)
+    igen_dir = os.path.dirname(igen_file)
+
     import argparse
     def _check(v, min_n=None, max_n=None):
         v = int(v)
@@ -199,7 +199,7 @@ if __name__ == "__main__":
     _check_inps(args)
     
     CC.logger_level = args.logger_level
-    logger = CM.VLog(me_name)
+    logger = CM.VLog(igen_name)
     logger.level = CC.logger_level
     
     seed = round(time(), 2) if args.seed is None else float(args.seed)
