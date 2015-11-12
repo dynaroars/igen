@@ -14,8 +14,6 @@ logger = CM.VLog('config')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
 
-if __debug__: logger.warn("DEBUG MODE ON. Can be slow !")
-
 #Data Structures
 class Dom(CC.Dom):
     """

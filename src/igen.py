@@ -77,6 +77,7 @@ def get_run_f(prog, args, mod):
     return _f, get_cov_f
 
 if __name__ == "__main__":
+    
     igen_file = CM.getpath(__file__)
     igen_name = os.path.basename(igen_file)
     igen_dir = os.path.dirname(igen_file)
@@ -201,6 +202,7 @@ if __name__ == "__main__":
     CC.logger_level = args.logger_level
     logger = CM.VLog(igen_name)
     logger.level = CC.logger_level
+    if __debug__: logger.warn("DEBUG MODE ON. Can be slow !")
     
     seed = round(time(), 2) if args.seed is None else float(args.seed)
     

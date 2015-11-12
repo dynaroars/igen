@@ -8,8 +8,6 @@ import get_cov as GC
 logger = CM.VLog('coreutils')
 logger.level = CC.logger_level
 
-if __debug__: print("DEBUG MODE ON. Can be slow !")
-
 def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
     if __debug__:
         assert isinstance(prog_name, str), prog_name
@@ -100,7 +98,7 @@ def get_cov_perl(config, data):
 
     #run perlCoverage.pl script
     ts = db[data['prog_name']](get_ts_data(config, data))
-    script_cmd = os.path.join(data['scripts_dir'], 'pptCoverage.pl')
+    script_cmd = os.path.join(data['scripts_dir'], 'pptCoverageHelper.pl')
     sids = ts.run_perl(script_cmd)
     sids = set(CM.iflatten(sids))
     if not sids:

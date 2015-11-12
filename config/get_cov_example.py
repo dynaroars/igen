@@ -8,8 +8,6 @@ import get_cov as GC
 logger = CM.VLog('example')
 logger.level = CC.logger_level
 
-if __debug__: print("DEBUG MODE ON. Can be slow !")
-
 def prepare(prog_name,get_dom_f,dir_):
     if __debug__:
         assert isinstance(prog_name,str),prog_name
