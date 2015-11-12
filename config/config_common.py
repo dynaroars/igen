@@ -16,12 +16,6 @@ allows_known_errors = False
 show_cov = True
 analyze_outps = False
 
-def mk_tmpdir(tmp_dir, prefix):
-    import getpass
-    prefix = "{}_{}_".format(getpass.getuser(), prefix)
-    tdir = tempfile.mkdtemp(dir=tmp_dir, prefix=prefix)
-    return tdir
-
 #Data Structures
 class CustDict(MutableMapping):
     """
