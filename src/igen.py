@@ -235,11 +235,10 @@ if __name__ == "__main__":
             logger.debug("*run {}, seed {}, time {}s, '{}'".format(
                 i+1, seed_, time() - st_, tdir_))
 
-        logger.debug("** done benchmark '{}' {} runs, seed {}, "
-                     "time {}, results in '{}'"
-                     .format(prog_name, args.benchmark,
-                             seed, time() - st, tdir))
-
+        logger.info("** done {} runs, seed {}, "
+                    "time {}, results in '{}'"
+                    .format(args.benchmark, seed, time() - st, tdir))
+                            
     else: #run analysis
         do_min_configs = args.do_min_configs  
         if do_min_configs and do_min_configs != 'use_existing':
@@ -248,7 +247,7 @@ if __name__ == "__main__":
 
         cmp_rand = args.cmp_rand
         if cmp_rand:
-            _f,_ = get_run_f(cmp_rand,args, IA)
+            _f,_ = get_run_f(cmp_rand, args, IA)
             tdir = CC.mk_tmpdir(tmp_dir, cmp_rand + "igen_cmp_rand")
             cmp_rand = lambda rand_n: _f(seed, tdir, rand_n)
 
