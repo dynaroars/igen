@@ -44,18 +44,12 @@ def get_run_f(prog, args, mod):
         else:
             import igen_settings
             import get_cov_coreutils as Coreutils            
-            import get_cov_example as Example
-            
-            if prog in Coreutils.db:
-                dom, get_cov_f = Coreutils.prepare(
-                    prog,
-                    mod.Dom.get_dom,
-                    igen_settings.coreutils_main_dir,
-                    igen_settings.coreutils_doms_dir,
-                    do_perl=args.do_perl)
-            else:
-                dom, get_cov_f = Example.prepare(
-                    prog, mod.Dom.get_dom, igen_settings.examples_dir)
+            dom, get_cov_f = Coreutils.prepare(
+                prog,
+                mod.Dom.get_dom,
+                igen_settings.coreutils_main_dir,
+                igen_settings.coreutils_doms_dir,
+                do_perl=args.do_perl)
                     
             config_default = None  #no default config for these
             
