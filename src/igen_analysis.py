@@ -61,7 +61,7 @@ class Analysis(object):
             return pp_cores_d
             
     @staticmethod
-    def replay(dir_,show_iters,do_min_configs,cmp_gt,cmp_rand):
+    def replay(dir_, show_iters, do_min_configs, cmp_gt, cmp_rand):
         """
         Replay and analyze execution info from saved info in dir_
         do_min_configs has 3 possible values
