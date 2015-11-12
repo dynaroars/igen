@@ -36,14 +36,13 @@ def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
         assert os.path.isdir(dir_), dir_
         prog_exe = os.path.join(prog_dir, prog_name)        
         assert os.path.isfile(prog_exe), prog_exe
-        logger.info("prog_exe: '{}'".format(prog_exe))
         get_cov_f = get_cov_gcov
         dom_file = os.path.join(
             doms_dir, "doms_gnu_coreutils", "{}.dom".format(prog_name))
             
     dom_file = CM.getpath(dom_file)
     dom,_ = get_dom_f(dom_file)
-    logger.info("dom_file '{}': {}".format(dom_file,dom))
+    logger.debug("dom_file '{}': {}".format(dom_file,dom))
     
     assert all(len(vs) >= 2 and "off" in vs 
                for vs in dom.itervalues()),"incorrect format"
