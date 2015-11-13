@@ -228,24 +228,24 @@ class Config(CC.Config):
     And(a == 1, b == 0, c == 1)
     """
 
-    def c_implies(self,core):
+    def c_implies(self, core):
         """
         self => conj core
         x=0&y=1 => x=0,y=1
         not(x=0&z=1 => x=0,y=1)
         """
         if __debug__:
-            assert isinstance(core,Core),(core)
+            assert isinstance(core, Core),(core)
 
         return (not core or
                 all(k in self and self[k] in core[k] for k in core))
 
-    def d_implies(self,core):
+    def d_implies(self, core):
         """
         self => disj core
         """
         if __debug__:
-            assert isinstance(core,Core),core
+            assert isinstance(core, Core),core
 
         return (not core or
                 any(k in self and self[k] in core[k] for k in core))
@@ -899,7 +899,7 @@ class Infer(object):
             assert isinstance(dom,Dom),dom        
             assert isinstance(cache,dict),cache
 
-        def _f(configs,cc,cd,_b):
+        def _f(configs, cc, cd, _b):
             new_cc,new_cd = cc,cd
             if configs:
                 new_cc = Infer.infer_cache(cc,configs,dom,cache)
@@ -914,7 +914,7 @@ class Infer(object):
                         new_cd = Core((k,v) for (k,v) in new_cd.iteritems()
                                       if k not in new_cc)
 
-            return new_cc,new_cd
+            return new_cc, new_cd
 
         pc,pd,nc,nd = core
         
@@ -928,11 +928,11 @@ class Infer(object):
             nconfigs = [c for c in cconfigs_d if sid not in cconfigs_d[c]]
             
         _b = lambda: [c for c in configs_d if sid not in configs_d[c]]
-        pc_,pd_ = _f(pconfigs,pc,pd,_b)
+        pc_,pd_ = _f(pconfigs, pc, pd, _b)
         
         _b = lambda: covs_d[sid]
-        nc_,nd_ = _f(nconfigs,nc,nd,_b)
-        return PNCore((pc_,pd_,nc_,nd_))
+        nc_,nd_ = _f(nconfigs, nc, nd, _b)
+        return PNCore((pc_, pd_, nc_, nd_))
 
     @staticmethod
     def infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom):
@@ -976,17 +976,18 @@ class IGen(object):
     """
     Main algorithm
     """
-    def __init__(self,dom,get_cov,config_default=None):
+    def __init__(self, dom, get_cov, config_default=None):
         if __debug__:
             assert isinstance(dom,Dom),dom
             assert callable(get_cov),get_cov
             assert (config_default is None or
-                    isinstance(config_default,Config)), config_default
+                    isinstance(config_default, dict)), config_default
             
         self.dom = dom
         self.z3db = self.dom.z3db
         self.get_cov = get_cov
-        self.config_default = config_default
+        self.config_default = Config((k, list(config_default[k])[0])
+                                     for k in dom)
 
     def go(self,seed,rand_n=None,existing_results=None,tmpdir=None):
         """
