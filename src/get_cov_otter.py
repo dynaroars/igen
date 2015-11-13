@@ -4,14 +4,12 @@ import os.path
 import vu_common as CM
 
 import config_common as CC
-import config as IA
+import igen_alg as IA
 
 logger = CM.VLog('otter')
 logger.level = CC.logger_level
 
-if __debug__: logger.warn("DEBUG MODE ON. Can be slow !")
-
-db = {"vsftpd":None,"ngircd":None}
+db = {"vsftpd":None, "ngircd":None}
 from igen_settings import otter_dir
 
 def prepare(prog_name,get_dom_f):
@@ -19,19 +17,19 @@ def prepare(prog_name,get_dom_f):
         assert isinstance(prog_name,str),prog_name
         assert callable(get_dom_f),get_dom_f
     
-    dir_ = CM.getpath(os.path.join(otter_dir,prog_name))
+    dir_ = CM.getpath(os.path.join(otter_dir, prog_name))
     dom_file = os.path.join(dir_,'possibleValues.txt')
     pathconds_d_file = os.path.join(dir_,'{}.tvn'.format('pathconds_d'))
     assert os.path.isfile(dom_file),dom_file
     assert os.path.isfile(pathconds_d_file),pathconds_d_file
     
     dom,_ = get_dom_f(dom_file)
-    logger.info("dom_file '{}': {}".format(dom_file,dom))
+    logger.debug("dom_file '{}': {}".format(dom_file,dom))
     
     st = time()
     pathconds_d = CM.vload(pathconds_d_file)
-    logger.info("'{}': {} path conds ({}s)"
-                .format(pathconds_d_file,len(pathconds_d),time()-st))
+    logger.debug("'{}': {} path conds ({}s)"
+                 .format(pathconds_d_file,len(pathconds_d),time() - st))
 
     args={'pathconds_d':pathconds_d}
     get_cov_f = lambda config: get_cov(config,args)

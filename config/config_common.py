@@ -2,6 +2,7 @@ import abc
 import itertools
 import random
 import os.path
+import tempfile
 from collections import OrderedDict, MutableMapping
 
 from vu_common import HDict
@@ -14,8 +15,6 @@ logger_level = CM.VLog.DEBUG
 allows_known_errors = False
 show_cov = True
 analyze_outps = False
-
-if __debug__: print("DEBUG MODE ON. Can be slow !")
 
 #Data Structures
 class CustDict(MutableMapping):
@@ -166,7 +165,7 @@ class Dom(OrderedDict):
         return z3db
     
     @classmethod
-    def get_dom(cls,dom_file):
+    def get_dom(cls, dom_file):
         """
         Read domain info from a file
         """
@@ -181,12 +180,11 @@ class Dom(OrderedDict):
         dom = cls(get_lines(CM.iread_strip(dom_file)))
 
         config_default = None
-        dom_file_default = dom_file+'.default'
+        dom_file_default = dom_file + '.default'
         if os.path.isfile(dom_file_default):
-            rs = dict(get_lines(CM.iread_strip(dom_file_default)))
-            config_default = Config((k,list(rs[k])[0]) for k in dom)
+            config_default = dict(get_lines(CM.iread_strip(dom_file_default)))
 
-        return dom,config_default
+        return dom, config_default
 
     #Methods to generate configurations
     def gen_configs_full(self,config_cls=None):
@@ -308,7 +306,8 @@ class Configs_d(CustDict):
         ss = (c.__str__(self[c]) for c in self.__dict__)
         return '\n'.join("{}. {}".format(i+1,s) for i,s in enumerate(ss))
 
-   
+
+    
     
 if __name__ == "__main__":
     import doctest

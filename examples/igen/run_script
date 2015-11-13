@@ -15,6 +15,9 @@ import os.path
 import vu_common as CM
 
 if __name__ == "__main__":
+    me_file = CM.getpath(__file__)
+    me_dir = os.path.dirname(me_file)
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("inputs", help="input configurations")
     args = parser.parse_args()
@@ -24,7 +27,7 @@ if __name__ == "__main__":
     assert len(varnames) == len(varvals)
 
     import platform
-    prog_exe = os.path.abspath("ex.{}.exe".format(platform.system()))
+    prog_exe = os.path.join(me_dir, "ex.{}.exe".format(platform.system()))
     prog_inp = ' '.join(varvals) #"0 1 0"
     prog_out = "/var/tmp/tvn.out"
     cmd = "{} {} > {}".format(prog_exe, prog_inp, prog_out)
