@@ -246,7 +246,7 @@ class Config(HDict):
     And(a == 1, b == 0, c == 1)
     """
     def __init__(self,config=HDict()):
-        HDict.__init__(self,config)
+        HDict.__init__(self, config)
         
         if __debug__:
             assert all(is_setting(s) for s in self.iteritems()), self
