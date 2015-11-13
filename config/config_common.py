@@ -165,7 +165,7 @@ class Dom(OrderedDict):
         return z3db
     
     @classmethod
-    def get_dom(cls,dom_file):
+    def get_dom(cls, dom_file):
         """
         Read domain info from a file
         """
@@ -180,12 +180,11 @@ class Dom(OrderedDict):
         dom = cls(get_lines(CM.iread_strip(dom_file)))
 
         config_default = None
-        dom_file_default = dom_file+'.default'
+        dom_file_default = dom_file + '.default'
         if os.path.isfile(dom_file_default):
-            rs = dict(get_lines(CM.iread_strip(dom_file_default)))
-            config_default = Config((k,list(rs[k])[0]) for k in dom)
+            config_default = dict(get_lines(CM.iread_strip(dom_file_default)))
 
-        return dom,config_default
+        return dom, config_default
 
     #Methods to generate configurations
     def gen_configs_full(self,config_cls=None):
