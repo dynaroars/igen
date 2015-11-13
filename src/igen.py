@@ -3,6 +3,7 @@ import tempfile
 from time import time
 import vu_common as CM
 import config_common as CC
+logger = None
 
 def get_run_f(prog, args, mod):
     """
@@ -36,8 +37,9 @@ def get_run_f(prog, args, mod):
         if args.dom_file:
             #general way to run prog using dom_file/runscript
             dom, config_default = mod.Dom.get_dom(CM.getpath(args.dom_file))
+            logger.debug("dom_file '{}': {}".format(args.dom_file, dom))
+
             run_script = CM.getpath(args.run_script)
-            
             import get_cov
             get_cov_f = lambda config: get_cov.runscript_get_cov(
                 config, run_script)
@@ -107,7 +109,7 @@ if __name__ == "__main__":
                          type=int, 
                          choices=range(5),
                          default = 4)    
-    
+
     aparser.add_argument("--seed", "-seed",
                          type=float,
                          help="use this seed")
@@ -149,6 +151,14 @@ if __name__ == "__main__":
                          help="do coretutils written in perl",
                          action="store_true")
 
+    aparser.add_argument("--sids", "-sids",
+                         help="find interactions for sids",
+                         action="store")
+
+    aparser.add_argument("--cfg_file", "-cfg_file",
+                         help="file containing predecessors from cfg",
+                         action="store")
+    
     #replay options
     aparser.add_argument("--show_iters", "-show_iters",
                          help="for use with analysis, show stats of all iters",
@@ -195,7 +205,6 @@ if __name__ == "__main__":
         CC.analyze_outps = True
 
     #import here so that settings in CC take effect
-    #import config as IA
     import igen_alg as IA
     from igen_settings import tmp_dir
     from igen_analysis import Analysis
@@ -216,7 +225,7 @@ if __name__ == "__main__":
         _f, _ = get_run_f(prog, args, IA)
 
         prog_name = prog if prog else 'noname'
-        prefix = "igen_{}_{}_{}".format(
+        prefix = "igen_{}_{}_{}_".format(
             args.benchmark,
             'full' if args.do_full else 'normal',
             prog_name)

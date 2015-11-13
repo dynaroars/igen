@@ -42,7 +42,7 @@ def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
             
     dom_file = CM.getpath(dom_file)
     dom,_ = get_dom_f(dom_file)
-    logger.debug("dom_file '{}': {}".format(dom_file,dom))
+    logger.debug("dom_file '{}': {}".format(dom_file, dom))
     
     assert all(len(vs) >= 2 and "off" in vs 
                for vs in dom.itervalues()),"incorrect format"
@@ -100,8 +100,6 @@ def get_cov_perl(config, data):
     script_cmd = os.path.join(data['scripts_dir'], 'pptCoverageHelper.pl')
     sids = ts.run_perl(script_cmd)
     sids = set(CM.iflatten(sids))
-    if not sids:
-        logger.warn("config {} has NO cov".format(config))
 
     return sids, []
 
@@ -115,7 +113,7 @@ def get_cov_gcov(config, data):
     _ = GC.run(cmd,'cleanup')
     
     #run testsuite
-    ts = db[data['prog_name']](get_ts_data(config,data))
+    ts = db[data['prog_name']](get_ts_data(config, data))
     outps = ts.run()
 
     #read traces from gcov
@@ -127,10 +125,7 @@ def get_cov_gcov(config, data):
     sids = (GC.parse_gcov(os.path.join(gcov_dir,f))
             for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
     sids = set(CM.iflatten(sids))
-    if not sids:
-        logger.warn("config {} has NO cov".format(config))
-        
-    return sids,outps
+    return sids, outps
 
 def check_ts_data(data):
     assert isinstance(data,dict) 

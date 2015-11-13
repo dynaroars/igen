@@ -971,15 +971,14 @@ class Infer(object):
 
         return new_covs,new_cores
 
-
 class IGen(object):
     """
     Main algorithm
     """
     def __init__(self, dom, get_cov, config_default=None):
         if __debug__:
-            assert isinstance(dom,Dom),dom
-            assert callable(get_cov),get_cov
+            assert isinstance(dom,Dom), dom
+            assert callable(get_cov), get_cov
             assert (config_default is None or
                     isinstance(config_default, dict)), config_default
             
@@ -987,12 +986,12 @@ class IGen(object):
         self.z3db = self.dom.z3db
         self.get_cov = get_cov
         if config_default:
-            self.config_default = Config((k, list(config_default[k])[0])
-                                         for k in dom)
+            self.config_default = Config(
+                (k, list(config_default[k])[0]) for k in dom)
         else:
             self.config_default = None
 
-    def go(self,seed,rand_n=None,existing_results=None,tmpdir=None):
+    def go(self, seed, rand_n=None, existing_results=None, tmpdir=None):
         """
         rand_n = None: use default CEGIR mode
         rand_n = 0  : use init configs
@@ -1014,7 +1013,6 @@ class IGen(object):
         cur_min_stren = min_stren
         cur_stuck = 0
         max_stuck = 3
-        do_perturb = True #set this to True will not do any perturbing
         cores_d,configs_d,covs_d = Cores_d(),CC.Configs_d(),CC.Covs_d()
         sel_core = SCore.mk_default()
         ignore_sel_cores = set()
@@ -1053,24 +1051,12 @@ class IGen(object):
                 set(cores_d.values()),ignore_sel_cores,
                 cur_min_stren,configs_d)
 
-            stop = False
             if sel_core is None:
-                if do_perturb: #if already perturb
-                    stop = True
-                else:
-                    do_perturb = True
-                    logger.debug("perturb !")
-                    sel_core,configs = self.gen_configs_iter(
-                        set(cores_d.values()),set(),cur_min_stren,configs_d)
-                    if sel_core is None:
-                        stop = True
-                        
-                if stop:
-                    cur_iter -= 1
-                    logger.debug('done after iter {}'.format(cur_iter))
-                    break
+                cur_iter -= 1
+                logger.debug('done after iter {}'.format(cur_iter))
+                break
 
-            assert configs,configs
+            assert configs, configs
             cconfigs_d,xtime = self.eval_configs(configs)
             xtime_total += xtime
             new_covs,new_cores = Infer.infer_covs(
@@ -1124,9 +1110,13 @@ class IGen(object):
         for c in configs:
             if c in cconfigs_d: #skip
                 continue
-            sids,outps = self.get_cov(c)
-            cconfigs_d[c]= (outps if CC.analyze_outps else sids)
-        return cconfigs_d,time() - st
+            sids, outps = self.get_cov(c)
+            rs = outps if CC.analyze_outps else sids
+            if not rs:
+                logger.warn("config {} generates nothing".format(c))
+                
+            cconfigs_d[c] = rs
+        return cconfigs_d, time() - st
 
     def gen_configs_init(self,rand_n,seed):
         if not rand_n: #None or 0
