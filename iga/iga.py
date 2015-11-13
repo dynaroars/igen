@@ -1,4 +1,5 @@
 from time import time
+import tempfile
 import vu_common as CM
 import config_common as CC
 
@@ -91,5 +92,5 @@ if __name__ == "__main__":
     _f,_ = get_run_f(prog, args, GO)
 
     prog_name = prog if prog else 'noname'
-    tdir = CC.mk_tmpdir(tmp_dir, "iga_" + prog_name)
+    tdir = tempfile.mkdtemp(dir=tmp_dir, prefix="iga_" + prog_name)
     _ = _f(seed,tdir)
