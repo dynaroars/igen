@@ -454,11 +454,7 @@ class IGa(object):
                 if cur_exploit < 0:
                     cur_exploit = 0
 
-        if sid in cov_s:
-            config = CM.find_first(config_s, lambda c: sid in configs_d[sid])
-            print config
-        
-        logger.debug("sid '{}': {} ({}s), iters {}, configs {}, covs {}"
+        logger.debug("* sid '{}': {} ({}s), iters {}, configs {}, covs {}"
                      .format(sid,
                              'found' if sid in cov_s else 'not found',
                              time() - st,
@@ -466,6 +462,10 @@ class IGa(object):
                              len(config_s),
                              len(cov_s)))
 
+        if sid in cov_s:
+            config = CM.find_first(config_s, lambda c: sid in configs_d[c])
+            logger.debug(str(config))
+            
         return config_s, cov_s
 
 
