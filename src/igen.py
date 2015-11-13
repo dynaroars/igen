@@ -50,9 +50,8 @@ def get_run_f(prog, args, mod):
                 igen_settings.coreutils_main_dir,
                 igen_settings.coreutils_doms_dir,
                 do_perl=args.do_perl)
-                    
             config_default = None  #no default config for these
-            
+
         igen = mod.IGen(dom, get_cov_f, config_default=config_default)
         if args.cmp_rand:
             _f = lambda seed, tdir, rand_n: igen.go_rand(

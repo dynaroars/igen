@@ -986,8 +986,11 @@ class IGen(object):
         self.dom = dom
         self.z3db = self.dom.z3db
         self.get_cov = get_cov
-        self.config_default = Config((k, list(config_default[k])[0])
-                                     for k in dom)
+        if config_default:
+            self.config_default = Config((k, list(config_default[k])[0])
+                                         for k in dom)
+        else:
+            self.config_default = None
 
     def go(self,seed,rand_n=None,existing_results=None,tmpdir=None):
         """
