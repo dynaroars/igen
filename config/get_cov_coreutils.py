@@ -8,60 +8,61 @@ import get_cov as GC
 logger = CM.VLog('coreutils')
 logger.level = CC.logger_level
 
-if __debug__: print("DEBUG MODE ON. Can be slow !")
-
 def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
     if __debug__:
-        assert isinstance(prog_name,str), prog_name
-        assert isinstance(do_perl,bool), do_perl
-        assert callable(get_dom_f), get_dom_f
-        
+        assert isinstance(prog_name, str), prog_name
+        assert callable(get_dom_f), get_dom_f        
+        assert isinstance(main_dir, str), main_dir
+        assert isinstance(doms_dir, str), doms_dir
+        assert isinstance(do_perl, bool), do_perl
+
     main_dir = CM.getpath(main_dir)
     dom_dir = CM.getpath(doms_dir)    
-
+    scripts_dir = CM.getpath(os.path.join(dom_dir, '../../scripts'))
+    
     if do_perl:
-        prog_dir = os.path.join(main_dir,'coreutils_perl')
-        dir_ = os.path.join(main_dir,'ppt')
+        prog_dir = None # os.path.join(main_dir, 'coreutils_perl')
+        dir_ = os.path.join(main_dir, 'ppt')
+        assert os.path.isdir(dir_), dir_
         prog_exe = "@@@" + prog_name
         get_cov_f = get_cov_perl
         dom_file = os.path.join(
-            doms_dir, "doms_ppt_coreutils","{}.dom".format(prog_name))
+            doms_dir, "doms_ppt_coreutils", "{}.dom".format(prog_name))
             
     else:
-        bdir = os.path.join(main_dir,'coreutils')
-        prog_dir = os.path.join(bdir,'obj-gcov','src')
-        dir_ = os.path.join(bdir,'src')
+        bdir = os.path.join(main_dir, 'coreutils')
+        prog_dir = os.path.join(bdir, 'obj-gcov', 'src')
+        dir_ = os.path.join(bdir, 'src')
         assert os.path.isdir(dir_), dir_
-        prog_exe = os.path.join(prog_dir,prog_name)        
-        assert os.path.isfile(prog_exe),prog_exe
-        logger.info("prog_exe: '{}'".format(prog_exe))
+        prog_exe = os.path.join(prog_dir, prog_name)        
+        assert os.path.isfile(prog_exe), prog_exe
         get_cov_f = get_cov_gcov
         dom_file = os.path.join(
             doms_dir, "doms_gnu_coreutils", "{}.dom".format(prog_name))
             
     dom_file = CM.getpath(dom_file)
     dom,_ = get_dom_f(dom_file)
-    logger.info("dom_file '{}': {}".format(dom_file,dom))
+    logger.debug("dom_file '{}': {}".format(dom_file,dom))
     
     assert all(len(vs) >= 2 and "off" in vs 
                for vs in dom.itervalues()),"incorrect format"
 
-    data = {'var_names':dom.keys(),
-            'prog_name':prog_name,
-            'prog_exe':prog_exe,
+    data = {'var_names': dom.keys(),
+            'prog_name': prog_name,
+            'prog_exe': prog_exe,
             'get_cov_f': get_cov_f,
-            'dir_':dir_,
-            'main_dir':main_dir,
-            'prog_dir':prog_dir}
-    get_cov_f = lambda config: GC.get_cov_wrapper(config,data)
-    return dom,get_cov_f
+            'dir_': dir_,
+            'main_dir': main_dir,
+            'prog_dir': prog_dir,
+            'scripts_dir': scripts_dir}
+    get_cov_f = lambda config: GC.get_cov_wrapper(config, data)
+    return dom, get_cov_f
 
 def check_data(data):
     GC.check_data(data)
     assert 'main_dir' in data
     assert 'prog_dir' in data
     
-
 def get_opts(config,ks):
     """
     >>> ks = "-x -y z + --o".split()
@@ -83,34 +84,34 @@ def get_opts(config,ks):
 
     return ' '.join(opts)
 
-def get_ts_data(config,data):
-    return {'prog':data['prog_exe'],
-            'opts':get_opts(config,data['var_names']),
-            'cdir':os.path.join(data['main_dir'],'testfiles','common'),
-            'tdir':os.path.join(data['main_dir'],'testfiles',data['prog_name'])}
+def get_ts_data(config, data):
+    return {'prog': data['prog_exe'],
+            'opts': get_opts(config, data['var_names']),
+            'cdir': os.path.join(data['main_dir'], 'testfiles', 'common'),
+            'tdir': os.path.join(data['main_dir'], 'testfiles', data['prog_name'])}
 
-def get_cov_perl(config,data):
+def get_cov_perl(config, data):
     if __debug__:
-        assert isinstance(config,CC.Config),config
+        assert isinstance(config, CC.Config),config
         check_data(data)
 
     #run perlCoverage.pl script
-    ts = db[data['prog_name']](get_ts_data(config,data))
-    sids = ts.run_perl()
+    ts = db[data['prog_name']](get_ts_data(config, data))
+    script_cmd = os.path.join(data['scripts_dir'], 'pptCoverageHelper.pl')
+    sids = ts.run_perl(script_cmd)
     sids = set(CM.iflatten(sids))
     if not sids:
         logger.warn("config {} has NO cov".format(config))
 
-    print len(sids)
-    return sids,[]
+    return sids, []
 
-def get_cov_gcov(config,data):
+def get_cov_gcov(config, data):
     if __debug__:
-        assert isinstance(config,CC.Config),config        
+        assert isinstance(config, CC.Config),config        
         check_data(data)
         
     #cleanup
-    cmd = "rm -rf {}/*.gcov {}/*.gcda".format(data['dir_'],data['prog_dir'])
+    cmd = "rm -rf {}/*.gcov {}/*.gcda".format(data['dir_'], data['prog_dir'])
     _ = GC.run(cmd,'cleanup')
     
     #run testsuite
@@ -119,8 +120,8 @@ def get_cov_gcov(config,data):
 
     #read traces from gcov
     #/path/prog.Linux.exe -> prog
-    cmd = "gcov {} -o {}".format(data['prog_name'],data['prog_dir'])
-    _ = GC.run(cmd,'gcov')
+    cmd = "gcov {} -o {}".format(data['prog_name'], data['prog_dir'])
+    _ = GC.run(cmd, 'gcov')
     
     gcov_dir = os.getcwd()
     sids = (GC.parse_gcov(os.path.join(gcov_dir,f))
@@ -157,11 +158,11 @@ class TestSuite_COREUTILS(object):
         outps = GC.run(cmds,'run testsuite')
         return outps
 
-    def run_perl(self):
+    def run_perl(self, script_cmd):
         cmds = self.get_cmds()
         sids = []
         for cmd in cmds:
-            sids_ = GC.run_runscript('perlCoverage.pl',cmd)
+            sids_ = GC.run_runscript(script_cmd, cmd)
             sids.append(sids_)
         return sids
 

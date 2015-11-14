@@ -8,13 +8,11 @@ from vu_common import HDict
 
 import vu_common as CM
 import config_common as CC
-from config_common import Configs_d #do not del, nec to read existing results
+from config_common import Configs_d #do not del, needed to read existing results
 
 logger = CM.VLog('config')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
-
-if __debug__: logger.warn("DEBUG MODE ON. Can be slow !")
 
 #Data Structures
 class Dom(CC.Dom):
@@ -38,7 +36,6 @@ class Dom(CC.Dom):
     >>> configs = dom.gen_configs_rand_smt(dom.siz)
     >>> assert len(configs) == dom.siz
     """
-
 
     """
     Create configs using an SMT solver
@@ -231,24 +228,24 @@ class Config(CC.Config):
     And(a == 1, b == 0, c == 1)
     """
 
-    def c_implies(self,core):
+    def c_implies(self, core):
         """
         self => conj core
         x=0&y=1 => x=0,y=1
         not(x=0&z=1 => x=0,y=1)
         """
         if __debug__:
-            assert isinstance(core,Core),(core)
+            assert isinstance(core, Core),(core)
 
         return (not core or
                 all(k in self and self[k] in core[k] for k in core))
 
-    def d_implies(self,core):
+    def d_implies(self, core):
         """
         self => disj core
         """
         if __debug__:
-            assert isinstance(core,Core),core
+            assert isinstance(core, Core),core
 
         return (not core or
                 any(k in self and self[k] in core[k] for k in core))
@@ -738,9 +735,9 @@ class Cores_d(CC.CustDict):
             mcores_d.add(core_,sid)
 
         if show_detail:
-            logger.debug("mcores_d has {} items\n{}"
-                         .format(len(mcores_d),mcores_d))
-            logger.info("mcores_d strens (stren, nresults, nsids): {}"
+            logger.info("inferred results ({}):\n{}"
+                        .format(len(mcores_d),mcores_d))
+            logger.debug("mcores_d strens (stren, nresults, nsids): {}"
                         .format(mcores_d.strens_str))
             
         return mcores_d
@@ -761,7 +758,7 @@ class Cores_d(CC.CustDict):
                              format(sid,old_c,new_c))
 
         cores_d = Cores_d()                
-        logger.info("analyze results for {} sids".format(len(self)))
+        logger.debug("analyze results for {} sids".format(len(self)))
 
         if covs_d:
             logger.debug("verify ...")
@@ -902,7 +899,7 @@ class Infer(object):
             assert isinstance(dom,Dom),dom        
             assert isinstance(cache,dict),cache
 
-        def _f(configs,cc,cd,_b):
+        def _f(configs, cc, cd, _b):
             new_cc,new_cd = cc,cd
             if configs:
                 new_cc = Infer.infer_cache(cc,configs,dom,cache)
@@ -917,7 +914,7 @@ class Infer(object):
                         new_cd = Core((k,v) for (k,v) in new_cd.iteritems()
                                       if k not in new_cc)
 
-            return new_cc,new_cd
+            return new_cc, new_cd
 
         pc,pd,nc,nd = core
         
@@ -931,11 +928,11 @@ class Infer(object):
             nconfigs = [c for c in cconfigs_d if sid not in cconfigs_d[c]]
             
         _b = lambda: [c for c in configs_d if sid not in configs_d[c]]
-        pc_,pd_ = _f(pconfigs,pc,pd,_b)
+        pc_,pd_ = _f(pconfigs, pc, pd, _b)
         
         _b = lambda: covs_d[sid]
-        nc_,nd_ = _f(nconfigs,nc,nd,_b)
-        return PNCore((pc_,pd_,nc_,nd_))
+        nc_,nd_ = _f(nconfigs, nc, nd, _b)
+        return PNCore((pc_, pd_, nc_, nd_))
 
     @staticmethod
     def infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom):
@@ -979,17 +976,21 @@ class IGen(object):
     """
     Main algorithm
     """
-    def __init__(self,dom,get_cov,config_default=None):
+    def __init__(self, dom, get_cov, config_default=None):
         if __debug__:
             assert isinstance(dom,Dom),dom
             assert callable(get_cov),get_cov
             assert (config_default is None or
-                    isinstance(config_default,Config)), config_default
+                    isinstance(config_default, dict)), config_default
             
         self.dom = dom
         self.z3db = self.dom.z3db
         self.get_cov = get_cov
-        self.config_default = config_default
+        if config_default:
+            self.config_default = Config((k, list(config_default[k])[0])
+                                         for k in dom)
+        else:
+            self.config_default = None
 
     def go(self,seed,rand_n=None,existing_results=None,tmpdir=None):
         """
@@ -1003,7 +1004,7 @@ class IGen(object):
             assert isinstance(seed,(float,int)), seed
             
         random.seed(seed)
-        logger.info("seed: {}, tmpdir: {}".format(seed,tmpdir))
+        logger.debug("seed: {}, tmpdir: {}".format(seed,tmpdir))
 
         DTrace.save_pre(seed,self.dom,tmpdir)
 
@@ -1066,7 +1067,7 @@ class IGen(object):
                         
                 if stop:
                     cur_iter -= 1
-                    logger.info('done after iter {}'.format(cur_iter))
+                    logger.debug('done after iter {}'.format(cur_iter))
                     break
 
             assert configs,configs
@@ -1090,10 +1091,10 @@ class IGen(object):
         _ = pp_cores_d.merge(show_detail=True)
         itime_total = time() - st
         
-        logger.info(DTrace.str_of_summary(
+        logger.debug(DTrace.str_of_summary(
             seed,cur_iter,itime_total,xtime_total,
             len(configs_d),len(covs_d),tmpdir))
-        logger.info("Done (seed {}, test {})"
+        logger.debug("Done (seed {}, test {})"
                     .format(seed,random.randrange(100)))
         DTrace.save_post(pp_cores_d,itime_total,tmpdir)
         
@@ -1130,13 +1131,13 @@ class IGen(object):
     def gen_configs_init(self,rand_n,seed):
         if not rand_n: #None or 0
             configs = self.dom.gen_configs_tcover1(config_cls=Config)
-            logger.info("gen {} configs using tcover 1".format(len(configs)))
+            logger.debug("gen {} configs using tcover 1".format(len(configs)))
         elif rand_n > 0 and rand_n < self.dom.siz:        
             configs = self.dom.gen_configs_rand_smt(rand_n)
-            logger.info("gen {} rand configs".format(len(configs)))
+            logger.debug("gen {} rand configs".format(len(configs)))
         else:
             configs = self.dom.gen_configs_full(config_cls=Config)
-            logger.info("gen all {} configs".format(len(configs)))
+            logger.debug("gen all {} configs".format(len(configs)))
 
         configs = list(set(configs))
         assert configs, 'no initial configs created'
@@ -1237,7 +1238,7 @@ class DTrace(object):
         self.cores_d = cores_d
         
     def show(self):
-        logger.info("ITER {}, ".format(self.citer) +
+        logger.debug("ITER {}, ".format(self.citer) +
                     "{}s, ".format(self.itime) +
                     "{}s eval, ".format(self.xtime) +
                     "total: {} configs, {} covs, {} cores, "
@@ -1255,7 +1256,7 @@ class DTrace(object):
         mcores_d = self.cores_d.merge()
         logger.debug("infer {} interactions".format(len(mcores_d)))
         logger.detail('\n{}'.format(mcores_d))
-        logger.info("strens: {}".format(mcores_d.strens_str))
+        logger.debug("strens: {}".format(mcores_d.strens_str))
 
     @staticmethod
     def save_pre(seed,dom,tmpdir):
@@ -1268,7 +1269,6 @@ class DTrace(object):
     @staticmethod
     def save_iter(cur_iter,dtrace,tmpdir):
         CM.vsave(os.path.join(tmpdir,'{}.tvn'.format(cur_iter)),dtrace)
-
 
     @staticmethod
     def load_pre(dir_):

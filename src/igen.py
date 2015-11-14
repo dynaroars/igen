@@ -4,15 +4,9 @@ from time import time
 import vu_common as CM
 import config_common as CC
 
-def _tmpdir(tmp_dir, prefix):
-    import getpass
-    prefix = "{}_bm_{}_".format(getpass.getuser(), prefix)
-    tdir = tempfile.mkdtemp(dir=tmp_dir, prefix=prefix)
-    return tdir
-    
 def get_run_f(prog, args, mod):
     """
-    Ret f that takes inputs seed,existing_results,tmpdir 
+    Ret f that takes inputs seed, tmpdir 
     and call appropriate iGen function on those inputs
     """
     import get_cov_otter as Otter
@@ -38,35 +32,26 @@ def get_run_f(prog, args, mod):
         else:
             _f = lambda seed,tdir: igen.go_rand(
                 rand_n=args.rand_n, seed=seed, tmpdir=tdir)
-
-    else:
-        #general way to run prog using a runscript
-        if args.dom_file:  
-            dom,config_default = mod.Dom.get_dom(
-                os.path.realpath(args.dom_file))
-            run_script = os.path.realpath(args.run_script)
+    else:        
+        if args.dom_file:
+            #general way to run prog using dom_file/runscript
+            dom, config_default = mod.Dom.get_dom(CM.getpath(args.dom_file))
+            run_script = CM.getpath(args.run_script)
             
             import get_cov
             get_cov_f = lambda config: get_cov.runscript_get_cov(
-                config,run_script)
+                config, run_script)
         else:
             import igen_settings
             import get_cov_coreutils as Coreutils            
-            import get_cov_example as Example
-            
-            if prog in Coreutils.db:
-                dom, get_cov_f = Coreutils.prepare(
-                    prog,
-                    mod.Dom.get_dom,
-                    igen_settings.coreutils_build_dir,
-                    igen_settings.coreutils_doms_dir,
-                    do_perl=args.do_perl)
-            else:
-                dom, get_cov_f = Example.prepare(
-                    prog, mod.Dom.get_dom, igen_settings.examples_dir)
-                    
+            dom, get_cov_f = Coreutils.prepare(
+                prog,
+                mod.Dom.get_dom,
+                igen_settings.coreutils_main_dir,
+                igen_settings.coreutils_doms_dir,
+                do_perl=args.do_perl)
             config_default = None  #no default config for these
-            
+
         igen = mod.IGen(dom, get_cov_f, config_default=config_default)
         if args.cmp_rand:
             _f = lambda seed, tdir, rand_n: igen.go_rand(
@@ -85,8 +70,12 @@ def get_run_f(prog, args, mod):
     return _f, get_cov_f
 
 if __name__ == "__main__":
-    import argparse
     
+    igen_file = CM.getpath(__file__)
+    igen_name = os.path.basename(igen_file)
+    igen_dir = os.path.dirname(igen_file)
+
+    import argparse
     def _check(v, min_n=None, max_n=None):
         v = int(v)
         if min_n and v < min_n:
@@ -156,23 +145,11 @@ if __name__ == "__main__":
                          help="a script running the subject program",
                          action="store")
     
-    aparser.add_argument("--from_outfile", 
-                         help="cov output to a file (DEPRECATED)",
-                         action="store_true")
-    
     aparser.add_argument("--do_perl", "-do_perl",
                          help="do coretutils written in perl",
                          action="store_true")
 
     #replay options
-    aparser.add_argument("--replay", "-replay",
-                         help="replay info from run dir (DEPRECATED)",
-                         action="store_true")
-
-    aparser.add_argument("--replay_dirs", "-replay_dirs",
-                         help="replay info from adir containing multiple run dirs (DEPRECATED)",
-                         action="store_true")
-
     aparser.add_argument("--show_iters", "-show_iters",
                          help="for use with analysis, show stats of all iters",
                          action="store_true")
@@ -204,6 +181,10 @@ if __name__ == "__main__":
     _check_inps(args)
     
     CC.logger_level = args.logger_level
+    logger = CM.VLog(igen_name)
+    logger.level = CC.logger_level
+    if __debug__: logger.warn("DEBUG MODE ON. Can be slow !")
+    
     seed = round(time(), 2) if args.seed is None else float(args.seed)
     
     if args.allows_known_errors:
@@ -214,7 +195,8 @@ if __name__ == "__main__":
         CC.analyze_outps = True
 
     #import here so that settings in CC take effect
-    import config as IA    
+    #import config as IA
+    import igen_alg as IA
     from igen_settings import tmp_dir
     from igen_analysis import Analysis
 
@@ -234,39 +216,39 @@ if __name__ == "__main__":
         _f, _ = get_run_f(prog, args, IA)
 
         prog_name = prog if prog else 'noname'
-        prefix = "{}_{}_{}".format(
+        prefix = "igen_{}_{}_{}".format(
             args.benchmark,
             'full' if args.do_full else 'normal',
             prog_name)
-        tdir = _tmpdir(tmp_dir, prefix)
+        tdir = tempfile.mkdtemp(dir=tmp_dir, prefix=prefix)
 
-        print("* benchmark '{}',  {} runs, seed {}, results in '{}'"
-              .format(prog_name, args.benchmark, seed, tdir))
+        logger.debug("* benchmark '{}', {} runs, seed {}, results in '{}'"
+                     .format(prog_name, args.benchmark, seed, tdir))
         st = time()
         for i in range(args.benchmark):        
             st_ = time()
             seed_ = seed + i
-            tdir_ = tempfile.mkdtemp(dir=tdir,prefix="run{}_".format(i))
-            print("*run {}/{}".format(i+1,args.benchmark))
-            _ = _f(seed_,tdir_)
-            print("*run {}, seed {}, time {}s, '{}'".format(
-                i+1,seed_,time()-st_,tdir_))
+            tdir_ = tempfile.mkdtemp(dir=tdir, prefix="run{}_".format(i))
+            logger.debug("*run {}/{}".format(i+1, args.benchmark))
+            _ = _f(seed_, tdir_)
+            logger.debug("*run {}, seed {}, time {}s, '{}'".format(
+                i+1, seed_, time() - st_, tdir_))
 
-        print("** done benchmark '{}' {} runs, seed {}, "
-              "time {}, results in '{}'"
-              .format(prog_name, args.benchmark,
-                      seed, time() - st, tdir))
-
+        logger.info("** done {} runs, seed {}, "
+                    "time {}, results in '{}'"
+                    .format(args.benchmark, seed, time() - st, tdir))
+                            
     else: #run analysis
         do_min_configs = args.do_min_configs  
-        if do_min_configs and do_min_configs != 'use_existing':
+        if do_min_configs and (do_min_configs != 'use_existing' or args.dom_file):
             _,get_cov_f = get_run_f(do_min_configs, args, IA)
             do_min_configs = get_cov_f
 
         cmp_rand = args.cmp_rand
         if cmp_rand:
-            _f,_ = get_run_f(cmp_rand,args, IA)
-            tdir = _tmpdir(tmp_dir, cmp_rand + "_cmp_rand")
+            _f,_ = get_run_f(cmp_rand, args, IA)
+            tdir = tempfile.mkdtemp(dir=tmp_dir,
+                                    prefix=cmp_rand + "igen_cmp_rand")
             cmp_rand = lambda rand_n: _f(seed, tdir, rand_n)
 
         analysis_f(args.inp,
