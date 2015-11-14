@@ -12,7 +12,7 @@ logger.level = CC.logger_level
 db = {"vsftpd":None, "ngircd":None}
 from igen_settings import otter_dir
 
-def prepare(prog_name,get_dom_f):
+def prepare(prog_name, get_dom_f):
     if __debug__:
         assert isinstance(prog_name,str),prog_name
         assert callable(get_dom_f),get_dom_f
@@ -24,8 +24,6 @@ def prepare(prog_name,get_dom_f):
     assert os.path.isfile(pathconds_d_file),pathconds_d_file
     
     dom,_ = get_dom_f(dom_file)
-    logger.debug("dom_file '{}': {}".format(dom_file,dom))
-    
     st = time()
     pathconds_d = CM.vload(pathconds_d_file)
     logger.debug("'{}': {} path conds ({}s)"

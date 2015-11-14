@@ -42,8 +42,6 @@ def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
             
     dom_file = CM.getpath(dom_file)
     dom,_ = get_dom_f(dom_file)
-    logger.debug("dom_file '{}': {}".format(dom_file, dom))
-    
     assert all(len(vs) >= 2 and "off" in vs 
                for vs in dom.itervalues()),"incorrect format"
 

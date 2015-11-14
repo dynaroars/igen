@@ -36,8 +36,8 @@ class CustDict(MutableMapping):
             self.__dict__[key] = set()
         self.__dict__[key].add(val)
         
-is_cov = lambda cov: (isinstance(cov,set) and
-                      all(isinstance(s,str) for s in cov))
+is_cov = lambda cov: (isinstance(cov, set) and
+                      all(isinstance(s, str) for s in cov))
 def str_of_cov(cov):
     """
     >>> assert str_of_cov(set("L2 L1 L3".split())) == '(3) L1,L2,L3'
@@ -86,7 +86,6 @@ def str_of_csetting((k,vs)):
         assert is_csetting((k,vs)), (k,vs)
     
     return '{}={}'.format(k,str_of_valset(vs))
-
 
 class Dom(OrderedDict):
     """
@@ -183,7 +182,8 @@ class Dom(OrderedDict):
         dom_file_default = dom_file + '.default'
         if os.path.isfile(dom_file_default):
             config_default = dict(get_lines(CM.iread_strip(dom_file_default)))
-
+            config_default = Config((k, list(config_default[k])[0]) for k in dom)
+            
         return dom, config_default
 
     #Methods to generate configurations
@@ -291,20 +291,20 @@ class Covs_d(CustDict):
 
     def add(self,sid,config):
         if __debug__:
-            assert isinstance(sid,str),sid
-            assert isinstance(config,Config),config
-        super(Covs_d,self).add_set(sid,config)
+            assert isinstance(sid, str),sid
+            assert isinstance(config, Config),config
+        super(Covs_d, self).add_set(sid, config)
 
 class Configs_d(CustDict):
-    def __setitem__(self,config,cov):
+    def __setitem__(self, config, cov):
         if __debug__:
-            assert isinstance(config,Config),config
-            assert is_cov(cov),cov
+            assert isinstance(config, Config), config
+            assert is_cov(cov), cov
         self.__dict__[config] = cov
 
     def __str__(self):
         ss = (c.__str__(self[c]) for c in self.__dict__)
-        return '\n'.join("{}. {}".format(i+1,s) for i,s in enumerate(ss))
+        return '\n'.join("{}. {}".format(i+1, s) for i, s in enumerate(ss))
 
 
     

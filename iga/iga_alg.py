@@ -369,7 +369,7 @@ class IGa(object):
                             len(solved), len(sids), len(covs_s),
                             len(configs_d), self.dom.siz))
 
-        return is_success,len(solved),len(configs_d)
+        return is_success, solved, configs_d
         
     def go_sid(self, sid, configs_d, fits_d):
         if __debug__:
