@@ -1,0 +1,2 @@
+Compile program with proper flags for gcov and cfg support
+gcc -g -fprofile-arcs -ftest-coverage ex.c -fdump-tree-cfg-lineno -o ex.Linux.exe

@@ -1,0 +1,84 @@
+#!/usr/bin/env python2.7
+
+"""
+gcc -g -fprofile-arcs -ftest-coverage ex5.c -fdump-tree-cfg-lineno -o ex5.Linux.exe
+
+This is a run_script example that run a program, which takes as input a list of varname and value and 
+returns to stdout (the terminal screen) the name of the file consisting of covered lines
+
+e.g.,
+./test_script "x 0, y 1, z 0 ..."   #this represent the configuration x = 0 , y = 1 z = 0 ...
+/var/tmp/tvn.out
+
+"""
+import argparse
+import os.path
+import platform
+import vu_common as CM
+
+import gcovparse
+def parse_gcov(gcov_file):
+    gcov_obj = gcovparse.gcovparse(CM.vread(gcov_file))
+    assert len(gcov_obj) == 1, gcov_obj
+    gcov_obj = gcov_obj[0]
+    sids = (d['line'] for d in gcov_obj['lines'] if d['hit'] > 0)
+    sids = set("{}:{}".format(gcov_obj['file'],line) for line in sids)
+    return sids    
+
+if __name__ == "__main__":
+    me_file = CM.getpath(__file__)
+    me_dir = os.path.dirname(me_file)
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("inputs", help="input configurations")
+    args = parser.parse_args()
+    inputs = args.inputs.strip()  #  "x 0, y 1, z 0"
+    parts = [p.split() for p in inputs.split(",")]
+    varnames,varvals = zip(*parts)
+    assert len(varnames) == len(varvals)
+
+    prog_name = "ex5"
+    prog_exe = os.path.join(
+        me_dir,"{}.{}.exe".format(prog_name, platform.system()))
+    prog_dir = os.path.dirname(prog_exe)
+
+    #cleanup
+    rm_cmd = "rm -rf {}/*.gcov {}/*.gcda".format(prog_dir, prog_dir)
+    try:
+        _, rs_err = CM.vcmd(rm_cmd)
+        assert len(rs_err) == 0, rs_err
+    except:
+        print("cmd '{}' failed".format(rm_cmd))
+    
+    #run program
+    prog_inp = ' '.join(varvals)
+    run_cmd = "{} {}".format(prog_exe, prog_inp)
+    try:
+        _, rs_err = CM.vcmd(run_cmd)
+        assert len(rs_err) == 0, rs_err
+    except:
+        print("cmd '{}' failed".format(run_cmd))
+
+    #run gcov
+    gcov_cmd = "gcov {}".format(prog_name)
+    try:
+        rs_out, rs_err = CM.vcmd(gcov_cmd)
+        assert len(rs_err) == 0, rs_err
+        assert "Creating 'ex5.c.gcov'" in rs_out, rs_out
+    except:
+        print("cmd '{}' failed".format(gcov_cmd))
+
+    #parse coverage
+    sids = (parse_gcov(os.path.join(prog_dir,f))
+            for f in os.listdir(prog_dir) if f.endswith(".gcov"))
+    sids = set(CM.iflatten(sids))
+    if not sids:
+        print("config {} has NO cov".format(config))
+
+    #write coverage to file
+    prog_out = "/var/tmp/tvn.out"
+    CM.vwrite(prog_out, '\n'.join(sorted(sids)))
+    print prog_out
+
+
+

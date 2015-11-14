@@ -1,8 +1,14 @@
+import os.path
+import vu_common as CM
+
+me_file = CM.getpath(__file__)
+me_dir = os.path.dirname(me_file)
+
 tmp_dir = "/var/tmp"
 
-examples_dir = "../examples"
+examples_dir = CM.getpath(os.path.join(me_dir, "../examples/igen"))
 otter_dir = "~/igen_exps/otter"
 
 #Note: whenever changing directory, need to recompile coreutils for gcov to work
-coreutils_build_dir = "~/igen_exps/coreutils"  
-coreutils_doms_dir = "../benchmarks/doms"
+coreutils_main_dir = "~/igen_exps/coreutils"  
+coreutils_doms_dir = CM.getpath(os.path.join(me_dir,"../benchmarks/doms"))
