@@ -479,8 +479,9 @@ class PNCore(MCore):
         if __debug__:
             assert self.pc is not None, self.pc #this never happens
             #nc is None => pd is None
-            assert self.nc is not None or self.pd is None, (self.nc,self.nd)
-            assert all(isinstance(c,Config) for c in configs) and configs, configs
+            assert self.nc is not None or self.pd is None, (self.nc, self.nd)
+            assert (all(isinstance(c,Config) for c in configs) and
+                    configs), configs
             assert isinstance(dom,Dom),dom
 
         pc,pd,nc,nd = self
@@ -977,21 +978,17 @@ class IGen(object):
     """
     def __init__(self, dom, get_cov, config_default=None):
         if __debug__:
-            assert isinstance(dom,Dom), dom
+            assert isinstance(dom, Dom), dom
             assert callable(get_cov), get_cov
             assert (config_default is None or
-                    isinstance(config_default, dict)), config_default
+                    isinstance(config_default, CC.Config)), config_default
             
         self.dom = dom
         self.z3db = self.dom.z3db
-        self.get_cov = get_cov
-        if config_default:
-            self.config_default = Config(
-                (k, list(config_default[k])[0]) for k in dom)
-        else:
-            self.config_default = None
+        self.get_cov = get_cov        
+        self.config_default = Config(config_default) if config_default else None
 
-    def go(self, seed, rand_n=None, existing_results=None, tmpdir=None):
+    def go(self, seed, rand_n=None, econfigs_d=None, tmpdir=None):
         """
         rand_n = None: use default CEGIR mode
         rand_n = 0  : use init configs
@@ -999,8 +996,11 @@ class IGen(object):
         rand_n < 0  : use all possible configs
         """
         if __debug__:
-            assert isinstance(tmpdir,str) and os.path.isdir(tmpdir), tmpdir
-            assert isinstance(seed,(float,int)), seed
+            assert isinstance(seed,(float, int)), seed
+            assert rand_n is None or isinstance(rand_n, int), rand_n
+            assert (econfigs_d is None or
+                    isinstance(econfigs_d, CC.Configs_d)), econfigs_d
+            assert isinstance(tmpdir, str) and os.path.isdir(tmpdir), tmpdir
             
         random.seed(seed)
         logger.debug("seed: {}, tmpdir: {}".format(seed,tmpdir))
@@ -1013,7 +1013,7 @@ class IGen(object):
         cur_min_stren = min_stren
         cur_stuck = 0
         max_stuck = 3
-        cores_d,configs_d,covs_d = Cores_d(),CC.Configs_d(),CC.Covs_d()
+        cores_d, configs_d, covs_d = Cores_d(), CC.Configs_d(), CC.Covs_d()
         sel_core = SCore.mk_default()
         ignore_sel_cores = set()
 
@@ -1022,17 +1022,26 @@ class IGen(object):
         ct = st
         xtime_total = 0.0
         
-        configs = self.gen_configs_init(rand_n,seed)
+        configs = self.gen_configs_init(rand_n, seed)
         if self.config_default:
             logger.debug("add default config")
             configs.append(self.config_default)
             
-        cconfigs_d,xtime = self.eval_configs(configs)
+        cconfigs_d, xtime = self.eval_configs(configs)
         xtime_total += xtime
-        new_covs,new_cores = Infer.infer_covs(cores_d,cconfigs_d,
-                                              configs_d,covs_d,self.dom)
+        
+        if econfigs_d:
+            econfigs = [(c, Config(c)) for c in econfigs_d]
+            econfigs = [(c, c_) for c,c_ in econfigs if c_ not in cconfigs_d]
+            for c,c_ in econfigs:
+                cconfigs_d[c_] = econfigs_d[c]
+            logger.debug("add {} existing configs".format(len(econfigs)))
+                    
+        new_covs, new_cores = Infer.infer_covs(
+            cores_d, cconfigs_d, configs_d, covs_d, self.dom)
+            
         while True:
-            ct_ = time();itime = ct_ - ct;ct = ct_
+            ct_ = time(); itime = ct_ - ct; ct = ct_
             dtrace = DTrace(
                 cur_iter,itime,xtime,
                 len(configs_d),len(covs_d),len(cores_d),
@@ -1047,9 +1056,9 @@ class IGen(object):
                 break
 
             cur_iter += 1
-            sel_core,configs = self.gen_configs_iter(
-                set(cores_d.values()),ignore_sel_cores,
-                cur_min_stren,configs_d)
+            sel_core, configs = self.gen_configs_iter(
+                set(cores_d.values()), ignore_sel_cores,
+                cur_min_stren, configs_d)
 
             if sel_core is None:
                 cur_iter -= 1
@@ -1057,10 +1066,10 @@ class IGen(object):
                 break
 
             assert configs, configs
-            cconfigs_d,xtime = self.eval_configs(configs)
+            cconfigs_d, xtime = self.eval_configs(configs)
             xtime_total += xtime
             new_covs,new_cores = Infer.infer_covs(
-                cores_d,cconfigs_d,configs_d,covs_d,self.dom)
+                cores_d, cconfigs_d, configs_d, covs_d, self.dom)
 
             if new_covs or new_cores: #progress
                 cur_stuck = 0
@@ -1088,19 +1097,13 @@ class IGen(object):
 
     #Shortcuts
     def go_full(self,tmpdir=None):
-        return self.go(seed=0,rand_n=-1,
-                       existing_results=None,tmpdir=tmpdir)
-
+        return self.go(seed=0,rand_n=-1,tmpdir=tmpdir)
+                       
     def go_rand(self,rand_n,seed=None,tmpdir=None):
-        return self.go(seed=seed,rand_n=rand_n,
-                       existing_results=None,tmpdir=tmpdir)
-
-    def go_minconfigs(self,seed,existing_results,tmpdir=None):
-        return self.go(seed=seed,rand_n=None,
-                       existing_results=existing_results,tmpdir=tmpdir)
+        return self.go(seed=seed,rand_n=rand_n,tmpdir=tmpdir)
 
     #Helper functions
-    def eval_configs(self,configs):
+    def eval_configs(self, configs):
         if __debug__:
             assert (isinstance(configs,list) and
                     all(isinstance(c,Config) for c in configs)
@@ -1118,7 +1121,7 @@ class IGen(object):
             cconfigs_d[c] = rs
         return cconfigs_d, time() - st
 
-    def gen_configs_init(self,rand_n,seed):
+    def gen_configs_init(self,rand_n, seed):
         if not rand_n: #None or 0
             configs = self.dom.gen_configs_tcover1(config_cls=Config)
             logger.debug("gen {} configs using tcover 1".format(len(configs)))
@@ -1130,7 +1133,8 @@ class IGen(object):
             logger.debug("gen all {} configs".format(len(configs)))
 
         configs = list(set(configs))
-        assert configs, 'no initial configs created'
+        if __debug__:
+            assert configs, 'no initial configs created'
         return configs
         
     def gen_configs_iter(self,cores,ignore_sel_cores,min_stren,configs_d):
@@ -1144,7 +1148,7 @@ class IGen(object):
 
         configs = []
         while True:
-            sel_core = self.select_core(cores,ignore_sel_cores,min_stren)
+            sel_core = self.select_core(cores, ignore_sel_cores, min_stren)
             if sel_core is None:
                 break
 
@@ -1165,14 +1169,15 @@ class IGen(object):
         return sel_core, configs
 
     @staticmethod
-    def select_core(pncores,ignore_sel_cores,min_stren):
+    def select_core(pncores, ignore_sel_cores, min_stren):
         """
         Returns either None or SCore
         """
         if __debug__:
-            assert all(isinstance(c,PNCore) for c in pncores) and pncores,pncores
-            assert (isinstance(ignore_sel_cores,set) and
-                    all(isinstance(c,SCore) for c in ignore_sel_cores)),\
+            assert (all(isinstance(c, PNCore) for c in pncores) and
+                    pncores), pncores
+            assert (isinstance(ignore_sel_cores, set) and
+                    all(isinstance(c, SCore) for c in ignore_sel_cores)),\
                     ignore_sel_cores
 
         sel_cores = []
@@ -1199,7 +1204,7 @@ class IGen(object):
         sel_cores = [c for c in sel_cores if c.sstren >= min_stren]
 
         if sel_cores:
-            sel_core = max(sel_cores,key=lambda c: (c.sstren,c.vstren))
+            sel_core = max(sel_cores, key=lambda c: (c.sstren, c.vstren))
             ignore_sel_cores.add(sel_core)
         else:
             sel_core = None

@@ -5,7 +5,7 @@ import vu_common as CM
 import config_common as CC
 logger = None
 
-def get_run_f(prog, args, mod):
+def get_run_f(prog, args, mod, ga_mod):
     """
     Ret f that takes inputs seed, tmpdir 
     and call appropriate iGen function on those inputs
@@ -19,7 +19,6 @@ def get_run_f(prog, args, mod):
             #TODO: test this 
             _f = lambda seed,tdir,rand_n: igen.go_rand(
                 rand_n=rand_n, seed=seed, tmpdir=tdir)
-
         elif args.do_full:
             if args.rand_n:
                 _f = lambda _,tdir: Otter.do_full(
@@ -37,8 +36,6 @@ def get_run_f(prog, args, mod):
         if args.dom_file:
             #general way to run prog using dom_file/runscript
             dom, config_default = mod.Dom.get_dom(CM.getpath(args.dom_file))
-            logger.debug("dom_file '{}': {}".format(args.dom_file, dom))
-
             run_script = CM.getpath(args.run_script)
             import get_cov
             get_cov_f = lambda config: get_cov.runscript_get_cov(
@@ -55,20 +52,36 @@ def get_run_f(prog, args, mod):
             config_default = None  #no default config for these
 
         igen = mod.IGen(dom, get_cov_f, config_default=config_default)
-        if args.cmp_rand:
+
+        if args.sids:
+            if args.dom_file:
+                cfg_file = args.cfg_file
+            else:
+                #coreutils
+                import os.path
+                cfg_file = os.path.join(iga_settings.coreutils_main_dir,
+                                        'coreutils','obj-gcov', 'src',
+                                        '{}.c.011t.cfg.preds'.format(prog))
+
+            cfg = ga_mod.CFG.mk_from_lines(CM.iread_strip(cfg_file))
+            iga = ga_mod.IGa(dom, cfg, get_cov_f)
+            sids = args.sids.split()
+            def _f(seed, tdir):
+                _, _, configs_d = iga.go(seed=seed, sids=sids, tmpdir=tdir)
+                return igen.go(seed=seed, econfigs_d=configs_d, tmpdir=tdir)
+            
+        elif args.cmp_rand:
             _f = lambda seed, tdir, rand_n: igen.go_rand(
                 rand_n=rand_n, seed=seed, tmpdir=tdir)
-            
         elif args.do_full:
             _f = lambda _,tdir: igen.go_full(tmpdir=tdir)
-            
         elif args.rand_n is None:
             _f = lambda seed, tdir: igen.go(seed=seed, tmpdir=tdir)
-            
         else:
             _f = lambda seed, tdir: igen.go_rand(
                 rand_n=args.rand_n, seed=seed, tmpdir=tdir)
-                
+
+    logger.debug("dom:\n{}".format(dom))
     return _f, get_cov_f
 
 if __name__ == "__main__":
@@ -78,6 +91,7 @@ if __name__ == "__main__":
     igen_dir = os.path.dirname(igen_file)
 
     import argparse
+    
     def _check(v, min_n=None, max_n=None):
         v = int(v)
         if min_n and v < min_n:
@@ -208,6 +222,11 @@ if __name__ == "__main__":
     import igen_alg as IA
     from igen_settings import tmp_dir
     from igen_analysis import Analysis
+        
+    if args.sids:
+        import iga_alg as GA
+    else:
+        GA = None
 
     # two main modes: 1. run iGen to find interactions and
     # 2. run Analysis to analyze iGen's generated files    
@@ -222,7 +241,7 @@ if __name__ == "__main__":
 
     if analysis_f is None: #run iGen
         prog = args.inp
-        _f, _ = get_run_f(prog, args, IA)
+        _f, get_cov_f = get_run_f(prog, args, IA, GA)
 
         prog_name = prog if prog else 'noname'
         prefix = "igen_{}_{}_{}_".format(
@@ -250,12 +269,12 @@ if __name__ == "__main__":
     else: #run analysis
         do_min_configs = args.do_min_configs  
         if do_min_configs and (do_min_configs != 'use_existing' or args.dom_file):
-            _,get_cov_f = get_run_f(do_min_configs, args, IA)
+            _,get_cov_f = get_run_f(do_min_configs, args, IA, None)
             do_min_configs = get_cov_f
 
         cmp_rand = args.cmp_rand
         if cmp_rand:
-            _f,_ = get_run_f(cmp_rand, args, IA)
+            _f,_ = get_run_f(cmp_rand, args, IA, None)
             tdir = tempfile.mkdtemp(dir=tmp_dir,
                                     prefix=cmp_rand + "igen_cmp_rand")
             cmp_rand = lambda rand_n: _f(seed, tdir, rand_n)
