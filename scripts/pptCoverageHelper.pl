@@ -9,7 +9,8 @@ no warnings;
 no warnings "all";
 
 my $igenIn=$ARGV[0];
-my $SUT_DIR="/fs/buzz/ukoc/ppt";
+#my $SUT_DIR="/fs/buzz/ukoc/ppt";
+my $SUT_DIR="/home/ugur/igen_exps/ppt";
 
 #To extract program name
 my($prog_name) = $igenIn =~ m/@@@(.*)\s/;
@@ -23,12 +24,15 @@ my $logFile="$SUT_DIR/archive/test-$start.log";
 
 #running program
 `echo "Running command: $igenIn \nTime: $start" > $logFile 2>&1`;
-`$igenIn >> $logFile 2>&1`;
-`cover >> $logFile 2>&1`;
+`cd $SUT_DIR && $igenIn >> $logFile 2>&1`;
+`cd $SUT_DIR && cover >> $logFile 2>&1`;
 
 #html parsing
 my $te = HTML::TableExtract->new;
-$te->parse_file("cover_db/ppt-0-14-bin-$prog_name.html");
+my $coverageFile="$SUT_DIR/cover_db/ppt-0-14-bin-$prog_name.html";
+#print "$coverageFile";
+$te->parse_file($coverageFile);
+
 my @tables = $te->tables;
 my $counter = 0;
 for my $row ($tables[1]->rows) {
@@ -42,6 +46,6 @@ for my $row ($tables[1]->rows) {
    }
 }
 
-`rm -fr cover_db/`; #cleaning
+`rm -fr $SUT_DIR/cover_db/`; #cleaning
 
 print $covFile; #printing coverage file name
