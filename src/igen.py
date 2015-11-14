@@ -1,19 +1,43 @@
-import os.path
+import argparse
 import tempfile
+import os.path
 from time import time
 import vu_common as CM
 import config_common as CC
 logger = None
 
-def get_run_f(prog, args, mod, ga_mod):
+def check_range(v, min_n=None, max_n=None):
+    v = int(v)
+    if min_n and v < min_n:
+        raise argparse.ArgumentTypeError(
+            "must be >= {} (inp: {})".format(min_n, v))
+    if max_n and v > max_n:
+        raise argparse.ArgumentTypeError(
+            "must be <= {} (inpt: {})".format(max_n, v))
+    return v
+
+def check_inps(args):
+    t1 = args.run_script and args.dom_file
+    t2 = args.run_script is None and args.dom_file is None
+    #either t1 or t2
+    if not (not t2 or args.inp):
+        raise argparse.ArgumentTypeError("need some input")
+    
+    # if not (t1 or t2):
+    #     raise argparse.ArgumentTypeError(
+    #         "req valid inp or use the options -run_script -dom together")
+    #t2 => args.inp 
+
+def get_run_f(prog, args):
     """
     Ret f that takes inputs seed, tmpdir 
     and call appropriate iGen function on those inputs
     """
+    import igen_alg as IA    
     import get_cov_otter as Otter
     if prog in Otter.db:
-        dom, get_cov_f, pathconds_d = Otter.prepare(prog, mod.Dom.get_dom)
-        igen = mod.IGen(dom, get_cov_f, config_default=None)
+        dom, get_cov_f, pathconds_d = Otter.prepare(prog, IA.Dom.get_dom)
+        igen = IA.IGen(dom, get_cov_f, config_default=None)
 
         if args.cmp_rand:
             #TODO: test this 
@@ -35,8 +59,17 @@ def get_run_f(prog, args, mod, ga_mod):
     else:        
         if args.dom_file:
             #general way to run prog using dom_file/runscript
-            dom, config_default = mod.Dom.get_dom(CM.getpath(args.dom_file))
-            run_script = CM.getpath(args.run_script)
+            dom_file = CM.getpath(args.dom_file)
+            dom, config_default = IA.Dom.get_dom(dom_file)
+            
+            if args.run_script:
+                run_script = CM.getpath(args.run_script)
+            else:
+                #ex.dom  => ex.run
+                dom_dir = os.path.dirname(dom_file)
+                dom_name = CM.file_basename(dom_file)
+                run_script = os.path.join(dom_dir, dom_name + ".run")
+                
             import get_cov
             get_cov_f = lambda config: get_cov.runscript_get_cov(
                 config, run_script)
@@ -45,26 +78,25 @@ def get_run_f(prog, args, mod, ga_mod):
             import get_cov_coreutils as Coreutils            
             dom, get_cov_f = Coreutils.prepare(
                 prog,
-                mod.Dom.get_dom,
+                IA.Dom.get_dom,
                 igen_settings.coreutils_main_dir,
                 igen_settings.coreutils_doms_dir,
                 do_perl=args.do_perl)
             config_default = None  #no default config for these
 
-        igen = mod.IGen(dom, get_cov_f, config_default=config_default)
+        igen = IA.IGen(dom, get_cov_f, config_default=config_default)
 
         if args.sids:
             if args.dom_file:
-                cfg_file = args.cfg_file
+                cfg_file = args.cfg
             else:
                 #coreutils
-                import os.path
                 cfg_file = os.path.join(iga_settings.coreutils_main_dir,
                                         'coreutils','obj-gcov', 'src',
                                         '{}.c.011t.cfg.preds'.format(prog))
-
-            cfg = ga_mod.CFG.mk_from_lines(CM.iread_strip(cfg_file))
-            iga = ga_mod.IGa(dom, cfg, get_cov_f)
+            import iga_alg as GA
+            cfg = GA.CFG.mk_from_lines(CM.iread_strip(cfg_file))
+            iga = GA.IGa(dom, cfg, get_cov_f)
             sids = args.sids.split()
             def _f(seed, tdir):
                 _, _, configs_d = iga.go(seed=seed, sids=sids, tmpdir=tdir)
@@ -84,35 +116,12 @@ def get_run_f(prog, args, mod, ga_mod):
     logger.debug("dom:\n{}".format(dom))
     return _f, get_cov_f
 
+
 if __name__ == "__main__":
     
     igen_file = CM.getpath(__file__)
     igen_name = os.path.basename(igen_file)
     igen_dir = os.path.dirname(igen_file)
-
-    import argparse
-    
-    def _check(v, min_n=None, max_n=None):
-        v = int(v)
-        if min_n and v < min_n:
-            raise argparse.ArgumentTypeError(
-                "must be >= {} (inp: {})".format(min_n, v))
-        if max_n and v > max_n:
-            raise argparse.ArgumentTypeError(
-                "must be <= {} (inpt: {})".format(max_n, v))
-        return v
-
-    def _check_inps(args):
-        t1 = args.run_script and args.dom_file
-        t2 = args.run_script is None and args.dom_file is None
-        #either t1 or t2
-        if not (not t2 or args.inp):
-            raise argparse.ArgumentTypeError("need some input")
-        
-        if not (t1 or t2):
-            raise argparse.ArgumentTypeError(
-                "req valid inp or use the options -run_script -dom together")
-        #t2 => args.inp 
         
     aparser = argparse.ArgumentParser("iGen (dynamic interaction generator)")
     aparser.add_argument("inp", help="inp", nargs='?') 
@@ -129,7 +138,7 @@ if __name__ == "__main__":
                          help="use this seed")
 
     aparser.add_argument("--rand_n", "-rand_n", 
-                         type=lambda v:_check(v,min_n=1),
+                         type=lambda v:check_range(v, min_n=1),
                          help="rand_n is an integer")
 
     aparser.add_argument("--do_full", "-do_full",
@@ -149,7 +158,7 @@ if __name__ == "__main__":
                          action="store_true")
     
     aparser.add_argument("--benchmark", "-benchmark",
-                         type=lambda v:_check(v,min_n=1),
+                         type=lambda v: check_range(v, min_n=1),
                          default=1,
                          help="run benchmark program n times")
 
@@ -169,7 +178,7 @@ if __name__ == "__main__":
                          help="find interactions for sids",
                          action="store")
 
-    aparser.add_argument("--cfg_file", "-cfg_file",
+    aparser.add_argument("--cfg", "-cfg",
                          help="file containing predecessors from cfg",
                          action="store")
     
@@ -202,14 +211,12 @@ if __name__ == "__main__":
                          type=str)
 
     args = aparser.parse_args()
-    _check_inps(args)
+    check_inps(args)
     
     CC.logger_level = args.logger_level
     logger = CM.VLog(igen_name)
     logger.level = CC.logger_level
-    if __debug__: logger.warn("DEBUG MODE ON. Can be slow !")
-    
-    seed = round(time(), 2) if args.seed is None else float(args.seed)
+    if __debug__: logger.warn("DEBUG MODE ON. Can be slow !")    
     
     if args.allows_known_errors:
         CC.allows_known_errors = True
@@ -217,21 +224,15 @@ if __name__ == "__main__":
         CC.show_cov = False
     if args.analyze_outps:
         CC.analyze_outps = True
-
-    #import here so that settings in CC take effect
-    import igen_alg as IA
+    seed = round(time(), 2) if args.seed is None else float(args.seed)
+    
     from igen_settings import tmp_dir
-    from igen_analysis import Analysis
         
-    if args.sids:
-        import iga_alg as GA
-    else:
-        GA = None
-
     # two main modes: 1. run iGen to find interactions and
     # 2. run Analysis to analyze iGen's generated files    
     analysis_f = None
     if args.inp and os.path.isdir(args.inp):
+        from igen_analysis import Analysis
         is_run_dir = Analysis.is_run_dir(args.inp)
         if is_run_dir is not None:
             if is_run_dir:
@@ -241,7 +242,7 @@ if __name__ == "__main__":
 
     if analysis_f is None: #run iGen
         prog = args.inp
-        _f, get_cov_f = get_run_f(prog, args, IA, GA)
+        _f, get_cov_f = get_run_f(prog, args)
 
         prog_name = prog if prog else 'noname'
         prefix = "igen_{}_{}_{}_".format(
@@ -250,7 +251,7 @@ if __name__ == "__main__":
             prog_name)
         tdir = tempfile.mkdtemp(dir=tmp_dir, prefix=prefix)
 
-        logger.debug("* benchmark '{}', {} runs, seed {}, results in '{}'"
+        logger.debug("* benchmark '{}', {} runs, seed {}, results '{}'"
                      .format(prog_name, args.benchmark, seed, tdir))
         st = time()
         for i in range(args.benchmark):        
@@ -260,21 +261,20 @@ if __name__ == "__main__":
             logger.debug("*run {}/{}".format(i+1, args.benchmark))
             _ = _f(seed_, tdir_)
             logger.debug("*run {}, seed {}, time {}s, '{}'".format(
-                i+1, seed_, time() - st_, tdir_))
+                i + 1, seed_, time() - st_, tdir_))
 
-        logger.info("** done {} runs, seed {}, "
-                    "time {}, results in '{}'"
+        logger.info("** done {} runs, seed {}, time {}, results '{}'"
                     .format(args.benchmark, seed, time() - st, tdir))
                             
     else: #run analysis
         do_min_configs = args.do_min_configs  
         if do_min_configs and (do_min_configs != 'use_existing' or args.dom_file):
-            _,get_cov_f = get_run_f(do_min_configs, args, IA, None)
+            _,get_cov_f = get_run_f(do_min_configs, args)
             do_min_configs = get_cov_f
 
         cmp_rand = args.cmp_rand
         if cmp_rand:
-            _f,_ = get_run_f(cmp_rand, args, IA, None)
+            _f, _ = get_run_f(cmp_rand, args)
             tdir = tempfile.mkdtemp(dir=tmp_dir,
                                     prefix=cmp_rand + "igen_cmp_rand")
             cmp_rand = lambda rand_n: _f(seed, tdir, rand_n)

@@ -10,7 +10,7 @@ import vu_common as CM
 import config_common as CC
 from config_common import Configs_d #do not del, needed to read existing results
 
-logger = CM.VLog('config')
+logger = CM.VLog('igen_alg')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
 
