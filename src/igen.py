@@ -26,7 +26,21 @@ def check_inps(args):
     # if not (t1 or t2):
     #     raise argparse.ArgumentTypeError(
     #         "req valid inp or use the options -run_script -dom together")
-    #t2 => args.inp 
+    #t2 => args.inp
+
+def detect_file(file1, file2, ext):
+    """
+    detect file2 based on file1
+    """
+    if file2:
+        return CM.getpath(file2)
+    else:
+        #file1.orig_ext => file1.ext
+        file1 = CM.getpath(file1)
+        dir_ = os.path.dirname(file1)
+        name_ = CM.file_basename(file1)
+        file2 = os.path.join(dir_, name_ + ext)
+    return file2
 
 def get_run_f(prog, args):
     """
@@ -61,15 +75,7 @@ def get_run_f(prog, args):
             #general way to run prog using dom_file/runscript
             dom_file = CM.getpath(args.dom_file)
             dom, config_default = IA.Dom.get_dom(dom_file)
-            
-            if args.run_script:
-                run_script = CM.getpath(args.run_script)
-            else:
-                #ex.dom  => ex.run
-                dom_dir = os.path.dirname(dom_file)
-                dom_name = CM.file_basename(dom_file)
-                run_script = os.path.join(dom_dir, dom_name + ".run")
-                
+            run_script = detect_file(dom_file, args.run_script, ".run")
             import get_cov
             get_cov_f = lambda config: get_cov.runscript_get_cov(
                 config, run_script)
@@ -87,13 +93,15 @@ def get_run_f(prog, args):
         igen = IA.IGen(dom, get_cov_f, config_default=config_default)
 
         if args.sids:
+            ext =  ".c.011t.cfg.preds"
             if args.dom_file:
-                cfg_file = args.cfg
+                cfg_file = detect_file(args.dom_file, args.cfg, ext)
+                    
             else:
                 #coreutils
                 cfg_file = os.path.join(iga_settings.coreutils_main_dir,
                                         'coreutils','obj-gcov', 'src',
-                                        '{}.c.011t.cfg.preds'.format(prog))
+                                        prog + ext)
             import iga_alg as GA
             cfg = GA.CFG.mk_from_lines(CM.iread_strip(cfg_file))
             iga = GA.IGa(dom, cfg, get_cov_f)
