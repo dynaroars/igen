@@ -9,7 +9,7 @@ no warnings;
 no warnings "all";
 
 my $igenIn=$ARGV[0];
-#my $SUT_DIR="/fs/buzz/ukoc/ppt";
+#update following variable according to your enviroment
 my $SUT_DIR="/home/ugur/igen_exps/ppt";
 
 #To extract program name
