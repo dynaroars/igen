@@ -16,18 +16,6 @@ def check_range(v, min_n=None, max_n=None):
             "must be <= {} (inpt: {})".format(max_n, v))
     return v
 
-def check_inps(args):
-    t1 = args.run_script and args.dom_file
-    t2 = args.run_script is None and args.dom_file is None
-    #either t1 or t2
-    if not (not t2 or args.inp):
-        raise argparse.ArgumentTypeError("need some input")
-    
-    # if not (t1 or t2):
-    #     raise argparse.ArgumentTypeError(
-    #         "req valid inp or use the options -run_script -dom together")
-    #t2 => args.inp
-
 def detect_file(file1, file2, ext):
     """
     detect file2 based on file1
@@ -47,11 +35,12 @@ def get_run_f(prog, args):
     Ret f that takes inputs seed, tmpdir 
     and call appropriate iGen function on those inputs
     """
+    sids = set(args.sids.split()) if args.sids else None
     import igen_alg as IA    
     import get_cov_otter as Otter
     if prog in Otter.db:
         dom, get_cov_f, pathconds_d = Otter.prepare(prog, IA.Dom.get_dom)
-        igen = IA.IGen(dom, get_cov_f, config_default=None)
+        igen = IA.IGen(dom, get_cov_f, config_default=None, sids=sids)
 
         if args.cmp_rand:
             #TODO: test this 
@@ -90,22 +79,21 @@ def get_run_f(prog, args):
                 do_perl=args.do_perl)
             config_default = None  #no default config for these
 
-        igen = IA.IGen(dom, get_cov_f, config_default=config_default)
+        igen = IA.IGen(dom, get_cov_f, config_default=config_default, sids=sids)
 
-        if args.sids:
+        if sids:
             ext =  ".c.011t.cfg.preds"
             if args.dom_file:
                 cfg_file = detect_file(args.dom_file, args.cfg, ext)
-                    
             else:
                 #coreutils
-                cfg_file = os.path.join(iga_settings.coreutils_main_dir,
-                                        'coreutils','obj-gcov', 'src',
-                                        prog + ext)
+                cfg_file = os.path.join(
+                    iga_settings.coreutils_main_dir,
+                    'coreutils','obj-gcov', 'src', prog + ext)
+                    
             import iga_alg as GA
             cfg = GA.CFG.mk_from_lines(CM.iread_strip(cfg_file))
             iga = GA.IGa(dom, cfg, get_cov_f)
-            sids = args.sids.split()
             def _f(seed, tdir):
                 _, _, configs_d = iga.go(seed=seed, sids=sids, tmpdir=tdir)
                 return igen.go(seed=seed, econfigs_d=configs_d, tmpdir=tdir)
@@ -175,11 +163,11 @@ if __name__ == "__main__":
                          action="store")
 
     aparser.add_argument("--run_script", "-run_script",
-                         help="a script running the subject program",
+                         help="a script to obtain the program's coverage",
                          action="store")
     
     aparser.add_argument("--do_perl", "-do_perl",
-                         help="do coretutils written in perl",
+                         help="do coretutils written in Perl",
                          action="store_true")
 
     aparser.add_argument("--sids", "-sids",
@@ -219,8 +207,6 @@ if __name__ == "__main__":
                          type=str)
 
     args = aparser.parse_args()
-    check_inps(args)
-    
     CC.logger_level = args.logger_level
     logger = CM.VLog(igen_name)
     logger.level = CC.logger_level

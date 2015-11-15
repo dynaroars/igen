@@ -260,7 +260,7 @@ class Config(HDict):
             s = "{}: {}".format(s,str_of_cov(cov))
         return s
 
-    def z3expr(self,z3db):
+    def z3expr(self, z3db):
         if __debug__:
             
             #assert len(self) == len(z3db), (len(self), len(z3db))
@@ -273,7 +273,6 @@ class Config(HDict):
             f.append(vn_==vs_[vv])
 
         return z3util.myAnd(f)    
-
 
 class Covs_d(CustDict):
     """
