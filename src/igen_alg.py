@@ -722,7 +722,7 @@ class Cores_d(CC.CustDict):
     def merge(self,show_detail=False):
         mcores_d = Mcores_d()
         cache = {}
-        for sid,core in self.iteritems():
+        for sid, core in self.iteritems():
             try:
                 key = core.vstr 
             except AttributeError:
@@ -733,24 +733,24 @@ class Cores_d(CC.CustDict):
                 cache[key] = core_
             else:
                 core_ = cache[key]
-            mcores_d.add(core_,sid)
+            mcores_d.add(core_, sid)
 
         if show_detail:
             logger.info("inferred results ({}):\n{}"
-                        .format(len(mcores_d),mcores_d))
-            logger.debug("mcores_d strens (stren, nresults, nsids): {}"
-                        .format(mcores_d.strens_str))
+                        .format(len(mcores_d), mcores_d))
+            logger.debug("strens (stren, nresults, nsids): {}"
+                         .format(mcores_d.strens_str))
             
         return mcores_d
 
-    def analyze(self,dom,covs_d):
+    def analyze(self, dom, covs_d):
         """
         Simplify cores. If covs_d then also check that cores are valid invs
         """
         if __debug__:
             if covs_d is not None:
-                assert isinstance(covs_d,CC.Covs_d) and covs_d, covs_d
-                assert len(self) == len(covs_d), (len(self),len(covs_d))
+                assert isinstance(covs_d, CC.Covs_d) and covs_d, covs_d
+                assert len(self) == len(covs_d), (len(self), len(covs_d))
             assert isinstance(dom,Dom), dom
 
         def show_compare(sid,old_c,new_c):
@@ -766,7 +766,7 @@ class Cores_d(CC.CustDict):
             cache = {}
             for sid,core in self.iteritems():
                 configs = frozenset(covs_d[sid])
-                key = (core,configs)
+                key = (core, configs)
                 if key not in cache:
                     core_ = core.verify(configs,dom)
                     cache[key]=core_
@@ -783,7 +783,7 @@ class Cores_d(CC.CustDict):
         for sid in cores_d:
             core = cores_d[sid]
             if core not in cache:
-                core_,expr = core.simplify(dom,do_firsttime=(covs_d is not None))
+                core_,expr = core.simplify(dom, do_firsttime=(covs_d is not None))
                 cache[core]=core_
                 show_compare(sid,core,core_)
             else:
@@ -844,19 +844,19 @@ class Mcores_d(CC.CustDict):
 #Inference algorithm
 class Infer(object):
     @staticmethod
-    def infer(configs,core,dom):
+    def infer(configs, core, dom):
         """
         Approximation in *conjunctive* form
         """
         if __debug__:
-            assert (all(isinstance(c,Config) for c in configs)
+            assert (all(isinstance(c, Config) for c in configs)
                     and configs), configs
-            assert Core.is_maybe_core(core),core
-            assert isinstance(dom,Dom),dom
+            assert Core.is_maybe_core(core), core
+            assert isinstance(dom, Dom), dom
 
         if core is None:  #not yet set
-            core = min(configs,key=lambda c:len(c))
-            core = Core((k,frozenset([v])) for k,v in core.iteritems())
+            core = min(configs, key=lambda c: len(c))
+            core = Core((k, frozenset([v])) for k,v in core.iteritems())
 
         def f(k,s,ldx):
             s_ = set(s)
@@ -876,7 +876,7 @@ class Infer(object):
     @staticmethod
     def infer_cache(core,configs,dom,cache):
         if __debug__:
-            assert core is None or isinstance(core,Core),core
+            assert core is None or isinstance(core, Core), core
             assert (configs and
                     all(isinstance(c,Config) for c in configs)), configs
             assert isinstance(dom,Dom),dom
@@ -936,58 +936,67 @@ class Infer(object):
         return PNCore((pc_, pd_, nc_, nd_))
 
     @staticmethod
-    def infer_covs(cores_d,cconfigs_d,configs_d,covs_d,dom):
+    def infer_covs(cores_d, cconfigs_d, configs_d, covs_d, dom, sids=None):
         if __debug__:
-            assert isinstance(cores_d,Cores_d),cores_d
-            assert isinstance(cconfigs_d,CC.Configs_d) and cconfigs_d,cconfigs_d
-            assert isinstance(configs_d,CC.Configs_d),configs_d        
-            assert all(c not in configs_d for c in cconfigs_d),cconfigs_d
-            assert isinstance(covs_d,CC.Covs_d),covs_d
-            assert isinstance(dom,Dom),dom
+            assert isinstance(cores_d, Cores_d), cores_d
+            assert isinstance(cconfigs_d, CC.Configs_d) and cconfigs_d, cconfigs_d
+            assert isinstance(configs_d, CC.Configs_d), configs_d        
+            assert all(c not in configs_d for c in cconfigs_d), cconfigs_d
+            assert isinstance(covs_d, CC.Covs_d), covs_d
+            assert isinstance(dom, Dom), dom
+            assert not sids or is_cov(sids), sids
 
-        sids = set(cores_d.keys())
+        sids_ = set(cores_d.keys())
         #update configs_d and covs_d
         for config in cconfigs_d:
             for sid in cconfigs_d[config]:
-                sids.add(sid)
-                covs_d.add(sid,config)
+                sids_.add(sid)
+                covs_d.add(sid, config)
+                
+            if __debug__:
+                assert config not in configs_d, config
+            configs_d[config] = cconfigs_d[config]
 
-            assert config not in configs_d, config
-            configs_d[config]=cconfigs_d[config]
-
+        #only consider interested sids
+        if sids:
+            sids_ = [sid for sid in sids_ if sid in sids]
+            
         cache = {}
-        new_covs,new_cores = set(),set()  #updated stuff    
-        for i,sid in enumerate(sorted(sids)):
+        new_covs, new_cores = set(), set()  #updated stuff
+        for sid in sorted(sids_):
             if sid in cores_d:
                 core = cores_d[sid]
             else:
                 core = PNCore.mk_default()
-                new_covs.add(sid)
+                new_covs.add(sid) #progress
 
-            core_ = Infer.infer_sid(sid,core,cconfigs_d,
-                                    configs_d,covs_d,dom,cache)
+            core_ = Infer.infer_sid(
+                sid, core, cconfigs_d, configs_d, covs_d, dom, cache)
+                
             if not core_ == core: #progress
                 new_cores.add(sid)
                 cores_d[sid] = core_
 
-        return new_covs,new_cores
+        return new_covs, new_cores
 
 class IGen(object):
     """
     Main algorithm
     """
-    def __init__(self, dom, get_cov, config_default=None):
+    def __init__(self, dom, get_cov, config_default=None, sids=None):
         if __debug__:
             assert isinstance(dom, Dom), dom
             assert callable(get_cov), get_cov
             assert (config_default is None or
                     isinstance(config_default, CC.Config)), config_default
+            assert not sids or is_cov(sids), sids
             
         self.dom = dom
         self.z3db = self.dom.z3db
         self.get_cov = get_cov        
         self.config_default = Config(config_default) if config_default else None
-
+        self.sids = sids
+        
     def go(self, seed, rand_n=None, econfigs_d=None, tmpdir=None):
         """
         rand_n = None: use default CEGIR mode
@@ -998,7 +1007,7 @@ class IGen(object):
         if __debug__:
             assert isinstance(seed,(float, int)), seed
             assert rand_n is None or isinstance(rand_n, int), rand_n
-            assert (econfigs_d is None or
+            assert (not econfigs_d or
                     isinstance(econfigs_d, CC.Configs_d)), econfigs_d
             assert isinstance(tmpdir, str) and os.path.isdir(tmpdir), tmpdir
             
@@ -1038,19 +1047,19 @@ class IGen(object):
             logger.debug("add {} existing configs".format(len(econfigs)))
                     
         new_covs, new_cores = Infer.infer_covs(
-            cores_d, cconfigs_d, configs_d, covs_d, self.dom)
+            cores_d, cconfigs_d, configs_d, covs_d, self.dom, self.sids)
             
         while True:
             ct_ = time(); itime = ct_ - ct; ct = ct_
             dtrace = DTrace(
-                cur_iter,itime,xtime,
-                len(configs_d),len(covs_d),len(cores_d),
+                cur_iter, itime, xtime,
+                len(configs_d), len(covs_d), len(cores_d),
                 cconfigs_d,
-                new_covs,new_cores,
+                new_covs, new_cores,
                 sel_core,
                 cores_d)
             dtrace.show()
-            DTrace.save_iter(cur_iter,dtrace,tmpdir)
+            DTrace.save_iter(cur_iter, dtrace, tmpdir)
 
             if rand_n is not None:
                 break
@@ -1068,8 +1077,8 @@ class IGen(object):
             assert configs, configs
             cconfigs_d, xtime = self.eval_configs(configs)
             xtime_total += xtime
-            new_covs,new_cores = Infer.infer_covs(
-                cores_d, cconfigs_d, configs_d, covs_d, self.dom)
+            new_covs, new_cores = Infer.infer_covs(
+                cores_d, cconfigs_d, configs_d, covs_d, self.dom, self.sids)
 
             if new_covs or new_cores: #progress
                 cur_stuck = 0
@@ -1082,18 +1091,33 @@ class IGen(object):
                     logger.detail('cur_min_stren is {}'.format(cur_min_stren))
 
         #postprocess
-        pp_cores_d = cores_d.analyze(self.dom,covs_d)
-        _ = pp_cores_d.merge(show_detail=True)
+
+        #only analyze sids
+        if self.sids:
+            assert set(pp_cores_d) == set(covs_d)
+            cores_d_ = Cores_d()
+            covs_d_ = CC.Covs_d()
+            for sid in cores_d:
+                if sid in self.sids:
+                    cores_d_[sid] = cores_d[sid]
+                    for c in covs_d[sid]:
+                        covs_d_.add(sid, c)
+
+            pp_cores_d = cores_d_.analyze(self.dom, covs_d_)
+            _ = pp_cores_d.merge(show_detail=True)
+        else:
+            pp_cores_d = cores_d.analyze(self.dom, covs_d)
+            _ = pp_cores_d.merge(show_detail=True)
+        
         itime_total = time() - st
-        
         logger.debug(DTrace.str_of_summary(
-            seed,cur_iter,itime_total,xtime_total,
-            len(configs_d),len(covs_d),tmpdir))
+            seed, cur_iter, itime_total, xtime_total,
+            len(configs_d), len(covs_d), tmpdir))
         logger.debug("Done (seed {}, test {})"
-                    .format(seed,random.randrange(100)))
-        DTrace.save_post(pp_cores_d,itime_total,tmpdir)
+                    .format(seed, random.randrange(100)))
+        DTrace.save_post(pp_cores_d, itime_total, tmpdir)
         
-        return pp_cores_d,cores_d,configs_d,covs_d,self.dom
+        return pp_cores_d, cores_d, configs_d, covs_d, self.dom
 
     #Shortcuts
     def go_full(self,tmpdir=None):
@@ -1137,14 +1161,14 @@ class IGen(object):
             assert configs, 'no initial configs created'
         return configs
         
-    def gen_configs_iter(self,cores,ignore_sel_cores,min_stren,configs_d):
+    def gen_configs_iter(self, cores, ignore_sel_cores, min_stren, configs_d):
         if __debug__:
-            assert (isinstance(cores,set) and 
-                    all(isinstance(c,PNCore) for c in cores)), cores
-            assert (isinstance(ignore_sel_cores,set) and 
-                    all(isinstance(c,SCore) for c in ignore_sel_cores)),\
+            assert (isinstance(cores, set) and 
+                    all(isinstance(c, PNCore) for c in cores)), cores
+            assert (isinstance(ignore_sel_cores, set) and 
+                    all(isinstance(c, SCore) for c in ignore_sel_cores)),\
                     ignore_sel_cores
-            assert isinstance(configs_d,CC.Configs_d),configs_d
+            assert isinstance(configs_d, CC.Configs_d),configs_d
 
         configs = []
         while True:
@@ -1152,8 +1176,7 @@ class IGen(object):
             if sel_core is None:
                 break
 
-            configs = self.dom.gen_configs_cex(                
-                sel_core,configs_d,self.z3db)
+            configs = self.dom.gen_configs_cex(sel_core, configs_d, self.z3db)
             configs = list(set(configs)) 
             if configs:
                 break
