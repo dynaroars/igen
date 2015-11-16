@@ -215,7 +215,7 @@ class TS_join(TestSuite_COREUTILS):
         cmds.append("{} {} {}/file5.txt {}/file6.txt".format(self.prog,self.opts,self.tdir,self.tdir))
         cmds.append("{} {} {}/file4.txt".format(self.prog,self.opts,self.tdir))
         cmds.append("{} {} {}/file1.txt {}/nonExistingFile.txt".format(self.prog,self.opts,self.tdir,self.tdir))
-        cmds.append("{} {} {}/file4.txt {}/file4.txt {}/file4.txt".format(self.prog,self.opts,self.tdir,self.tdir,self.tdir))
+        #cmds.append("{} {} {}/file4.txt {}/file4.txt {}/file4.txt".format(self.prog,self.opts,self.tdir,self.tdir,self.tdir))
         return cmds
 
 # class TS_cp(TestSuite_COREUTILS):

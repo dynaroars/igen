@@ -87,9 +87,9 @@ def get_run_f(prog, args):
                 cfg_file = detect_file(args.dom_file, args.cfg, ext)
             else:
                 #coreutils
-                cfg_file = os.path.join(
-                    iga_settings.coreutils_main_dir,
-                    'coreutils','obj-gcov', 'src', prog + ext)
+                cfg_file = CM.getpath(os.path.join(
+                    igen_settings.coreutils_main_dir,
+                    'coreutils','obj-gcov', 'src', prog + ext))
                     
             import iga_alg as GA
             cfg = GA.CFG.mk_from_lines(CM.iread_strip(cfg_file))

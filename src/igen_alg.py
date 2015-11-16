@@ -352,7 +352,7 @@ class SCore(MCore):
         super(SCore,self).__init__((mc,sc))
         #additional assertion
         if __debug__:
-            assert mc is None or isinstance(mc,Core) and mc, mc
+            assert mc is None or isinstance(mc, Core) and mc, mc
             #sc is not None => ...
             assert not sc or all(k not in mc for k in sc), sc
         self.keep = False
@@ -389,7 +389,7 @@ class SCore(MCore):
         return '; '.join(ss)        
         
     @staticmethod
-    def mk_default(): return SCore((None,None))
+    def mk_default(): return SCore((None, None))
         
 class PNCore(MCore):
     """
@@ -465,7 +465,7 @@ class PNCore(MCore):
         self._vstr = vs
 
     @staticmethod
-    def mk_default(): return PNCore((None,None,None,None))
+    def mk_default(): return PNCore((None, None, None, None))
 
     def __str__(self):
         try:
@@ -710,8 +710,8 @@ class Cores_d(CC.CustDict):
     """
     def __setitem__(self,sid,pncore):
         if __debug__:
-            assert isinstance(sid,str),sid
-            assert isinstance(pncore,PNCore),pncore
+            assert isinstance(sid, str), sid
+            assert isinstance(pncore, PNCore), pncore
         self.__dict__[sid]=pncore
 
     def __str__(self):
