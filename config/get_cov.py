@@ -13,30 +13,35 @@ def run_single(cmd):
         if rs_outp:
             logger.detail("outp: {}".format(rs_outp))
         
-        #IMPORTANT, comment out the below allows
+        #NOTE: comment out the below allows
         #erroneous test runs, which can be helpful
         #to detect incorrect configs
         #assert len(rs_err) == 0, rs_err
 
         serious_errors = ["invalid",
                           "-c: line",
-                          "/bin/sh"]
+                          "/bin/sh",
+                          "assuming not executed"]
 
-        known_errors = ["assuming not executed"]
+        known_errors = ["invalid file number in field spec"]
         if rs_err:
             logger.detail("error: {}".format(rs_err))
-            if any(serr in rs_err for serr in serious_errors): 
-                raise AssertionError("Check this serious error !")
 
-            if not CC.allows_known_errors:
+            if CC.allows_known_errors:
+                if (not any(kerr in rs_err for kerr in known_errors) and
+                    any(serr in rs_err for serr in serious_errors)):
+                    raise AssertionError("Check this serious error!")
+            else:
                 if any(kerr in rs_err for kerr in known_errors):
                     raise AssertionError("Check this known error!")
-                    
-        return (rs_outp,rs_err)
+                if any(serr in rs_err for serr in serious_errors): 
+                    raise AssertionError("Check this serious error!")
+            
+        return (rs_outp, rs_err)
     
     except Exception as e:
-        raise AssertionError("cmd '{}' fails, raise error: {}"
-                             .format(cmd,e))
+        raise AssertionError("cmd '{}' fails, raise error: {}, {}"
+                             .format(cmd, rs_err, e))
 
 
 def runscript_get_cov(config,run_script):
