@@ -4,7 +4,6 @@ import os.path
 from time import time
 import vu_common as CM
 import config_common as CC
-logger = None
 
 def check_range(v, min_n=None, max_n=None):
     v = int(v)
@@ -30,17 +29,18 @@ def detect_file(file1, file2, ext):
         file2 = os.path.join(dir_, name_ + ext)
     return file2
 
-def get_run_f(prog, args):
+def get_run_f(prog, args, logger):
     """
     Ret f that takes inputs seed, tmpdir 
     and call appropriate iGen function on those inputs
     """
     sids = set(args.sids.split()) if args.sids else None
+    
     import igen_alg as IA    
     import get_cov_otter as Otter
     if prog in Otter.db:
         dom, get_cov_f, pathconds_d = Otter.prepare(prog, IA.Dom.get_dom)
-        igen = IA.IGen(dom, get_cov_f, config_default=None, sids=sids)
+        igen = IA.IGen(dom, get_cov_f, default_configs=None, sids=sids)
 
         if args.cmp_rand:
             #TODO: test this 
@@ -63,7 +63,7 @@ def get_run_f(prog, args):
         if args.dom_file:
             #general way to run prog using dom_file/runscript
             dom_file = CM.getpath(args.dom_file)
-            dom, config_default = IA.Dom.get_dom(dom_file)
+            dom, default_configs = IA.Dom.get_dom(dom_file)
             run_script = detect_file(dom_file, args.run_script, ".run")
             import get_cov
             get_cov_f = lambda config: get_cov.runscript_get_cov(
@@ -77,12 +77,12 @@ def get_run_f(prog, args):
                 igen_settings.coreutils_main_dir,
                 igen_settings.coreutils_doms_dir,
                 do_perl=args.do_perl)
-            config_default = None  #no default config for these
+            default_configs = None  #no default config for these
 
-        igen = IA.IGen(dom, get_cov_f, config_default=config_default, sids=sids)
+        igen = IA.IGen(dom, get_cov_f, default_configs=default_configs, sids=sids)
 
         if sids:
-            ext =  ".c.011t.cfg.preds"
+            ext = ".c.011t.cfg.preds"
             if args.dom_file:
                 cfg_file = detect_file(args.dom_file, args.cfg, ext)
             else:
@@ -95,8 +95,12 @@ def get_run_f(prog, args):
             cfg = GA.CFG.mk_from_lines(CM.iread_strip(cfg_file))
             iga = GA.IGa(dom, cfg, get_cov_f)
             def _f(seed, tdir):
-                _, _, configs_d = iga.go(seed=seed, sids=sids, tmpdir=tdir)
-                return igen.go(seed=seed, econfigs_d=configs_d, tmpdir=tdir)
+                is_success, _, configs_d = iga.go(
+                    seed=seed, sids=sids, tmpdir=tdir)
+                if not args.only_ga and is_success:
+                    return igen.go(seed=seed, econfigs_d=configs_d, tmpdir=tdir)
+                else:
+                    return None
             
         elif args.cmp_rand:
             _f = lambda seed, tdir, rand_n: igen.go_rand(
@@ -173,10 +177,15 @@ if __name__ == "__main__":
     aparser.add_argument("--sids", "-sids",
                          help="find interactions for sids",
                          action="store")
-
+    
     aparser.add_argument("--cfg", "-cfg",
                          help="file containing predecessors from cfg",
                          action="store")
+
+    aparser.add_argument("--only_ga", "-only_ga",
+                         help="don't find interactions",
+                         default=False,
+                         action="store_true")
     
     #replay options
     aparser.add_argument("--show_iters", "-show_iters",
@@ -236,7 +245,7 @@ if __name__ == "__main__":
 
     if analysis_f is None: #run iGen
         prog = args.inp
-        _f, get_cov_f = get_run_f(prog, args)
+        _f, get_cov_f = get_run_f(prog, args, logger)
 
         prog_name = prog if prog else 'noname'
         prefix = "igen_{}_{}_{}_".format(
@@ -263,12 +272,12 @@ if __name__ == "__main__":
     else: #run analysis
         do_min_configs = args.do_min_configs  
         if do_min_configs and (do_min_configs != 'use_existing' or args.dom_file):
-            _,get_cov_f = get_run_f(do_min_configs, args)
+            _,get_cov_f = get_run_f(do_min_configs, args, logger)
             do_min_configs = get_cov_f
 
         cmp_rand = args.cmp_rand
         if cmp_rand:
-            _f, _ = get_run_f(cmp_rand, args)
+            _f, _ = get_run_f(cmp_rand, args, logger)
             tdir = tempfile.mkdtemp(dir=tmp_dir,
                                     prefix=cmp_rand + "igen_cmp_rand")
             cmp_rand = lambda rand_n: _f(seed, tdir, rand_n)

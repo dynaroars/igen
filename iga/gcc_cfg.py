@@ -4,6 +4,7 @@ Utilities to read CFG file produced by gcc -fdump-tree-cfg-lineno
 To test against lots of CFG's, try
 for i in /home/tnguyen/iga_exps/benchmarks/coreutils/coreutils-8.24/obj-gcov/src/*.cfg; do echo $i; python ~/Dropbox/git/iga/src/gcc_cfg.py $i >> out ; done 
 """
+import os.path
 import sys
 import itertools
 import vu_common as CM

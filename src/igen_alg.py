@@ -753,14 +753,15 @@ class Cores_d(CC.CustDict):
                 assert len(self) == len(covs_d), (len(self), len(covs_d))
             assert isinstance(dom,Dom), dom
 
+        if not self:
+            return self
+            
         def show_compare(sid,old_c,new_c):
             if old_c != new_c:
                 logger.debug("sid {}: {} ~~> {}".
                              format(sid,old_c,new_c))
-
-        cores_d = Cores_d()                
         logger.debug("analyze results for {} sids".format(len(self)))
-
+        cores_d = Cores_d()                
         if covs_d:
             logger.debug("verify ...")
             cache = {}
@@ -944,7 +945,7 @@ class Infer(object):
             assert all(c not in configs_d for c in cconfigs_d), cconfigs_d
             assert isinstance(covs_d, CC.Covs_d), covs_d
             assert isinstance(dom, Dom), dom
-            assert not sids or is_cov(sids), sids
+            assert not sids or CC.is_cov(sids), sids
 
         sids_ = set(cores_d.keys())
         #update configs_d and covs_d
@@ -983,18 +984,22 @@ class IGen(object):
     """
     Main algorithm
     """
-    def __init__(self, dom, get_cov, config_default=None, sids=None):
+    def __init__(self, dom, get_cov, default_configs=None, sids=None):
         if __debug__:
             assert isinstance(dom, Dom), dom
             assert callable(get_cov), get_cov
-            assert (config_default is None or
-                    isinstance(config_default, CC.Config)), config_default
-            assert not sids or is_cov(sids), sids
+            assert (not default_configs or
+                    all(isinstance(c, list)
+                        for c in default_configs)), default_configs
+            assert not sids or CC.is_cov(sids), sids
             
         self.dom = dom
         self.z3db = self.dom.z3db
-        self.get_cov = get_cov        
-        self.config_default = Config(config_default) if config_default else None
+        self.get_cov = get_cov
+        if default_configs:
+            self.default_configs = map(Config, default_configs)
+        else:
+            self.default_configs = None
         self.sids = sids
         
     def go(self, seed, rand_n=None, econfigs_d=None, tmpdir=None):
@@ -1030,22 +1035,21 @@ class IGen(object):
         st = time()
         ct = st
         xtime_total = 0.0
-        
-        configs = self.gen_configs_init(rand_n, seed)
-        if self.config_default:
-            logger.debug("add default config")
-            configs.append(self.config_default)
-            
-        cconfigs_d, xtime = self.eval_configs(configs)
-        xtime_total += xtime
-        
+
         if econfigs_d:
-            econfigs = [(c, Config(c)) for c in econfigs_d]
-            econfigs = [(c, c_) for c,c_ in econfigs if c_ not in cconfigs_d]
-            for c,c_ in econfigs:
-                cconfigs_d[c_] = econfigs_d[c]
-            logger.debug("add {} existing configs".format(len(econfigs)))
-                    
+            cconfigs_d = CC.Configs_d()
+            for c in econfigs_d:
+                cconfigs_d[Config(c)] = econfigs_d[c]
+            logger.debug("add {} existing configs".format(len(econfigs_d)))
+            xtime = 0.0
+        else:
+            configs = self.gen_configs_init(rand_n, seed)
+            if self.default_configs:
+                for c in self.default_configs:
+                    configs.append(c)
+            cconfigs_d, xtime = self.eval_configs(configs)
+            xtime_total += xtime
+        
         new_covs, new_cores = Infer.infer_covs(
             cores_d, cconfigs_d, configs_d, covs_d, self.dom, self.sids)
             
@@ -1074,7 +1078,9 @@ class IGen(object):
                 logger.debug('done after iter {}'.format(cur_iter))
                 break
 
-            assert configs, configs
+            if __debug__:
+                assert configs, configs
+                
             cconfigs_d, xtime = self.eval_configs(configs)
             xtime_total += xtime
             new_covs, new_cores = Infer.infer_covs(
@@ -1091,18 +1097,14 @@ class IGen(object):
                     logger.detail('cur_min_stren is {}'.format(cur_min_stren))
 
         #postprocess
-
         #only analyze sids
         if self.sids:
-            assert set(pp_cores_d) == set(covs_d)
-            cores_d_ = Cores_d()
-            covs_d_ = CC.Covs_d()
-            for sid in cores_d:
-                if sid in self.sids:
+            cores_d_, covs_d_ = Cores_d(), CC.Covs_d()
+            for sid in self.sids:
+                if sid in cores_d:
                     cores_d_[sid] = cores_d[sid]
                     for c in covs_d[sid]:
                         covs_d_.add(sid, c)
-
             pp_cores_d = cores_d_.analyze(self.dom, covs_d_)
             _ = pp_cores_d.merge(show_detail=True)
         else:
@@ -1145,7 +1147,8 @@ class IGen(object):
             cconfigs_d[c] = rs
         return cconfigs_d, time() - st
 
-    def gen_configs_init(self,rand_n, seed):
+    def gen_configs_init(self, rand_n, seed):
+        #return []
         if not rand_n: #None or 0
             configs = self.dom.gen_configs_tcover1(config_cls=Config)
             logger.debug("gen {} configs using tcover 1".format(len(configs)))
