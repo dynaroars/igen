@@ -185,9 +185,6 @@ class CFG(OrderedDict):
             return rs
 
 
-class Dom(CC.Dom):
-    pass
-
 class Config(CC.Config):
 
     def get_mincover(self,sids):
@@ -260,12 +257,7 @@ class Config(CC.Config):
             cs.remove(config)
             sids = sids - config.cov
         
-        if mincover:
-            mincover = Pop(mincover)
-            return mincover,sids
-        else:
-            return None,sids
-
+        return mincover, sids
 
 class Configs_d(CC.Configs_d):
     pass
@@ -294,7 +286,7 @@ class IGa(object):
     """
     def __init__(self, dom, cfg, get_cov):
         if __debug__:
-            assert isinstance(dom, Dom), dom
+            assert isinstance(dom, CC.Dom), dom
             assert isinstance(cfg, CFG), cfg
             assert callable(get_cov), get_cov
         
@@ -304,8 +296,8 @@ class IGa(object):
         self.sids = self.cfg.sids
         self.get_cov = get_cov
         self.z3db = self.dom.z3db
-        logger.info("cfg {}, sids {}"
-                    .format(len(self.cfg),len(self.sids)))
+        logger.debug("cfg {}, sids {}"
+                     .format(len(self.cfg),len(self.sids)))
 
     def compute_covs(self, configs, configs_d):
         """
@@ -331,7 +323,7 @@ class IGa(object):
             assert isinstance(tmpdir,str), tmpdir
             
         random.seed(seed)
-        logger.info("seed: {}, tmpdir: {}".format(seed,tmpdir))        
+        logger.debug("seed: {}, tmpdir: {}".format(seed,tmpdir))        
 
         configs_d  = Configs_d()
         fits_d = Fits_d()
@@ -363,11 +355,11 @@ class IGa(object):
             logger.debug('unsolved {}/{}: {}'.format(
                 len(unsolved),len(sids),', '.join(sorted(unsolved))))
             
-        logger.info('{}, seed {}, sids {}/{} (covs {}), configs {}/{}'
-                    .format('success' if is_success else 'fail',
-                            seed,
-                            len(solved), len(sids), len(covs_s),
-                            len(configs_d), self.dom.siz))
+        logger.debug('{}, seed {}, sids {}/{} (covs {}), configs {}/{}'
+                     .format('success' if is_success else 'fail',
+                             seed,
+                             len(solved), len(sids), len(covs_s),
+                             len(configs_d), self.dom.siz))
 
         return is_success, solved, configs_d
         
@@ -616,7 +608,7 @@ class IGa(object):
                     (configs and
                     all(isinstance(c, Config) for c in configs))), configs
             assert fits_d and isinstance(fits_d, Fits_d), fits_d
-            assert isinstance(dom, Dom), dom
+            assert isinstance(dom, CC.Dom), dom
             
         fits = [fits_d[c][sid] for c in configs]
         min_fit = min(fits)

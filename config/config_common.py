@@ -173,31 +173,33 @@ class Dom(OrderedDict):
 
         def get_lines(lines):
             rs = (line.split() for line in lines)
-            rs = [(parts[0],frozenset(parts[1:])) for parts in rs]
+            rs = [(parts[0], frozenset(parts[1:])) for parts in rs]
             return rs
 
         dom = cls(get_lines(CM.iread_strip(dom_file)))
 
-        config_default = None
-        dom_file_default = dom_file + '.default'
-        if os.path.isfile(dom_file_default):
-            config_default = dict(get_lines(CM.iread_strip(dom_file_default)))
-            config_default = Config((k, list(config_default[k])[0]) for k in dom)
-            
-        return dom, config_default
+        #default configs
+        dom_dir = os.path.dirname(dom_file)
+        configs = [f for f in os.listdir(dom_dir) if '.default' in f]
+        configs = [os.path.join(dom_dir, f) for f in configs]
+        configs = [dict(get_lines(CM.iread_strip(f))) for f in configs
+                   if os.path.isfile(f)]
+        configs = [[(k, list(c[k])[0]) for k in dom] for c in configs]
+        
+        return dom, configs
 
     #Methods to generate configurations
-    def gen_configs_full(self,config_cls=None):
+    def gen_configs_full(self, config_cls=None):
         if config_cls is None:
             config_cls = Config
         
         ns,vs = itertools.izip(*self.iteritems())
-        configs = [config_cls(zip(ns,c)) for c in itertools.product(*vs)]
+        configs = [config_cls(zip(ns, c)) for c in itertools.product(*vs)]
         return configs
 
-    def gen_configs_rand(self,rand_n,config_cls=None):
+    def gen_configs_rand(self, rand_n, config_cls=None):
         if __debug__:
-            assert 0 < rand_n <= self.siz, (rand_n,self.siz)
+            assert 0 < rand_n <= self.siz, (rand_n, self.siz)
 
         if config_cls is None:
             config_cls = Config
@@ -206,7 +208,7 @@ class Dom(OrderedDict):
         configs = list(set(config_cls(rgen()) for _ in range(rand_n)))
         return configs
 
-    def gen_configs_tcover1(self,config_cls=None):
+    def gen_configs_tcover1(self, config_cls=None):
         """
         Return a set of tcover array of stren 1
         """
