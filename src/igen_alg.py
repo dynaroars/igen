@@ -1151,15 +1151,9 @@ class IGen(object):
                     all(isinstance(c, Config) for c in configs)
                     and configs), configs
         st = time()
+        results = CC.eval_configs(configs, self.get_cov)
         cconfigs_d = CC.Configs_d()
-        for c in configs:
-            if c in cconfigs_d: #skip
-                continue
-            sids, outps = self.get_cov(c)
-            rs = outps if CC.analyze_outps else sids
-            if not rs:
-                logger.warn("config {} generates nothing".format(c))
-                
+        for c,rs in results:
             cconfigs_d[c] = rs
         return cconfigs_d, time() - st
 

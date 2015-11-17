@@ -306,6 +306,29 @@ class Configs_d(CustDict):
         ss = (c.__str__(self[c]) for c in self.__dict__)
         return '\n'.join("{}. {}".format(i+1, s) for i, s in enumerate(ss))
 
+
+def eval_configs(configs, get_cov):
+    if __debug__:
+        assert (isinstance(configs, list) and
+                all(isinstance(c, Config) for c in configs)
+                and configs), configs
+        assert callable(get_cov), get_cov
+
+    cache = set()
+    results = []
+    for c in configs:
+        if c in cache:
+            continue
+        cache.add(c)
+        
+        sids, outps = get_cov(c)
+        rs = outps if analyze_outps else sids
+        if not rs:
+            logger.warn("config {} generates nothing".format(c))
+        results.append((c,rs))
+        
+    return results
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
