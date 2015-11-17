@@ -40,7 +40,7 @@ def get_run_f(prog, args, logger):
     import get_cov_otter as Otter
     if prog in Otter.db:
         dom, get_cov_f, pathconds_d = Otter.prepare(prog, IA.Dom.get_dom)
-        igen = IA.IGen(dom, get_cov_f, default_configs=None, sids=sids)
+        igen = IA.IGen(dom, get_cov_f, sids=sids)
 
         if args.cmp_rand:
             #TODO: test this 
@@ -71,16 +71,15 @@ def get_run_f(prog, args, logger):
         else:
             import igen_settings
             import get_cov_coreutils as Coreutils            
-            dom, get_cov_f = Coreutils.prepare(
+            dom, default_configs, get_cov_f = Coreutils.prepare(
                 prog,
                 IA.Dom.get_dom,
                 igen_settings.coreutils_main_dir,
                 igen_settings.coreutils_doms_dir,
                 do_perl=args.do_perl)
-            default_configs = None  #no default config for these
 
-        igen = IA.IGen(dom, get_cov_f, default_configs=default_configs, sids=sids)
-
+        igen = IA.IGen(dom, get_cov_f, sids=sids)
+        econfigs = [(c, None) for c in default_configs]
         if sids:
             ext = ".c.011t.cfg.preds"
             if args.dom_file:
@@ -90,28 +89,32 @@ def get_run_f(prog, args, logger):
                 cfg_file = CM.getpath(os.path.join(
                     igen_settings.coreutils_main_dir,
                     'coreutils','obj-gcov', 'src', prog + ext))
-                    
-            import iga_alg as GA
-            cfg = GA.CFG.mk_from_lines(CM.iread_strip(cfg_file))
-            iga = GA.IGa(dom, cfg, get_cov_f)
-            def _f(seed, tdir):
-                is_success, _, configs_d = iga.go(
-                    seed=seed, sids=sids, tmpdir=tdir)
-                if not args.only_ga and is_success:
-                    return igen.go(seed=seed, econfigs_d=configs_d, tmpdir=tdir)
-                else:
-                    return None
+            if args.no_ga:
+                _f =  lambda seed, tdir: igen.go(seed=seed, tmpdir=tdir)
+            else:
+                import iga_alg as GA
+                cfg = GA.CFG.mk_from_lines(CM.iread_strip(cfg_file))
+                iga = GA.IGa(dom, cfg, get_cov_f)
+                def _f(seed, tdir):
+                    is_success, _, configs_d = iga.go(
+                        seed=seed, sids=sids, tmpdir=tdir)
+                    econfigs.extend(configs_d.items())
+                    if not args.only_ga and is_success:
+                        return igen.go(
+                            seed=seed,econfigs=econfigs, tmpdir=tdir)
+                    else:
+                        return None
             
         elif args.cmp_rand:
             _f = lambda seed, tdir, rand_n: igen.go_rand(
-                rand_n=rand_n, seed=seed, tmpdir=tdir)
+                rand_n=rand_n, seed=seed, econfigs=econfigs, tmpdir=tdir)
         elif args.do_full:
-            _f = lambda _,tdir: igen.go_full(tmpdir=tdir)
+            _f = lambda _,tdir: igen.go_full(econfigs = econfigs, tmpdir=tdir)
         elif args.rand_n is None:
-            _f = lambda seed, tdir: igen.go(seed=seed, tmpdir=tdir)
+            _f = lambda seed, tdir: igen.go(seed=seed, econfigs=econfigs, tmpdir=tdir)
         else:
             _f = lambda seed, tdir: igen.go_rand(
-                rand_n=args.rand_n, seed=seed, tmpdir=tdir)
+                rand_n=args.rand_n, seed=seed, econfigs=econfigs, tmpdir=tdir)
 
     logger.debug("dom:\n{}".format(dom))
     return _f, get_cov_f
@@ -183,6 +186,11 @@ if __name__ == "__main__":
                          action="store")
 
     aparser.add_argument("--only_ga", "-only_ga",
+                         help="don't find interactions",
+                         default=False,
+                         action="store_true")
+
+    aparser.add_argument("--no_ga", "-no_ga",
                          help="don't find interactions",
                          default=False,
                          action="store_true")
