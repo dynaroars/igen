@@ -41,7 +41,7 @@ def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
             doms_dir, "doms_gnu_coreutils", "{}.dom".format(prog_name))
             
     dom_file = CM.getpath(dom_file)
-    dom,_ = get_dom_f(dom_file)
+    dom,default_configs = get_dom_f(dom_file)
     assert all(len(vs) >= 2 and "off" in vs 
                for vs in dom.itervalues()),"incorrect format"
 
@@ -54,7 +54,7 @@ def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
             'prog_dir': prog_dir,
             'scripts_dir': scripts_dir}
     get_cov_f = lambda config: GC.get_cov_wrapper(config, data)
-    return dom, get_cov_f
+    return dom, default_configs, get_cov_f
 
 def check_data(data):
     GC.check_data(data)

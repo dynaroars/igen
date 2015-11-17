@@ -984,25 +984,25 @@ class IGen(object):
     """
     Main algorithm
     """
-    def __init__(self, dom, get_cov, default_configs=None, sids=None):
+    def __init__(self, dom, get_cov, sids=None):
         if __debug__:
             assert isinstance(dom, Dom), dom
             assert callable(get_cov), get_cov
-            assert (not default_configs or
-                    all(isinstance(c, list)
-                        for c in default_configs)), default_configs
+            # assert (not default_configs or
+            #         all(isinstance(c, list)
+            #             for c in default_configs)), default_configs
             assert not sids or CC.is_cov(sids), sids
             
         self.dom = dom
         self.z3db = self.dom.z3db
         self.get_cov = get_cov
-        if default_configs:
-            self.default_configs = map(Config, default_configs)
-        else:
-            self.default_configs = None
+        # if default_configs:
+        #     self.default_configs = map(Config, default_configs)
+        # else:
+        #     self.default_configs = None
         self.sids = sids
         
-    def go(self, seed, rand_n=None, econfigs_d=None, tmpdir=None):
+    def go(self, seed, rand_n=None, econfigs=None, tmpdir=None):
         """
         rand_n = None: use default CEGIR mode
         rand_n = 0  : use init configs
@@ -1012,12 +1012,11 @@ class IGen(object):
         if __debug__:
             assert isinstance(seed,(float, int)), seed
             assert rand_n is None or isinstance(rand_n, int), rand_n
-            assert (not econfigs_d or
-                    isinstance(econfigs_d, CC.Configs_d)), econfigs_d
+            assert not econfigs or isinstance(econfigs, list), econfigs
             assert isinstance(tmpdir, str) and os.path.isdir(tmpdir), tmpdir
             
         random.seed(seed)
-        logger.debug("seed: {}, tmpdir: {}".format(seed,tmpdir))
+        logger.debug("seed: {}, tmpdir: {}".format(seed, tmpdir))
 
         DTrace.save_pre(seed,self.dom,tmpdir)
 
@@ -1036,19 +1035,36 @@ class IGen(object):
         ct = st
         xtime_total = 0.0
 
-        if econfigs_d:
-            cconfigs_d = CC.Configs_d()
-            for c in econfigs_d:
-                cconfigs_d[Config(c)] = econfigs_d[c]
-            logger.debug("add {} existing configs".format(len(econfigs_d)))
-            xtime = 0.0
-        else:
-            configs = self.gen_configs_init(rand_n, seed)
-            if self.default_configs:
-                for c in self.default_configs:
+        cconfigs_d = CC.Configs_d()
+        configs = []
+        xtime = 0.0
+
+        #init configs
+        if econfigs:
+            for c, cov in econfigs:
+                c = Config(c)
+                if cov is None:
                     configs.append(c)
-            cconfigs_d, xtime = self.eval_configs(configs)
+                else:
+                    cconfigs_d[c] = cov
+                    
+        configs = [c for c in configs if c not in cconfigs_d]
+
+        logger.debug("existing configs {} evaled, {} not evaled"
+                     .format(len(cconfigs_d), len(configs)))
+
+        if not cconfigs_d:
+            configs_ = self.gen_configs_init(rand_n, seed)
+            configs.extend(configs_)
+
+        if configs:
+            cconfigs_d_, xtime = self.eval_configs(configs)
             xtime_total += xtime
+            for c in cconfigs_d_:
+                assert c not in cconfigs_d
+                cconfigs_d[c]  = cconfigs_d_[c]
+                
+        logger.debug("init configs {}".format(len(cconfigs_d)))
         
         new_covs, new_cores = Infer.infer_covs(
             cores_d, cconfigs_d, configs_d, covs_d, self.dom, self.sids)
@@ -1131,8 +1147,8 @@ class IGen(object):
     #Helper functions
     def eval_configs(self, configs):
         if __debug__:
-            assert (isinstance(configs,list) and
-                    all(isinstance(c,Config) for c in configs)
+            assert (isinstance(configs, list) and
+                    all(isinstance(c, Config) for c in configs)
                     and configs), configs
         st = time()
         cconfigs_d = CC.Configs_d()
@@ -1210,7 +1226,7 @@ class IGen(object):
         for (pc,pd,nc,nd) in pncores:
             #if can add pc then don't cosider pd (i.e., refine pc first)
             if pc and (pc,None) not in ignore_sel_cores:
-                sc = SCore((pc,None))
+                sc = SCore((pc, None))
                 if pd is None: sc.set_keep()
                 sel_cores.append(sc)
                     

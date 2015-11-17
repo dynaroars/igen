@@ -24,11 +24,11 @@ class CustDict(MutableMapping):
     __metaclass__ = abc.ABCMeta
     def __init__(self): self.__dict__ = {}
     def __len__(self): return len(self.__dict__)
-    def __getitem__(self,key): return self.__dict__[key]
+    def __getitem__(self, key): return self.__dict__[key]
     def __iter__(self): return iter(self.__dict__)    
-    def __setitem__(self,key,val): raise NotImplementedError("setitem")
-    def __delitem__(self,key): raise NotImplementedError("delitem")
-    def add_set(self,key,val):
+    def __setitem__(self, key, val): raise NotImplementedError("setitem")
+    def __delitem__(self, key): raise NotImplementedError("delitem")
+    def add_set(self, key, val):
         """
         For mapping from key to set
         """
@@ -51,20 +51,20 @@ def str_of_cov(cov):
     return s
 
 
-is_setting = lambda (k,v): isinstance(k,str) and isinstance(v,str)
-def str_of_setting((k,v)):
+is_setting = lambda (k, v): isinstance(k, str) and isinstance(v, str)
+def str_of_setting((k, v)):
     """
     >>> print str_of_setting(('x','1'))
     x=1
     """
     if __debug__:
-        assert is_setting((k,v)), (k,v)
+        assert is_setting((k, v)), (k, v)
         
-    return '{}={}'.format(k,v)
+    return '{}={}'.format(k, v)
 
 
-is_valset = lambda vs: (isinstance(vs,frozenset) and vs and
-                        all(isinstance(v,str) for v in vs))
+is_valset = lambda vs: (isinstance(vs, frozenset) and vs and
+                        all(isinstance(v, str) for v in vs))
 
 def str_of_valset(s):
     """
@@ -73,7 +73,7 @@ def str_of_valset(s):
     """
     return ','.join(sorted(s))
 
-is_csetting = lambda (k,vs): isinstance(k,str) and is_valset(vs)
+is_csetting = lambda (k,vs): isinstance(k, str) and is_valset(vs)
 
 def str_of_csetting((k,vs)):
     """
@@ -83,9 +83,9 @@ def str_of_csetting((k,vs)):
     x=1,3
     """
     if __debug__:
-        assert is_csetting((k,vs)), (k,vs)
+        assert is_csetting((k, vs)), (k, vs)
     
-    return '{}={}'.format(k,str_of_valset(vs))
+    return '{}={}'.format(k, str_of_valset(vs))
 
 class Dom(OrderedDict):
     """
@@ -126,20 +126,19 @@ class Dom(OrderedDict):
 
     """
     def __init__(self,dom):
-        OrderedDict.__init__(self,dom)
+        OrderedDict.__init__(self, dom)
         
         if __debug__:
-            assert (self and all(is_csetting(s)
-                                 for s in self.iteritems())), self
+            assert self and all(is_csetting(s) for s in self.iteritems()), self
 
     def __str__(self):
         """
         """
         s = "{} vars and {} pos configs".format(len(self),self.siz)
         s_detail = '\n'.join("{}. {}: ({}) {}"
-                             .format(i+1,k,len(vs),str_of_valset(vs))
-                             for i,(k,vs) in enumerate(self.iteritems()))
-        s = "{}\n{}".format(s,s_detail)
+                             .format(i+1, k, len(vs), str_of_valset(vs))
+                             for i, (k, vs) in enumerate(self.iteritems()))
+        s = "{}\n{}".format(s, s_detail)
         return s
 
     @property
@@ -155,18 +154,19 @@ class Dom(OrderedDict):
     @property
     def z3db(self):
         z3db = dict()
-        for k,vs in self.iteritems():
+        for k, vs in self.iteritems():
             vs = sorted(list(vs))
-            ttyp,tvals=z3.EnumSort(k,vs)
-            rs = [vv for vv in zip(vs,tvals)]
-            rs.append(('typ',ttyp))
-            z3db[k]=(z3.Const(k,ttyp),dict(rs))
+            ttyp, tvals=z3.EnumSort(k,vs)
+            rs = [vv for vv in zip(vs, tvals)]
+            rs.append(('typ', ttyp))
+            z3db[k] = (z3.Const(k, ttyp),dict(rs))
         return z3db
     
     @classmethod
     def get_dom(cls, dom_file):
         """
-        Read domain info from a file
+        Read domain info from a file. 
+        Also read default configs (.default*) if given
         """
         if __debug__:
             assert os.path.isfile(dom_file), dom_file
@@ -180,12 +180,11 @@ class Dom(OrderedDict):
 
         #default configs
         dom_dir = os.path.dirname(dom_file)
-        configs = [f for f in os.listdir(dom_dir) if '.default' in f]
-        configs = [os.path.join(dom_dir, f) for f in configs]
+        configs = [os.path.join(dom_dir, f) for f in os.listdir(dom_dir)
+                   if '.default' in f]
         configs = [dict(get_lines(CM.iread_strip(f))) for f in configs
                    if os.path.isfile(f)]
         configs = [[(k, list(c[k])[0]) for k in dom] for c in configs]
-        
         return dom, configs
 
     #Methods to generate configurations
@@ -307,9 +306,6 @@ class Configs_d(CustDict):
         ss = (c.__str__(self[c]) for c in self.__dict__)
         return '\n'.join("{}. {}".format(i+1, s) for i, s in enumerate(ss))
 
-
-    
-    
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
