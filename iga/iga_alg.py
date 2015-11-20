@@ -184,7 +184,7 @@ class CFG(OrderedDict):
                         
             return rs
 
-
+    
 class Config(CC.Config):
 
     def get_mincover(self,sids):
@@ -232,8 +232,6 @@ class Config(CC.Config):
         2. x=3, cov (4): 1, 3, 4, 7
         3. x=2, cov (3): 2, 4, 6
         set([8])
-
-
         """
         
         if __debug__:
@@ -273,7 +271,7 @@ class Fits_d(CC.CustDict):
 
         self.__dict__[config] = fits
 
-    def __str__(self,sid):
+    def __str__(self, sid):
         cs = (c for c,fits in self.__dict__.iteritems() if sid in fits)
         cs = sorted(cs,key=lambda c: self.__dict__[c][sid],reverse=True)
         return '\n'.join("{}. {} fit {}"
@@ -299,28 +297,51 @@ class IGa(object):
         logger.debug("cfg {}, sids {}"
                      .format(len(self.cfg),len(self.sids)))
 
-    def compute_covs(self, configs, configs_d):
+    def eval_configs(self, configs):
+        if __debug__:
+            assert (isinstance(configs, list) and
+                    all(isinstance(c, Config) for c in configs)
+                    and configs), configs
+        st = time()
+        results = CC.eval_configs(configs, self.get_cov)
+        cconfigs_d = CC.Configs_d()
+        for c,rs in results:
+            cconfigs_d[c] = rs
+        return cconfigs_d, time() - st
+
+    @staticmethod
+    def mk_configs(n, f):
         """
-        It's OK for duplicatins in configs (similar individuals in pop)
+        Generic method to create at most n configs
         """
         if __debug__:
-            assert (configs and
-                    all(isinstance(c,Config) for c in configs)), configs
+            assert isinstance(n,int) and n > 0, n
+            assert callable(f), f
+            
+        pop = OrderedDict()
+        for _ in range(n):
+            c = f()
 
-        st = time()
-        for c in configs:
-            if c in configs_d:
-                continue
-            sids,_ = self.get_cov(c)
-            configs_d[c]= sids
-        return time() - st
+            c_iter = 0
+            while c in pop and c_iter < 3:
+                c_iter += 1
+                c = f()
 
+            if c not in pop:
+                pop[c]=None
+                
+        if __debug__:
+            assert len(pop) <= n
+            
+        return pop.keys()
+    
+        
     def go(self, seed, sids, tmpdir):
         if __debug__:
-            assert isinstance(seed,float), seed
+            assert isinstance(seed, float), seed
             assert (sids and isinstance(sids, set) and
                     all(sid in self.sids for sid in sids)), sids
-            assert isinstance(tmpdir,str), tmpdir
+            assert isinstance(tmpdir, str), tmpdir
             
         random.seed(seed)
         logger.debug("seed: {}, tmpdir: {}".format(seed,tmpdir))        
@@ -365,9 +386,9 @@ class IGa(object):
         
     def go_sid(self, sid, configs_d, fits_d):
         if __debug__:
-            assert isinstance(sid,str), sid
+            assert isinstance(sid, str), sid
             assert isinstance(configs_d, Configs_d), configs_d
-            assert isinstance(fits_d,Fits_d), fits_d
+            assert isinstance(fits_d, Fits_d), fits_d
 
         def cache(configs,config_s,cov_s):
             for c in configs:
@@ -396,13 +417,16 @@ class IGa(object):
 
             if cur_iter == 1:
                 configs = self.dom.gen_configs_tcover1(config_cls=Config)
-                xtime = self.compute_covs(configs, configs_d)
+                configs_d_, xtime = self.eval_configs(configs)
+                for c in configs_d_:
+                    if c not in configs_d:
+                        configs_d[c] = configs_d_[c]                        
                 xtime_total += xtime        
-                cache(configs,config_s,cov_s)
+                cache(configs, config_s, cov_s)
                 continue
 
             if cur_iter == 2:
-                config_siz = max(len(self.dom),self.dom.max_fsiz)
+                config_siz = max(len(self.dom), self.dom.max_fsiz)
                 paths = self.cfg.paths[sid]
                 IGa.compute_fits(sid, paths, configs, configs_d, fits_d)
             
@@ -412,19 +436,25 @@ class IGa(object):
             
             logger.debug("configs {} fit best {} avg {} "
                          .format(len(configs_d), cur_best_fit, cur_avg_fit))
+            logger.debug(str(cur_best))
             
             #gen new configs
             freqs = IGa.get_freqs(sid, configs, fits_d, self.dom)
-            configs = [IGa.tourn_sel(freqs, cur_exploit)
-                       for _ in range(config_siz)]
+            configs = IGa.mk_configs(
+                config_siz, lambda: IGa.tourn_select(freqs, cur_exploit))
+                
             if __debug__:
-                assert len(configs) == config_siz, \
-                    (len(configs), config_siz)
+                assert len(configs) == config_siz, (len(configs), config_siz)
 
-            xtime = self.compute_covs(configs, configs_d)
+            configs_d_, xtime = self.eval_configs(configs)
+            for c in configs_d_:
+                if c not in configs_d:
+                    configs_d[c] = configs_d_[c]
             xtime_total += xtime
             cache(configs,config_s,cov_s)            
             IGa.compute_fits(sid, paths, configs, configs_d, fits_d)
+            for c in configs:
+                print c, fits_d[c][sid]
 
             #elitism
             if cur_best not in configs:
@@ -460,47 +490,10 @@ class IGa(object):
             
         return config_s, cov_s
 
-
-    @staticmethod
-    def get_tourn_siz(sample_siz,exploit_rate):
-        """
-        >>> [IGa.get_tourn_siz(x,y) for x,y in [(10,.8),(10,.9),(3,.8),(3,.5)]]
-        [8, 9, 3, 2]
-        """
-        if __debug__:
-            assert sample_siz >= 1, sample_siz
-        siz = int(math.ceil(sample_siz*exploit_rate))
-        if siz > sample_siz:
-            siz = sample_siz
-        if siz < 1:
-            siz = 1
-        return siz
-    
-    @staticmethod
-    def tourn_sel(rls,exploit_rate):
-        def sample_f(rl,tourn_siz):
-            if __debug__:
-                assert isinstance(rl[0],tuple) and len(rl[0])==2
-                #rl = [('val', score)]            
-            s = (random.choice(rl) for _ in range(tourn_siz))
-            return s
-        
-        settings = []
-        for name,ranked_list in rls:
-            assert len(ranked_list) >= 1
-            
-            tourn_siz = IGa.get_tourn_siz(len(ranked_list),exploit_rate)
-            sample = sample_f(ranked_list,tourn_siz)
-            val,_ = max(sample,key=lambda (val,rank):rank)
-            settings.append((name,val))
-
-        c = Config(settings)
-        return c
-
     @staticmethod
     def get_best(sid, configs, fits_d):
         if __debug__:
-            assert isinstance(sid,str), sid
+            assert isinstance(sid, str), sid
             assert (configs is None or
                     (configs and
                     all(isinstance(c, Config) for c in configs))), configs
@@ -515,7 +508,7 @@ class IGa(object):
         return best_fit, best
     
     @staticmethod
-    def get_avg(sid,configs,fits_d):
+    def get_avg(sid, configs, fits_d):
         if __debug__:
             assert isinstance(sid,str), sid
             assert (configs and
@@ -530,12 +523,15 @@ class IGa(object):
         return sum(fits_d[c][sid] for c in cs) / float(len(cs))
 
     @staticmethod
-    def get_freqs(sid,configs,fits_d,dom):
+    def get_freqs(sid, configs, fits_d, dom):
         """
-        >>> ns = 'ssl loc lis acc anon dual'.split()
-        >>> vs = ['0 1 3 4', '0 1', '0 1', '0 1', '0 1', '0 1 2']
-        >>> dom = Dom(zip(ns,[frozenset(v.split()) for v in vs]))
+        Returns a list of variable names and their fitness scores and occurrences.
+        Used later to create new configuration (i.e., those with high scoes and 
+        appear frequently are likely chosen).
 
+        >>> ks = 'a b c d e f'.split()
+        >>> vs = ['0 1 3 4', '0 1', '0 1', '0 1', '0 1', '0 1 2']
+        >>> dom = CC.Dom(zip(ks, [frozenset(v.split()) for v in vs]))
         >>> cs = [\
         ('0 1 0 1 0 0',2),\
         ('1 1 0 1 0 0',1),\
@@ -544,88 +540,124 @@ class IGa(object):
         ('0 1 0 1 0 1',2),\
         ('0 0 1 0 1 1',8)]
 
-        >>> configs = [Config(zip(ns,c.split())) for c,f in cs]
-        >>> fits = [{None:f} for _,f in cs]
+        >>> configs = [Config(zip(ks, c.split())) for c,f in cs]
+        >>> fits = [{'s':f} for _, f in cs]
         >>> fits_d = Fits_d()
-        >>> for c,f in zip(configs,fits): fits_d[c]=f
-
-        >>> print fits_d.__str__(None)
-        1. ssl=0 loc=0 lis=1 acc=0 anon=1 dual=1 fit 8
-        2. ssl=0 loc=1 lis=0 acc=1 anon=0 dual=0 fit 2
-        3. ssl=0 loc=1 lis=0 acc=1 anon=0 dual=1 fit 2
-        4. ssl=1 loc=0 lis=1 acc=0 anon=1 dual=0 fit 1
-        5. ssl=1 loc=1 lis=0 acc=1 anon=0 dual=0 fit 1
-        6. ssl=1 loc=0 lis=1 acc=0 anon=0 dual=1 fit 0
-
-        >>> rls = IGa.analyze(None,fits_d,dom)
-        >>> print rls
-        [('ssl', [('3', -0.1), ('4', -0.1), ('1', 0), ('1', 1), ('1', 1), ('0', 2), ('0', 2), ('0', 8)]), ('loc', [('0', 0), ('0', 1), ('1', 1), ('1', 2), ('1', 2), ('0', 8)]), ('lis', [('1', 0), ('1', 1), ('0', 1), ('0', 2), ('0', 2), ('1', 8)]), ('acc', [('0', 0), ('0', 1), ('1', 1), ('1', 2), ('1', 2), ('0', 8)]), ('anon', [('0', 0), ('1', 1), ('0', 1), ('0', 2), ('0', 2), ('1', 8)]), ('dual', [('2', -0.1), ('1', 0), ('0', 1), ('0', 1), ('0', 2), ('1', 2), ('1', 8)])]
-
-
-
-        # #Another example
-        >>> ns = 'a b c d e'.split()
-        >>> vs = ['0 1', '0 1', '0 1', '0 1', '0 1']
-        >>> dom = OrderedDict(zip(ns,[v.split() for v in vs]))
-        >>> cs = [\
-        ('1 1 1 1 1', 3),\
-        ('1 1 0 1 0', 6),\
-        ('1 0 1 1 0', 6),\
-        ('0 1 1 1 0', 6),\
-        ('1 1 1 1 0', 6)]
-
-        >>> configs = [Config(zip(ns,c.split())) for c,f in cs]
-        >>> fits = [{'s':f} for _,f in cs]
-        >>> fits_d = Fits_d()
-        >>> for c,f in zip(configs,fits): fits_d[c]=f
+        >>> for c,f in zip(configs, fits): fits_d[c]=f
 
         >>> print fits_d.__str__('s')
-        1. a=0 b=1 c=1 d=1 e=0 fit 6
-        2. a=1 b=0 c=1 d=1 e=0 fit 6
-        3. a=1 b=1 c=1 d=1 e=0 fit 6
-        4. a=1 b=1 c=0 d=1 e=0 fit 6
-        5. a=1 b=1 c=1 d=1 e=1 fit 3
-        
-        >>> rls = IGa.analyze('s',fits_d,dom)
-        >>> print rls
-        [('a', [('0', 6), ('1', 6), ('1', 3), ('1', 6), ('1', 6)]), ('b', [('1', 6), ('0', 6), ('1', 3), ('1', 6), ('1', 6)]), ('c', [('1', 6), ('1', 6), ('1', 3), ('1', 6), ('0', 6)]), ('d', [('0', 2.9), ('1', 6), ('1', 6), ('1', 3), ('1', 6), ('1', 6)]), ('e', [('0', 6), ('0', 6), ('1', 3), ('0', 6), ('0', 6)])]
+        1. a=0 b=0 c=1 d=0 e=1 f=1 fit 8
+        2. a=0 b=1 c=0 d=1 e=0 f=0 fit 2
+        3. a=0 b=1 c=0 d=1 e=0 f=1 fit 2
+        4. a=1 b=1 c=0 d=1 e=0 f=0 fit 1
+        5. a=1 b=0 c=1 d=0 e=1 f=0 fit 1
+        6. a=1 b=0 c=1 d=0 e=0 f=1 fit 0
 
-        # >>> random.seed(1)
-        # >>> print Pop.mk_ts(rls,siz=10,tourn_siz=2,exploit_rate=1.0)
-        # 1. a=1 b=1 c=1 d=1 e=1
-        # 2. a=1 b=1 c=1 d=1 e=0
-        # 3. a=1 b=1 c=0 d=1 e=0
-        # 4. a=0 b=1 c=1 d=1 e=0
-        # 5. a=1 b=0 c=1 d=1 e=0
-        # 6. a=1 b=0 c=0 d=1 e=0
-        # 7. a=0 b=1 c=0 d=1 e=0
-        # 8. a=1 b=1 c=1 d=0 e=0
+        >>> freqs = IGa.get_freqs('s', configs, fits_d, dom)
+        >>> print freqs
+        [('a', [('0', 2), ('1', 1), ('1', 1), ('1', 0), ('0', 2), ('0', 8), ('3', -0.1), ('4', -0.1)]), ('b', [('1', 2), ('1', 1), ('0', 1), ('0', 0), ('1', 2), ('0', 8)]), ('c', [('0', 2), ('0', 1), ('1', 1), ('1', 0), ('0', 2), ('1', 8)]), ('d', [('1', 2), ('1', 1), ('0', 1), ('0', 0), ('1', 2), ('0', 8)]), ('e', [('0', 2), ('0', 1), ('1', 1), ('0', 0), ('0', 2), ('1', 8)]), ('f', [('0', 2), ('0', 1), ('0', 1), ('1', 0), ('1', 2), ('1', 8), ('2', -0.1)])]
+
+        #high exploit rates result in values with high fits (e.g., a=0)
+        >>> random.seed(0)
+        >>> configs = IGa.mk_configs(10, lambda: IGa.tourn_select(freqs, 0.9))
+        >>> for c in configs: print c
+        a=0 b=0 c=1 d=0 e=1 f=1
+        a=0 b=0 c=1 d=0 e=0 f=1
+        a=0 b=0 c=1 d=1 e=1 f=1
+        a=0 b=0 c=1 d=0 e=0 f=0
+        a=0 b=1 c=1 d=0 e=1 f=1
+        a=0 b=0 c=0 d=0 e=0 f=1
+        a=0 b=0 c=1 d=1 e=1 f=0
+        a=0 b=1 c=1 d=1 e=1 f=0
+        a=0 b=1 c=0 d=1 e=1 f=1
+        a=0 b=1 c=1 d=0 e=1 f=0
+
+        #with low exploit rate, also consider value with low fits
+        #or even values that do not appear in the configs (e.g., a=3)
+        >>> random.seed(0)
+        >>> configs = IGa.mk_configs(10, lambda: IGa.tourn_select(freqs, 0.1))
+        >>> for c in configs: print c
+        a=3 b=1 c=1 d=1 e=0 f=0
+        a=3 b=1 c=1 d=0 e=1 f=1
+        a=1 b=1 c=1 d=1 e=1 f=2
+        a=3 b=0 c=0 d=1 e=1 f=1
+        a=1 b=1 c=1 d=0 e=1 f=2
+        a=1 b=0 c=0 d=1 e=0 f=0
+        a=0 b=0 c=0 d=1 e=0 f=1
+        a=3 b=1 c=0 d=0 e=0 f=1
+        a=1 b=0 c=0 d=0 e=0 f=0
+        a=0 b=0 c=0 d=0 e=0 f=1
 
         """
         if __debug__:
-            assert isinstance(sid,str), sid
-            assert (configs is None or
-                    (configs and
-                    all(isinstance(c, Config) for c in configs))), configs
+            assert isinstance(sid, str), sid
+            assert (not configs or
+                    all(isinstance(c, Config) for c in configs)), configs
             assert fits_d and isinstance(fits_d, Fits_d), fits_d
             assert isinstance(dom, CC.Dom), dom
             
-        fits = [fits_d[c][sid] for c in configs]
-        min_fit = min(fits)
-        tiny = 0.1
+
+        fits = [fits_d[config][sid] for config in configs]
+        #compute low_fit wrt to fits (instead of giving a fixed value) avoids
+        #problem with fitness having negative values (not with fscore, but could
+        #happen with other approach)
+        low_fit = min(fits) - 0.1
 
         freqs = []
-        for k,vs in dom.iteritems():
-            cvs = [c[k] for c in configs]
-            ts = zip(cvs,fits)
-            #non-appearing values are also considered (with low fit)
-            ts = [(v,min_fit-tiny) for v in vs if v not in cvs] + ts
-            freqs.append((k,ts))
+        # Iterate through variables.
+        for k, vs in dom.iteritems():
+            # For each variable, obtain its value and fitness score from configs.
+            cvs = [config[k] for config in configs]
+            rs = zip(cvs, fits)
+            # Also give a low fitness score to values not appearring in configs
+            # so that these values are also considered
+            cvs = set(cvs)
+            rs_ = [(v, low_fit) for v in vs if v not in cvs]
+            freqs.append((k, rs + rs_))
 
         return freqs
 
     @staticmethod
-    def get_fscore(cov,path):
+    def tourn_select(freqs, exploit_rate):
+        """
+        Use tournament selection to create a new candidate from freqs list 
+        (computed from fitness and occurences).
+        """
+        if __debug__:
+            assert freqs and isinstance(freqs, list), freqs
+            #('var', [('val', score)])
+            assert all(isinstance(f,tuple) and len(f)==2 and
+                       isinstance(f[0], str) and
+                       isinstance(f[1], list) and f[1] and 
+                       all(isinstance(vs, tuple) and len(vs)==2 and
+                           isinstance(vs[0], str) and isinstance(vs[1], (int,float))
+                           for vs in f[1])
+                       for f in freqs), freqs
+            assert (isinstance(exploit_rate, float) and
+                    0.0 <= exploit_rate <= 1.0), exploit_rate
+
+        settings = []
+        for k, ls in freqs:
+            if __debug__:
+                assert ls, ls
+
+            #higher exploit rate gives larger tour_siz
+            if exploit_rate:
+                tourn_siz = int(math.ceil(len(ls) * exploit_rate))
+            else:
+                tourn_siz = 1
+            if __debug__:
+                assert 1 <= tourn_siz <= len(ls), tourn_siz
+                
+            #select randomly tourn_siz values and use the largest fitness
+            sample = (random.choice(ls) for _ in range(tourn_siz))
+            val, _ = max(sample, key=lambda (val, fit) : fit)
+            settings.append((k, val))
+            
+        return Config(settings)
+    
+    @staticmethod
+    def get_fscore(cov, path):
         if cov == path:
             return 1.0
         else:
@@ -658,7 +690,7 @@ class IGa(object):
             if c in fits_d and sid in fits_d[c]:
                 continue
             cov = configs_d[c]
-            fit = max(IGa.get_fscore(cov,path) for path in paths)
+            fit = max(IGa.get_fscore(cov, path) for path in paths)
             if c not in fits_d:
                 fits_d[c] = {sid:fit}
             else:
@@ -668,3 +700,6 @@ class IGa(object):
 
 
                 
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
