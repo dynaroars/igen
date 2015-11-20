@@ -310,10 +310,9 @@ class IGa(object):
         return cconfigs_d, time() - st
 
     @staticmethod
-    def mk_configs(n, f, exact=False):
+    def mk_configs(n, f):
         """
         Generic method to create at most n configs.
-        if exact is True then will create exactly n configs
         """
         if __debug__:
             assert isinstance(n,int) and n > 0, n
@@ -336,15 +335,43 @@ class IGa(object):
 
         pop = pop.keys()
         
-        if exact and len(pop) < n:
-            pop_ = [f() for _ in range(n - len(pop))]
-            pop.extend(pop_)
-            if __debug__:
-                assert len(pop) == n, (len(pop), n)
-
         return pop
-    
+
+    @staticmethod
+    def mk_config_shuffle(config, dom, n=1):
+        """
+        Create a new config by suffling n values in config
         
+        >>> ks = 'a b c d e f'.split()
+        >>> vs = ['0 1 3 4', '0 1', '0 1', '0 1', '0 1', '0 1 2']
+        >>> dom = CC.Dom(zip(ks, [frozenset(v.split()) for v in vs]))
+        >>> c = Config(zip(ks, '0 1 0 1 0 1'.split()))
+        >>> print c
+        a=0 b=1 c=0 d=1 e=0 f=1
+        >>> random.seed(0)
+        >>> configs = [IGa.mk_config_shuffle(c, dom, 1) for _ in range(3)]
+        >>> for c in configs: print c
+        a=0 b=1 c=0 d=1 e=0 f=2
+        a=0 b=1 c=1 d=1 e=0 f=1
+        a=0 b=1 c=0 d=0 e=0 f=1
+        >>> random.seed(0)
+        >>> print IGa.mk_config_shuffle(c, dom, 4)
+        a=3 b=0 c=0 d=1 e=0 f=0
+        """
+        if __debug__:
+            assert isinstance(config, Config), config
+            assert isinstance(dom, CC.Dom), dom
+            assert len(config) == len(dom), (len(config), len(dom))
+            assert 0 < n < len(dom), n
+            
+        ks = set(random.sample(dom.keys(), n))
+        settings = []
+        for k, v in config.iteritems():
+            if k in ks:
+                v = random.choice(list(set(dom[k]) - set([v])))
+            settings.append((k,v))
+        return Config(settings)
+    
     def go(self, seed, sids, tmpdir):
         if __debug__:
             assert isinstance(seed, float), seed
@@ -443,15 +470,20 @@ class IGa(object):
             cur_avg_fit = IGa.get_avg(sid, configs, fits_d)
             cur_ncovs = len(cov_s)
             
-            logger.debug("configs {} fit best {} avg {} "
+            logger.debug("configs {}, fit best {} avg {} "
                          .format(len(configs_d), cur_best_fit, cur_avg_fit))
             logger.debug(str(cur_best))
             
             #gen new configs
             freqs = IGa.get_freqs(sid, configs, fits_d, self.dom)
             configs = IGa.mk_configs(
-                config_siz, lambda: IGa.tourn_select(freqs, cur_exploit),
-                exact=True)
+                int(config_siz/2), lambda: IGa.tourn_select(freqs, cur_exploit))
+
+            if len(configs) < config_siz:
+                for _ in range(config_siz - len(configs)):
+                    config = IGa.mk_config_shuffle(cur_best, self.dom, n=1)
+                    configs.append(config)
+                    
             if __debug__:
                 assert len(configs) == config_siz, (len(configs), config_siz)
 
@@ -462,9 +494,6 @@ class IGa(object):
             xtime_total += xtime
             cache(configs,config_s,cov_s)            
             IGa.compute_fits(sid, paths, configs, configs_d, fits_d)
-            for c in configs:
-                print c, fits_d[c][sid]
-
             #elitism
             if cur_best not in configs:
                 configs.append(cur_best)
@@ -657,7 +686,6 @@ class IGa(object):
                 tourn_siz = 1
             if __debug__:
                 assert 1 <= tourn_siz <= len(ls), tourn_siz
-                
             #select randomly tourn_siz values and use the largest fitness
             sample = (random.choice(ls) for _ in range(tourn_siz))
             val, _ = max(sample, key=lambda (val, fit) : fit)
