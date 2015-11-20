@@ -310,9 +310,10 @@ class IGa(object):
         return cconfigs_d, time() - st
 
     @staticmethod
-    def mk_configs(n, f):
+    def mk_configs(n, f, exact=False):
         """
-        Generic method to create at most n configs
+        Generic method to create at most n configs.
+        if exact is True then will create exactly n configs
         """
         if __debug__:
             assert isinstance(n,int) and n > 0, n
@@ -331,9 +332,17 @@ class IGa(object):
                 pop[c]=None
                 
         if __debug__:
-            assert len(pop) <= n
-            
-        return pop.keys()
+            assert len(pop) <= n, (len(pop), n)
+
+        pop = pop.keys()
+        
+        if exact and len(pop) < n:
+            pop_ = [f() for _ in range(n - len(pop))]
+            pop.extend(pop_)
+            if __debug__:
+                assert len(pop) == n, (len(pop), n)
+
+        return pop
     
         
     def go(self, seed, sids, tmpdir):
@@ -441,8 +450,8 @@ class IGa(object):
             #gen new configs
             freqs = IGa.get_freqs(sid, configs, fits_d, self.dom)
             configs = IGa.mk_configs(
-                config_siz, lambda: IGa.tourn_select(freqs, cur_exploit))
-                
+                config_siz, lambda: IGa.tourn_select(freqs, cur_exploit),
+                exact=True)
             if __debug__:
                 assert len(configs) == config_siz, (len(configs), config_siz)
 
