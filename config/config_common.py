@@ -181,7 +181,8 @@ class Dom(OrderedDict):
         #default configs
         dom_dir = os.path.dirname(dom_file)
         configs = [os.path.join(dom_dir, f) for f in os.listdir(dom_dir)
-                   if '.default' in f]
+                   if dom_file in f and '.default' in f]
+
         configs = [dict(get_lines(CM.iread_strip(f))) for f in configs
                    if os.path.isfile(f)]
         configs = [[(k, list(c[k])[0]) for k in dom] for c in configs]
