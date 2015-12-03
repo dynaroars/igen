@@ -166,7 +166,7 @@ class Dom(CC.Dom):
 
         e_configs = [c.z3expr(z3db) for c in existing_configs]
         for changed_core in changes:
-            yexpr = changed_core.z3expr(z3db,z3util.myAnd)
+            yexpr = changed_core.z3expr(z3db, z3util.myAnd)
             nexpr = z3util.myOr(e_configs)
             configs_ = self.gen_configs_exprs([yexpr],[nexpr],k=1)
             if not configs_:
@@ -182,7 +182,7 @@ class Dom(CC.Dom):
 
         return configs
 
-    def gen_configs_rand_smt(self,rand_n):
+    def gen_configs_rand_smt(self, rand_n):
         """
         Create rand_n configs
         """
@@ -195,7 +195,7 @@ class Dom(CC.Dom):
         config = configs[0]
         e_configs = []
 
-        for _ in range(rand_n-1):
+        for _ in range(rand_n - 1):
             e_configs.append(config.z3expr(z3db))
             nexpr = z3util.myOr(e_configs)
             configs_ = self.gen_configs_exprs([],[nexpr],1)
@@ -988,18 +988,11 @@ class IGen(object):
         if __debug__:
             assert isinstance(dom, Dom), dom
             assert callable(get_cov), get_cov
-            # assert (not default_configs or
-            #         all(isinstance(c, list)
-            #             for c in default_configs)), default_configs
             assert not sids or CC.is_cov(sids), sids
             
         self.dom = dom
         self.z3db = self.dom.z3db
         self.get_cov = get_cov
-        # if default_configs:
-        #     self.default_configs = map(Config, default_configs)
-        # else:
-        #     self.default_configs = None
         self.sids = sids
         
     def go(self, seed, rand_n=None, econfigs=None, tmpdir=None):
