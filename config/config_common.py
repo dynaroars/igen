@@ -179,10 +179,10 @@ class Dom(OrderedDict):
         dom = cls(get_lines(CM.iread_strip(dom_file)))
 
         #default configs
+        dom_name = os.path.basename(dom_file)
         dom_dir = os.path.dirname(dom_file)
         configs = [os.path.join(dom_dir, f) for f in os.listdir(dom_dir)
-                   if dom_file in f and '.default' in f]
-
+                   if dom_name in f and '.default' in f]
         configs = [dict(get_lines(CM.iread_strip(f))) for f in configs
                    if os.path.isfile(f)]
         configs = [[(k, list(c[k])[0]) for k in dom] for c in configs]
@@ -195,17 +195,6 @@ class Dom(OrderedDict):
         
         ns,vs = itertools.izip(*self.iteritems())
         configs = [config_cls(zip(ns, c)) for c in itertools.product(*vs)]
-        return configs
-
-    def gen_configs_rand(self, rand_n, config_cls=None):
-        if __debug__:
-            assert 0 < rand_n <= self.siz, (rand_n, self.siz)
-
-        if config_cls is None:
-            config_cls = Config
-            
-        rgen = lambda: [(k,random.choice(list(self[k]))) for k in self]
-        configs = list(set(config_cls(rgen()) for _ in range(rand_n)))
         return configs
 
     def gen_configs_tcover1(self, config_cls=None):
@@ -234,7 +223,18 @@ class Dom(OrderedDict):
         while dom_used: configs.append(mk())
         return configs    
 
+    def gen_configs_rand(self, rand_n, config_cls=None):
+        if __debug__:
+            assert 0 < rand_n <= self.siz, (rand_n, self.siz)
 
+        if config_cls is None:
+            config_cls = Config
+            
+        rgen = lambda: [(k,random.choice(list(self[k]))) for k in self]
+        configs = list(set(config_cls(rgen()) for _ in range(rand_n)))
+        return configs
+
+    #generate configs using smt solver
 class Config(HDict):
     """
     >>> c = Config([('a', '1'), ('b', '0'), ('c', '1')])

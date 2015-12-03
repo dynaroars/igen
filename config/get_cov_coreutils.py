@@ -41,7 +41,7 @@ def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
             doms_dir, "doms_gnu_coreutils", "{}.dom".format(prog_name))
             
     dom_file = CM.getpath(dom_file)
-    dom,default_configs = get_dom_f(dom_file)
+    dom, default_configs = get_dom_f(dom_file)
     assert all(len(vs) >= 2 and "off" in vs 
                for vs in dom.itervalues()),"incorrect format"
 
