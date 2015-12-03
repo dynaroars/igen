@@ -121,8 +121,34 @@ class Dom(OrderedDict):
     x=1 y=1 z=2 w=c
     x=1 y=1 z=1 w=b
 
-
     >>> assert len(dom.z3db) == len(dom) and set(dom.z3db) == set(dom)
+
+    >>> random.seed(0)
+    >>> configs = dom.gen_configs_rand_smt(5)
+    >>> print "\\n".join(map(str,configs))
+    x=2 y=1 z=0 w=a
+    x=1 y=1 z=0 w=b
+    x=2 y=1 z=1 w=a
+    x=2 y=1 z=2 w=a
+    x=1 y=1 z=0 w=a
+
+    >>> random.seed(0)
+    >>> configs = dom.gen_configs_rand_smt(5, configs+configs)
+    >>> print "\\n".join(map(str, configs))
+    x=1 y=1 z=0 w=c
+    x=2 y=1 z=0 w=b
+    x=2 y=1 z=0 w=c
+    x=2 y=1 z=2 w=c
+    x=2 y=1 z=2 w=b
+
+    >>> new_configs = dom.gen_configs_rand_smt(dom.siz, configs)
+    >>> assert len(new_configs) == dom.siz - len(configs), (len(new_configs), dom.siz, len(configs))
+
+    >>> configs = dom.gen_configs_rand_smt(dom.siz)
+    >>> assert len(configs) == dom.siz    
+
+    >>> configs = dom.gen_configs_rand_smt(dom.siz, configs)
+    >>> assert not configs
 
     """
     def __init__(self,dom):
@@ -234,7 +260,106 @@ class Dom(OrderedDict):
         configs = list(set(config_cls(rgen()) for _ in range(rand_n)))
         return configs
 
-    #generate configs using smt solver
+    #generate configs using an SMT solver
+    def config_of_model(self, model, config_cls):
+        """
+        Ret a config from a model
+        """
+        if __debug__:
+            assert isinstance(model, dict), model
+            assert config_cls, config_clcs
+            
+        _f = lambda k: (model[k] if k in model
+                        else random.choice(list(self[k])))
+        config = config_cls((k,_f(k)) for k in self)
+        return config
+    
+    def gen_configs_expr(self, expr, k, config_cls):
+        """
+        Return at most k configs satisfying expr
+        """
+        if __debug__:
+            assert z3.is_expr(expr), expr
+            assert k > 0, k
+            assert config_cls, config_cls
+            
+        def _f(m):
+            m = dict((str(v), str(m[v])) for v in m)
+            return None if not m else self.config_of_model(m, config_cls)
+
+        models = z3util.get_models(expr, k)
+        assert models is not None, models  #z3 cannot solve this
+        if not models:  #not satisfy
+            return []
+        else:
+            if __debug__:
+                assert len(models) >= 1, models
+            configs = [_f(m) for m in models]
+            return configs
+        
+    def gen_configs_exprs(self, yexprs, nexprs, k, config_cls):
+        """
+        Return a config satisfying yexprs but not nexprs
+        """
+        if __debug__:
+            assert all(e is None or z3.is_expr(e)
+                       for e in yexprs),yexprs
+            assert all(e is None or z3.is_expr(e)
+                       for e in nexprs),nexprs
+            assert k > 0, k
+            assert config_cls, config_cls
+
+        yexprs = [e for e in yexprs if e]
+        nexprs = [z3.Not(e) for e in nexprs if e]
+        exprs = yexprs + nexprs
+        if __debug__:
+            assert exprs, 'empty exprs'
+            
+        expr = exprs[0] if len(exprs)==1 else z3util.myAnd(exprs)
+        return self.gen_configs_expr(expr, k, config_cls)
+
+
+    def gen_configs_rand_smt(self, rand_n, existing_configs=[], config_cls=None):
+        """
+        Create rand_n uniq configs
+        """
+        if __debug__:
+            assert 0 < rand_n <= self.siz, (rand_n, self.siz)
+            assert isinstance(existing_configs, list), existing_configs
+            
+        if config_cls is None:
+            config_cls = Config
+
+        z3db = self.z3db
+        exprs = []
+            
+        existing_configs = set(existing_configs)
+        if existing_configs:
+            exprs = [c.z3expr(z3db) for c in existing_configs]
+            nexpr = z3util.myOr(exprs)
+            configs = self.gen_configs_exprs([], [nexpr], 1, config_cls)
+            if not configs:
+                return []
+            else:
+                config = configs[0]
+        else:
+            configs = self.gen_configs_rand(1, config_cls)
+            assert len(configs) == 1, configs
+            config = configs[0]
+
+        for _ in range(rand_n - 1):
+            exprs.append(config.z3expr(z3db))
+            nexpr = z3util.myOr(exprs)
+            configs_ = self.gen_configs_exprs([], [nexpr], 1, config_cls)
+            if not configs_:
+                break
+            config = configs_[0]            
+            configs.append(config)
+            
+        return configs    
+        
+            
+        
 class Config(HDict):
     """
     >>> c = Config([('a', '1'), ('b', '0'), ('c', '1')])
