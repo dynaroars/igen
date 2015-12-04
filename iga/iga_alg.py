@@ -13,8 +13,18 @@ logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
 
 class Dom(CC.Dom):
-    pass
+    def gen_configs_cex(self, config, existing_configs):
 
+        new_configs = []
+        for k in config:
+            vs = self[k] - set(config[k])
+            for v in vs:
+                new_config = Config(config)
+                new_config[k] = v
+                if new_config not in existing_configs:
+                    new_configs.append(new_config)
+        return new_configs
+                
 class Config(CC.Config):
     pass
 
@@ -23,13 +33,12 @@ class Configs_d(CC.Configs_d):
 
 class Fits_d(CC.CustDict):
     def __setitem__(self, config, fits):
-        if __debug__:
-            assert isinstance(config,Config),config
-            assert config not in self.__dict__,config
-            assert all((sid is None or isinstance(sid,str))
-                       and isinstance(fit,(int,float))
-                       for sid,fit in fits.iteritems()), fits
-
+        assert isinstance(config,Config),config
+        assert config not in self.__dict__,config
+        assert all((sid is None or isinstance(sid,str))
+                   and isinstance(fit,(int,float))
+                   for sid,fit in fits.iteritems()), fits
+        
         self.__dict__[config] = fits
 
     def __str__(self, sid):
@@ -38,16 +47,130 @@ class Fits_d(CC.CustDict):
         return '\n'.join("{}. {} fit {}"
                          .format(i+1,c,self.__dict__[c][sid])
                          for i,c in enumerate(cs))
+
+
+class GA(object):
+    
+    @staticmethod
+    def mutate_p(config, dom, p):
+        """
+        Randomly change values of config using probability p
+        """
+        assert isinstance(config, Config), config
+        assert isinstance(dom, Dom), dom
+        assert len(config) == len(dom), (len(config), len(dom))
+        assert isinstance(p, float) and 0.0 <= p <= 1.0, p
+
+        settings = []
+        for k, v in config.iteritems():
+            if random.random() >= p:
+                v = random.choice(list(dom[k] - set([v])))
+            settings.append((k,v))
+        return Config(settings)
+
+    
+    @staticmethod
+    def mutate_n(config, dom, n):
+        """
+        Create a new candidate by suffling n values in config
+        
+        >>> ks = 'a b c d e f'.split()
+        >>> vs = ['0 1 3 4', '0 1', '0 1', '0 1', '0 1', '0 1 2']
+        >>> dom = Dom(zip(ks, [frozenset(v.split()) for v in vs]))
+        >>> c = Config(zip(ks, '0 1 0 1 0 1'.split()))
+        >>> print c
+        a=0 b=1 c=0 d=1 e=0 f=1
+
+        >>> random.seed(0)
+        >>> configs = [GA.mutate_n(c, dom, 1) for _ in range(3)]
+        >>> for c in configs: print c
+        a=0 b=1 c=0 d=1 e=0 f=2
+        a=0 b=1 c=1 d=1 e=0 f=1
+        a=0 b=1 c=0 d=0 e=0 f=1
+
+        >>> random.seed(0)
+        >>> print GA.mutate_n(c, dom, 4)
+        a=3 b=0 c=0 d=1 e=0 f=0
+        """
+        assert isinstance(config, Config), config
+        assert isinstance(dom, Dom), dom
+        assert len(config) == len(dom), (len(config), len(dom))
+        assert 0 < n < len(dom), n
+
+        ks = set(random.sample(dom.keys(), n))
+        settings = []
+        for k, v in config.iteritems():
+            if k in ks:
+                v = random.choice(list(dom[k] - set([v])))
+            settings.append((k,v))
+        return Config(settings)
+
+    @staticmethod
+    def mutate(config, dom, p_or_n):
+        """
+        Call mutate_p if p_or_n is a float and call mutate_n if p_or_n is an int
+        """
+        f = GA.mutate_p if isinstance(p_or_n, float) else GA.mutate_n
+        return f(config, dom, p_or_n)
+        
+
+    @staticmethod
+    def get_fitness(pop):
+        pass
+    
+    @staticmethod
+    def gen_pop_tourn_sel(sid, old_pop, pop_siz, cur_exploit, configs_d, fits_d, dom):
+        #create new configs
+        freqs = IGa.get_freqs(sid, old_pop, fits_d, dom)
+        pop = [IGa.tourn_select(freqs, cur_exploit) for _ in range(pop_siz)]
+
+        #mutation
+        pop_ = []
+        for c in pop:
+            if random.random() > cur_exploit:
+                c = GA.mutate(c, dom, 1)
+            pop_.append(c)
+
+        pop = pop_
+
+        #random
+        uniqs = set(c for c in pop if c not in configs_d)
+        if not uniqs:
+            #introduce some varieties
+            pass
+
+        return pop
+
+    #Steady state
+    @staticmethod
+    def gen_pop_steady_state(sid, old_pop, pop_siz, cur_exploit, configs_d, fits_d, dom):
+        """
+        Pick a config with the highest fitness and modify it
+        """
+        assert isinstance(sid, str), sid
+        assert old_pop, old_pop
+        assert pop_siz > 0, pop_siz
+        assert isinstance(dom, Dom), dom
+        
+        best_fit = max(fits_d[c][sid] for c in fits_d)
+        pop_bests = [c for c in old_pop if fits_d[c][sid] == best_fit]
+        best = random.choice(pop_bests)
+        pop = dom.gen_configs_cex(best, configs_d)
+        rand_n = pop_siz - len(pop)
+        if rand_n > 0:
+            pop_ = dom.gen_configs_rand_smt(
+                rand_n, existing_configs=configs_d.keys(), config_cls=Config)
+            pop.extend(pop_)
+        return pop
     
 class IGa(object):
     """
     Main algorithm
     """
     def __init__(self, dom, cfg, get_cov):
-        if __debug__:
-            assert isinstance(dom, CC.Dom), dom
-            assert isinstance(cfg, CFG.CFG), cfg
-            assert callable(get_cov), get_cov
+        assert isinstance(dom, CC.Dom), dom
+        assert isinstance(cfg, CFG.CFG), cfg
+        assert callable(get_cov), get_cov
         
         self.dom = Dom(dom)
         self.z3db = self.dom.z3db        
@@ -76,95 +199,11 @@ class IGa(object):
         for c in cconfigs_d:
             cconfigs_d[c] = set(sid for sid in cconfigs_d[c] if s in sid)
 
-    def eval_update_configs(self, pop, s, configs_d, covs):
-        cconfigs_d, xtime = self.eval_configs(pop)
+    def eval_update_configs(self, pop, s, eval_configs_f, configs_d, covs):
+        cconfigs_d, xtime = eval_configs_f(pop)
         IGa.rm_sids(cconfigs_d, s)
         IGa.update_caches(cconfigs_d, configs_d, covs)
         return xtime
-
-    @staticmethod
-    def mk_configs(n, f):
-        """
-        Generic method to create at most n configs.
-        """
-        if __debug__:
-            assert isinstance(n,int) and n > 0, n
-            assert callable(f), f
-            
-        pop = OrderedDict()
-        for _ in range(n):
-            c = f()
-
-            c_iter = 0
-            while c in pop and c_iter < 5:
-                c_iter += 1
-                c = f()
-
-            if c not in pop:
-                pop[c]=None
-                
-        if __debug__:
-            assert len(pop) <= n, (len(pop), n)
-
-        pop = pop.keys()
-        
-        return pop
-
-    @staticmethod
-    def mk_config_shuffle(config, dom, n=1):
-        """
-        Create a new config by suffling n values in config
-        
-        >>> ks = 'a b c d e f'.split()
-        >>> vs = ['0 1 3 4', '0 1', '0 1', '0 1', '0 1', '0 1 2']
-        >>> dom = Dom(zip(ks, [frozenset(v.split()) for v in vs]))
-        >>> c = Config(zip(ks, '0 1 0 1 0 1'.split()))
-        >>> print c
-        a=0 b=1 c=0 d=1 e=0 f=1
-        >>> random.seed(0)
-        >>> configs = [IGa.mk_config_shuffle(c, dom, 1) for _ in range(3)]
-        >>> for c in configs: print c
-        a=0 b=1 c=0 d=1 e=0 f=2
-        a=0 b=1 c=1 d=1 e=0 f=1
-        a=0 b=1 c=0 d=0 e=0 f=1
-        >>> random.seed(0)
-        >>> print IGa.mk_config_shuffle(c, dom, 4)
-        a=3 b=0 c=0 d=1 e=0 f=0
-        """
-        if __debug__:
-            assert isinstance(config, Config), config
-            assert isinstance(dom, Dom), dom
-            assert len(config) == len(dom), (len(config), len(dom))
-            assert 0 < n < len(dom), n
-
-        ks = set(random.sample(dom.keys(), n))
-        settings = []
-        for k, v in config.iteritems():
-            if k in ks:
-                v = random.choice(list(set(dom[k]) - set([v])))
-            settings.append((k,v))
-        return Config(settings)
-
-    @staticmethod
-    def mk_config_shuffle1(config, dom, p):
-        """
-        Create a new config by suffling n values in config
-
-        """
-        if __debug__:
-            assert isinstance(config, Config), config
-            assert isinstance(dom, Dom), dom
-            assert len(config) == len(dom), (len(config), len(dom))
-            assert isinstance(p, float) and 0.0 <= p <= 1.0, p
-
-        settings = []
-        nchanges = 0
-        for k, v in config.iteritems():
-            if random.random() >= p:
-                nchanges +=1
-                v = random.choice(list(set(dom[k]) - set([v])))
-            settings.append((k,v))
-        return Config(settings)
 
     def go(self, seed, sids, econfigs=None, tmpdir=None):
         if __debug__:
@@ -220,7 +259,7 @@ class IGa(object):
 
             for s in configs_d[c]:
                 covs.add(s)
-                
+
     def go_sid(self, sid, configs_d, fits_d):
         """
         Use GA to find sid.
@@ -255,7 +294,7 @@ class IGa(object):
                 logger.debug("create {} init pop".format(len(pop)))
 
                 xtime = self.eval_update_configs(
-                    pop, req_s, configs_d, covs)
+                    pop, req_s, self.eval_configs, configs_d, covs)
                 xtime_total += xtime
                 continue
             
@@ -282,27 +321,15 @@ class IGa(object):
             logger.debug(str(cur_best))
 
             #create new configs
-            freqs = IGa.get_freqs(sid, pop, fits_d, self.dom)
-            pop = [IGa.tourn_select(freqs, cur_exploit) for _ in range(pop_siz)]
+            # pop = GA.gen_pop_tourn_sel(sid, pop, pop_siz, cur_exploit,
+            #                            configs_d, fits_d, self.dom)
 
-            #mutation
-            pop_ = []
-            for c in pop:
-                if random.random() > cur_exploit:
-                    c = IGa.mk_config_shuffle(c, self.dom, 1)
-                pop_.append(c)
-            
-            pop = pop_
-
-            #random
-            uniqs = set(c for c in pop if c not in configs_d)
-            if not uniqs:
-                #introduce some varieties
-                pass
+            pop = GA.gen_pop_steady_state(sid, pop, pop_siz, cur_exploit,
+                                          configs_d, fits_d, self.dom)
             
             # evaluate & compute fitness
             xtime = self.eval_update_configs(
-                pop, req_s, configs_d, covs)
+                pop, req_s, self.eval_configs, configs_d, covs)
             xtime_total += xtime
 
             IGa.compute_fits(sid, paths, pop, configs_d, fits_d)
@@ -420,7 +447,7 @@ class IGa(object):
 
         #high exploit rates result in values with high fits (e.g., a=0)
         >>> random.seed(0)
-        >>> configs = IGa.mk_configs(10, lambda: IGa.tourn_select(freqs, 0.9))
+        >>> configs = Config.mk(10, lambda: IGa.tourn_select(freqs, 0.9))
         >>> for c in configs: print c
         a=0 b=0 c=1 d=0 e=1 f=1
         a=0 b=0 c=1 d=0 e=0 f=1
@@ -436,7 +463,7 @@ class IGa(object):
         #with low exploit rate, also consider value with low fits
         #or even values that do not appear in the configs (e.g., a=3)
         >>> random.seed(0)
-        >>> configs = IGa.mk_configs(10, lambda: IGa.tourn_select(freqs, 0.1))
+        >>> configs = Config.mk(10, lambda: IGa.tourn_select(freqs, 0.1))
         >>> for c in configs: print c
         a=3 b=1 c=1 d=1 e=0 f=0
         a=3 b=1 c=1 d=0 e=1 f=1
