@@ -3,6 +3,7 @@ Utilities to read CFG file produced by gcc -fdump-tree-cfg-lineno
 
 To test against lots of CFG's, try
 for i in /home/tnguyen/iga_exps/benchmarks/coreutils/coreutils-8.24/obj-gcov/src/*.cfg; do echo $i; python ~/Dropbox/git/iga/src/gcc_cfg.py $i >> out ; done 
+
 """
 import os.path
 import sys
@@ -22,58 +23,7 @@ def splitlines(lines, _f):
 
     parts.append(cur_part)    
     return parts
-
-def parse_cfg_file(filename):
-    """
-    Parse a .cfg file produced by gcc -fdump-tree-vcg-lineno
-    """
-    lines = list(CM.iread_strip(filename,None))
-    funs = splitlines(lines,lambda l: l.startswith(";; Function "))
-    funs = [f for f in funs if f[0].startswith(";; Function ")]
-    funs = [parse_function(f) for f in funs]
-    funs_d = OrderedDict((fun_name, fun_d) for fun_name,fun_d in funs)
-
-    #post processing
-    #remove weird function
-    for fun in funs_d:
-        if '_GLOBAL__sub_I_65535_0' in fun:
-            funs_d.pop(fun)
-    
-    #remove nondefined function, e.g., those defined in std lib
-    for fun in funs_d:
-        blocks = funs_d[fun]['blocks']
-        for b in blocks:
-            for b in blocks:
-                stmts = blocks[b]
-                for stmt in stmts:
-                    blocks[b][stmt] = [f for f in blocks[b][stmt] if f in funs_d]
-
-    #create fake blocks for blocks appear in succs but not in fun's
-    for fun in funs_d:
-        avail_blocks = funs_d[fun]['blocks']
-        succ_blocks = funs_d[fun]['succs']
-        succ_blocks = set(succ_blocks.keys() +
-                          list(itertools.chain.from_iterable(
-                              succ_blocks.values())))
-
-        blocks = set([b for b in succ_blocks if b not in avail_blocks])
-        for b in blocks:
-            avail_blocks[b] = OrderedDict()
-
-    #fix empty block, gives it a fake sid to fix the linkage problem,
-    #when analyze things, just ignore these fake sid
-    #note real code also contains empty blocks sometimes
-    for fun in funs_d:
-        fun_blocks = funs_d[fun]['blocks']
-        for b in fun_blocks:
-            if not fun_blocks[b]:
-                fake_sid = "{}_b{}".format(fun, b)
-                fake_sid = "fake_{}:{}".format(filename,fake_sid)
-                fun_blocks[b][fake_sid] = []  #no functions
-                #print ("create sid {}".format(fake_sid))
-
-    return funs_d
-    
+ 
 def parse_function(lines):
     if __debug__:
         assert isinstance(lines,list), lines
@@ -126,7 +76,6 @@ def parse_function(lines):
 
     return fun_name, fun_d
 
-
 def parse_block(lines):
     """
     <bb 2>:
@@ -164,7 +113,7 @@ def parse_block(lines):
     [test_cfg.c : 33:7] c = foo (a, D.2739);
     """
     if __debug__:
-        assert isinstance(lines,list), lines
+        assert isinstance(lines, list), lines
     
     block_name = [l for l in lines if l.startswith('<bb') and l.endswith('>:')]
     assert len(block_name) == 1
@@ -263,6 +212,54 @@ def parse_succs(s):
     s = (s[0],s[1:])
     return s
 
+def parse_cfg_file(filename):
+    """
+    Parse a .cfg file produced by gcc -fdump-tree-vcg-lineno
+    """
+    if __debug__:
+        assert isinstance(filename,str), filename 
+    lines = list(CM.iread_strip(filename, None))
+    funs = splitlines(lines, lambda l: l.startswith(";; Function "))
+    funs = [f for f in funs
+            if f[0].startswith(";; Function ") and
+            '_GLOBAL__sub_I_65535_0' not in f[0]]
+    funs = [parse_function(f) for f in funs]
+    funs_d = OrderedDict((fun_name, fun_d) for fun_name, fun_d in funs)
+
+    #post processing
+    #remove nondefined function, e.g., only considered those defined in file
+    for fun in funs_d:
+        blocks = funs_d[fun]['blocks']
+        for b in blocks:
+            stmts = blocks[b]
+            for stmt in stmts:
+                blocks[b][stmt] = [f for f in blocks[b][stmt] if f in funs_d]
+
+    #create fake blocks for blocks appear in succs but not in fun's
+    for fun in funs_d:
+        avail_blocks = funs_d[fun]['blocks']
+        succ_blocks = funs_d[fun]['succs']
+        succ_blocks = set(succ_blocks.keys() +
+                          list(itertools.chain.from_iterable(
+                              succ_blocks.values())))
+
+        blocks = set([b for b in succ_blocks if b not in avail_blocks])
+        for b in blocks:
+            avail_blocks[b] = OrderedDict()
+
+    #fix empty block, gives it a fake sid to fix the linkage problem,
+    #when analyze things, just ignore these fake sid
+    for fun in funs_d:
+        fun_blocks = funs_d[fun]['blocks']
+        for b in fun_blocks:
+            if not fun_blocks[b]:
+                fake_sid = "{}_b{}".format(fun, b)
+                fake_sid = "fake_{}:{}".format(filename,fake_sid)
+                fun_blocks[b][fake_sid] = []  #no functions
+
+    return funs_d
+
+### Compute predessors ####
 
 fstelem = lambda elems: elems[0]
 lstelem = lambda elems: elems[-1]
@@ -277,7 +274,7 @@ def stmt_of_line(cfg, fun, block, sid, do_fst):
     """
     funs = cfg[fun]['blocks'][block][sid]
     funs = [f for f in funs if f in cfg]
-    if not funs:
+    if not funs or do_fst:  #big change here
         return sid
     else:
         f = fstelem(funs) if do_fst else lstelem(funs)
@@ -323,75 +320,121 @@ def stmt_of_fun(cfg, fun, do_fst):
     b = (_fst if do_fst else _lst)(blocks)
     return stmt_of_block(cfg, fun, b, do_fst)
     
+def get_preds_sids(fun, cfg):
+    """
+    chain sids in block
+    block [sid1, .., sidn] means  sid_i is pred of sid_i+1
+    """
+    preds = []
+    blocks = cfg[fun]['blocks']
+    for b in blocks:
+        stmts = blocks[b].keys()
+        assert stmts        
+        for s,s_ in zip(stmts[1:], stmts):
+            #print s, s_, blocks[b][s_]
+            funs = blocks[b][s_]
+            if funs:
+                lstfun = lstelem(blocks[b][s_])
+                lst_st = stmt_of_fun(cfg, lstfun, do_fst=False)
+                fstfun = fstelem(blocks[b][s_])
+                fst_st = stmt_of_fun(cfg, fstfun, do_fst=True)
+                #print 'lstfun', lstfun, lst_st, s
+                #print 'fstfun', fstfun, fst_st, s
+                assert lst_st != s
+                preds.append((lst_st,s))
+                assert s != fst_st
+                #print (s_, fst_st)
+                preds.append((s_, fst_st))
+            else:
+                assert s_ != s
+                #print (s_, s)
+                preds.append((s_, s))
+    return preds
+
+def get_preds_chain_fun_calls(fun, cfg):
+    """
+    chain function calls
+    stmt [f,g...] means lst(f) is pred of fst(g)
+    also, stmt is pred of fst(f)
+    """
+    preds = []
+    blocks = cfg[fun]['blocks']
+    for b in blocks:
+        stmts = blocks[b]
+        assert stmts
+
+        for stmt in stmts:
+            funs = blocks[b][stmt]
+            if not funs:
+                continue
+
+            for f,g in zip(funs, funs[1:]):
+                lst_f = stmt_of_fun(cfg, f, do_fst=False)
+                fst_g = stmt_of_fun(cfg, g, do_fst=True)
+                assert lst_f != fst_g , (fun, f, g)
+                preds.append((lst_f, fst_g))
+
+            fst_f = stmt_of_fun(cfg, funs[0], do_fst=True)
+            preds.append((stmt, fst_f))
+                
+    return preds
+
+def get_preds_chain_fun_blocks(fun, cfg):
+    """
+    chain function blocks
+    succs f: {g, h} means lst(b) is pred of fst(g), fst(h),
+    """
+    preds = []
+    blocks = cfg[fun]['blocks']
+    sblocks = cfg[fun]['succs']
+
+    fs = [f for f in sblocks if sblocks[f]]
+    for f in fs:
+        assert f in blocks        
+        lst_f = stmt_of_block(cfg, fun, f, do_fst=False)
+        # print f, lst_f, sblocks[f]
+        # CM.pause()
+        for g in sblocks[f]:
+            assert g in blocks
+
+            fst_g = stmt_of_block(cfg, fun, g, do_fst=True)
+
+            #could happen with or, e.g., y = a || b;
+            if lst_f != fst_g:
+                #print lst_f, fst_g
+                preds.append((lst_f, fst_g))
+    return preds
+    
 def compute_preds(cfg):
     preds = []
     
     #chain sids in block
     #block [sid1, .., sidn] means  sid_i is pred of sid_i+1
     for fun in cfg:
-        blocks = cfg[fun]['blocks']
-        for b in blocks:
-            stmts = blocks[b].keys()
-            assert stmts
+        preds_ = get_preds_sids(fun, cfg)
+        # print fun
+        # print preds_
+        for f,g in preds_:
+            preds.append((f, g))
             
-            for s,s_ in zip(stmts[1:], stmts):
-                #print s, s_, blocks[b][s_]
-                funs = blocks[b][s_]
-                if funs:
-                    lstfun = lstelem(blocks[b][s_])
-                    lst_st = stmt_of_fun(cfg, lstfun, do_fst=False)
-                    fstfun = fstelem(blocks[b][s_])
-                    fst_st = stmt_of_fun(cfg, fstfun, do_fst=True)
-                    # print 'lstfun', lstfun, lst_st, s
-                    # print 'fstfun', fstfun, fst_st, s
-                    assert lst_st != s
-                    preds.append((lst_st,s))
-                    assert s != fst_st
-                    preds.append((s_,fst_st))
-                else:
-                    assert s_ != s
-                    preds.append((s_, s))
-
 
     #chain function calls
     #[f,g...] means lst(f) is pred of fst(g)
     for fun in cfg:
-        blocks = cfg[fun]['blocks']
-        for b in blocks:
-            stmts = blocks[b]
-            assert stmts
-
-            for stmt in stmts:
-                funs = blocks[b][stmt]
-                if not funs:
-                    continue
-
-                for f,g in zip(funs, funs[1:]):
-                    lst_f = stmt_of_fun(cfg, f, do_fst=False)
-                    fst_g = stmt_of_fun(cfg, g, do_fst=True)
-                    assert lst_f != fst_g , (fun, f, g)
-                    preds.append((lst_f, fst_g))
-
+        preds_ = get_preds_chain_fun_calls(fun, cfg)
+        #print fun
+        #print preds_
+        for f,g in preds_:
+            preds.append((f, g))
 
 
     #chain function blocks
     #succs f: {g, h} means lst(b) is pred of fst(g), fst(h),
     for fun in cfg:
-        blocks = cfg[fun]['blocks']
-        sblocks = cfg[fun]['succs']
-        for f in sblocks:
-            assert f in blocks
-            # print fun, f, sblocks[f]
-            # CM.pause()
-            for g in sblocks[f]:
-                assert g in blocks
-                lst_f = stmt_of_block(cfg, fun, f, do_fst=False)
-                fst_g = stmt_of_block(cfg, fun, g, do_fst=True)
-                
-                #could happen with or, e.g., y = a || b;
-                if lst_f != fst_g:
-                    preds.append((lst_f, fst_g))
-
+        preds_ = get_preds_chain_fun_blocks(fun, cfg)        
+        for f,g in preds_:
+            preds.append((f, g))
+        
     preds_d = {}
     for f,g in preds:
         if g not in preds_d:
@@ -399,6 +442,7 @@ def compute_preds(cfg):
         preds_d[g].add(f)
 
     return preds_d
+
 
 def write_preds(filename, preds_d):
     if __debug__:
