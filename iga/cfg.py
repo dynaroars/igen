@@ -117,11 +117,12 @@ class CFG(OrderedDict):
         try:
             return self.__paths__[sid]
         except KeyError:
-            pc = CFG._get_paths_count(sid, self, frozenset())
-            print 'pathcount', pc
+            pc = CFG._guess_paths_count(sid, self, frozenset())
+            print 'guess npaths {}'.format(pc)
             CM.pause()
             paths = CFG._get_paths(sid, self, frozenset())
             paths = [[s for s in p if not s.startswith('fake')] for p in paths]
+            print "guess", pc, "real", len(paths)
             if paths:
                 self.__paths__[sid] = paths                
             else:
@@ -165,19 +166,15 @@ class CFG(OrderedDict):
         return rs
 
     @staticmethod
-    def _get_paths_count(sid, preds_d, visited):
+    def _guess_paths_count(sid, preds_d, visited):
         """
-        >>> CFG._get_paths_count(5,OrderedDict([(5,[4]),(4,[3,5]),(3,[2]),(2,[1,3]),(1,[])]), frozenset())
-        1
+        Quickly guess the # of paths by essentially counting the levels of the tree, 
+        e.g., for n levels and each level has m preds then it's m^n.
+        >>> CFG._guess_paths_count(0, OrderedDict([(0,[1,2]), (1,[3,4]),(3,[5]),(4,[]), (2,[6,7,8]), (6,[]), (7,[9, 10]), (9, []), (10, []), (8,[])]), frozenset())
+        12
 
-        >>> CFG._get_paths_count(3,OrderedDict([(3,[2]),(2,[1]),(1,[3])]), frozenset())
-        0
-
-        >>> CFG._get_paths_count(6,OrderedDict([(6,[5,7]),(7,[1]),(5,[4]),(4,[3,5]),(3,[2]),(2,[1,3]),(1,[])]), frozenset())
-        2
-
-        WARN: I was hoping this serves as a quick way to get the # of paths before doing the full _get_paths, 
-        but turns out to be also slow on large programs ... so probably not useful
+        Note: doesn't work very well on real apps (the greedy choice doesn't work in practice).  Can't think of any faster way to determine the 
+        level of tree
         """
         
         assert isinstance(sid,(str, int)), sid
@@ -185,18 +182,17 @@ class CFG(OrderedDict):
         assert isinstance(visited, frozenset), visited
 
         if sid in visited:
-            return 0
+            return 1
 
         if sid not in preds_d or not preds_d[sid]:
             return 1
 
-        rs = []
         preds = preds_d[sid]
-        pc = 0
-        for i,p in enumerate(preds):
-            pc += CFG._get_paths_count(p, preds_d, frozenset(list(visited)+[sid]))
+        #heuristic, only traverse the sid with largest preds
+        lsid = max(preds, key=lambda s: len(preds_d[s]) if s in preds_d else 0)
+        pc = CFG._guess_paths_count(lsid, preds_d, frozenset(list(visited)+[sid]))
             
-        return pc
+        return len(preds) * pc
         
     
 if __name__ == "__main__":
