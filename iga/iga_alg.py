@@ -77,7 +77,10 @@ class IGa(object):
         covs, found = set(), set()        
         configs_d = Configs_d()
         fits_d = Fits_d()
-
+        
+        logger.debug("search for {} sids".format(len(sids)))
+        logger.debug(str(sids))
+        
         remains = list(sorted(sids))
         while remains:            
             covs_ = self.go_sid(remains.pop(), configs_d, fits_d)
@@ -125,15 +128,17 @@ class IGa(object):
         
         while True:
             cur_iter += 1
-            logger.debug("sid {}, iter {} covs {}".format(sid, cur_iter, len(covs)))
+            logger.debug("sid '{}': iter {} covs {}"
+                         .format(sid, cur_iter, len(covs)))
 
             #init configs (to quickly find easy locations)
             if cur_iter == 1: 
                 pop = self.dom.gen_configs_tcover1(config_cls=Config)
                 logger.debug("create {} init pop".format(len(pop)))
 
-                found, xtime = IGa.eval_configs(sid, pop, req_s, self.get_cov,
-                                                configs_d, covs)
+                found, xtime = IGa.eval_configs(
+                    sid, pop, req_s, self.get_cov, configs_d, covs)
+                    
                 xtime_total += xtime
                 if found:
                     break
@@ -146,7 +151,12 @@ class IGa(object):
                     len(paths), CM.str_of_list(map(len,paths))
                 ))
                 logger.debug("\n" + '\n'.join("{}. {}".format(i, CM.str_of_list(p))
-                                              for i,p in enumerate (paths)))
+                                               for i,p in enumerate (paths)))
+                if max(map(len,paths)) <= 1:
+                    logger.warn("something wrong with cfg for sid '{}' .. skip"
+                                .format(sid))
+                    break
+                
                 IGa.compute_fits(sid, paths, pop, configs_d, fits_d)
 
             #cur stats
@@ -339,7 +349,7 @@ class IGa(object):
         assert pop_siz > 0, pop_siz
         assert isinstance(dom, Dom), dom
         
-        best_fit = max(fits_d[c][sid] for c in fits_d)
+        best_fit = max(fits_d[c][sid] for c in fits_d if sid in fits_d[c])
         pop_bests = [c for c in old_pop if fits_d[c][sid] == best_fit]
         best = random.choice(pop_bests)
         pop = dom.gen_configs_cex(best, configs_d)
