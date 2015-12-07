@@ -48,121 +48,6 @@ class Fits_d(CC.CustDict):
                          .format(i+1,c,self.__dict__[c][sid])
                          for i,c in enumerate(cs))
 
-
-class GA(object):
-    
-    @staticmethod
-    def mutate_p(config, dom, p):
-        """
-        Randomly change values of config using probability p
-        """
-        assert isinstance(config, Config), config
-        assert isinstance(dom, Dom), dom
-        assert len(config) == len(dom), (len(config), len(dom))
-        assert isinstance(p, float) and 0.0 <= p <= 1.0, p
-
-        settings = []
-        for k, v in config.iteritems():
-            if random.random() >= p:
-                v = random.choice(list(dom[k] - set([v])))
-            settings.append((k,v))
-        return Config(settings)
-
-    
-    @staticmethod
-    def mutate_n(config, dom, n):
-        """
-        Create a new candidate by suffling n values in config
-        
-        >>> ks = 'a b c d e f'.split()
-        >>> vs = ['0 1 3 4', '0 1', '0 1', '0 1', '0 1', '0 1 2']
-        >>> dom = Dom(zip(ks, [frozenset(v.split()) for v in vs]))
-        >>> c = Config(zip(ks, '0 1 0 1 0 1'.split()))
-        >>> print c
-        a=0 b=1 c=0 d=1 e=0 f=1
-
-        >>> random.seed(0)
-        >>> configs = [GA.mutate_n(c, dom, 1) for _ in range(3)]
-        >>> for c in configs: print c
-        a=0 b=1 c=0 d=1 e=0 f=2
-        a=0 b=1 c=1 d=1 e=0 f=1
-        a=0 b=1 c=0 d=0 e=0 f=1
-
-        >>> random.seed(0)
-        >>> print GA.mutate_n(c, dom, 4)
-        a=3 b=0 c=0 d=1 e=0 f=0
-        """
-        assert isinstance(config, Config), config
-        assert isinstance(dom, Dom), dom
-        assert len(config) == len(dom), (len(config), len(dom))
-        assert 0 < n < len(dom), n
-
-        ks = set(random.sample(dom.keys(), n))
-        settings = []
-        for k, v in config.iteritems():
-            if k in ks:
-                v = random.choice(list(dom[k] - set([v])))
-            settings.append((k,v))
-        return Config(settings)
-
-    @staticmethod
-    def mutate(config, dom, p_or_n):
-        """
-        Call mutate_p if p_or_n is a float and call mutate_n if p_or_n is an int
-        """
-        f = GA.mutate_p if isinstance(p_or_n, float) else GA.mutate_n
-        return f(config, dom, p_or_n)
-        
-
-    @staticmethod
-    def get_fitness(pop):
-        pass
-    
-    @staticmethod
-    def gen_pop_tourn_sel(sid, old_pop, pop_siz, cur_exploit, configs_d, fits_d, dom):
-        #create new configs
-        freqs = IGa.get_freqs(sid, old_pop, fits_d, dom)
-        pop = [IGa.tourn_select(freqs, cur_exploit) for _ in range(pop_siz)]
-
-        #mutation
-        pop_ = []
-        for c in pop:
-            if random.random() > cur_exploit:
-                c = GA.mutate(c, dom, 1)
-            pop_.append(c)
-
-        pop = pop_
-
-        #random
-        uniqs = set(c for c in pop if c not in configs_d)
-        if not uniqs:
-            #introduce some varieties
-            pass
-
-        return pop
-
-    #Steady state
-    @staticmethod
-    def gen_pop_steady_state(sid, old_pop, pop_siz, cur_exploit, configs_d, fits_d, dom):
-        """
-        Pick a config with the highest fitness and modify it
-        """
-        assert isinstance(sid, str), sid
-        assert old_pop, old_pop
-        assert pop_siz > 0, pop_siz
-        assert isinstance(dom, Dom), dom
-        
-        best_fit = max(fits_d[c][sid] for c in fits_d)
-        pop_bests = [c for c in old_pop if fits_d[c][sid] == best_fit]
-        best = random.choice(pop_bests)
-        pop = dom.gen_configs_cex(best, configs_d)
-        rand_n = pop_siz - len(pop)
-        if rand_n > 0:
-            pop_ = dom.gen_configs_rand_smt(
-                rand_n, existing_configs=configs_d.keys(), config_cls=Config)
-            pop.extend(pop_)
-        return pop
-    
 class IGa(object):
     """
     Main algorithm
@@ -178,41 +63,14 @@ class IGa(object):
         self.sids = self.cfg.__sids__
         logger.debug("cfg {}".format(len(self.cfg)))
         self.get_cov = get_cov
-        
-    def eval_configs(self, configs):
-        if __debug__:
-            assert (isinstance(configs, list) and
-                    all(isinstance(c, Config) for c in configs)
-                    and configs), configs
-        st = time()
-        results = CC.eval_configs(configs, self.get_cov)
-        cconfigs_d = Configs_d()
-        for c, rs in results:
-            cconfigs_d[c] = rs
-        return cconfigs_d, time() - st
-
-    @staticmethod
-    def rm_sids(cconfigs_d, s):
-        """
-        Only keep statements containing string s
-        """
-        for c in cconfigs_d:
-            cconfigs_d[c] = set(sid for sid in cconfigs_d[c] if s in sid)
-
-    def eval_update_configs(self, pop, s, eval_configs_f, configs_d, covs):
-        cconfigs_d, xtime = eval_configs_f(pop)
-        IGa.rm_sids(cconfigs_d, s)
-        IGa.update_caches(cconfigs_d, configs_d, covs)
-        return xtime
 
     def go(self, seed, sids, econfigs=None, tmpdir=None):
-        if __debug__:
-            assert isinstance(seed, float), seed
-            assert (sids and isinstance(sids, set) and
-                    all(sid in self.sids for sid in sids)), sids
-            assert not econfigs or isinstance(econfigs, list), econfigs
-            assert isinstance(tmpdir, str) and os.path.isdir(tmpdir), tmpdir
-            assert isinstance(tmpdir, str), tmpdir
+        assert isinstance(seed, float), seed
+        assert (sids and isinstance(sids, set) and
+                all(sid in self.sids for sid in sids)), sids
+        assert not econfigs or isinstance(econfigs, list), econfigs
+        assert isinstance(tmpdir, str) and os.path.isdir(tmpdir), tmpdir
+        assert isinstance(tmpdir, str), tmpdir
         
         random.seed(seed)
 
@@ -243,59 +101,43 @@ class IGa(object):
                             len(found), len(sids), len(covs), len(configs_d),
                             self.dom.siz))
         return is_success, found, configs_d
-
-    @staticmethod
-    def update_caches(cconfigs_d, configs_d, covs):
-        """
-        Update configs_d, configs, covs with the cconfigs_d
-        """
-        if __debug__:
-            assert isinstance(cconfigs_d, Configs_d), cconfigs_d
-            assert CC.is_cov(covs), covs
-
-        for c in cconfigs_d:
-            if c not in configs_d:
-                configs_d[c] = cconfigs_d[c]
-
-            for s in configs_d[c]:
-                covs.add(s)
+        
 
     def go_sid(self, sid, configs_d, fits_d):
         """
         Use GA to find sid.
         Also update information from configs_d and fits_d
         """
-        if __debug__:
-            assert isinstance(sid, str), sid
-            assert isinstance(configs_d, Configs_d), configs_d
-            assert isinstance(fits_d, Fits_d), fits_d
+        assert isinstance(sid, str), sid
+        assert isinstance(configs_d, Configs_d), configs_d
+        assert isinstance(fits_d, Fits_d), fits_d
 
-        max_stuck = 10
+        found = False
+        max_stuck = 3
         cur_stuck = 0
-        max_exploit = 0.8
-        cur_exploit = max_exploit
         xtime_total = 0.0
         covs = set()
         bests = set()
         
         cur_iter = 0        
         req_s = os.path.basename(sid).split(':')[0]
-        pop_siz = max(len(self.dom), self.dom.max_fsiz) * 2
+        pop_siz = max(len(self.dom), self.dom.max_fsiz)
         
-        while sid not in covs and cur_stuck <= max_stuck:
+        while True:
             cur_iter += 1
-            logger.debug("sid {}, iter {} covs {} stuck {}/{}, exploit {}"
-                         .format(sid, cur_iter, len(covs),
-                                 cur_stuck, max_stuck, cur_exploit))
+            logger.debug("sid {}, iter {} covs {}".format(sid, cur_iter, len(covs)))
 
-            #init configs (to find easy locations quickly)
+            #init configs (to quickly find easy locations)
             if cur_iter == 1: 
                 pop = self.dom.gen_configs_tcover1(config_cls=Config)
                 logger.debug("create {} init pop".format(len(pop)))
 
-                xtime = self.eval_update_configs(
-                    pop, req_s, self.eval_configs, configs_d, covs)
+                found, xtime = IGa.eval_configs(sid, pop, req_s, self.get_cov,
+                                                configs_d, covs)
                 xtime_total += xtime
+                if found:
+                    break
+                
                 continue
             
             if cur_iter == 2: #compute fitness of init configs
@@ -321,15 +163,12 @@ class IGa(object):
             logger.debug(str(cur_best))
 
             #create new configs
-            # pop = GA.gen_pop_tourn_sel(sid, pop, pop_siz, cur_exploit,
-            #                            configs_d, fits_d, self.dom)
-
-            pop = GA.gen_pop_steady_state(sid, pop, pop_siz, cur_exploit,
-                                          configs_d, fits_d, self.dom)
+            pop = IGa.gen_pop(sid, pop, pop_siz, configs_d, fits_d, self.dom)
             
             # evaluate & compute fitness
-            xtime = self.eval_update_configs(
-                pop, req_s, self.eval_configs, configs_d, covs)
+            found, xtime = IGa.eval_configs(sid, pop, req_s, self.get_cov, configs_d, covs)
+            if found:
+                break
             xtime_total += xtime
 
             IGa.compute_fits(sid, paths, pop, configs_d, fits_d)
@@ -349,37 +188,60 @@ class IGa(object):
             better_bests = len(bests) > cur_nbests
             if better_cov or better_avg or better_best or better_bests:
                 cur_stuck = 0
-                cur_exploit = max_exploit
             else:
                 cur_stuck += 1
-                cur_exploit -= max_exploit / max_stuck
-                if cur_exploit < 0.01: cur_exploit = 0.01
+                if cur_stuck > max_stuck:
+                    break
 
-        if sid in covs:
+        if found:
             config = CM.find_first(configs_d, lambda c: sid in configs_d[c])
             logger.debug("sol for '{}' : {}".format(sid, config))
             
         return covs
-                
+    
     @staticmethod
-    def tourn_sel(configs, sid, fits_d, tourn_siz):
-        if __debug__:
-            assert configs, configs
-            assert isinstance(fits_d, Fits_d), fits_d
-            assert tourn_siz >= 2, tourn_siz
+    def eval_configs(sid, pop, req_s, get_cov_f, configs_d, covs_s):
+        """
+        Compute cov for pop and Update configs_d, configs, covs
+        """
+        assert isinstance(sid, str), sid
+        assert (isinstance(pop, list) and pop and 
+                all(isinstance(c, Config) for c in pop)), pop
+        assert all(c not in configs_d for c in pop), pop
+        assert isinstance(req_s, str), req_s
+        assert callable(get_cov_f), get_cov_f
+        assert isinstance(configs_d, Configs_d), configs_d
+        assert CC.is_cov(covs_s), covs_s
+
+        cache = set()
+        st = time()
+        
+        for c in pop:
+            if c in cache or c in configs_d:
+                continue
+
+            cache.add(c)
+            sids, _ = get_cov_f(c)
+            sids = set(s for s in sids if req_s in s)
+            if not sids:
+                logger.warn("config {} produces nothing".format(c))
             
-        sample = (random.choice(configs) for _ in range(tourn_siz))
-        best = max(sample, key=lambda c: fits_d[c][sid])
-        return best
+            configs_d[c] = sids
+            for s in sids:
+                covs_s.add(s)
             
+            if sid in sids:
+                return True, time() - st
+            
+        return False, time() - st
+    
     @staticmethod
     def get_best(sid, configs, fits_d):
-        if __debug__:
-            assert isinstance(sid, str), sid
-            assert (configs is None or
-                    (configs and
-                    all(isinstance(c, Config) for c in configs))), configs
-            assert fits_d and isinstance(fits_d, Fits_d), fits_d
+        assert isinstance(sid, str), sid
+        assert (configs is None or
+                (configs and
+                all(isinstance(c, Config) for c in configs))), configs
+        assert fits_d and isinstance(fits_d, Fits_d), fits_d
 
         if configs is None:
             cs = [c for c in fits_d if sid in fits_d[c]]
@@ -391,11 +253,10 @@ class IGa(object):
     
     @staticmethod
     def get_avg(sid, configs, fits_d):
-        if __debug__:
-            assert isinstance(sid,str), sid
-            assert (configs and
-                    all(isinstance(c, Config) for c in configs)), configs
-            assert fits_d and isinstance(fits_d, Fits_d), fits_d
+        assert isinstance(sid,str), sid
+        assert (configs and
+                all(isinstance(c, Config) for c in configs)), configs
+        assert fits_d and isinstance(fits_d, Fits_d), fits_d
 
         if configs is None:
             cs = [c for c in fits_d if sid in fits_d[c]]
@@ -410,143 +271,13 @@ class IGa(object):
         best_fit, best = IGa.get_best(sids, configs, fits_d)
         return avg_fit, best_fit, best
     
-    @staticmethod
-    def get_freqs(sid, configs, fits_d, dom):
-        """
-        Returns a list of variable names and their fitness scores and occurrences.
-        Used later to create new configuration (i.e., those with high scoes and 
-        appear frequently are likely chosen).
 
-        >>> ks = 'a b c d e f'.split()
-        >>> vs = ['0 1 3 4', '0 1', '0 1', '0 1', '0 1', '0 1 2']
-        >>> dom = Dom(zip(ks, [frozenset(v.split()) for v in vs]))
-        >>> cs = [\
-        ('0 1 0 1 0 0',2),\
-        ('1 1 0 1 0 0',1),\
-        ('1 0 1 0 1 0',1),\
-        ('1 0 1 0 0 1',0),\
-        ('0 1 0 1 0 1',2),\
-        ('0 0 1 0 1 1',8)]
-
-        >>> configs = [Config(zip(ks, c.split())) for c,f in cs]
-        >>> fits = [{'s':f} for _, f in cs]
-        >>> fits_d = Fits_d()
-        >>> for c,f in zip(configs, fits): fits_d[c]=f
-
-        >>> print fits_d.__str__('s')
-        1. a=0 b=0 c=1 d=0 e=1 f=1 fit 8
-        2. a=0 b=1 c=0 d=1 e=0 f=0 fit 2
-        3. a=0 b=1 c=0 d=1 e=0 f=1 fit 2
-        4. a=1 b=1 c=0 d=1 e=0 f=0 fit 1
-        5. a=1 b=0 c=1 d=0 e=1 f=0 fit 1
-        6. a=1 b=0 c=1 d=0 e=0 f=1 fit 0
-
-        >>> freqs = IGa.get_freqs('s', configs, fits_d, dom)
-        >>> print freqs
-        [('a', [('0', 2), ('1', 1), ('1', 1), ('1', 0), ('0', 2), ('0', 8), ('3', -0.1), ('4', -0.1)]), ('b', [('1', 2), ('1', 1), ('0', 1), ('0', 0), ('1', 2), ('0', 8)]), ('c', [('0', 2), ('0', 1), ('1', 1), ('1', 0), ('0', 2), ('1', 8)]), ('d', [('1', 2), ('1', 1), ('0', 1), ('0', 0), ('1', 2), ('0', 8)]), ('e', [('0', 2), ('0', 1), ('1', 1), ('0', 0), ('0', 2), ('1', 8)]), ('f', [('0', 2), ('0', 1), ('0', 1), ('1', 0), ('1', 2), ('1', 8), ('2', -0.1)])]
-
-        #high exploit rates result in values with high fits (e.g., a=0)
-        >>> random.seed(0)
-        >>> configs = Config.mk(10, lambda: IGa.tourn_select(freqs, 0.9))
-        >>> for c in configs: print c
-        a=0 b=0 c=1 d=0 e=1 f=1
-        a=0 b=0 c=1 d=0 e=0 f=1
-        a=0 b=0 c=1 d=1 e=1 f=1
-        a=0 b=0 c=1 d=0 e=0 f=0
-        a=0 b=1 c=1 d=0 e=1 f=1
-        a=0 b=0 c=0 d=0 e=0 f=1
-        a=0 b=0 c=1 d=1 e=1 f=0
-        a=0 b=1 c=1 d=1 e=1 f=0
-        a=0 b=1 c=0 d=1 e=1 f=1
-        a=0 b=1 c=1 d=0 e=1 f=0
-
-        #with low exploit rate, also consider value with low fits
-        #or even values that do not appear in the configs (e.g., a=3)
-        >>> random.seed(0)
-        >>> configs = Config.mk(10, lambda: IGa.tourn_select(freqs, 0.1))
-        >>> for c in configs: print c
-        a=3 b=1 c=1 d=1 e=0 f=0
-        a=3 b=1 c=1 d=0 e=1 f=1
-        a=1 b=1 c=1 d=1 e=1 f=2
-        a=3 b=0 c=0 d=1 e=1 f=1
-        a=1 b=1 c=1 d=0 e=1 f=2
-        a=1 b=0 c=0 d=1 e=0 f=0
-        a=0 b=0 c=0 d=1 e=0 f=1
-        a=3 b=1 c=0 d=0 e=0 f=1
-        a=1 b=0 c=0 d=0 e=0 f=0
-        a=0 b=0 c=0 d=0 e=0 f=1
-
-        """
-        if __debug__:
-            assert isinstance(sid, str), sid
-            assert (not configs or
-                    all(isinstance(c, Config) for c in configs)), configs
-            assert fits_d and isinstance(fits_d, Fits_d), fits_d
-            assert isinstance(dom, Dom), dom
-            
-
-        fits = [fits_d[config][sid] for config in configs]
-        #compute low_fit wrt to fits (instead of giving a fixed value) avoids
-        #problem with fitness having negative values (not with fscore, but could
-        #happen with other approach)
-        low_fit = min(fits) - 0.1
-
-        freqs = []
-        # Iterate through variables.
-        for k, vs in dom.iteritems():
-            # For each variable, obtain its value and fitness score from configs.
-            cvs = [config[k] for config in configs]
-            rs = zip(cvs, fits)
-            # Also give a low fitness score to values not appearring in configs
-            # so that these values are also considered
-            cvs = set(cvs)
-            rs_ = [(v, low_fit) for v in vs if v not in cvs]
-            freqs.append((k, rs + rs_))
-
-        return freqs
-
-    @staticmethod
-    def tourn_select(freqs, exploit_rate):
-        """
-        Use tournament selection to create a new candidate from freqs list 
-        (computed from fitness and occurences).
-        """
-        if __debug__:
-            assert freqs and isinstance(freqs, list), freqs
-            #('var', [('val', score)])
-            assert all(isinstance(f,tuple) and len(f)==2 and
-                       isinstance(f[0], str) and
-                       isinstance(f[1], list) and f[1] and 
-                       all(isinstance(vs, tuple) and len(vs)==2 and
-                           isinstance(vs[0], str) and isinstance(vs[1], (int,float))
-                           for vs in f[1])
-                       for f in freqs), freqs
-            assert (isinstance(exploit_rate, float) and
-                    0.0 <= exploit_rate <= 1.0), exploit_rate
-
-        settings = []
-        for k, ls in freqs:
-            if __debug__:
-                assert ls, ls
-
-            #higher exploit rate gives larger tour_siz
-            if exploit_rate > 0:
-                tourn_siz = int(math.ceil(len(ls) * exploit_rate))
-            else:
-                tourn_siz = 1
-            if __debug__:
-                assert 1 <= tourn_siz <= len(ls), tourn_siz
-            #select randomly tourn_siz values and use the largest fitness
-            sample = (random.choice(ls) for _ in range(tourn_siz))
-            val, _ = max(sample, key=lambda (val, fit) : fit)
-            settings.append((k, val))
-            
-        return Config(settings)
-    
     @staticmethod
     def get_fscore(cov, path):
-        # print cov
-        # print path
+        #TOFIX, these parms should be set
+        assert isinstance(cov, set), cov
+        assert isinstance(path, set), path
+        
         if cov == path:
             return 1.0
         else:
@@ -560,7 +291,6 @@ class IGa(object):
                 r=0.0 if (tp+fn)==0 else (float(tp)/(tp+fn))
                 f=0.0 if (r+p)==0 else float(2*r*p)/(r+p)
                 return f
-
 
     @staticmethod
     def get_vscore(cov, path):
@@ -599,6 +329,26 @@ class IGa(object):
                 fits_d[c][sid] = fit
 
 
+    @staticmethod
+    def gen_pop(sid, old_pop, pop_siz, configs_d, fits_d, dom):
+        """
+        Pick a config with the highest fitness and modify it
+        """
+        assert isinstance(sid, str), sid
+        assert old_pop, old_pop
+        assert pop_siz > 0, pop_siz
+        assert isinstance(dom, Dom), dom
+        
+        best_fit = max(fits_d[c][sid] for c in fits_d)
+        pop_bests = [c for c in old_pop if fits_d[c][sid] == best_fit]
+        best = random.choice(pop_bests)
+        pop = dom.gen_configs_cex(best, configs_d)
+        rand_n = pop_siz - len(pop)
+        if rand_n > 0:
+            pop_ = dom.gen_configs_rand_smt(
+                rand_n, existing_configs=configs_d.keys(), config_cls=Config)
+            pop.extend(pop_)
+        return pop
                 
 if __name__ == "__main__":
     import doctest
