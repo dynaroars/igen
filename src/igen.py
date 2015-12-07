@@ -5,6 +5,31 @@ from time import time
 import vu_common as CM
 import config_common as CC
 
+def get_sids(inp):
+    """
+    Parse statements from the inp string, 
+    e.g., "f1.c:5 f2.c:15" or "path/to/file" that contains statements
+    """
+    assert inp is None or isinstance(inp, str), inpt
+    
+    if not inp:
+        return None
+    
+    inp = inp.strip()
+    sids = set(inp.split())
+    if len(sids) == 1:
+        sid_file = list(sids)[0]
+        if os.path.isfile(sid_file):
+            #parse sids from file
+            lines = CM.iread_strip(sid_file)
+            sids = []
+            for l in lines:
+                sids_ = [s.strip() for s in l.split(',')]
+                sids.extend(sids_)
+            sids = set(sids)
+
+    return sids if sids else None
+
 def check_range(v, min_n=None, max_n=None):
     v = int(v)
     if min_n and v < min_n:
@@ -34,7 +59,7 @@ def get_run_f(prog, args, logger):
     Ret f that takes inputs seed, tmpdir 
     and call appropriate iGen function on those inputs
     """
-    sids = set(args.sids.split()) if args.sids else None
+    sids = get_sids(args.sids)
     
     import igen_alg as IA    
     import get_cov_otter as Otter
@@ -233,7 +258,8 @@ if __name__ == "__main__":
     CC.logger_level = args.logger_level
     logger = CM.VLog(igen_name)
     logger.level = CC.logger_level
-    if __debug__: logger.warn("DEBUG MODE ON. Can be slow !")    
+    if __debug__:
+        logger.warn("DEBUG MODE ON. Can be slow !")    
     
     if args.allows_known_errors:
         CC.allows_known_errors = True
