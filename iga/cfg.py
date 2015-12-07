@@ -117,6 +117,9 @@ class CFG(OrderedDict):
         try:
             return self.__paths__[sid]
         except KeyError:
+            pc = CFG._get_paths_count(sid, self, frozenset())
+            print 'pathcount', pc
+            CM.pause()
             paths = CFG._get_paths(sid, self, frozenset())
             paths = [[s for s in p if not s.startswith('fake')] for p in paths]
             if paths:
@@ -162,16 +165,19 @@ class CFG(OrderedDict):
         return rs
 
     @staticmethod
-    def _get_paths_count(sid, preds_d, visisted):
+    def _get_paths_count(sid, preds_d, visited):
         """
         >>> CFG._get_paths_count(5,OrderedDict([(5,[4]),(4,[3,5]),(3,[2]),(2,[1,3]),(1,[])]), frozenset())
         1
 
-        >>> CFG._get_paths(3,OrderedDict([(3,[2]),(2,[1]),(1,[3])]), frozenset())
+        >>> CFG._get_paths_count(3,OrderedDict([(3,[2]),(2,[1]),(1,[3])]), frozenset())
         0
 
-        >>> CFG._get_paths(6,OrderedDict([(6,[5,7]),(7,[1]),(5,[4]),(4,[3,5]),(3,[2]),(2,[1,3]),(1,[])]), frozenset())
+        >>> CFG._get_paths_count(6,OrderedDict([(6,[5,7]),(7,[1]),(5,[4]),(4,[3,5]),(3,[2]),(2,[1,3]),(1,[])]), frozenset())
         2
+
+        WARN: I was hoping this serves as a quick way to get the # of paths before doing the full _get_paths, 
+        but turns out to be also slow on large programs ... so probably not useful
         """
         
         assert isinstance(sid,(str, int)), sid
@@ -190,7 +196,6 @@ class CFG(OrderedDict):
         for i,p in enumerate(preds):
             pc += CFG._get_paths_count(p, preds_d, frozenset(list(visited)+[sid]))
             
-
         return pc
         
     
