@@ -545,7 +545,9 @@ class HighCov(object):
         for pack,expr in d.iteritems():
             #Todo: and not one of the existing ones
             nexpr = z3util.myOr(minset_d)            
-            configs = dom.gen_configs_exprs([expr],[nexpr],k=1)
+            configs = dom.gen_configs_exprs(
+                [expr], [nexpr], k=1, config_cls=IA.Config)
+                
             if not configs:
                 logger.warn("Cannot create configs from {}"
                             .format(HighCov.str_of_pack(pack)))
@@ -596,7 +598,7 @@ class HighCov(object):
             e_expr = z3util.myOr([exprs_d[c] for c in e_configs])
             p_expr = exprs_d[pack]
             expr = z3.And(p_expr,e_expr)
-            configs = dom.gen_configs_expr(expr,k=1)
+            configs = dom.gen_configs_expr(expr, k=1, config_cls=IA.Config)
             if not configs:
                 return None
             else:

@@ -23,58 +23,10 @@ class Dom(CC.Dom):
     ('w',frozenset(['a','b','c']))\
     ])
     >>> assert dom.siz == len(dom.gen_configs_full()) == 18
-
-    >>> random.seed(0)
-    >>> configs = dom.gen_configs_rand_smt(5)
-    >>> print "\\n".join(map(str,configs))
-    x=2 y=1 z=0 w=a
-    x=1 y=1 z=0 w=b
-    x=2 y=1 z=1 w=a
-    x=2 y=1 z=2 w=a
-    x=1 y=1 z=0 w=a
-
-    >>> configs = dom.gen_configs_rand_smt(dom.siz)
-    >>> assert len(configs) == dom.siz
     """
 
-    """
-    Create configs using an SMT solver
-    """
-    
-    def config_of_model(self,model):
+    def gen_configs_cex(self,sel_core,existing_configs,z3db):
         """
-        Ret a config from a model
-        """
-        if __debug__:
-            assert isinstance(model,dict),model
-
-        _f = lambda k: (model[k] if k in model
-                        else random.choice(list(self[k])))
-        config = Config((k,_f(k)) for k in self)
-        return config
-    
-    def gen_configs_expr(self,expr,k):
-        if __debug__:
-            assert z3.is_expr(expr),expr
-            assert k>0,k
-
-        def _f(m):
-            m = dict((str(v),str(m[v])) for v in m)
-            return None if not m else self.config_of_model(m)
-        
-        models = z3util.get_models(expr,k)
-        assert models is not None, models  #z3 cannot solve this
-        if not models:  #not satisfy
-            return []
-        else:
-            assert len(models)>=1,models            
-            configs = [_f(m) for m in models]
-            return configs
-        
-    def gen_configs_exprs(self,yexprs,nexprs,k):
-        """
-        Return a config satisfying core and not already in existing_configs
-
         >>> dom = Dom([('a', frozenset(['1', '0'])), \
         ('b', frozenset(['1', '0'])), ('c', frozenset(['1', '0', '2']))])
         >>> z3db = dom.z3db
@@ -97,43 +49,27 @@ class Dom(CC.Dom):
 
         >>> configs = [c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11]
         >>> nexpr = z3util.myOr([c.z3expr(z3db) for c in configs])
-        >>> assert dom.gen_configs_exprs([None],[nexpr],k=1)[0] == c12
+        >>> assert dom.gen_configs_exprs([None],[nexpr],k=1,config_cls=Config)[0] == c12
 
         >>> core = Core([('a',frozenset(['1']))])
         >>> core_expr = core.z3expr(z3db,z3util.myAnd)
-        >>> assert dom.gen_configs_exprs([None],[nexpr],k=1)[0] == c12
+        >>> assert dom.gen_configs_exprs([None],[nexpr],k=1, config_cls=Config)[0] == c12
 
         >>> core = Core([('a',frozenset(['0']))])
         >>> core_expr = core.z3expr(z3db,z3util.myAnd)
-        >>> assert not dom.gen_configs_exprs([core_expr],[nexpr],k=1)
+        >>> assert not dom.gen_configs_exprs([core_expr],[nexpr],k=1, config_cls=Config)
 
         >>> core = Core([('c',frozenset(['0','1']))])
         >>> core_expr = core.z3expr(z3db,z3util.myAnd)
-        >>> assert not dom.gen_configs_exprs([core_expr],[nexpr],k=1)
+        >>> assert not dom.gen_configs_exprs([core_expr],[nexpr],k=1, config_cls=Config)
 
         >>> core = Core([('c',frozenset(['0','2']))])
         >>> core_expr = core.z3expr(z3db,z3util.myAnd)
-        >>> config = dom.gen_configs_exprs([core_expr],[nexpr],k=1)[0]
+        >>> config = dom.gen_configs_exprs([core_expr],[nexpr],k=1, config_cls=Config)[0]
         >>> print config
         a=1 b=1 c=2
 
-        """
-        if __debug__:
-            assert all(e is None or z3.is_expr(e)
-                       for e in yexprs),yexprs
-            assert all(e is None or z3.is_expr(e)
-                       for e in nexprs),nexprs
-            assert k > 0, k
 
-        yexprs = [e for e in yexprs if e]
-        nexprs = [z3.Not(e) for e in nexprs if e]
-        exprs = yexprs + nexprs
-        assert exprs, 'empty exprs'
-        expr = exprs[0] if len(exprs)==1 else z3util.myAnd(exprs)
-        return self.gen_configs_expr(expr,k)
-        
-    def gen_configs_cex(self,sel_core,existing_configs,z3db):
-        """
         sel_core = (c_core,s_core)
         create counterexample configs by changing settings in c_core,
         but these configs must satisfy s_core
@@ -168,7 +104,7 @@ class Dom(CC.Dom):
         for changed_core in changes:
             yexpr = changed_core.z3expr(z3db, z3util.myAnd)
             nexpr = z3util.myOr(e_configs)
-            configs_ = self.gen_configs_exprs([yexpr],[nexpr],k=1)
+            configs_ = self.gen_configs_exprs([yexpr],[nexpr],k=1, config_cls=Config)
             if not configs_:
                 continue
             config=configs_[0]
@@ -182,28 +118,7 @@ class Dom(CC.Dom):
 
         return configs
 
-    def gen_configs_rand_smt(self, rand_n):
-        """
-        Create rand_n configs
-        """
-        if __debug__:
-            assert 0 < rand_n <= self.siz, (rand_n,self.siz)
-            
-        z3db = self.z3db
-        configs = self.gen_configs_rand(1,config_cls=Config)
-        assert len(configs) == 1, configs
-        config = configs[0]
-        e_configs = []
 
-        for _ in range(rand_n - 1):
-            e_configs.append(config.z3expr(z3db))
-            nexpr = z3util.myOr(e_configs)
-            configs_ = self.gen_configs_exprs([],[nexpr],1)
-            assert len(configs_) == 1, configs_
-            config = configs_[0]            
-            configs.append(config)
-            
-        return configs    
 
 class Config(CC.Config):
     """
@@ -1131,11 +1046,11 @@ class IGen(object):
         return pp_cores_d, cores_d, configs_d, covs_d, self.dom
 
     #Shortcuts
-    def go_full(self,tmpdir=None):
-        return self.go(seed=0,rand_n=-1,tmpdir=tmpdir)
+    def go_full(self, tmpdir=None):
+        return self.go(seed=0, rand_n=-1, tmpdir=tmpdir)
                        
-    def go_rand(self,rand_n,seed=None,tmpdir=None):
-        return self.go(seed=seed,rand_n=rand_n,tmpdir=tmpdir)
+    def go_rand(self,rand_n, seed=None, tmpdir=None):
+        return self.go(seed=seed, rand_n=rand_n, tmpdir=tmpdir)
 
     #Helper functions
     def eval_configs(self, configs):

@@ -28,7 +28,7 @@ def detect_file(file1, file2, ext):
         name_ = CM.file_basename(file1)
         file2 = os.path.join(dir_, name_ + ext)
     return file2
-
+    
 def get_run_f(prog, args, logger):
     """
     Ret f that takes inputs seed, tmpdir 
@@ -78,8 +78,12 @@ def get_run_f(prog, args, logger):
                 igen_settings.coreutils_doms_dir,
                 do_perl=args.do_perl)
 
-        igen = IA.IGen(dom, get_cov_f, sids=sids)
-        econfigs = [(c, None) for c in default_configs]
+        if default_configs:
+            econfigs = [(c, None) for c in default_configs]
+        else:
+            econfigs = []
+            
+        igen = IA.IGen(dom, get_cov_f, sids=sids)            
         if sids:
             ext = ".c.011t.cfg.preds"
             if args.dom_file:
@@ -93,11 +97,13 @@ def get_run_f(prog, args, logger):
                 _f =  lambda seed, tdir: igen.go(seed=seed, tmpdir=tdir)
             else:
                 import iga_alg as GA
-                cfg = GA.CFG.mk_from_lines(CM.iread_strip(cfg_file))
+                import cfg as CFG
+                cfg = CFG.CFG.mk_from_lines(CM.iread_strip(cfg_file))
                 iga = GA.IGa(dom, cfg, get_cov_f)
                 def _f(seed, tdir):
                     is_success, _, configs_d = iga.go(
-                        seed=seed, sids=sids, tmpdir=tdir)
+                        seed=seed, sids=sids, econfigs=default_configs,
+                        tmpdir=tdir)
                     econfigs.extend(configs_d.items())
                     if not args.only_ga and is_success:
                         return igen.go(
@@ -109,7 +115,7 @@ def get_run_f(prog, args, logger):
             _f = lambda seed, tdir, rand_n: igen.go_rand(
                 rand_n=rand_n, seed=seed, econfigs=econfigs, tmpdir=tdir)
         elif args.do_full:
-            _f = lambda _,tdir: igen.go_full(econfigs = econfigs, tmpdir=tdir)
+            _f = lambda _,tdir: igen.go_full(tmpdir=tdir)
         elif args.rand_n is None:
             _f = lambda seed, tdir: igen.go(seed=seed, econfigs=econfigs, tmpdir=tdir)
         else:
@@ -121,7 +127,7 @@ def get_run_f(prog, args, logger):
 
 
 if __name__ == "__main__":
-    
+
     igen_file = CM.getpath(__file__)
     igen_name = os.path.basename(igen_file)
     igen_dir = os.path.dirname(igen_file)

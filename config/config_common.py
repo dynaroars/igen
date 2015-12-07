@@ -151,7 +151,7 @@ class Dom(OrderedDict):
     >>> assert not configs
 
     """
-    def __init__(self,dom):
+    def __init__(self, dom):
         OrderedDict.__init__(self, dom)
         
         if __debug__:
@@ -229,6 +229,7 @@ class Dom(OrderedDict):
         """
         if config_cls is None:
             config_cls = Config
+            
         dom_used = dict((k,set(self[k])) for k in self)
 
         def mk():
@@ -359,7 +360,6 @@ class Dom(OrderedDict):
         return configs    
         
             
-        
 class Config(HDict):
     """
     >>> c = Config([('a', '1'), ('b', '0'), ('c', '1')])
@@ -378,7 +378,7 @@ class Config(HDict):
         if __debug__:
             assert all(is_setting(s) for s in self.iteritems()), self
 
-    def __str__(self,cov=None):
+    def __str__(self, cov=None):
         if __debug__:
             assert cov is None or is_cov(cov), cov
 
@@ -399,7 +399,34 @@ class Config(HDict):
             vn_,vs_ = z3db[vn]
             f.append(vn_==vs_[vv])
 
-        return z3util.myAnd(f)    
+        return z3util.myAnd(f)
+
+    @staticmethod
+    def mk(n, f):
+        """
+        Try to create at most n configs by calling f().
+        """
+        if __debug__:
+            assert isinstance(n, int) and n > 0, n
+            assert callable(f), f
+            
+        pop = OrderedDict()
+        for _ in range(n):
+            c = f()
+            c_iter = 0
+            while c in pop and c_iter < 5:
+                c_iter += 1
+                c = f()
+
+            if c not in pop:
+                pop[c]=None
+                
+        if __debug__:
+            assert len(pop) <= n, (len(pop), n)
+
+        pop = pop.keys()
+        return pop
+    
 
 class Covs_d(CustDict):
     """
@@ -433,12 +460,16 @@ class Configs_d(CustDict):
         return '\n'.join("{}. {}".format(i+1, s) for i, s in enumerate(ss))
 
 
-def eval_configs(configs, get_cov):
+def eval_configs(configs, get_cov_f):
+    """
+    Eval (e.g., get coverage) configurations using function get_cov_f
+    Ret a list of configs and their results
+    """
     if __debug__:
         assert (isinstance(configs, list) and
                 all(isinstance(c, Config) for c in configs)
                 and configs), configs
-        assert callable(get_cov), get_cov
+        assert callable(get_cov_f), get_cov_f
 
     cache = set()
     results = []
@@ -447,11 +478,11 @@ def eval_configs(configs, get_cov):
             continue
         cache.add(c)
         
-        sids, outps = get_cov(c)
+        sids, outps = get_cov_f(c)
         rs = outps if analyze_outps else sids
         if not rs:
-            logger.warn("config {} generates nothing".format(c))
-        results.append((c,rs))
+            logger.warn("config {} produces nothing".format(c))
+        results.append((c, rs))
         
     return results
 
