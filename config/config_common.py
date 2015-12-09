@@ -36,7 +36,7 @@ class CustDict(MutableMapping):
             self.__dict__[key] = set()
         self.__dict__[key].add(val)
         
-is_cov = lambda cov: (isinstance(cov, set) and
+is_cov = lambda cov: (isinstance(cov, (set, frozenset)) and
                       all(isinstance(s, str) for s in cov))
 def str_of_cov(cov):
     """
