@@ -16,7 +16,7 @@ def get_sids(inp):
         return None
     
     inp = inp.strip()
-    sids = set(inp.split())
+    sids = frozenset(inp.split())
     if len(sids) == 1:
         sid_file = list(sids)[0]
         if os.path.isfile(sid_file):
@@ -26,7 +26,7 @@ def get_sids(inp):
             for l in lines:
                 sids_ = [s.strip() for s in l.split(',')]
                 sids.extend(sids_)
-            sids = set(sids)
+            sids = frozenset(sids)
 
     return sids if sids else None
 
@@ -121,12 +121,12 @@ def get_run_f(prog, args, logger):
             if args.no_ga:
                 _f =  lambda seed, tdir: igen.go(seed=seed, tmpdir=tdir)
             else:
-                import iga_alg as GA
                 import cfg as CFG
+                from ec_alg import EC
                 cfg = CFG.CFG.mk_from_lines(CM.iread_strip(cfg_file))
-                iga = GA.IGa(dom, cfg, get_cov_f)
+                ec = EC(dom, cfg, get_cov_f)
                 def _f(seed, tdir):
-                    is_success, _, configs_d = iga.go(
+                    is_success, _, configs_d = ec.go(
                         seed=seed, sids=sids, econfigs=default_configs,
                         tmpdir=tdir)
                     econfigs.extend(configs_d.items())
