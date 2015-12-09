@@ -1,11 +1,7 @@
 from collections import OrderedDict
 import vu_common as CM
-import config_common as CC
-
-logger = CM.VLog('CFG')
-logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
-
+    
 class CFG(OrderedDict):
     """
     >>> lines = [\
@@ -21,8 +17,6 @@ class CFG(OrderedDict):
     >>> print c
     CFG([('LS', []), ('L0', ['LS']), ('L1', ['L0']), ('L2', ['L0']), ('L3', ['L2']), ('L4', ['L3', 'L2', 'L1']), ('L5', ['L4'])])
 
-    # >>> c.compute_paths()
-    
     >>> print sorted(c.__sids__)
     ['L0', 'L1', 'L2', 'L3', 'L4', 'L5', 'LS']
 
@@ -31,6 +25,12 @@ class CFG(OrderedDict):
     
     >>> c.get_paths('L4')
     [['LS', 'L0', 'L2', 'L3', 'L4'], ['LS', 'L0', 'L2', 'L4'], ['LS', 'L0', 'L1', 'L4']]
+
+    >>> c.get_paths('L4', 10)
+    [['LS', 'L0', 'L2', 'L3', 'L4'], ['LS', 'L0', 'L2', 'L4'], ['LS', 'L0', 'L1', 'L4']]
+
+    >>> c.get_paths('L4', 2)
+    [['LS', 'L0', 'L2', 'L3', 'L4'], ['LS', 'L0', 'L2', 'L4']]
 
     >>> c.get_paths('notexist')
     Traceback (most recent call last):
@@ -74,8 +74,7 @@ class CFG(OrderedDict):
     """    
     def __init__(self,d):            
         OrderedDict.__init__(self, d)
-        if __debug__:
-            assert self, 'empty cfg'
+        assert self, 'empty cfg'
 
         self.__paths__ = OrderedDict()
         self.__sids__ = set(sid for sid in self if not sid.startswith('fake'))
@@ -110,91 +109,71 @@ class CFG(OrderedDict):
         return CFG(prevs)
     
         
-    def get_paths(self, sid):
-        assert isinstance(sid, str) and not sid.startswith('fake'), sid
+    def get_paths(self, sid, max_npaths=None):
+        assert isinstance(sid, str), sid
         assert sid in self.__sids__, "invalid sid '{}'".format(sid)
+        assert max_npaths is None or max_npaths > 0, max_npaths
 
+        k = (sid, max_npaths)
         try:
-            return self.__paths__[sid]
+            return self.__paths__[k]
         except KeyError:
-            pc = CFG._guess_paths_count(sid, self, frozenset())
-            print 'guess npaths {}'.format(pc)
-            CM.pause()
-            paths = CFG._get_paths(sid, self, frozenset())
-            paths = [[s for s in p if not s.startswith('fake')] for p in paths]
-            print "guess", pc, "real", len(paths)
-            if paths:
-                self.__paths__[sid] = paths                
+            paths_generator = CFG._get_paths(sid, self, frozenset())
+            if max_npaths:
+                paths = []
+                for path in paths_generator:
+                    paths.append(path)
+                    if len(paths) >=  max_npaths:
+                        break
+
             else:
-                logger.warn("sid {} has no paths".format(sid))
+                paths = list(paths_generator)
+                
+            if paths:
+                self.__paths__[k] = paths
+            else:
+                print("WARN: sid '{}' has no paths. "
+                      "Removing sid from cfg".format(sid))
                 self.__sids__.remove(sid)
+
+            assert isinstance(paths, list), paths
             return paths
             
-    
     @staticmethod
-    def _get_paths(sid, preds_d, visited):
+    def _get_paths(sid, preds_d, visited, acc=[]):
         """
-        >>> CFG._get_paths(5,OrderedDict([(5,[4]),(4,[3,5]),(3,[2]),(2,[1,3]),(1,[])]), frozenset())
+        Get sid's paths using generator, which helps avoid too many paths
+
+        >>> list(CFG._get_paths(5,OrderedDict([(5,[4]),(4,[3,5]),(3,[2]),(2,[1,3]),(1,[])]), frozenset()))
         [[1, 2, 3, 4, 5]]
 
-        >>> CFG._get_paths(3,OrderedDict([(3,[2]),(2,[1]),(1,[3])]), frozenset())
+        >>> list(CFG._get_paths(3,OrderedDict([(3,[2]),(2,[1]),(1,[3])]), frozenset()))
         []
 
-        >>> CFG._get_paths(6,OrderedDict([(6,[5,7]),(7,[1]),(5,[4]),(4,[3,5]),(3,[2]),(2,[1,3]),(1,[])]), frozenset())
+        >>> list(CFG._get_paths(6,OrderedDict([(6,[5,7]),(7,[1]),(5,[4]),(4,[3,5]),(3,[2]),(2,[1,3]),(1,[])]), frozenset()))
         [[1, 2, 3, 4, 5, 6], [1, 7, 6]]
+
         """
-        
         assert isinstance(sid,(str, int)), sid
         assert isinstance(preds_d, dict), preds_d
         assert isinstance(visited, frozenset), visited
-
-        if sid in visited:
-            return [[None]]
-
-        if sid not in preds_d or not preds_d[sid]:
-            return [[sid]]
-
-        rs = []
-        preds = preds_d[sid]
-        for i,p in enumerate(preds):
-            paths = CFG._get_paths(p, preds_d, frozenset(list(visited)+[sid]))
-
-            for path in paths:
-                if None not in path:
-                    rs.append(path + [sid])
-
-        return rs
-
-    @staticmethod
-    def _guess_paths_count(sid, preds_d, visited):
-        """
-        Quickly guess the # of paths by essentially counting the levels of the tree, 
-        e.g., for n levels and each level has m preds then it's m^n.
-        >>> CFG._guess_paths_count(0, OrderedDict([(0,[1,2]), (1,[3,4]),(3,[5]),(4,[]), (2,[6,7,8]), (6,[]), (7,[9, 10]), (9, []), (10, []), (8,[])]), frozenset())
-        12
-
-        Note: doesn't work very well on real apps (the greedy choice doesn't work in practice).  Can't think of any faster way to determine the 
-        level of tree
-        """
+        assert isinstance(acc, list), acc
         
-        assert isinstance(sid,(str, int)), sid
-        assert isinstance(preds_d, dict), preds_d
-        assert isinstance(visited, frozenset), visited
-
-        if sid in visited:
-            return 1
-
-        if sid not in preds_d or not preds_d[sid]:
-            return 1
-
-        preds = preds_d[sid]
-        #heuristic, only traverse the sid with largest preds
-        lsid = max(preds, key=lambda s: len(preds_d[s]) if s in preds_d else 0)
-        pc = CFG._guess_paths_count(lsid, preds_d, frozenset(list(visited)+[sid]))
+        if sid not in preds_d or not preds_d[sid]: # base case
+            yield [sid] + acc
             
-        return len(preds) * pc
+        elif sid in visited:  #loop, will not use this path
+            yield [None] + acc
+            
+        else: #recursive case
+            for p in preds_d[sid]:
+                paths = CFG._get_paths(
+                    p, preds_d, frozenset(list(visited) + [sid]), [sid] + acc)
+
+                for p_ in paths:
+                    if None not in p_:
+                        yield p_
         
-    
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
