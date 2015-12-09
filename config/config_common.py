@@ -42,8 +42,7 @@ def str_of_cov(cov):
     """
     >>> assert str_of_cov(set("L2 L1 L3".split())) == '(3) L1,L2,L3'
     """
-    if __debug__:
-        assert is_cov(cov),cov
+    assert is_cov(cov),cov
 
     s = "({})".format(len(cov))
     if show_cov:
@@ -57,8 +56,7 @@ def str_of_setting((k, v)):
     >>> print str_of_setting(('x','1'))
     x=1
     """
-    if __debug__:
-        assert is_setting((k, v)), (k, v)
+    assert is_setting((k, v)), (k, v)
         
     return '{}={}'.format(k, v)
 
@@ -82,8 +80,7 @@ def str_of_csetting((k,vs)):
     >>> print str_of_csetting(('x',frozenset(['3','1'])))
     x=1,3
     """
-    if __debug__:
-        assert is_csetting((k, vs)), (k, vs)
+    assert is_csetting((k, vs)), (k, vs)
     
     return '{}={}'.format(k, str_of_valset(vs))
 
@@ -154,8 +151,7 @@ class Dom(OrderedDict):
     def __init__(self, dom):
         OrderedDict.__init__(self, dom)
         
-        if __debug__:
-            assert self and all(is_csetting(s) for s in self.iteritems()), self
+        assert self and all(is_csetting(s) for s in self.iteritems()), self
 
     def __str__(self):
         """
@@ -194,8 +190,7 @@ class Dom(OrderedDict):
         Read domain info from a file. 
         Also read default configs (.default*) if given
         """
-        if __debug__:
-            assert os.path.isfile(dom_file), dom_file
+        assert os.path.isfile(dom_file), dom_file
 
         def get_lines(lines):
             rs = (line.split() for line in lines)
@@ -251,8 +246,7 @@ class Dom(OrderedDict):
         return configs    
 
     def gen_configs_rand(self, rand_n, config_cls=None):
-        if __debug__:
-            assert 0 < rand_n <= self.siz, (rand_n, self.siz)
+        assert 0 < rand_n <= self.siz, (rand_n, self.siz)
 
         if config_cls is None:
             config_cls = Config
@@ -266,9 +260,8 @@ class Dom(OrderedDict):
         """
         Ret a config from a model
         """
-        if __debug__:
-            assert isinstance(model, dict), model
-            assert config_cls, config_clcs
+        assert isinstance(model, dict), model
+        assert config_cls, config_clcs
             
         _f = lambda k: (model[k] if k in model
                         else random.choice(list(self[k])))
@@ -279,10 +272,9 @@ class Dom(OrderedDict):
         """
         Return at most k configs satisfying expr
         """
-        if __debug__:
-            assert z3.is_expr(expr), expr
-            assert k > 0, k
-            assert config_cls, config_cls
+        assert z3.is_expr(expr), expr
+        assert k > 0, k
+        assert config_cls, config_cls
             
         def _f(m):
             m = dict((str(v), str(m[v])) for v in m)
@@ -293,8 +285,7 @@ class Dom(OrderedDict):
         if not models:  #not satisfy
             return []
         else:
-            if __debug__:
-                assert len(models) >= 1, models
+            assert len(models) >= 1, models
             configs = [_f(m) for m in models]
             return configs
         
@@ -302,19 +293,17 @@ class Dom(OrderedDict):
         """
         Return a config satisfying yexprs but not nexprs
         """
-        if __debug__:
-            assert all(e is None or z3.is_expr(e)
-                       for e in yexprs),yexprs
-            assert all(e is None or z3.is_expr(e)
-                       for e in nexprs),nexprs
-            assert k > 0, k
-            assert config_cls, config_cls
+        assert all(e is None or z3.is_expr(e)
+                   for e in yexprs),yexprs
+        assert all(e is None or z3.is_expr(e)
+                   for e in nexprs),nexprs
+        assert k > 0, k
+        assert config_cls, config_cls
 
         yexprs = [e for e in yexprs if e]
         nexprs = [z3.Not(e) for e in nexprs if e]
         exprs = yexprs + nexprs
-        if __debug__:
-            assert exprs, 'empty exprs'
+        assert exprs, 'empty exprs'
             
         expr = exprs[0] if len(exprs)==1 else z3util.myAnd(exprs)
         return self.gen_configs_expr(expr, k, config_cls)
@@ -324,9 +313,8 @@ class Dom(OrderedDict):
         """
         Create rand_n uniq configs
         """
-        if __debug__:
-            assert 0 < rand_n <= self.siz, (rand_n, self.siz)
-            assert isinstance(existing_configs, list), existing_configs
+        assert 0 < rand_n <= self.siz, (rand_n, self.siz)
+        assert isinstance(existing_configs, list), existing_configs
             
         if config_cls is None:
             config_cls = Config
@@ -375,12 +363,10 @@ class Config(HDict):
     def __init__(self,config=HDict()):
         HDict.__init__(self, config)
         
-        if __debug__:
-            assert all(is_setting(s) for s in self.iteritems()), self
+        assert all(is_setting(s) for s in self.iteritems()), self
 
     def __str__(self, cov=None):
-        if __debug__:
-            assert cov is None or is_cov(cov), cov
+        assert cov is None or is_cov(cov), cov
 
         s =  ' '.join(map(str_of_setting,self.iteritems()))
         if cov:
@@ -388,11 +374,9 @@ class Config(HDict):
         return s
 
     def z3expr(self, z3db):
-        if __debug__:
-            
-            #assert len(self) == len(z3db), (len(self), len(z3db))
-            #not true when using partial config from Otter
-            assert all(e in z3db for e in self), (self, z3db)
+        #assert len(self) == len(z3db), (len(self), len(z3db))
+        #not true when using partial config from Otter
+        assert all(e in z3db for e in self), (self, z3db)
 
         f = []
         for vn,vv in self.iteritems():
@@ -406,9 +390,8 @@ class Config(HDict):
         """
         Try to create at most n configs by calling f().
         """
-        if __debug__:
-            assert isinstance(n, int) and n > 0, n
-            assert callable(f), f
+        assert isinstance(n, int) and n > 0, n
+        assert callable(f), f
             
         pop = OrderedDict()
         for _ in range(n):
@@ -421,9 +404,8 @@ class Config(HDict):
             if c not in pop:
                 pop[c]=None
                 
-        if __debug__:
-            assert len(pop) <= n, (len(pop), n)
 
+        assert len(pop) <= n, (len(pop), n)
         pop = pop.keys()
         return pop
     
@@ -443,16 +425,16 @@ class Covs_d(CustDict):
     """
 
     def add(self,sid,config):
-        if __debug__:
-            assert isinstance(sid, str),sid
-            assert isinstance(config, Config),config
+        assert isinstance(sid, str),sid
+        assert isinstance(config, Config),config
+        
         super(Covs_d, self).add_set(sid, config)
 
 class Configs_d(CustDict):
     def __setitem__(self, config, cov):
-        if __debug__:
-            assert isinstance(config, Config), config
-            assert is_cov(cov), cov
+        assert isinstance(config, Config), config
+        assert is_cov(cov), cov
+        
         self.__dict__[config] = cov
 
     def __str__(self):
@@ -465,11 +447,10 @@ def eval_configs(configs, get_cov_f):
     Eval (e.g., get coverage) configurations using function get_cov_f
     Ret a list of configs and their results
     """
-    if __debug__:
-        assert (isinstance(configs, list) and
-                all(isinstance(c, Config) for c in configs)
-                and configs), configs
-        assert callable(get_cov_f), get_cov_f
+    assert (isinstance(configs, list) and
+            all(isinstance(c, Config) for c in configs)
+            and configs), configs
+    assert callable(get_cov_f), get_cov_f
 
     cache = set()
     results = []
