@@ -13,17 +13,20 @@ logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
 
 class Dom(CC.Dom):
-    def gen_configs_cex(self, config, existing_configs):
+    def gen_configs_cex(self, config, configs_d):
         """
         Create new configs by changing var values from input config one at a time.
         """
+        assert isinstance(config, Config), config
+        assert isinstance(configs_d, Configs_d), configs_d
+        
         new_configs = []
         for k in config:
             vs = self[k] - set(config[k])
             for v in vs:
                 new_config = Config(config)
                 new_config[k] = v
-                if new_config not in existing_configs:
+                if new_config not in configs_d:
                     new_configs.append(new_config)
         return new_configs
                 
@@ -50,9 +53,80 @@ class Fits_d(CC.CustDict):
                          .format(i+1,c,self.__dict__[c][sid])
                          for i,c in enumerate(cs))
 
-class IGa(object):
+    def get_avg_best(self, sid, configs):
+        assert isinstance(sid,str), sid
+        assert (configs is None or
+                (configs and 
+                 all(isinstance(c, Config) and c in self
+                     for c in configs))), configs
+
+        if configs is None:
+            cs = [c for c in self if sid in self[c]]
+        else:
+            cs = configs
+
+        avg_fit = sum(self[c][sid] for c in cs) / float(len(cs))
+        best =  max(cs, key = lambda c: self[c][sid])
+        best_fit = self[best][sid]
+        return avg_fit, best_fit, best
+
+    def compute(self, sid, paths, configs, configs_d):
+        """
+        Compute fitness (store results in fits_d)
+        it's OK for duplicate in configs (similar individuals in pop)
+        """
+        assert isinstance(sid,str), sid
+        assert paths, paths
+        assert configs_d and isinstance(configs_d,  Configs_d), configs
+        assert (configs and
+                all(isinstance(c, Config) and c in configs_d
+                    for c in configs)), configs
+
+        for c in configs:
+            if c in self and sid in self[c]:
+                continue
+            cov = configs_d[c]
+            fit = max(self.get_vscore(cov, path) for path in paths)
+            if c in self:
+                assert sid not in self[c], (sid, self[c])
+                self[c][sid] = fit
+            else:
+                self[c] = {sid : fit}
+                
+    @staticmethod
+    def get_fscore(cov, path):
+        assert CC.is_cov(cov), cov
+        assert path and isinstance(path, frozenset), path
+        
+        if cov == path:
+            return 1.0
+        else:
+            tp = len([s for s in cov if s in path])
+            fp = len([s for s in cov if s not in path])
+            fn = len([s for s in path if s not in cov])
+            if fp == fn == 0:  #identical
+                return 1.0
+            else:
+                p=0.0 if (tp+fp)==0 else (float(tp)/(tp+fp))
+                r=0.0 if (tp+fn)==0 else (float(tp)/(tp+fn))
+                f=0.0 if (r+p)==0 else float(2*r*p)/(r+p)
+                return f
+
+    @staticmethod
+    def get_vscore(cov, path):
+        assert CC.is_cov(cov), cov
+        assert path and isinstance(path, frozenset), path
+        
+        if cov == path:
+            return 1.0
+        else:
+            tp = len([s for s in cov if s in path])
+            f = float(tp) / len(path)
+            return f
+        
+class EC(object):
     """
-    Main algorithm
+    Evolutionary Computing algorithm
     """
     def __init__(self, dom, cfg, get_cov):
         assert isinstance(dom, CC.Dom), dom
@@ -69,7 +143,10 @@ class IGa(object):
     def go(self, seed, sids, econfigs=None, tmpdir=None):
         assert isinstance(seed, float), seed
         assert sids and isinstance(sids, frozenset), sids
-        assert not econfigs or isinstance(econfigs, list), econfigs
+        assert (not econfigs or
+                isinstance(econfigs, list) and
+                all(isinstance(c, CC.Config) for c in econfigs)), econfigs
+        
         assert isinstance(tmpdir, str) and os.path.isdir(tmpdir), tmpdir
         assert isinstance(tmpdir, str), tmpdir
         
@@ -79,7 +156,7 @@ class IGa(object):
         configs_d = Configs_d()
         fits_d = Fits_d()
         
-        skips = frozenset(sid for sid in sids if sid not in self.sids)
+        skips = [sid for sid in sids if sid not in self.sids]
         if skips:
             logger.warn("skip {} sids not in cfg".format(len(skips)))
             logger.debug(', '.join(skips))
@@ -142,7 +219,7 @@ class IGa(object):
             if cur_iter == 1: 
                 pop = self.dom.gen_configs_tcover1(config_cls=Config)
                 logger.debug("create {} init configs".format(len(pop)))
-                found, xtime = IGa.eval_configs(
+                found, xtime = EC.eval_configs(
                     sid, pop, req_s, self.get_cov, configs_d, covs)
                 xtime_total += xtime
                 
@@ -150,7 +227,7 @@ class IGa(object):
                 continue
             
             if cur_iter == 2: #compute fitness of init configs
-                paths = IGa.get_paths(sid, self.cfg, req_s, max_npaths)
+                paths = EC.get_paths(sid, self.cfg, req_s, max_npaths)
                 logger.debug("{} paths: {}".format(
                     len(paths), CM.str_of_list(map(len, paths))
                 ))
@@ -160,11 +237,11 @@ class IGa(object):
                                 .format(sid))
                     break
                 
-                IGa.compute_fits(sid, paths, pop, configs_d, fits_d)
+                fits_d.compute(sid, paths, pop, configs_d)
 
             #cur stats
-            cur_avg_fit, cur_best_fit, cur_best = IGa.get_avg_best(
-                sid, pop, fits_d)
+            cur_avg_fit, cur_best_fit, cur_best = fits_d.get_avg_best(sid, pop)
+                
             pop_bests = [c for c in pop if fits_d[c][sid] == cur_best_fit]
             for c in pop_bests: bests.add(c)
             cur_nbests = len(bests)
@@ -176,16 +253,16 @@ class IGa(object):
             logger.debug(str(cur_best))
 
             #create new configs
-            pop = IGa.gen_pop(sid, pop, pop_siz, configs_d, fits_d, self.dom)
+            pop = EC.gen_pop(sid, pop, pop_siz, configs_d, fits_d, self.dom)
             
             # evaluate & compute fitness
-            found, xtime = IGa.eval_configs(sid, pop, req_s, self.get_cov, configs_d, covs)
+            found, xtime = EC.eval_configs(sid, pop, req_s, self.get_cov, configs_d, covs)
             if found:
                 break
             xtime_total += xtime
 
-            IGa.compute_fits(sid, paths, pop, configs_d, fits_d)
-            avg_fit, best_fit, best = IGa.get_avg_best(sid, pop, fits_d)
+            fits_d.compute(sid, paths, pop, configs_d)
+            avg_fit, best_fit, best = fits_d.get_avg_best(sid, pop)
             pop_bests = [c for c in pop if fits_d[c][sid] == best_fit]
             for c in pop_bests: bests.add(c)
 
@@ -258,94 +335,18 @@ class IGa(object):
             if sid in sids:
                 return True, time() - st
             
-        return False, time() - st
-    
-    @staticmethod
-    def get_avg_best(sid, configs, fits_d):
-        assert isinstance(sid,str), sid
-        assert (configs is None or
-                (configs and 
-                 all(isinstance(c, Config) for c in configs))), configs
-        assert fits_d and isinstance(fits_d, Fits_d), fits_d
-
-        if configs is None:
-            cs = [c for c in fits_d if sid in fits_d[c]]
-        else:
-            cs = configs
-
-        assert cs
-        avg_fit = sum(fits_d[c][sid] for c in cs) / float(len(cs))
-        best =  max(cs, key = lambda c: fits_d[c][sid])
-        best_fit = fits_d[best][sid]
-        return avg_fit, best_fit, best
-    
-    @staticmethod
-    def get_fscore(cov, path):
-        assert CC.is_cov(cov), cov
-        assert path and isinstance(path, frozenset), path
-        
-        if cov == path:
-            return 1.0
-        else:
-            tp = len([s for s in cov if s in path])
-            fp = len([s for s in cov if s not in path])
-            fn = len([s for s in path if s not in cov])
-            if fp == fn == 0:  #identical
-                return 1.0
-            else:
-                p=0.0 if (tp+fp)==0 else (float(tp)/(tp+fp))
-                r=0.0 if (tp+fn)==0 else (float(tp)/(tp+fn))
-                f=0.0 if (r+p)==0 else float(2*r*p)/(r+p)
-                return f
-
-    @staticmethod
-    def get_vscore(cov, path):
-        assert CC.is_cov(cov), cov
-        assert path and isinstance(path, frozenset), path
-        
-        if cov == path:
-            return 1.0
-        else:
-            tp = len([s for s in cov if s in path])
-            f = float(tp) / len(path)
-            return f
-
-    @staticmethod
-    def compute_fits(sid, paths, configs, configs_d, fits_d):
-        """
-        Compute fitness (store results in fits_d)
-        it's OK for duplicatins in configs (similar individuals in pop)
-        """
-        if __debug__:
-            assert isinstance(sid,str), sid
-            assert paths, paths
-            assert (configs and
-                    all(isinstance(c,Config) for c in configs)), configs
-            assert configs_d and isinstance(configs_d,  Configs_d), configs
-            assert isinstance(fits_d, Fits_d), fits_d
-
-        for c in configs:
-            if c in fits_d and sid in fits_d[c]:
-                continue
-            cov = configs_d[c]
-            fit = max(IGa.get_vscore(cov, path) for path in paths)
-            if c not in fits_d:
-                fits_d[c] = {sid:fit}
-            else:
-                if __debug__:
-                    assert sid not in fits_d[c], (sid, fits_d[c])
-                fits_d[c][sid] = fit
-
+        return False, time() - st    
 
     @staticmethod
     def gen_pop(sid, old_pop, pop_siz, configs_d, fits_d, dom):
         """
-        Pick a config with the highest fitness and modify it
+        Create new confgs from an existing config with high fitness
         """
         assert isinstance(sid, str), sid
         assert old_pop, old_pop
         assert pop_siz > 0, pop_siz
-        assert isinstance(dom, Dom), dom
+        assert configs_d and isinstance(configs_d,  Configs_d), configs
+        assert isinstance(fits_d, Fits_d), fits_d
         
         best_fit = max(fits_d[c][sid] for c in fits_d if sid in fits_d[c])
         pop_bests = [c for c in old_pop if fits_d[c][sid] == best_fit]
