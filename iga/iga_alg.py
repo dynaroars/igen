@@ -6,15 +6,17 @@ import math
 
 import vu_common as CM
 import config_common as CC
-import cfg as CFG
+from cfg import CFG
 
-logger = CM.VLog('GA')
+logger = CM.VLog('EC')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
 
 class Dom(CC.Dom):
     def gen_configs_cex(self, config, existing_configs):
-
+        """
+        Create new configs by changing var values from input config one at a time.
+        """
         new_configs = []
         for k in config:
             vs = self[k] - set(config[k])
@@ -54,7 +56,7 @@ class IGa(object):
     """
     def __init__(self, dom, cfg, get_cov):
         assert isinstance(dom, CC.Dom), dom
-        assert isinstance(cfg, CFG.CFG), cfg
+        assert isinstance(cfg, CFG), cfg
         assert callable(get_cov), get_cov
         
         self.dom = Dom(dom)
@@ -66,8 +68,7 @@ class IGa(object):
 
     def go(self, seed, sids, econfigs=None, tmpdir=None):
         assert isinstance(seed, float), seed
-        assert (sids and isinstance(sids, set) and
-                all(sid in self.sids for sid in sids)), sids
+        assert sids and isinstance(sids, frozenset), sids
         assert not econfigs or isinstance(econfigs, list), econfigs
         assert isinstance(tmpdir, str) and os.path.isdir(tmpdir), tmpdir
         assert isinstance(tmpdir, str), tmpdir
@@ -78,15 +79,19 @@ class IGa(object):
         configs_d = Configs_d()
         fits_d = Fits_d()
         
+        skips = frozenset(sid for sid in sids if sid not in self.sids)
+        if skips:
+            logger.warn("skip {} sids not in cfg".format(len(skips)))
+            logger.debug(', '.join(skips))
+
+        sids = frozenset(sid for sid in sids if sid in self.sids)
         logger.debug("search for {} sids".format(len(sids)))
-        logger.debug(str(sids))
-        
+        logger.detail(str(sids))
+
         remains = list(sorted(sids))
         while remains:            
             covs_ = self.go_sid(remains.pop(), configs_d, fits_d)
-            for sid in covs_:
-                covs.add(sid)
-
+            for sid in covs_: covs.add(sid)
             remains = [sid for sid in remains if sid not in covs]
             found = set(sid for sid in sids if sid in covs)
             logger.debug("found {}/{}, remains {}".format(
@@ -96,19 +101,20 @@ class IGa(object):
         notfound = set(sid for sid in sids if sid not in covs)
         if not is_success:
             logger.debug("not found {}/{}".format(len(notfound), len(sids)))
-            logger.detail("{}".format(", ".join(sorted(notfound))))
+            logger.debug("{}".format(", ".join(sorted(notfound))))
 
-        logger.info("{}, seed {}, found {}/{}, covs {}, configs {}/{}"
+        logger.info("{}, seed {}, found {}/{} (skip {}), covs {}, configs {}/{}"
                     .format('success' if is_success else 'fail',
                             seed,
-                            len(found), len(sids), len(covs), len(configs_d),
+                            len(found), len(sids), len(skips),
+                            len(covs), len(configs_d),
                             self.dom.siz))
         return is_success, found, configs_d
         
 
     def go_sid(self, sid, configs_d, fits_d):
         """
-        Use GA to find sid.
+        Use EC to find sid.
         Also update information from configs_d and fits_d
         """
         assert isinstance(sid, str), sid
@@ -116,6 +122,7 @@ class IGa(object):
         assert isinstance(fits_d, Fits_d), fits_d
 
         found = False
+        max_npaths = 100
         max_stuck = 3
         cur_stuck = 0
         xtime_total = 0.0
@@ -134,24 +141,20 @@ class IGa(object):
             #init configs (to quickly find easy locations)
             if cur_iter == 1: 
                 pop = self.dom.gen_configs_tcover1(config_cls=Config)
-                logger.debug("create {} init pop".format(len(pop)))
-
+                logger.debug("create {} init configs".format(len(pop)))
                 found, xtime = IGa.eval_configs(
                     sid, pop, req_s, self.get_cov, configs_d, covs)
-                    
                 xtime_total += xtime
-                if found:
-                    break
                 
+                if found: break
                 continue
             
             if cur_iter == 2: #compute fitness of init configs
-                paths = self.cfg.get_paths(sid)
+                paths = IGa.get_paths(sid, self.cfg, req_s, max_npaths)
                 logger.debug("{} paths: {}".format(
-                    len(paths), CM.str_of_list(map(len,paths))
+                    len(paths), CM.str_of_list(map(len, paths))
                 ))
-                logger.debug("\n" + '\n'.join("{}. {}".format(i, CM.str_of_list(p))
-                                               for i,p in enumerate (paths)))
+
                 if max(map(len,paths)) <= 1:
                     logger.warn("something wrong with cfg for sid '{}' .. skip"
                                 .format(sid))
@@ -206,8 +209,20 @@ class IGa(object):
         if found:
             config = CM.find_first(configs_d, lambda c: sid in configs_d[c])
             logger.debug("sol for '{}' : {}".format(sid, config))
-            
+
+        assert CC.is_cov(covs), covs
         return covs
+
+    @staticmethod
+    def get_paths(sid, cfg, req_s, max_npaths):
+        assert isinstance(sid, str), sid
+        assert isinstance(req_s, str), req_s
+        assert max_npaths is None or max_npaths > 0, max_npaths
+        
+        paths = cfg.get_paths(sid, max_npaths)
+        paths = frozenset(frozenset(s for s in path if req_s in s)
+                          for path in paths)
+        return paths
     
     @staticmethod
     def eval_configs(sid, pop, req_s, get_cov_f, configs_d, covs_s):
@@ -232,7 +247,7 @@ class IGa(object):
 
             cache.add(c)
             sids, _ = get_cov_f(c)
-            sids = set(s for s in sids if req_s in s)
+            sids = frozenset(s for s in sids if req_s in s)
             if not sids:
                 logger.warn("config {} produces nothing".format(c))
             
@@ -246,47 +261,28 @@ class IGa(object):
         return False, time() - st
     
     @staticmethod
-    def get_best(sid, configs, fits_d):
-        assert isinstance(sid, str), sid
+    def get_avg_best(sid, configs, fits_d):
+        assert isinstance(sid,str), sid
         assert (configs is None or
-                (configs and
-                all(isinstance(c, Config) for c in configs))), configs
+                (configs and 
+                 all(isinstance(c, Config) for c in configs))), configs
         assert fits_d and isinstance(fits_d, Fits_d), fits_d
 
         if configs is None:
             cs = [c for c in fits_d if sid in fits_d[c]]
         else:
             cs = configs
+
+        assert cs
+        avg_fit = sum(fits_d[c][sid] for c in cs) / float(len(cs))
         best =  max(cs, key = lambda c: fits_d[c][sid])
         best_fit = fits_d[best][sid]
-        return best_fit, best
-    
-    @staticmethod
-    def get_avg(sid, configs, fits_d):
-        assert isinstance(sid,str), sid
-        assert (configs and
-                all(isinstance(c, Config) for c in configs)), configs
-        assert fits_d and isinstance(fits_d, Fits_d), fits_d
-
-        if configs is None:
-            cs = [c for c in fits_d if sid in fits_d[c]]
-        else:
-            cs = configs
-
-        return sum(fits_d[c][sid] for c in cs) / float(len(cs))
-
-    @staticmethod
-    def get_avg_best(sids, configs, fits_d):
-        avg_fit = IGa.get_avg(sids, configs, fits_d)
-        best_fit, best = IGa.get_best(sids, configs, fits_d)
         return avg_fit, best_fit, best
     
-
     @staticmethod
     def get_fscore(cov, path):
-        #TOFIX, these parms should be set
-        assert isinstance(cov, set), cov
-        assert isinstance(path, set), path
+        assert CC.is_cov(cov), cov
+        assert path and isinstance(path, frozenset), path
         
         if cov == path:
             return 1.0
@@ -304,13 +300,15 @@ class IGa(object):
 
     @staticmethod
     def get_vscore(cov, path):
+        assert CC.is_cov(cov), cov
+        assert path and isinstance(path, frozenset), path
+        
         if cov == path:
             return 1.0
         else:
             tp = len([s for s in cov if s in path])
-            r = float(tp) / len(path)
-            return r
-
+            f = float(tp) / len(path)
+            return f
 
     @staticmethod
     def compute_fits(sid, paths, configs, configs_d, fits_d):
@@ -330,7 +328,7 @@ class IGa(object):
             if c in fits_d and sid in fits_d[c]:
                 continue
             cov = configs_d[c]
-            fit = max(IGa.get_fscore(cov, path) for path in paths)
+            fit = max(IGa.get_vscore(cov, path) for path in paths)
             if c not in fits_d:
                 fits_d[c] = {sid:fit}
             else:
@@ -363,3 +361,8 @@ class IGa(object):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+
+
+    # logger.debug("\n" + '\n'.join("{}. {}".format(i, CM.str_of_list(p))
+    #                                for i,p in enumerate (paths)))
+    
