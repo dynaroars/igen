@@ -9,19 +9,17 @@ import igen_alg as IA
 logger = CM.VLog('otter')
 logger.level = CC.logger_level
 
-db = {"vsftpd":None, "ngircd":None}
 from igen_settings import otter_dir
 
 def prepare(prog_name, get_dom_f):
-    if __debug__:
-        assert isinstance(prog_name,str),prog_name
-        assert callable(get_dom_f),get_dom_f
+    assert isinstance(prog_name,str), prog_name
+    assert callable(get_dom_f), get_dom_f
     
     dir_ = CM.getpath(os.path.join(otter_dir, prog_name))
     dom_file = os.path.join(dir_,'possibleValues.txt')
     pathconds_d_file = os.path.join(dir_,'{}.tvn'.format('pathconds_d'))
-    assert os.path.isfile(dom_file),dom_file
-    assert os.path.isfile(pathconds_d_file),pathconds_d_file
+    assert os.path.isfile(dom_file), dom_file
+    assert os.path.isfile(pathconds_d_file), pathconds_d_file
     
     dom,_ = get_dom_f(dom_file)
     st = time()
@@ -29,30 +27,29 @@ def prepare(prog_name, get_dom_f):
     logger.debug("'{}': {} path conds ({}s)"
                  .format(pathconds_d_file,len(pathconds_d),time() - st))
 
-    args={'pathconds_d':pathconds_d}
-    get_cov_f = lambda config: get_cov(config,args)
-    return dom,get_cov_f,pathconds_d
+    args={'pathconds_d' : pathconds_d}
+    get_cov_f = lambda config: get_cov(config, args)
+    return dom, get_cov_f, pathconds_d
 
-def get_cov(config,args):
+def get_cov(config, args):
     if __debug__:
         assert isinstance(config,IA.Config),config
         assert isinstance(args,dict) and 'pathconds_d' in args, args
         
     sids = set()        
-    for cov,configs in args['pathconds_d'].itervalues():
+    for cov, configs in args['pathconds_d'].itervalues():
         if any(config.hcontent.issuperset(c) for c in configs):
             for sid in cov:
                 sids.add(sid)
     outps = []
     return sids,outps
 
-def do_full(dom,pathconds_d,tmpdir,n=None):
+def do_full(dom, pathconds_d, tmpdir, n=None):
     """
     Obtain interactions using Otter's pathconds
     """
-    if __debug__:
-        assert n is None or 0 <= n <= len(pathconds_d), n
-        assert isinstance(tmpdir,str) and os.path.isdir(tmpdir), tmpdir
+    assert n is None or 0 <= n <= len(pathconds_d), n
+    assert isinstance(tmpdir,str) and os.path.isdir(tmpdir), tmpdir
 
     seed=0
     logger.info("seed: {} default, tmpdir: {}".format(seed,tmpdir))

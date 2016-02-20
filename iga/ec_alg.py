@@ -128,21 +128,22 @@ class EC(object):
     """
     Evolutionary Computing algorithm
     """
-    def __init__(self, dom, cfg, get_cov):
+    def __init__(self, dom, cfg, get_cov, sids):
         assert isinstance(dom, CC.Dom), dom
         assert isinstance(cfg, CFG), cfg
         assert callable(get_cov), get_cov
+        assert sids and CC.is_cov(sids), sids
         
         self.dom = Dom(dom)
         self.z3db = self.dom.z3db        
         self.cfg = cfg
-        self.sids = self.cfg.__sids__
+        self.avail_sids = self.cfg.__sids__
+        self.sids = sids
         logger.debug("cfg {}".format(len(self.cfg)))
         self.get_cov = get_cov
 
-    def go(self, seed, sids, econfigs=None, tmpdir=None):
+    def go(self, seed, econfigs=None, tmpdir=None):
         assert isinstance(seed, float), seed
-        assert sids and isinstance(sids, frozenset), sids
         assert (not econfigs or
                 isinstance(econfigs, list) and
                 all(isinstance(c, CC.Config) for c in econfigs)), econfigs
@@ -155,13 +156,14 @@ class EC(object):
         covs, found = set(), set()        
         configs_d = Configs_d()
         fits_d = Fits_d()
+        sids = self.sids
         
-        skips = [sid for sid in sids if sid not in self.sids]
+        skips = [sid for sid in sids if sid not in self.avail_sids]
         if skips:
             logger.warn("skip {} sids not in cfg".format(len(skips)))
             logger.debug(', '.join(skips))
 
-        sids = frozenset(sid for sid in sids if sid in self.sids)
+        sids = frozenset(sid for sid in sids if sid in self.avail_sids)
         logger.debug("search for {} sids".format(len(sids)))
         logger.detail(str(sids))
 
@@ -180,11 +182,12 @@ class EC(object):
             logger.debug("not found {}/{}".format(len(notfound), len(sids)))
             logger.debug("{}".format(", ".join(sorted(notfound))))
 
-        logger.info("{}, seed {}, found {}/{} (skip {}), covs {}, configs {}/{}"
+        logger.info("{}, seed {}, found {}/{} (skip {}), covs {}, configs {}/{} ({}%)"
                     .format('success' if is_success else 'fail',
                             seed,
                             len(found), len(sids), len(skips),
                             len(covs), len(configs_d),
+                            (100.0 * len(configs_d)) / self.dom.siz,
                             self.dom.siz))
         return is_success, found, configs_d
         
@@ -212,8 +215,9 @@ class EC(object):
         
         while True:
             cur_iter += 1
-            logger.debug("sid '{}': iter {} covs {}"
-                         .format(sid, cur_iter, len(covs)))
+            logger.debug("sid '{}': iter {} covs {} stuck {}/{}"
+                         .format(sid, cur_iter, len(covs),
+                                 cur_stuck, max_stuck))
 
             #init configs (to quickly find easy locations)
             if cur_iter == 1: 
@@ -247,8 +251,9 @@ class EC(object):
             cur_nbests = len(bests)
             cur_ncovs = len(covs)
             
-            logger.debug("pop {} (total {}) fit best {} avg {}"
+            logger.debug("pop {} (total {}, {}% of dom size) fit best {} avg {}"
                          .format(len(pop), len(configs_d),
+                                 (100.0 * len(configs_d)) / self.dom.siz,
                                  cur_best_fit, cur_avg_fit))
             logger.debug(str(cur_best))
 
@@ -256,7 +261,8 @@ class EC(object):
             pop = EC.gen_pop(sid, pop, pop_siz, configs_d, fits_d, self.dom)
             
             # evaluate & compute fitness
-            found, xtime = EC.eval_configs(sid, pop, req_s, self.get_cov, configs_d, covs)
+            found, xtime = EC.eval_configs(sid, pop, req_s, self.get_cov,
+                                           configs_d, covs)
             if found:
                 break
             xtime_total += xtime
@@ -293,12 +299,16 @@ class EC(object):
     @staticmethod
     def get_paths(sid, cfg, req_s, max_npaths):
         assert isinstance(sid, str), sid
-        assert isinstance(req_s, str), req_s
+        assert req_s is None or isinstance(req_s, str), req_s
         assert max_npaths is None or max_npaths > 0, max_npaths
         
         paths = cfg.get_paths(sid, max_npaths)
-        paths = frozenset(frozenset(s for s in path if req_s in s)
-                          for path in paths)
+        if req_s:
+            paths = frozenset(frozenset(s for s in path if req_s in s)
+                              for path in paths)
+        else:
+            paths = frozenset(map(frozenset, paths))
+            
         return paths
     
     @staticmethod
@@ -309,8 +319,7 @@ class EC(object):
         assert isinstance(sid, str), sid
         assert (isinstance(pop, list) and pop and 
                 all(isinstance(c, Config) for c in pop)), pop
-        assert all(c not in configs_d for c in pop), pop
-        assert isinstance(req_s, str), req_s
+        assert req_s is None or isinstance(req_s, str), req_s
         assert callable(get_cov_f), get_cov_f
         assert isinstance(configs_d, Configs_d), configs_d
         assert CC.is_cov(covs_s), covs_s
@@ -324,7 +333,10 @@ class EC(object):
 
             cache.add(c)
             sids, _ = get_cov_f(c)
-            sids = frozenset(s for s in sids if req_s in s)
+            if req_s:
+                sids = frozenset(s for s in sids if req_s in s)
+            else:
+                sids = frozenset(sids)
             if not sids:
                 logger.warn("config {} produces nothing".format(c))
             

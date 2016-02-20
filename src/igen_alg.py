@@ -76,8 +76,7 @@ class Dom(CC.Dom):
         x=0,y=1  =>  [x=0,y=0,z=rand;x=0,y=2,z=rand;x=1,y=1;z=rand]
         """
         
-        if __debug__:
-            assert isinstance(sel_core,SCore),sel_core 
+        assert isinstance(sel_core,SCore),sel_core 
         
         configs = []            
         c_core,s_core = sel_core
@@ -108,10 +107,10 @@ class Dom(CC.Dom):
             if not configs_:
                 continue
             config=configs_[0]
-            if __debug__:
-                assert config.c_implies(changed_core)
-                assert config not in existing_configs, \
-                    ("ERR: gen existing config {}".format(config))
+            
+            assert config.c_implies(changed_core)
+            assert config not in existing_configs, \
+                ("ERR: gen existing config {}".format(config))
                      
             configs.append(config)
             e_configs.append(config.z3expr(z3db))
@@ -149,8 +148,7 @@ class Config(CC.Config):
         x=0&y=1 => x=0,y=1
         not(x=0&z=1 => x=0,y=1)
         """
-        if __debug__:
-            assert isinstance(core, Core),(core)
+        assert isinstance(core, Core),(core)
 
         return (not core or
                 all(k in self and self[k] in core[k] for k in core))
@@ -159,8 +157,7 @@ class Config(CC.Config):
         """
         self => disj core
         """
-        if __debug__:
-            assert isinstance(core, Core),core
+        assert isinstance(core, Core),core
 
         return (not core or
                 any(k in self and self[k] in core[k] for k in core))
@@ -194,9 +191,8 @@ class Core(HDict):
     def __init__(self,core=HDict()):
         HDict.__init__(self,core)
         
-        if __debug__:
-            assert all(CC.is_csetting(s)
-                       for s in self.iteritems()), self
+        assert all(CC.is_csetting(s)
+                   for s in self.iteritems()), self
 
     def __str__(self,delim=' '):
         if self:
@@ -208,12 +204,12 @@ class Core(HDict):
     def settings(self):
         return [(k,v) for k,vs in self.iteritems() for v in vs]
         
-    def neg(self,dom):
+    def neg(self, dom):
         try:
             return self._neg
         except AttributeError:
-            if __debug__:
-                assert isinstance(dom,Dom),dom
+            assert isinstance(dom, Dom),dom
+            
             ncore = ((k,dom[k]-self[k]) for k in self)
             self._neg = Core([(k,vs) for k,vs in ncore if vs])
             return self._neg
@@ -237,9 +233,8 @@ class MCore(tuple):
     def __init__(self,cores):
         tuple.__init__(self,cores)
 
-        if __debug__:
-            assert len(self) == 2 or len(self) == 4, self
-            assert all(Core.is_maybe_core(c) for c in self), self
+        assert len(self) == 2 or len(self) == 4, self
+        assert all(Core.is_maybe_core(c) for c in self), self
 
     @property
     def settings(self):
@@ -266,10 +261,10 @@ class SCore(MCore):
         """
         super(SCore,self).__init__((mc,sc))
         #additional assertion
-        if __debug__:
-            assert mc is None or isinstance(mc, Core) and mc, mc
-            #sc is not None => ...
-            assert not sc or all(k not in mc for k in sc), sc
+        assert mc is None or isinstance(mc, Core) and mc, mc
+        #sc is not None => ...
+        assert not sc or all(k not in mc for k in sc), sc
+        
         self.keep = False
 
     def set_keep(self):
@@ -365,9 +360,8 @@ class PNCore(MCore):
     def vtyp(self): return self._vtyp
     @vtyp.setter
     def vtyp(self,vt):
-        if __debug__:
-            assert isinstance(vt,str) and \
-                vt in 'conj disj mix'.split(), vt
+        assert isinstance(vt,str) and vt in 'conj disj mix'.split(), vt
+            
         self._vtyp = vt
     
     @property
@@ -375,8 +369,8 @@ class PNCore(MCore):
     
     @vstr.setter
     def vstr(self,vs):
-        if __debug__:
-            assert isinstance(vs,str) and vs, vs
+        assert isinstance(vs,str) and vs, vs
+        
         self._vstr = vs
 
     @staticmethod
@@ -391,13 +385,12 @@ class PNCore(MCore):
             return '; '.join(ss)
 
     def verify(self,configs,dom):
-        if __debug__:
-            assert self.pc is not None, self.pc #this never happens
-            #nc is None => pd is None
-            assert self.nc is not None or self.pd is None, (self.nc, self.nd)
-            assert (all(isinstance(c,Config) for c in configs) and
-                    configs), configs
-            assert isinstance(dom,Dom),dom
+        assert self.pc is not None, self.pc #this never happens
+        #nc is None => pd is None
+        assert self.nc is not None or self.pd is None, (self.nc, self.nd)
+        assert (all(isinstance(c,Config) for c in configs) and
+                configs), configs
+        assert isinstance(dom,Dom),dom
 
         pc,pd,nc,nd = self
 
@@ -900,10 +893,9 @@ class IGen(object):
     Main algorithm
     """
     def __init__(self, dom, get_cov, sids=None):
-        if __debug__:
-            assert isinstance(dom, Dom), dom
-            assert callable(get_cov), get_cov
-            assert not sids or CC.is_cov(sids), sids
+        assert isinstance(dom, Dom), dom
+        assert callable(get_cov), get_cov
+        assert not sids or CC.is_cov(sids), sids
             
         self.dom = dom
         self.z3db = self.dom.z3db
@@ -917,11 +909,10 @@ class IGen(object):
         rand_n > 0  : use rand_n configs
         rand_n < 0  : use all possible configs
         """
-        if __debug__:
-            assert isinstance(seed,(float, int)), seed
-            assert rand_n is None or isinstance(rand_n, int), rand_n
-            assert not econfigs or isinstance(econfigs, list), econfigs
-            assert isinstance(tmpdir, str) and os.path.isdir(tmpdir), tmpdir
+        assert isinstance(seed,(float, int)), seed
+        assert rand_n is None or isinstance(rand_n, int), rand_n
+        assert not econfigs or isinstance(econfigs, list), econfigs
+        assert isinstance(tmpdir, str) and os.path.isdir(tmpdir), tmpdir
             
         random.seed(seed)
         logger.debug("seed: {}, tmpdir: {}".format(seed, tmpdir))
@@ -1002,8 +993,7 @@ class IGen(object):
                 logger.debug('done after iter {}'.format(cur_iter))
                 break
 
-            if __debug__:
-                assert configs, configs
+            assert configs, configs
                 
             cconfigs_d, xtime = self.eval_configs(configs)
             xtime_total += xtime

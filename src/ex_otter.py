@@ -3,14 +3,14 @@ from time import time
 from collections import OrderedDict
 import vu_common as CM
 
-#miscs
+#Utilities to work with Otter's data
 
 def read_config_from_line(l):
     """
     Read a config from a string
-    sage: print read_config_from_line("b=2")
+    >>> print read_config_from_line("b=2")
     b=2
-    sage: print Config.from_line("b=2 a=1")
+    >>> print read_config_from_line("b=2 a=1")
     b=2 a=1
     """
 
@@ -68,7 +68,6 @@ def read_exp_part_pc(lines):
     pc = (pathcond,covs,samples)
     return pc
     
-
 def read_exp_pc(lines):
     parts = []
     cur_part = []
@@ -85,7 +84,6 @@ def read_exp_pc(lines):
 
     pathconds = [read_exp_part_pc(p) for p in parts]
     return pathconds
-
 
 def read_exp_dir_pc(exp_dir):
     exp_files = [f for f in os.listdir(exp_dir)

@@ -20,6 +20,7 @@ analyze_outps = False
 class CustDict(MutableMapping):
     """
     MuttableMapping ex: https://stackoverflow.com/questions/21361106/how-would-i-implement-a-dict-with-abstract-base-classes-in-python
+    TODO: use MyDict in CM instead
     """
     __metaclass__ = abc.ABCMeta
     def __init__(self): self.__dict__ = {}

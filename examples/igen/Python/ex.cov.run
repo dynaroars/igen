@@ -1,0 +1,58 @@
+#!/usr/bin/env python2.7
+
+"""
+This is a run_script example that run a program call "ex.[Linux|Darwin].exe" , which 
+takes as input a list of varname and value and 
+returns to stdout (the terminal screen) the name of the file consisting of covered lines
+
+e.g.,
+./ex.run "x 0, y 1, z 0 ..."   #this represent the configuration x = 0 y = 1 z = 0 ...
+/var/tmp/tvn.out
+
+"""
+import argparse
+import os.path
+import vu_common as CM
+
+if __name__ == "__main__":
+    tmp_dir = "/var/tmp"
+    me_prog = "ex.py"
+    me_dir = os.path.dirname(CM.getpath(__file__))
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("inputs", help="input configurations")
+    args = parser.parse_args()
+    inputs = args.inputs.strip()  #  "x 0, y 1, z 0"
+    parts = [p.split() for p in inputs.split(",")]
+    varnames,varvals = zip(*parts)
+    assert len(varnames) == len(varvals)
+
+    prog_exe = os.path.join(me_dir, me_prog)
+    prog_inp = ' '.join("-{} {}".format(n,v) for n,v in zip(varnames, varvals))
+    prog_out = "{}/tvn.out".format(tmp_dir)
+
+    cmd = "rm -rf {}/.coverage".format(me_dir)
+    CM.vcmd(cmd)
+
+    #run coverage on tests
+    cmd = "python-coverage run -a {} {}".format(prog_exe, prog_inp)
+    CM.vcmd(cmd)
+
+    #get coverage
+    cov_dir = "{}/{}_cov".format(tmp_dir, me_prog)
+    cmd = "python-coverage annotate -d {}".format(cov_dir)
+    CM.vcmd(cmd)
+    
+    from get_cov_python import parse, cleanup
+    covered, _ = parse(cov_dir)
+    covered = cleanup(covered, cov_dir)
+    covered = '\n'.join(sorted(covered)) 
+    CM.vwrite(prog_out, covered)
+    
+    try:
+        _,rs_err = CM.vcmd(cmd)
+        assert len(rs_err) == 0, rs_err
+    except:
+        print("cmd '{}' failed".format(cmd))
+
+    print prog_out

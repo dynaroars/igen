@@ -52,7 +52,7 @@ class CFG(OrderedDict):
     'LS',\
     'L0 LS',\
     'L4 L3',\
-    'L4 L2    L1   L3',\
+    'L4 L2    L1   L3 L2',\
     'L1 L0',\
     'L2 L0',\
     'L2    L0',\
@@ -72,7 +72,7 @@ class CFG(OrderedDict):
     L3 L2
     L5 L4
     """    
-    def __init__(self,d):            
+    def __init__(self,d):
         OrderedDict.__init__(self, d)
         assert self, 'empty cfg'
 
@@ -81,15 +81,15 @@ class CFG(OrderedDict):
 
     def __str__(self, as_lines=False):
         if as_lines:
-            lines = ['{} {}'.format(loc, CM.str_of_list(prevs, ' '))
-                     for loc, prevs in self.iteritems()]
-            lines = [line.strip() for line in lines]
+            lines = ('{} {}'.format(loc, CM.str_of_list(prevs, ' '))
+                     for loc, prevs in self.iteritems())
+            lines = (line.strip() for line in lines)
             return CM.str_of_list(lines, '\n')
         else:
             return super(CFG, self).__str__()
-        
-    @staticmethod
-    def mk_from_lines(lines):
+
+    @classmethod
+    def mk_from_lines(cls, lines):
         """
         Make a CFG from list of strings having the form 
         l prev1 prev2  where
@@ -99,20 +99,66 @@ class CFG(OrderedDict):
         prevs = OrderedDict()
         for l in rs:
             k = l[0]
-            cs = l[1:]
+            cs = CM.vset(l[1:])
             if k in prevs:
                 cs = [c for c in cs if c not in prevs[k]]
                 prevs[k].extend(cs)
             else:
-                prevs[k]=cs
+                prevs[k] = cs
 
-        return CFG(prevs)
-    
+        return cls(prevs)
+
+    @classmethod
+    def guess_preds(cls, covs):
+        """
+        Obtain predecessors from  a list of covered lines 
+        e.g., [[l1, l2, l5], [l1, l3, l5] =>  preds['l5'] = {l2, l3}
+        
+        >>> CFG.guess_preds(["1 2 5".split(), "1 3 5".split()])
+        CFG([('1', []), ('3', ['1']), ('2', ['1']), ('5', ['2', '3'])])
+
+        >>> CFG.guess_preds([['LS', 'L0', 'L2', 'L3', 'L4'], ['LS', 'L0', 'L2', 'L4']])
+        CFG([('L4', ['L2', 'L3']), ('L2', ['L0']), ('LS', []), ('L0', ['LS']), ('L3', ['L2'])])
+
+        >>> CFG.guess_preds([['LS', 'L0', 'L2', 'L3', 'L4', 'L5'], ['LS', 'L0', 'L2', 'L4', 'L5'], ['LS', 'L0', 'L1', 'L4', 'L5']])
+        CFG([('L4', ['L1', 'L2', 'L3']), ('L5', ['L4']), ('L2', ['L0']), ('LS', []), ('L0', ['LS']), ('L1', ['L0']), ('L3', ['L2'])])
+        
+        """
+        assert all(cov and isinstance(cov, list) for cov in covs), covs
+        preds = {}
+        def add_to_pred(f,g):
+            if f not in preds:
+                preds[f] = set()
+            preds[f].add(g)
+                
+        for cov in covs:
+            assert cov
+            add_to_pred(cov[0], None)
+            ps = zip(cov[1:], cov)
+            for f,g in ps:
+                add_to_pred(f,g)
+
+        #preds has the format sid -> list
+        for sid in preds:
+            preds[sid] = sorted(s for s in preds[sid] if s)
+
+        return cls(preds)
+
+    @classmethod
+    def guess_paths_otter(cls, pathconds_d):
+        """
+        Call guess_paths on cov info from Otter's data
+        pathconds is a dict{str -> (cov, samples)} 
+        where cov is a set of sid strings
+        samples is a set of (partial) configs
+        """
+        covs = (cov for cov,_ in pathconds.itervalues())
         
     def get_paths(self, sid, max_npaths=None):
         assert isinstance(sid, str), sid
         assert sid in self.__sids__, "invalid sid '{}'".format(sid)
-        assert max_npaths is None or max_npaths > 0, max_npaths
+        assert (max_npaths is None or
+                (isinstance(max_npaths, int) and max_npaths > 0)), max_npaths
 
         k = (sid, max_npaths)
         try:
@@ -173,7 +219,8 @@ class CFG(OrderedDict):
                 for p_ in paths:
                     if None not in p_:
                         yield p_
-        
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

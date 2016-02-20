@@ -4,13 +4,24 @@ import os.path
 from time import time
 import vu_common as CM
 import config_common as CC
+import igen_settings
+
+def check_range(v, min_n=None, max_n=None):
+    v = int(v)
+    if min_n and v < min_n:
+        raise argparse.ArgumentTypeError(
+            "must be >= {} (inp: {})".format(min_n, v))
+    if max_n and v > max_n:
+        raise argparse.ArgumentTypeError(
+            "must be <= {} (inpt: {})".format(max_n, v))
+    return v
 
 def get_sids(inp):
     """
     Parse statements from the inp string, 
     e.g., "f1.c:5 f2.c:15" or "path/to/file" that contains statements
     """
-    assert inp is None or isinstance(inp, str), inpt
+    assert inp is None or isinstance(inp, str), inp
     
     if not inp:
         return None
@@ -30,125 +41,160 @@ def get_sids(inp):
 
     return sids if sids else None
 
-def check_range(v, min_n=None, max_n=None):
-    v = int(v)
-    if min_n and v < min_n:
-        raise argparse.ArgumentTypeError(
-            "must be >= {} (inp: {})".format(min_n, v))
-    if max_n and v > max_n:
-        raise argparse.ArgumentTypeError(
-            "must be <= {} (inpt: {})".format(max_n, v))
-    return v
-
-def detect_file(file1, file2, ext):
+def get_alt_file(orig_file, base_file, ext):
     """
-    detect file2 based on file1
+    If orig_file is not valid, try to get file by appending ext to the filename in base_file
     """
-    if file2:
-        return CM.getpath(file2)
+    if orig_file:
+        return CM.getpath(orig_file)
     else:
         #file1.orig_ext => file1.ext
-        file1 = CM.getpath(file1)
-        dir_ = os.path.dirname(file1)
-        name_ = CM.file_basename(file1)
-        file2 = os.path.join(dir_, name_ + ext)
-    return file2
+        base_file = CM.getpath(base_file)
+        dir_ = os.path.dirname(base_file)
+        name_ = CM.file_basename(base_file)
+        return os.path.join(dir_, name_ + ext)
+
+def get_cfg_file(cfg_file, dom_file):
+    ext = ".c.011t.cfg.preds"
+    if dom_file:
+        cfg_file = get_alt_file(cfg_file, dom_file, ext)
+    else:
+        #coreutils
+        cfg_file = CM.getpath(os.path.join(
+            igen_settings.coreutils_main_dir,
+            'coreutils','obj-gcov', 'src', prog + ext))
+    return cfg_file
+
+def combine_runs(econfigs, iec_f, igen_f, only_iea):
+    """
+    Return a function that first runs function ieac_f thens run igen_f
+    """
+    assert callable(iec_f), iec_f
+    assert callable(igen_f), igen_f
+    assert isinstance(only_iea, bool), only_iea
     
+    def run_f(seed, tdir):
+        is_success, _, configs_d = iec_f(
+            seed=seed, econfigs=econfigs,tmpdir=tdir)
+        
+        if not only_iea and is_success:
+            return igen_f(seed=seed, econfigs=configs_d.items(), tmpdir=tdir)
+        else:
+            return None
+
+    return run_f
+
+def get_run_otter(args, IA):
+    sids = get_sids(args.sids)
+    import get_cov_otter as Otter
+    dom, get_cov_f, pathconds_d = Otter.prepare(prog, IA.Dom.get_dom)
+    igen = IA.IGen(dom, get_cov_f, sids=get_sids(args.sids))
+
+    if sids:
+        if args.no_ga:
+            run_f = lambda seed,tdir: igen.go(seed=seed, tmpdir=tdir)
+        else:
+            #find sids using EC
+            from cfg import CFG
+            from ec_alg import EC
+            cfg_file = get_cfg_file(args.cfg, args.dom_file)
+            cfg = CFG.mk_from_lines(CM.iread_strip(cfg_file))
+            ec = EC(dom, cfg, get_cov_f, sids)
+            run_f = combine_runs(econfigs, ec.go, igen.go, args.only_ga)
+            
+    elif args.cmp_rand:
+        #TODO: test this 
+        run_f = lambda seed,tdir,rand_n: igen.go_rand(
+            rand_n=rand_n, seed=seed, tmpdir=tdir)
+        
+    elif args.do_full:
+        run_f = lambda _,tdir: Otter.do_full(
+            dom, pathconds_d, tmpdir=tdir,
+            n=args.rand_n if args.rand_n else None)
+
+    elif args.rand_n is None:  #default
+        run_f = lambda seed,tdir: igen.go(seed=seed, tmpdir=tdir)
+        
+    else:
+        run_f = lambda seed,tdir: igen.go_rand(
+            rand_n=args.rand_n, seed=seed, tmpdir=tdir)
+
+    return dom, get_cov_f, run_f
+
+
+def get_run_default_coreutils(args, IA):
+    sids=get_sids(args.sids)
+    dom, default_configs, get_cov_f = get_cov_default_coreutils(sids, args, IA)
+    econfigs = [(c, None) for c in default_configs] if default_configs else []
+    igen = IA.IGen(dom, get_cov_f, sids=sids)
+    
+    if sids:
+        if args.no_ga:  #TEST the econfigs thing
+            run_f = lambda seed, tdir: igen.go(seed=seed, econfigs=econfigs, tmpdir=tdir)
+
+        else:
+            #find sids using EC
+            from cfg import CFG
+            from ec_alg import EC
+            cfg_file = get_cfg_file(args.cfg, args.dom_file)
+            cfg = CFG.mk_from_lines(CM.iread_strip(cfg_file))
+            ec = EC(dom, cfg, get_cov_f, sids)
+            run_f = combine_runs(econfigs, ec.go, igen.go, args.only_ga)
+
+            
+    elif args.cmp_rand:
+        run_f = lambda seed, tdir, rand_n: igen.go_rand(
+            rand_n=rand_n, seed=seed, econfigs=econfigs, tmpdir=tdir)
+        
+    elif args.do_full:
+        run_f = lambda _,tdir: igen.go_full(tmpdir=tdir)
+        
+    elif args.rand_n is None:  #default
+        run_f = lambda seed, tdir: igen.go(seed=seed, econfigs=econfigs, tmpdir=tdir)
+        
+    else:
+        run_f = lambda seed, tdir: igen.go_rand(
+            rand_n=args.rand_n, seed=seed, econfigs=econfigs, tmpdir=tdir)
+
+    return dom, get_cov_f, run_f
+
+def get_cov_default_coreutils(sids, args, IA):
+    if args.dom_file:
+        #general way to run prog using dom_file/runscript
+        dom_file = CM.getpath(args.dom_file)
+        dom, default_configs = IA.Dom.get_dom(dom_file)
+        run_script = get_alt_file(args.run_script, dom_file, ".run")
+
+        import get_cov
+        get_cov_f = lambda config: get_cov.runscript_get_cov(
+            config, run_script)
+
+    else:
+        import igen_settings
+        import get_cov_coreutils as Coreutils            
+        dom, default_configs, get_cov_f = Coreutils.prepare(
+            prog,
+            IA.Dom.get_dom,
+            igen_settings.coreutils_main_dir,
+            igen_settings.coreutils_doms_dir,
+            do_perl=args.do_perl)
+
+    return dom, default_configs, get_cov_f
+
 def get_run_f(prog, args, logger):
     """
     Ret f that takes inputs seed, tmpdir 
     and call appropriate iGen function on those inputs
     """
-    sids = get_sids(args.sids)
     
     import igen_alg as IA    
-    import get_cov_otter as Otter
-    if prog in Otter.db:
-        dom, get_cov_f, pathconds_d = Otter.prepare(prog, IA.Dom.get_dom)
-        igen = IA.IGen(dom, get_cov_f, sids=sids)
-
-        if args.cmp_rand:
-            #TODO: test this 
-            _f = lambda seed,tdir,rand_n: igen.go_rand(
-                rand_n=rand_n, seed=seed, tmpdir=tdir)
-        elif args.do_full:
-            if args.rand_n:
-                _f = lambda _,tdir: Otter.do_full(
-                    dom, pathconds_d, tmpdir=tdir, n=args.rand_n)
-            else:
-                _f = lambda _,tdir: Otter.do_full(
-                    dom, pathconds_d, tmpdir=tdir, n=None)
-                
-        elif args.rand_n is None:
-            _f = lambda seed,tdir: igen.go(seed=seed, tmpdir=tdir)
-        else:
-            _f = lambda seed,tdir: igen.go_rand(
-                rand_n=args.rand_n, seed=seed, tmpdir=tdir)
-    else:        
-        if args.dom_file:
-            #general way to run prog using dom_file/runscript
-            dom_file = CM.getpath(args.dom_file)
-            dom, default_configs = IA.Dom.get_dom(dom_file)
-            run_script = detect_file(dom_file, args.run_script, ".run")
-            import get_cov
-            get_cov_f = lambda config: get_cov.runscript_get_cov(
-                config, run_script)
-        else:
-            import igen_settings
-            import get_cov_coreutils as Coreutils            
-            dom, default_configs, get_cov_f = Coreutils.prepare(
-                prog,
-                IA.Dom.get_dom,
-                igen_settings.coreutils_main_dir,
-                igen_settings.coreutils_doms_dir,
-                do_perl=args.do_perl)
-
-        if default_configs:
-            econfigs = [(c, None) for c in default_configs]
-        else:
-            econfigs = []
-            
-        igen = IA.IGen(dom, get_cov_f, sids=sids)            
-        if sids:
-            ext = ".c.011t.cfg.preds"
-            if args.dom_file:
-                cfg_file = detect_file(args.dom_file, args.cfg, ext)
-            else:
-                #coreutils
-                cfg_file = CM.getpath(os.path.join(
-                    igen_settings.coreutils_main_dir,
-                    'coreutils','obj-gcov', 'src', prog + ext))
-            if args.no_ga:
-                _f =  lambda seed, tdir: igen.go(seed=seed, tmpdir=tdir)
-            else:
-                import cfg as CFG
-                from ec_alg import EC
-                cfg = CFG.CFG.mk_from_lines(CM.iread_strip(cfg_file))
-                ec = EC(dom, cfg, get_cov_f)
-                def _f(seed, tdir):
-                    is_success, _, configs_d = ec.go(
-                        seed=seed, sids=sids, econfigs=default_configs,
-                        tmpdir=tdir)
-                    econfigs.extend(configs_d.items())
-                    if not args.only_ga and is_success:
-                        return igen.go(
-                            seed=seed,econfigs=econfigs, tmpdir=tdir)
-                    else:
-                        return None
-            
-        elif args.cmp_rand:
-            _f = lambda seed, tdir, rand_n: igen.go_rand(
-                rand_n=rand_n, seed=seed, econfigs=econfigs, tmpdir=tdir)
-        elif args.do_full:
-            _f = lambda _,tdir: igen.go_full(tmpdir=tdir)
-        elif args.rand_n is None:
-            _f = lambda seed, tdir: igen.go(seed=seed, econfigs=econfigs, tmpdir=tdir)
-        else:
-            _f = lambda seed, tdir: igen.go_rand(
-                rand_n=args.rand_n, seed=seed, econfigs=econfigs, tmpdir=tdir)
-
+    if prog in igen_settings.otter_progs:
+        dom, get_cov_f, run_f = get_run_otter(args, IA)
+    else:
+        dom, get_cov_f, run_f = get_run_default_coreutils(args, IA)
+        
     logger.debug("dom:\n{}".format(dom))
-    return _f, get_cov_f
+    return run_f, get_cov_f
 
 
 if __name__ == "__main__":
@@ -201,9 +247,9 @@ if __name__ == "__main__":
                          action="store")
 
     aparser.add_argument("--run_script", "-run_script",
-                         help="a script to obtain the program's coverage",
+                         help="script to obtain the program's coverage",
                          action="store")
-    
+
     aparser.add_argument("--do_perl", "-do_perl",
                          help="do coretutils written in Perl",
                          action="store_true")
@@ -258,18 +304,13 @@ if __name__ == "__main__":
     CC.logger_level = args.logger_level
     logger = CM.VLog(igen_name)
     logger.level = CC.logger_level
-    if __debug__:
-        logger.warn("DEBUG MODE ON. Can be slow !")    
-    
-    if args.allows_known_errors:
-        CC.allows_known_errors = True
-    if args.noshow_cov:
-        CC.show_cov = False
-    if args.analyze_outps:
-        CC.analyze_outps = True
+    if __debug__: logger.warn("DEBUG MODE ON. Can be slow !")    
+    if args.allows_known_errors: CC.allows_known_errors = True
+    if args.noshow_cov: CC.show_cov = False
+    if args.analyze_outps: CC.analyze_outps = True
+        
     seed = round(time(), 2) if args.seed is None else float(args.seed)
     
-    from igen_settings import tmp_dir
         
     # two main modes: 1. run iGen to find interactions and
     # 2. run Analysis to analyze iGen's generated files    
@@ -292,7 +333,7 @@ if __name__ == "__main__":
             args.benchmark,
             'full' if args.do_full else 'normal',
             prog_name)
-        tdir = tempfile.mkdtemp(dir=tmp_dir, prefix=prefix)
+        tdir = tempfile.mkdtemp(dir=igen_settings.tmp_dir, prefix=prefix)
 
         logger.debug("* benchmark '{}', {} runs, seed {}, results '{}'"
                      .format(prog_name, args.benchmark, seed, tdir))
@@ -318,7 +359,7 @@ if __name__ == "__main__":
         cmp_rand = args.cmp_rand
         if cmp_rand:
             _f, _ = get_run_f(cmp_rand, args, logger)
-            tdir = tempfile.mkdtemp(dir=tmp_dir,
+            tdir = tempfile.mkdtemp(dir=igen_settings.tmp_dir,
                                     prefix=cmp_rand + "igen_cmp_rand")
             cmp_rand = lambda rand_n: _f(seed, tdir, rand_n)
 
