@@ -16,7 +16,8 @@ import vu_common as CM
 
 if __name__ == "__main__":
     tmp_dir = "/var/tmp"
-    me_prog = "ex1.py"
+    me_prog = "vu_ex1.py"
+    me_progname = CM.file_basename(me_prog)    
     me_dir = os.path.dirname(CM.getpath(__file__))
     
     parser = argparse.ArgumentParser()
@@ -31,30 +32,33 @@ if __name__ == "__main__":
     prog_inp = ' '.join("-{} {}".format(n,v) for n,v in zip(varnames, varvals))
     prog_out = "{}/tvn.out".format(tmp_dir)
 
-    cmd = "rm -rf {}/.coverage".format(me_dir)
+    cmd = "python-coverage erase"
     CM.vcmd(cmd)
 
     #run coverage on tests
     prog_inp0 = prog_inp + " -testopt 0"
-    cmd = "python-coverage run -a {} {}".format(prog_exe, prog_inp0)
+    cmd = "python-coverage run --pylib -a --include \"*{}*\"  {} {}".format(
+        me_progname, prog_exe, prog_inp0)
     CM.vcmd(cmd)
 
     prog_inp1 = prog_inp + " -testopt 1"
-    cmd = "python-coverage run -a {} {}".format(prog_exe, prog_inp1)
+    cmd = "python-coverage run --pylib -a --include \"*{}*\"  {} {}".format(
+        me_progname, prog_exe, prog_inp1)
     CM.vcmd(cmd)
 
     prog_inp2 = prog_inp + " -testopt 2"
-    cmd = "python-coverage run -a {} {}".format(prog_exe, prog_inp2)
+    cmd = "python-coverage run --pylib -a --include \"*{}*\"  {} {}".format(
+        me_progname, prog_exe, prog_inp2)
     CM.vcmd(cmd)
     
     #get coverage
-    cov_dir = "{}/{}_cov".format(tmp_dir, me_prog)
-    cmd = "python-coverage annotate -d {}".format(cov_dir)
+    cov_xml = "{}/{}_cov.xml".format(tmp_dir, me_progname)
+    cmd = "python-coverage xml -o {}".format(cov_xml)
     CM.vcmd(cmd)
     
-    from get_cov_python import parse, cleanup
-    covered, _ = parse(cov_dir)
-    covered = cleanup(covered, cov_dir)
+    from get_cov_python_xml import parse, cleanup
+    covered, _ = parse(cov_xml)
+    #covered = cleanup(covered, cov_dir)
     covered = '\n'.join(sorted(covered))
     CM.vwrite(prog_out, covered)
     
