@@ -1,0 +1,79 @@
+#!/usr/bin/env python2.7
+
+"""
+Get coverage of pylint
+"""
+
+import argparse
+import os.path
+import vu_common as CM
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("inputs", help="input configurations")
+    parser.add_argument("--verbose", action="store_true")
+    args = parser.parse_args()
+    inputs = args.inputs.strip()  #  "x 0, y 1, z 0"
+    parts = [p.split() for p in inputs.split(",")]
+    varnames, varvals = zip(*parts)
+    assert len(varnames) == len(varvals)
+
+    prog_name = "pylint"    
+    tmp_dir = os.path.join("/var/tmp", prog_name + "_cov")
+    if not os.path.exists(tmp_dir): os.mkdir(tmp_dir)
+    prog_exe = os.path.join("/usr/bin", prog_name)
+    prog_out = os.path.join(tmp_dir, 'out.txt')
+    pylint_tests_dir = os.path.join(os.environ["IGEN_EXPS"], prog_name, "tests")
+    assert os.path.isdir(pylint_tests_dir), pylint_tests_dir
+
+    inps = []
+    for n,v in zip(varnames, varvals):
+        if v == "off":
+            pass
+        elif v == "on":
+            inps.append(n)
+        else:
+            inps.append("{}{}".format(n,v))
+        
+    prog_inp = ' '.join(inps)
+
+
+    #begin
+    assert "COVERAGE_FILE" not in os.environ, os.environ["COVERAGE_FILE"]
+    os.environ["COVERAGE_FILE"] = os.path.join(tmp_dir, "cov.bin")
+    
+    cmd = "python-coverage erase"
+    CM.vcmd(cmd)
+
+    #run coverage on tests
+    opts = "--pylib --include \"*{}*\" {}".format(prog_name, prog_exe)
+    
+    prog_inp0 = prog_inp + " " + os.path.join(pylint_tests_dir, "func_*.py")
+    cmd = "python-coverage run {} {} > /dev/null".format(opts, prog_inp0)
+    if args.verbose: print cmd
+    CM.vcmd(cmd)
+
+    rs, rs_err = CM.vcmd(cmd)
+    rs_err = rs_err.strip()
+    rs_err = rs_err.replace("No config file found, using default configuration", "")
+    assert not rs_err, "SERIOUS ERROR:\n{}".format(rs_err)
+    
+    #get coverage
+    cov_xml = os.path.join(tmp_dir, "cov.xml")
+    cmd = "python-coverage xml -o {}".format(cov_xml)
+    CM.vcmd(cmd)
+    
+    from get_cov_python_xml import parse, cleanup
+    covered, _ = parse(cov_xml)
+    covered = cleanup(covered)
+    if args.verbose: print len(covered)
+    covered = '\n'.join(sorted(covered))
+    CM.vwrite(prog_out, covered)
+    
+    try:
+        _,rs_err = CM.vcmd(cmd)
+        assert len(rs_err) == 0, rs_err
+    except:
+        print("cmd '{}' failed".format(cmd))
+
+    print prog_out
