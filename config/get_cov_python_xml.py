@@ -44,16 +44,24 @@ def parse(xmlfile):
                 
     return covered, uncovered
 
-def cleanup(lines, dirname):
+
+def cleanup(lines):
     """
     clean up resulting format
     E.g., dir/file,cover:n  ->  file:n
     """
-    #remov "/var/tmp/me_prog_cov"
-    lines = set(l.replace(dirname + '/', '') for l in lines)
-    #remove ",cover"
-    lines = set(l.replace(",cover", '') for l in lines)
-    return lines
+    import os.path
+    hashd = {}
+    lines_ = set()
+    for l in lines:
+        ldir = os.path.dirname(l)
+        lfile =  os.path.basename(l)
+        if ldir not in hashd:
+            hashd[ldir] = ''.join(s[0] for s in ldir.split("/") if s)
+            
+        lines_.add("{}/{}".format(hashd[ldir],lfile))
+    
+    return lines_
     
 if __name__ == "__main__":
     import argparse
@@ -63,7 +71,9 @@ if __name__ == "__main__":
 
     covered, uncovered = parse(args.xml)
     print '{} covered lines'.format(len(covered))
-    #print '\n'.join(sorted(covered))
+    covered = cleanup(covered)
+    print '{} covered lines'.format(len(covered))
+    print '\n'.join(sorted(covered))
 
     print '{} uncovered lines'.format(len(uncovered))
     #print '\n'.join(sorted(uncovered))

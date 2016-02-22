@@ -17,13 +17,13 @@ if __name__ == "__main__":
     varnames, varvals = zip(*parts)
     assert len(varnames) == len(varvals)
 
-    from igen_settings import pylint_tests_dir
-    assert os.path.isdir(pylint_tests_dir), pylint_tests_dir
-
+    from igen_settings import grin_dir, grin_tests_dir
+    assert os.path.isdir(grin_dir)
+    assert os.path.isdir(grin_tests_dir), grin_tests_dir
     
     tmp_dir = "/var/tmp"
-    prog_name = "pylint"
-    prog_exe = os.path.join("/usr/bin", prog_name)
+    prog_name = "grin"
+    prog_exe = os.path.join(grin_dir, prog_name)
     prog_out = "{}/{}_cov.out".format(tmp_dir, prog_name)
 
     inps = []
@@ -33,7 +33,7 @@ if __name__ == "__main__":
         elif v == "on":
             inps.append(n)
         else:
-            inps.append("{}{}".format(n,v))
+            inps.append("{} {}".format(n,v))
         
     prog_inp = ' '.join(inps)
 
@@ -45,15 +45,14 @@ if __name__ == "__main__":
     #run coverage on tests
     opts = "--pylib -a --include \"*{}*\" {}".format(prog_name, prog_exe)
     
-    prog_inp0 = prog_inp + " " + os.path.join(pylint_tests_dir, "func_*.py")
-    cmd = "python-coverage run {} {} > /dev/null".format(opts, prog_inp0)
-    #print cmd
-    CM.vcmd(cmd)
+    prog_inp0 = prog_inp + " " + "begin* *.run" 
+    cmd = "python-coverage run {} {}".format(opts, prog_inp0)
+    # print cmd
+    # CM.vcmd(cmd)
 
     rs, rs_err = CM.vcmd(cmd)
-    rs_err = rs_err.strip()
-    rs_err = rs_err.replace("No config file found, using default configuration", "")
-    assert not rs_err, "SERIOUS ERROR:\n{}".format(rs_err)
+    assert rs_err.strip() == "grin 1.2.1" or not rs_err, "SERIOUS ERROR:\n{}".format(rs_err)
+    assert "Bug reports to" not in rs, rs
     
     #get coverage
     cov_xml = os.path.join(tmp_dir, "{}_cov.xml".format(prog_name))
@@ -63,7 +62,7 @@ if __name__ == "__main__":
     from get_cov_python_xml import parse, cleanup
     covered, _ = parse(cov_xml)
     covered = cleanup(covered)
-    #print len(covered)
+    #print len(covered)    
     covered = '\n'.join(sorted(covered))
     CM.vwrite(prog_out, covered)
     

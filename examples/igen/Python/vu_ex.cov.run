@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     prog_exe = os.path.join(me_dir, me_prog)
     prog_inp = ' '.join("-{} {}".format(n,v) for n,v in zip(varnames, varvals))
-    prog_out = "{}/tvn.out".format(tmp_dir)
+    prog_out = "{}/{}_cov.out".format(tmp_dir, me_progname)
 
     cmd = "python-coverage erase"
     CM.vcmd(cmd)
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     
     from get_cov_python_xml import parse, cleanup
     covered, _ = parse(cov_xml)
-    #covered = cleanup(covered, cov_dir)
+    covered = cleanup(covered)
     covered = '\n'.join(sorted(covered)) 
     CM.vwrite(prog_out, covered)
     
