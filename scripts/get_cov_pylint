@@ -35,7 +35,7 @@ if __name__ == "__main__":
         elif v == "on":
             inps.append(n)
         else:
-            inps.append("{} {}".format(n,v))
+            inps.append("{}{}".format(n,v))
         
     prog_inp = ' '.join(inps)
 
