@@ -21,10 +21,12 @@ if __name__ == "__main__":
     prog_name = "pylint"    
     tmp_dir = os.path.join("/var/tmp", prog_name + "_cov")
     if not os.path.exists(tmp_dir): os.mkdir(tmp_dir)
+
+    tests_dir = os.path.join(os.environ["IGEN_EXPS"], prog_name, "tests")
+    assert os.path.isdir(tests_dir), tests_dir
+    
     prog_exe = os.path.join("/usr/bin", prog_name)
     prog_out = os.path.join(tmp_dir, 'out.txt')
-    pylint_tests_dir = os.path.join(os.environ["IGEN_EXPS"], prog_name, "tests")
-    assert os.path.isdir(pylint_tests_dir), pylint_tests_dir
 
     inps = []
     for n,v in zip(varnames, varvals):
@@ -33,7 +35,7 @@ if __name__ == "__main__":
         elif v == "on":
             inps.append(n)
         else:
-            inps.append("{}{}".format(n,v))
+            inps.append("{} {}".format(n,v))
         
     prog_inp = ' '.join(inps)
 
@@ -48,7 +50,7 @@ if __name__ == "__main__":
     #run coverage on tests
     opts = "--pylib --include \"*{}*\" {}".format(prog_name, prog_exe)
     
-    prog_inp0 = prog_inp + " " + os.path.join(pylint_tests_dir, "func_*.py")
+    prog_inp0 = prog_inp + " " + os.path.join(tests_dir, "func_*.py")
     cmd = "python-coverage run {} {} > /dev/null".format(opts, prog_inp0)
     if args.verbose: print cmd
     CM.vcmd(cmd)
