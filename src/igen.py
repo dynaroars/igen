@@ -187,7 +187,7 @@ def get_run_f(prog, args, logger):
     and call appropriate iGen function on those inputs
     """
     
-    import igen_alg as IA    
+    import config as IA    
     if prog in igen_settings.otter_progs:
         dom, get_cov_f, run_f = get_run_otter(args, IA)
     else:
