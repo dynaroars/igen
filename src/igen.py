@@ -311,12 +311,11 @@ if __name__ == "__main__":
         
     seed = round(time(), 2) if args.seed is None else float(args.seed)
     
-        
     # two main modes: 1. run iGen to find interactions and
     # 2. run Analysis to analyze iGen's generated files    
     analysis_f = None
     if args.inp and os.path.isdir(args.inp):
-        from igen_analysis import Analysis
+        from analysis import Analysis
         is_run_dir = Analysis.is_run_dir(args.inp)
         if is_run_dir is not None:
             if is_run_dir:
