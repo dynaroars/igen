@@ -118,7 +118,6 @@ class Dom(CC.Dom):
         return configs
 
 
-
 class Config(CC.Config):
     """
     >>> c = Config([('a', '1'), ('b', '0'), ('c', '1')])
@@ -225,7 +224,6 @@ class Core(HDict):
     @staticmethod
     def is_maybe_core(c): return c is None or isinstance(c,Core)
 
-    
 class MCore(tuple):
     """
     Multiple (tuples) cores
@@ -251,7 +249,6 @@ class MCore(tuple):
     
     @property
     def vstren(self): return sum(map(len,self.values))
-
 
 class SCore(MCore):
     def __init__(self,(mc,sc)):
