@@ -229,7 +229,8 @@ class Analysis(object):
               "xtime {}".format(nxtime_total/nruns_total),
               "configs {}".format(nconfigs_total/nruns_total),
               "covs {}".format(ncovs_total/nruns_total),
-              "minconfigs {}".format(nminconfigs_total/nruns_total)]
+              "minconfigs {}".format(nminconfigs_total/nruns_total),
+              "nmincovs {}".format(min_ncovs_total/nruns_total)]
         
         logger.info("STATS of {} runs (averages): {}".format(nruns_total,', '.join(ss)))
         
@@ -239,7 +240,8 @@ class Analysis(object):
                  "xtime {}".format(numpy.median(nxtime_arr)),
                  "configs {}".format(numpy.median(nconfigs_arr)),
                  "nminconfigs {}".format(numpy.median(nminconfigs_arr)),
-                 "covs {}".format(numpy.median(ncovs_arr))]
+                 "covs {}".format(numpy.median(ncovs_arr)),
+                 "nmincovs {}".format(numpy.median(min_ncovs_arr))]
         logger.info("STATS of {} runs (medians) : {}".format(nruns_total,', '.join(ssMed)))
         
         ssSIQR = ["iter {}".format(Analysis.siqr(niters_arr)),
@@ -248,7 +250,9 @@ class Analysis(object):
                   "xtime {}".format(Analysis.siqr(nxtime_arr)),
                   "configs {}".format(Analysis.siqr(nconfigs_arr)),
                   "nminconfigs {}".format(Analysis.siqr(nminconfigs_arr)),                  
-                  "covs {}".format(Analysis.siqr(ncovs_arr))]
+                  "covs {}".format(Analysis.siqr(ncovs_arr)),
+                  "nmincovs {}".format(Analysis.siqr(min_ncovs_arr))]
+        
         logger.info("STATS of {} runs (SIQR)   : {}".format(nruns_total,', '.join(ssSIQR)))
 
         sres = {}
@@ -669,6 +673,7 @@ class Metrics(object):
         """
         If a var k is not in c, then that means k = all_poss_of_k
         """
+
         if c is None:
             settings = set()
         elif isinstance(c,IA.Core):
@@ -699,6 +704,7 @@ class Metrics(object):
 
     @staticmethod
     def fscore_pncore(me,gt,dom):
+        #me and gt are pncore's (c,d,cd,dc)
         rs = [Metrics.fscore_core(m,g,dom) for m,g in zip(me,gt)]
         tp = sum(x for x,_,_ in rs)
         fp = sum(x for _,x,_ in rs)
@@ -744,9 +750,20 @@ class Metrics(object):
         >>> nd6=["v"]
 
         >>> me = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2], 'l5': [pn5,pd5,nc5,nd5]}
-        >>> gt={'l1': [pn3,pd3,nc3,nd3], 'l2': [pn4,pd4,nc4,nd4], 'l6': [pn6,pd6,nc6,nd6]}
+        >>> gt = {'l1': [pn3,pd3,nc3,nd3], 'l2': [pn4,pd4,nc4,nd4], 'l6': [pn6,pd6,nc6,nd6]}
         >>> Metrics.fscore_cores_d(me,gt,{})
         0.5714285714285714
+
+        >>> me = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2]}
+        >>> gt = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2], 'l6': [pn6,pd6,nc6,nd6]}
+        >>> Metrics.fscore_cores_d(me,gt,{})
+        0.6666666666666666
+
+        >>> me = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2]}
+        >>> gt = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2]}
+        >>> Metrics.fscore_cores_d(me,gt,{})
+        1.0
+
         """
         rs = [Metrics.fscore_pncore(me[k],gt[k],dom)
               for k in gt if k in me]
@@ -786,11 +803,20 @@ class Metrics(object):
 
                 pp_cores_d = dt.cores_d.analyze(dom,covs_d)
                 pp_cores_ds.append(pp_cores_d)
+
             fscores = [
                 (dt.citer,
                  Metrics.fscore_cores_d(pp_cores_d,gt_pp_cores_d,dom),
                  dt.nconfigs)
                 for dt, pp_cores_d in zip(dts,pp_cores_ds)]
+
+            fscores_ = []
+            for dt, pp_cores_d in zip(dts,pp_cores_ds):
+                rs = (dt.citer,
+                      Metrics.fscore_cores_d(pp_cores_d,gt_pp_cores_d,dom),
+                      dt.nconfigs)
+                fscores_.append(rs)
+
             logger.info("fscores (iter, fscore, configs): {}".format(
             ' -> '.join(map(str,fscores))))
         else:
