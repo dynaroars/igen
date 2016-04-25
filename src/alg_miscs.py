@@ -169,14 +169,14 @@ class HighCov(object):
         #prune
         d = dict((c,c.z3expr(z3db,dom)) for c in fs)
         d = HighCov.prune(d)
-        logger.info("prune: {} remains".format(len(d)))
+        logger.debug("prune: {} remains".format(len(d)))
         logger.debug("\n{}".format('\n'.join(
             "{}. {}".format(i+1,str(c)) for i,c
             in enumerate(sorted(d)))))
 
         #pack
         d = HighCov.pack(d)
-        logger.info("pack: {} remains".format(len(d)))
+        logger.debug("pack: {} remains".format(len(d)))
         logger.debug("\n{}".format('\n'.join(
             "{}. {}".format(i+1,HighCov.str_of_pack(c))
             for i,c in enumerate(d))))
@@ -297,9 +297,9 @@ class HighCov(object):
                               != len(remain_covs)]
 
         minset_ncovs = ncovs - len(remain_covs)
-        logger.debug("minset: {} configs cover {}/{} sids (time {}s)"
-                     .format(len(minset_d),
-                             minset_ncovs, ncovs, time()-st))
+        logger.info("minset: {} configs cover {}/{} sids (time {}s)"
+                    .format(len(minset_d),
+                            minset_ncovs, ncovs, time()-st))
         logger.detail('\n{}'.format(minset_d))
 
         return minset_d.keys(), minset_ncovs
@@ -543,4 +543,9 @@ class Influence(object):
                         .format(_str(k),v,p),rs))))
         return rs
 
+    
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
     
