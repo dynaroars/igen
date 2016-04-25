@@ -463,7 +463,7 @@ def eval_configs(configs, get_cov_f):
         sids, outps = get_cov_f(c)
         rs = outps if analyze_outps else sids
         if not rs:
-            logger.warn("config {} produces nothing".format(c))
+            print("config {} produces nothing".format(c))
         results.append((c, rs))
         
     return results

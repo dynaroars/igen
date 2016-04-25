@@ -355,10 +355,6 @@ class Analysis(object):
         logger.info(cconfigs_d)
 
 
-
-        
-                    
-            
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
