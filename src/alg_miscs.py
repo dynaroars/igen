@@ -1,3 +1,7 @@
+"""
+Several analyses on the resulting interactions
+"""
+
 import itertools
 from time import time
 import vu_common as CM
@@ -304,30 +308,28 @@ class HighCov(object):
 
         return minset_d.keys(), minset_ncovs
 
-class Metrics(object):
-    @staticmethod
-    def vscore_core(core,dom):
+class SimilarityMetrics(object):
+    @classmethod
+    def vscore_core(cls, core, dom):
         vs = [len(core[k] if k in core else dom[k]) for k in dom]
-        #print core,vs,sum(vs)
         return sum(vs)
 
-    @staticmethod
-    def vscore_pncore(pncore,dom):
+    @classmethod
+    def vscore_pncore(cls, pncore, dom):
         #"is not None" is correct because empty Core is valid
         #and in fact has max score
-        vs = [Metrics.vscore_core(c,dom) for c in pncore
+        vs = [cls.vscore_core(c,dom) for c in pncore
               if c is not None]
-        #print "pncore nnew", pncore, sum(vs)
         return sum(vs)
 
-    @staticmethod
-    def vscore_cores_d(cores_d,dom):
-        vs = [Metrics.vscore_pncore(c,dom) for c in cores_d.itervalues()]
+    @classmethod
+    def vscore_cores_d(cls, cores_d,dom):
+        vs = [cls.vscore_pncore(c,dom) for c in cores_d.itervalues()]
         return sum(vs)
 
     #f-score    
-    @staticmethod
-    def get_settings(c,dom):
+    @classmethod
+    def get_settings(cls, c,dom):
         """
         If a var k is not in c, then that means k = all_poss_of_k
         """
@@ -343,8 +345,8 @@ class Metrics(object):
             settings = c
         return settings
         
-    @staticmethod    
-    def fscore_core(me,gt,dom):
+    @classmethod    
+    def fscore_core(cls, me,gt,dom):
         def fscore(me,gt):
             """
             #false pos: in me but not in gt
@@ -356,21 +358,21 @@ class Metrics(object):
             fp = len([s for s in me if s not in gt])
             fn = len([s for s in gt if s not in me])
             return tp,fp,fn
-        me = Metrics.get_settings(me,dom)
-        gt = Metrics.get_settings(gt,dom)
-        return fscore(me,gt)
+        me = cls.get_settings(me, dom)
+        gt = cls.get_settings(gt, dom)
+        return fscore(me, gt)
 
-    @staticmethod
-    def fscore_pncore(me,gt,dom):
+    @classmethod
+    def fscore_pncore(cls, me, gt, dom):
         #me and gt are pncore's (c,d,cd,dc)
-        rs = [Metrics.fscore_core(m,g,dom) for m,g in zip(me,gt)]
+        rs = [cls.fscore_core(m,g,dom) for m,g in zip(me,gt)]
         tp = sum(x for x,_,_ in rs)
         fp = sum(x for _,x,_ in rs)
         fn = sum(x for _,_,x in rs)
         return tp,fp,fn
 
-    @staticmethod
-    def fscore_cores_d(me,gt,dom):
+    @classmethod
+    def fscore_cores_d(cls, me, gt, dom):
         """
         Precision(p) = tp / (tp+fp)
         Recall(r) = tp / (tp+fn)
@@ -409,21 +411,21 @@ class Metrics(object):
 
         >>> me = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2], 'l5': [pn5,pd5,nc5,nd5]}
         >>> gt = {'l1': [pn3,pd3,nc3,nd3], 'l2': [pn4,pd4,nc4,nd4], 'l6': [pn6,pd6,nc6,nd6]}
-        >>> Metrics.fscore_cores_d(me,gt,{})
+        >>> SimilarityMetrics.fscore_cores_d(me,gt,{})
         0.5714285714285714
 
         >>> me = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2]}
         >>> gt = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2], 'l6': [pn6,pd6,nc6,nd6]}
-        >>> Metrics.fscore_cores_d(me,gt,{})
+        >>> SimilarityMetrics.fscore_cores_d(me,gt,{})
         0.6666666666666666
 
         >>> me = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2]}
         >>> gt = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2]}
-        >>> Metrics.fscore_cores_d(me,gt,{})
+        >>> SimilarityMetrics.fscore_cores_d(me,gt,{})
         1.0
 
         """
-        rs = [Metrics.fscore_pncore(me[k],gt[k],dom)
+        rs = [cls.fscore_pncore(me[k],gt[k],dom)
               for k in gt if k in me]
         f_sum = 0.0        
         for tp,fp,fn in rs:
@@ -436,10 +438,9 @@ class Metrics(object):
             f_sum += f
         return f_sum/len(gt)
 
-    @staticmethod
-    def get_scores(dts,dom,cmp_gt):
-        #Evol scores
-        
+    @classmethod
+    def go(cls, dts, dom, cmp_gt):
+        #Evol scores        
         #Using f-score when ground truth is avail
         #Note here we use analyzed pp_cores_d instead of just cores_d
         if cmp_gt:
@@ -464,14 +465,14 @@ class Metrics(object):
 
             fscores = [
                 (dt.citer,
-                 Metrics.fscore_cores_d(pp_cores_d,gt_pp_cores_d,dom),
+                 cls.fscore_cores_d(pp_cores_d,gt_pp_cores_d,dom),
                  dt.nconfigs)
                 for dt, pp_cores_d in zip(dts,pp_cores_ds)]
 
             fscores_ = []
             for dt, pp_cores_d in zip(dts,pp_cores_ds):
                 rs = (dt.citer,
-                      Metrics.fscore_cores_d(pp_cores_d,gt_pp_cores_d,dom),
+                      cls.fscore_cores_d(pp_cores_d,gt_pp_cores_d,dom),
                       dt.nconfigs)
                 fscores_.append(rs)
 
@@ -484,7 +485,7 @@ class Metrics(object):
         #Using  a simple metrics that just gives more pts for more
         #info (new cov or new results). Note here we use cores_d
         vscores = [(dt.citer,
-                    Metrics.vscore_cores_d(dt.cores_d,dom),
+                    cls.vscore_cores_d(dt.cores_d,dom),
                     dt.nconfigs)
                    for dt in dts]
         logger.info("vscores (iter, vscore, configs): {}".format(
@@ -493,14 +494,21 @@ class Metrics(object):
         return fscores,vscores,gt_pp_cores_d
     
 class Influence(object):
+    """
+    Compute influence metrics of options. 
+    Returns a dict of (opt, uniq, %), e.g., 
+    opt z=4 appears in the interactions of 2 (uniq) locations, 
+    which is 25% of the 8 covered locations.
+    """
+    
     @staticmethod
-    def get_influence(mcores_d,ncovs,dom,do_settings=True):
-        if __debug__:
-            assert (mcores_d and
-                    isinstance(mcores_d, IA.Mcores_d)), mcores_d
-            assert ncovs > 0, ncovs
-            assert isinstance(dom, IA.Dom), dom            
-
+    def go(mcores_d, ncovs, dom, do_settings=True):
+        assert (mcores_d and
+                isinstance(mcores_d, IA.Mcores_d)), mcores_d
+        assert ncovs > 0, ncovs
+        assert isinstance(dom, IA.Dom), dom            
+        assert isinstance(do_settings, bool), do_settings
+        
         if do_settings:
             ks = set((k,v) for k,vs in dom.iteritems() for v in vs)
             def g(core):

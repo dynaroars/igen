@@ -117,21 +117,23 @@ class Analysis(object):
 
         logger.info("Additional analysis")
         from alg_miscs import Influence
-        influence_scores = Influence.get_influence(mcores_d,ncovs,dom)
+        influence_scores = Influence.go(mcores_d, ncovs, dom)
 
-        from alg_miscs import Metrics
-        fscores,vscores,gt_pp_cores_d = Metrics.get_scores(dts,dom,cmp_gt)
+        from alg_miscs import SimilarityMetrics
+        fscores, vscores, gt_pp_cores_d = SimilarityMetrics.go(
+            dts, dom, cmp_gt)
 
         #rand search
         r_f = cmp_rand
         if callable(r_f):
             r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = r_f(nconfigs)
             if gt_pp_cores_d:
-                r_fscore = Metrics.fscore_cores_d(r_pp_cores_d,gt_pp_cores_d,dom)
+                r_fscore = SimilarityMetrics.fscore_cores_d(
+                    r_pp_cores_d, gt_pp_cores_d, dom)
             else:
                 r_fscore = None
                 
-            r_vscore = Metrics.vscore_cores_d(r_cores_d,dom)
+            r_vscore = SimilarityMetrics.vscore_cores_d(r_cores_d, dom)
             logger.info("rand: configs {} cov {} vscore {} fscore {}"
                         .format(len(r_configs_d),len(r_covs_d),
                                 r_vscore,r_fscore))
