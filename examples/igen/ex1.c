@@ -1,8 +1,25 @@
+/*
+  Example
+  7 variables: s,t,u,v,x,y,z 
+  8 locs: L0,L1,L2,L2a,L3,L4,L5,L6 
+
+  iGen results
+  It's a bit harder to generate these results (comparing to ex.c)
+  because they require almost every possible configurations
+  
+  1. (0) true (conj): (1) L3
+  2. (2) (u=1 & v=1) (conj): (1) L4
+  3. (2) (x=1 & y=1) (conj): (1) L0
+  4. (2) (x=0 | y=0) (disj): (2) L2,L2a
+  5. (3) (x=1 & y=1 & z=0,3,4) (conj): (1) L1
+  6. (4) (s=1 | t=1) & (u=1 & v=1) (mix): (1) L5
+  7. (4) (s=0 & t=0) | (u=0 | v=0) (mix): (1) L6
+*/
+
+
 #include <stdlib.h>
 #include <stdio.h>
 int main(int argc, char **argv){
-
-  // options: s,t,u,v, x,y,z
 
   int s = atoi(argv[1]);
   int t = atoi(argv[2]);
@@ -39,17 +56,3 @@ int main(int argc, char **argv){
 }
   
 
-
-/*
-iGen results
-(It's actually difficult to generate these results 
-because they require almost every possible configurations)
-
-1. (0) true (conj): (1) L3
-2. (2) (u=1 & v=1) (conj): (1) L4
-3. (2) (x=1 & y=1) (conj): (1) L0
-4. (2) (x=0 | y=0) (disj): (2) L2,L2a
-5. (3) (x=1 & y=1 & z=0,3,4) (conj): (1) L1
-6. (4) (s=1 | t=1) & (u=1 & v=1) (mix): (1) L5
-7. (4) (s=0 & t=0) | (u=0 | v=0) (mix): (1) L6
- */
