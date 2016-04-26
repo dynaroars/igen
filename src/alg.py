@@ -544,7 +544,7 @@ class PNCore(MCore):
         return ((self.pc is None and self.pd is None) or
                 (self.nc is None and self.nd is None))
 
-    def z3expr(self,z3db,dom):
+    def z3expr(self,z3db, dom):
         """
         Note: z3 expr "true" is represented (and returned) as None
         """
