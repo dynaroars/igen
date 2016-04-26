@@ -55,6 +55,14 @@ class Analysis(object):
             return pp_cores_d.analyze(dom,covs_d=None)
         else:
             return pp_cores_d
+
+    @classmethod
+    def construct_configs_d(cls, dts):
+        configs_d = CC.Configs_d()
+        for dt in dts:
+            for c in dt.cconfigs_d:
+                configs_d[c] = dt.cconfigs_d[c]
+        return configs_d
             
     @staticmethod
     def replay(dir_, show_iters, do_min_configs, cmp_gt, cmp_rand):
@@ -65,11 +73,10 @@ class Analysis(object):
         2. f: (callable(f)) find min configs using f
         3. anything else: find min configs using existing configs
         """
-        if __debug__:
-            assert isinstance(dir_,str), dir_
-            assert isinstance(show_iters,bool),show_iters
-            assert cmp_gt is None or isinstance(cmp_gt,str), cmp_gt
-            assert cmp_rand is None or callable(cmp_rand), cmp_rand
+        assert isinstance(dir_,str), dir_
+        assert isinstance(show_iters,bool),show_iters
+        assert cmp_gt is None or isinstance(cmp_gt,str), cmp_gt
+        assert cmp_rand is None or callable(cmp_rand), cmp_rand
 
         import alg as IA
         logger.info("replay dir: '{}'".format(dir_))
@@ -82,8 +89,9 @@ class Analysis(object):
             for dt in dts:
                 dt.show()
 
-        pp_cores_d = Analysis.check_pp_cores_d(pp_cores_d,dom)
+        pp_cores_d = Analysis.check_pp_cores_d(pp_cores_d, dom)
         mcores_d = pp_cores_d.merge(show_detail=True)
+        configs_d = None  #some analysis will create this
         
         #print summary
         xtime_total = itime_total - sum(dt.xtime for dt in dts)
@@ -106,16 +114,15 @@ class Analysis(object):
             n_min_configs = len(min_configs)            
         else:
             #reconstruct information
-            configs_d = CC.Configs_d()
-            for dt in dts:
-                for c in dt.cconfigs_d:
-                    configs_d[c] = dt.cconfigs_d[c]
+            if configs_d is None:
+                configs_d = Analysis.construct_configs_d(dts)
 
             min_configs, min_ncovs = HighCov.get_minset_configs_d(
                 mcores_d,set(pp_cores_d),configs_d,dom)
             n_min_configs = len(min_configs)
 
         logger.info("Additional analysis")
+        
         from alg_miscs import Influence
         influence_scores = Influence.go(mcores_d, ncovs, dom)
 
@@ -145,6 +152,10 @@ class Analysis(object):
             r_fvscores = (r_fscore,r_vscore)
         else:
             r_fvscores = None
+
+
+        from alg_miscs import Undetermined
+        undetermined_d = Undetermined.go(mcores_d, dts)
 
         rs = Results(niters=len(dts),
                      ncores=len(mcores_d),
@@ -346,7 +357,7 @@ class Analysis(object):
                     
     
     @staticmethod
-    def debug_find_configs(sid,configs_d,find_in):
+    def debug_find_configs(sid, configs_d, find_in):
         if find_in:
             cconfigs_d = dict((c,cov) for c,cov in configs_d.iteritems()
                            if sid in cov)

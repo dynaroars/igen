@@ -1,5 +1,5 @@
 """
-Several analyses on the resulting interactions
+Analyses on the resulting interactions
 """
 
 import itertools
@@ -7,13 +7,14 @@ from time import time
 import vu_common as CM
 import config_common as CC
 import alg as IA
+import config as IA_alg
 
 logger = CM.VLog('alg_miscs')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
 
 import z3
-import z3util        
+import z3util
 class HighCov(object):
     """
     Use interactions to generate high cov configs
@@ -237,7 +238,7 @@ class HighCov(object):
         Use interactions to generate a min set of configs 
         from configs_d that cover remain_covs locations.
 
-        This essentially reuse generated configs. 
+        This essentially reuses generated configs. 
         If use packed elems then could be slow because
         have to check that all generated configs satisfy packed elem
         """
@@ -477,7 +478,7 @@ class SimilarityMetrics(object):
                 fscores_.append(rs)
 
             logger.info("fscores (iter, fscore, configs): {}".format(
-            ' -> '.join(map(str,fscores))))
+                ' -> '.join(map(str,fscores))))
         else:
             gt_pp_cores_d=None
             fscores = None
@@ -504,7 +505,7 @@ class Influence(object):
     @staticmethod
     def go(mcores_d, ncovs, dom, do_settings=True):
         assert (mcores_d and
-                isinstance(mcores_d, IA.Mcores_d)), mcores_d
+                isinstance(mcores_d, (IA.Mcores_d, IA_alg.Mcores_d))), mcores_d
         assert ncovs > 0, ncovs
         assert isinstance(dom, IA.Dom), dom            
         assert isinstance(do_settings, bool), do_settings
@@ -552,7 +553,40 @@ class Influence(object):
         return rs
 
     
+class Undetermined(object):
+    """
+    Computes how incorrect "true" interactions.
+    In several cases an interaction of a location cannot be determined 
+    (e.g., due to unsupported form), but iGen still treated it as True. 
+    So this analysis attempts to identify those interactions.
+    """
+    @classmethod
+    def go(cls, mcores_d, dts):
+        def all_cover(dts, loc):
+            rs = True
+            for dt in dts:
+                for c in dt.cconfigs_d:
+                    if loc not in dt.cconfigs_d[c]:
+                        return False
+            return rs
 
+        undetermined_d = {}
+        true_interaction = IA.PNCore.mk_default()
+        if true_interaction not in mcores_d:
+            return undetermined_d
+
+        undetermined_d[true_interaction] = set()
+        for loc in mcores_d[true_interaction]:
+            if not all_cover(dts, loc):
+                undetermined_d[true_interaction].add(loc)
+
+        
+        print(true_interaction,
+              len(undetermined_d[true_interaction]),
+              len(mcores_d[true_interaction]),
+              len(undetermined_d[true_interaction]) /
+              float(len(mcores_d[true_interaction])))
+        
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

@@ -25,7 +25,7 @@ class Dom(CC.Dom):
     >>> assert dom.siz == len(dom.gen_configs_full()) == 18
     """
 
-    def gen_configs_cex(self,sel_core,existing_configs,z3db):
+    def gen_configs_cex(self, sel_core, existing_configs, z3db):
         """
         >>> dom = Dom([('a', frozenset(['1', '0'])), \
         ('b', frozenset(['1', '0'])), ('c', frozenset(['1', '0', '2']))])
@@ -147,7 +147,7 @@ class Config(CC.Config):
         x=0&y=1 => x=0,y=1
         not(x=0&z=1 => x=0,y=1)
         """
-        assert isinstance(core, Core),(core)
+        assert isinstance(core, Core), core
 
         return (not core or
                 all(k in self and self[k] in core[k] for k in core))
@@ -190,8 +190,7 @@ class Core(HDict):
     def __init__(self,core=HDict()):
         HDict.__init__(self,core)
         
-        assert all(CC.is_csetting(s)
-                   for s in self.iteritems()), self
+        assert all(CC.is_csetting(s) for s in self.iteritems()), self
 
     def __str__(self,delim=' '):
         if self:
@@ -207,10 +206,9 @@ class Core(HDict):
         try:
             return self._neg
         except AttributeError:
-            assert isinstance(dom, Dom),dom
-            
-            ncore = ((k,dom[k]-self[k]) for k in self)
-            self._neg = Core([(k,vs) for k,vs in ncore if vs])
+            assert isinstance(dom, Dom), dom
+            ncore = ((k,dom[k] - self[k]) for k in self)
+            self._neg = Core((k,vs) for k,vs in ncore if vs)
             return self._neg
         
     def z3expr(self,z3db,myf):
@@ -248,7 +246,7 @@ class MCore(tuple):
     def sstren(self): return len(self.settings)
     
     @property
-    def vstren(self): return sum(map(len,self.values))
+    def vstren(self): return sum(map(len, self.values))
 
 class SCore(MCore):
     def __init__(self,(mc,sc)):
@@ -295,8 +293,8 @@ class SCore(MCore):
             ss.append("sc: {}".format(self.sc))
         return '; '.join(ss)        
         
-    @staticmethod
-    def mk_default(): return SCore((None, None))
+    @classmethod
+    def mk_default(cls): return cls((None, None))
         
 class PNCore(MCore):
     """
@@ -356,45 +354,41 @@ class PNCore(MCore):
     @property
     def vtyp(self): return self._vtyp
     @vtyp.setter
-    def vtyp(self,vt):
-        assert isinstance(vt,str) and vt in 'conj disj mix'.split(), vt
+    def vtyp(self, vt):
+        assert isinstance(vt, str) and vt in 'conj disj mix'.split(), vt
             
         self._vtyp = vt
     
     @property
     def vstr(self): return self._vstr
-    
     @vstr.setter
     def vstr(self,vs):
-        assert isinstance(vs,str) and vs, vs
+        assert isinstance(vs, str) and vs, vs
         
         self._vstr = vs
 
-    @staticmethod
-    def mk_default(): return PNCore((None, None, None, None))
+    @classmethod
+    def mk_default(cls): return cls((None, None, None, None))
 
     def __str__(self):
         try:
-            return "{} ({})".format(self.vstr,self.vtyp)
+            return "{} ({})".format(self.vstr, self.vtyp)
         except AttributeError:
             ss = ("{}: {}".format(s,c) for s,c in
                   zip('pc pd nc nd'.split(),self) if c is not None)
             return '; '.join(ss)
 
-    def verify(self,configs,dom):
+    def verify(self, configs, dom):
         assert self.pc is not None, self.pc #this never happens
         #nc is None => pd is None
         assert self.nc is not None or self.pd is None, (self.nc, self.nd)
-        assert (all(isinstance(c,Config) for c in configs) and
-                configs), configs
-        assert isinstance(dom,Dom),dom
+        assert (all(isinstance(c, Config) for c in configs) and configs), configs
+        assert isinstance(dom, Dom), dom
 
-        pc,pd,nc,nd = self
+        pc, pd, nc, nd = self
 
         #traces => pc & neg(pd)
-        if __debug__:
-            if pc:
-                assert all(c.c_implies(pc) for c in configs), pc
+        assert not pc or all(c.c_implies(pc) for c in configs), pc
 
         if pd:
             pd_n = pd.neg(dom)
@@ -422,17 +416,17 @@ class PNCore(MCore):
                 nc = None
                 nd = None
 
-        return PNCore((pc,pd,nc,nd))
+        return PNCore((pc, pd, nc, nd))
     
     @staticmethod
     def _get_expr(cc,cd,dom,z3db,is_and):
         fs = []
         if cc:
-            f = cc.z3expr(z3db,myf=z3util.myAnd)
+            f = cc.z3expr(z3db, myf=z3util.myAnd)
             fs.append(f)
         if cd:
             cd_n = cd.neg(dom)
-            f = cd_n.z3expr(z3db,myf=z3util.myOr)
+            f = cd_n.z3expr(z3db, myf=z3util.myOr)
             fs.append(f)
 
         myf = z3util.myAnd if is_and else z3util.myOr
@@ -458,9 +452,12 @@ class PNCore(MCore):
             s = _str(cd_n,or_delim)
             ss.append(s)
 
-        delim = and_delim if is_and else or_delim
-        return delim.join(sorted(ss)) if ss else 'true'
-        
+        if ss:
+            delim = and_delim if is_and else or_delim
+            return delim.join(sorted(ss))
+        else:
+            return 'true'
+
     @staticmethod
     def _get_expr_str(cc,cd,dom,z3db,is_and):
         expr = PNCore._get_expr(cc,cd,dom,z3db,is_and)
@@ -468,7 +465,7 @@ class PNCore(MCore):
         return expr,vstr
 
     
-    def simplify(self,dom,do_firsttime=True):
+    def simplify(self, dom, do_firsttime=True):
         """
         Compare between (pc,pd) and (nc,nd) and return the stronger one.
         This will set either (pc,pd) or (nc,nd) to (None,None)
@@ -481,9 +478,9 @@ class PNCore(MCore):
         inv1 = pc & not(pd)
         inv2 = not(nc & not(nd)) = nd | not(nc)
         """
-        if __debug__:
-            assert isinstance(dom,Dom),dom
+        assert isinstance(dom,Dom),dom
 
+        if __debug__:
             if do_firsttime:
                 assert self.pc is not None, self.pc #this never could happen
                 #nc is None => pd is None
@@ -508,9 +505,8 @@ class PNCore(MCore):
             pexpr,pvstr = PNCore._get_expr_str(pc,pd,dom,z3db,is_and=True)
             nexpr,nvstr = PNCore._get_expr_str(nd,nc,dom,z3db,is_and=False)
             
-            if __debug__:
-                assert pexpr is not None
-                assert nexpr is not None
+            assert pexpr is not None
+            assert nexpr is not None
 
             if z3util.is_tautology(z3.Implies(pexpr,nexpr)):
                 nc = None
@@ -614,9 +610,9 @@ class Cores_d(CC.CustDict):
 
     """
     def __setitem__(self,sid,pncore):
-        if __debug__:
-            assert isinstance(sid, str), sid
-            assert isinstance(pncore, PNCore), pncore
+        assert isinstance(sid, str), sid
+        assert isinstance(pncore, PNCore), pncore
+        
         self.__dict__[sid]=pncore
 
     def __str__(self):
@@ -652,11 +648,12 @@ class Cores_d(CC.CustDict):
         """
         Simplify cores. If covs_d then also check that cores are valid invs
         """
+        assert isinstance(dom,Dom), dom
+        
         if __debug__:
             if covs_d is not None:
                 assert isinstance(covs_d, CC.Covs_d) and covs_d, covs_d
                 assert len(self) == len(covs_d), (len(self), len(covs_d))
-            assert isinstance(dom,Dom), dom
 
         if not self:
             return self
@@ -703,9 +700,9 @@ class Mcores_d(CC.CustDict):
     A mapping from core -> {sids}
     """
     def add(self,core,sid):
-        if __debug__:
-            assert isinstance(core,PNCore),core
-            assert isinstance(sid,str),str
+        assert isinstance(core,PNCore),core
+        assert isinstance(sid,str),str
+        
         super(Mcores_d,self).add_set(core,sid)
 
     def __str__(self):
@@ -749,17 +746,16 @@ class Mcores_d(CC.CustDict):
 
 #Inference algorithm
 class Infer(object):
-    @staticmethod
-    def infer(configs, core, dom):
+    @classmethod
+    def infer(cls, configs, core, dom):
         """
         Approximation in *conjunctive* form
         """
-        if __debug__:
-            assert (all(isinstance(c, Config) for c in configs)
-                    and configs), configs
-            assert Core.is_maybe_core(core), core
-            assert isinstance(dom, Dom), dom
-
+        assert (all(isinstance(c, Config) for c in configs)
+                and configs), configs
+        assert Core.is_maybe_core(core), core
+        assert isinstance(dom, Dom), dom
+        
         if core is None:  #not yet set
             core = min(configs, key=lambda c: len(c))
             core = Core((k, frozenset([v])) for k,v in core.iteritems())
@@ -779,51 +775,49 @@ class Infer(object):
         core = Core((k,frozenset(vs)) for k,vs in zip(core,vss) if vs)
         return core  
 
-    @staticmethod
-    def infer_cache(core,configs,dom,cache):
-        if __debug__:
-            assert core is None or isinstance(core, Core), core
-            assert (configs and
-                    all(isinstance(c,Config) for c in configs)), configs
-            assert isinstance(dom,Dom),dom
-            assert isinstance(cache,dict),cache
+    @classmethod
+    def infer_cache(cls, core, configs, dom, cache):
+        assert core is None or isinstance(core, Core), core
+        assert (configs and
+                all(isinstance(c,Config) for c in configs)), configs
+        assert isinstance(dom,Dom),dom
+        assert isinstance(cache,dict),cache
 
         configs = frozenset(configs)
         key = (core,configs)
         if key not in cache:
-            cache[key] = Infer.infer(configs,core,dom)
+            cache[key] = cls.infer(configs,core,dom)
         return cache[key]
 
-    @staticmethod
-    def infer_sid(sid,core,cconfigs_d,configs_d,covs_d,dom,cache):
-        if __debug__:
-            assert isinstance(sid,str),sid
-            assert isinstance(core,PNCore),core
-            assert (cconfigs_d and
-                    isinstance(cconfigs_d,CC.Configs_d)),cconfigs_d
-            assert isinstance(configs_d,CC.Configs_d),configs_d
-            assert isinstance(covs_d,CC.Covs_d),covs_d
-            assert isinstance(dom,Dom),dom        
-            assert isinstance(cache,dict),cache
-
+    @classmethod
+    def infer_sid(cls,sid,core,cconfigs_d,configs_d,covs_d,dom,cache):
+        assert isinstance(sid,str),sid
+        assert isinstance(core,PNCore),core
+        assert (cconfigs_d and
+                isinstance(cconfigs_d,CC.Configs_d)), cconfigs_d
+        assert isinstance(configs_d, CC.Configs_d), configs_d
+        assert isinstance(covs_d,CC.Covs_d),covs_d
+        assert isinstance(dom,Dom),dom        
+        assert isinstance(cache,dict),cache
+        
         def _f(configs, cc, cd, _b):
             new_cc,new_cd = cc,cd
             if configs:
-                new_cc = Infer.infer_cache(cc,configs,dom,cache)
+                new_cc = cls.infer_cache(cc,configs,dom,cache)
 
             #TODO: this might be a bug, if new_cc is empty,
             #then new_cd won't be updated
             if new_cc:
                 configs_ = [c for c in _b() if c.c_implies(new_cc)]
                 if configs_:
-                    new_cd = Infer.infer_cache(cd,configs_,dom,cache)
+                    new_cd = cls.infer_cache(cd,configs_,dom,cache)
                     if new_cd:
                         new_cd = Core((k,v) for (k,v) in new_cd.iteritems()
                                       if k not in new_cc)
 
             return new_cc, new_cd
 
-        pc,pd,nc,nd = core
+        pc, pd, nc, nd = core
         
         pconfigs = [c for c in cconfigs_d if sid in cconfigs_d[c]]
  
@@ -841,17 +835,16 @@ class Infer(object):
         nc_,nd_ = _f(nconfigs, nc, nd, _b)
         return PNCore((pc_, pd_, nc_, nd_))
 
-    @staticmethod
-    def infer_covs(cores_d, cconfigs_d, configs_d, covs_d, dom, sids=None):
-        if __debug__:
-            assert isinstance(cores_d, Cores_d), cores_d
-            assert isinstance(cconfigs_d, CC.Configs_d) and cconfigs_d, cconfigs_d
-            assert isinstance(configs_d, CC.Configs_d), configs_d        
-            assert all(c not in configs_d for c in cconfigs_d), cconfigs_d
-            assert isinstance(covs_d, CC.Covs_d), covs_d
-            assert isinstance(dom, Dom), dom
-            assert not sids or CC.is_cov(sids), sids
-
+    @classmethod
+    def infer_covs(cls, cores_d, cconfigs_d, configs_d, covs_d, dom, sids=None):
+        assert isinstance(cores_d, Cores_d), cores_d
+        assert isinstance(cconfigs_d, CC.Configs_d) and cconfigs_d, cconfigs_d
+        assert isinstance(configs_d, CC.Configs_d), configs_d        
+        assert all(c not in configs_d for c in cconfigs_d), cconfigs_d
+        assert isinstance(covs_d, CC.Covs_d), covs_d
+        assert isinstance(dom, Dom), dom
+        assert not sids or CC.is_cov(sids), sids
+            
         sids_ = set(cores_d.keys())
         #update configs_d and covs_d
         for config in cconfigs_d:
@@ -859,8 +852,7 @@ class Infer(object):
                 sids_.add(sid)
                 covs_d.add(sid, config)
                 
-            if __debug__:
-                assert config not in configs_d, config
+            assert config not in configs_d, config
             configs_d[config] = cconfigs_d[config]
 
         #only consider interested sids
@@ -876,7 +868,7 @@ class Infer(object):
                 core = PNCore.mk_default()
                 new_covs.add(sid) #progress
 
-            core_ = Infer.infer_sid(
+            core_ = cls.infer_sid(
                 sid, core, cconfigs_d, configs_d, covs_d, dom, cache)
                 
             if not core_ == core: #progress
@@ -1041,10 +1033,10 @@ class IGen(object):
 
     #Helper functions
     def eval_configs(self, configs):
-        if __debug__:
-            assert (isinstance(configs, list) and
-                    all(isinstance(c, Config) for c in configs)
-                    and configs), configs
+        assert (isinstance(configs, list) and
+                all(isinstance(c, Config) for c in configs)
+                and configs), configs
+        
         st = time()
         results = CC.eval_configs(configs, self.get_cov)
         cconfigs_d = CC.Configs_d()
@@ -1065,18 +1057,16 @@ class IGen(object):
             logger.debug("gen all {} configs".format(len(configs)))
 
         configs = list(set(configs))
-        if __debug__:
-            assert configs, 'no initial configs created'
+        assert configs, 'no initial configs created'
         return configs
         
     def gen_configs_iter(self, cores, ignore_sel_cores, min_stren, configs_d):
-        if __debug__:
-            assert (isinstance(cores, set) and 
-                    all(isinstance(c, PNCore) for c in cores)), cores
-            assert (isinstance(ignore_sel_cores, set) and 
-                    all(isinstance(c, SCore) for c in ignore_sel_cores)),\
-                    ignore_sel_cores
-            assert isinstance(configs_d, CC.Configs_d),configs_d
+        assert (isinstance(cores, set) and 
+                all(isinstance(c, PNCore) for c in cores)), cores
+        assert (isinstance(ignore_sel_cores, set) and 
+                all(isinstance(c, SCore) for c in ignore_sel_cores)),\
+                ignore_sel_cores
+        assert isinstance(configs_d, CC.Configs_d),configs_d
 
         configs = []
         while True:
@@ -1093,9 +1083,8 @@ class IGen(object):
                              .format(sel_core))
 
         #self_core -> configs
-        if __debug__:
-            assert not sel_core or configs, (sel_core,configs)
-            assert all(c not in configs_d for c in configs), configs
+        assert not sel_core or configs, (sel_core,configs)
+        assert all(c not in configs_d for c in configs), configs
 
         return sel_core, configs
 
@@ -1104,12 +1093,11 @@ class IGen(object):
         """
         Returns either None or SCore
         """
-        if __debug__:
-            assert (all(isinstance(c, PNCore) for c in pncores) and
-                    pncores), pncores
-            assert (isinstance(ignore_sel_cores, set) and
-                    all(isinstance(c, SCore) for c in ignore_sel_cores)),\
-                    ignore_sel_cores
+        assert (all(isinstance(c, PNCore) for c in pncores) and
+                pncores), pncores
+        assert (isinstance(ignore_sel_cores, set) and
+                all(isinstance(c, SCore) for c in ignore_sel_cores)),\
+            ignore_sel_cores
 
         sel_cores = []
         for (pc,pd,nc,nd) in pncores:
@@ -1123,7 +1111,7 @@ class IGen(object):
                 sc = SCore((pd,pc))
                 sel_cores.append(sc)
 
-            if nc and (nc,None) not in ignore_sel_cores:
+            if nc and (nc, None) not in ignore_sel_cores:
                 sc = SCore((nc,None))
                 if nd is None: sc.set_keep()
                 sel_cores.append(sc)
@@ -1206,7 +1194,7 @@ class DTrace(object):
         return pp_cores_d,itime_total
     @staticmethod
     def load_iter(dir_,f):
-        dtrace =CM.vload(os.path.join(dir_,f))
+        dtrace = CM.vload(os.path.join(dir_,f))
         return dtrace
 
     @staticmethod
@@ -1219,10 +1207,10 @@ class DTrace(object):
               "Tmpdir {}".format(tmpdir)]
         return "Summary: " + ', '.join(ss)    
 
-    @staticmethod
-    def load_dir(dir_):
-        seed,dom = DTrace.load_pre(dir_)
-        dts = [DTrace.load_iter(dir_,f)
+    @classmethod
+    def load_dir(cls, dir_):
+        seed,dom = cls.load_pre(dir_)
+        dts = [cls.load_iter(dir_,f)
                for f in os.listdir(dir_) if f.endswith('.tvn')]
         try:
             pp_cores_d,itime_total = DTrace.load_post(dir_)
