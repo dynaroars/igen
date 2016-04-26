@@ -1,0 +1,40 @@
+#!/usr/bin/env python2.7
+
+"""
+This is a run_script example that run a program call "ex.[Linux|Darwin].exe" , which 
+takes as input a list of varname and value and 
+returns to stdout (the terminal screen) the name of the file consisting of covered lines
+
+e.g.,
+./test_script "x 0, y 1, z 0 ..."   #this represent the configuration x = 0 , y = 1 z = 0 ...
+/var/tmp/tvn.out
+
+"""
+import argparse
+import os.path
+import vu_common as CM
+
+if __name__ == "__main__":
+    me_file = CM.getpath(__file__)
+    me_dir = os.path.dirname(me_file)
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("inputs", help="input configurations")
+    args = parser.parse_args()
+    inputs = args.inputs.strip()  #  "x 0, y 1, z 0"
+    parts = [p.split() for p in inputs.split(",")]
+    varnames,varvals = zip(*parts)
+    assert len(varnames) == len(varvals)
+
+    import platform
+    prog_exe = os.path.join(me_dir, "ex_undetermined.{}.exe".format(platform.system()))
+    prog_inp = ' '.join(varvals) #"0 1 0"
+    prog_out = "/var/tmp/tvn.out"
+    cmd = "{} {} > {}".format(prog_exe, prog_inp, prog_out)
+    try:
+        _,rs_err = CM.vcmd(cmd)
+        assert len(rs_err) == 0, rs_err
+    except:
+        print("cmd '{}' failed".format(cmd))
+
+    print prog_out
