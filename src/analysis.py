@@ -26,8 +26,10 @@ fields = ['niters',
 Results = namedtuple("Results",' '.join(fields))
                      
 class Analysis(object):
-    @staticmethod
-    def is_run_dir(d):
+    configs_d = CC.Configs_d()  #{config : set(locs)}
+    
+    @classmethod
+    def is_run_dir(cls, d):
         """
         ret True if d is a run_dir that consists of *.tvn, pre, post files
         ret False if d is a benchmark dir that consists of run_dirs
@@ -42,30 +44,14 @@ class Analysis(object):
             return True
         else:
             ds = [os.path.join(d,f) for f in fs]
-            if (ds and all(os.path.isdir(d_) and
-                           Analysis.is_run_dir(d_) for d_ in ds)):
+            if (ds and
+                all(os.path.isdir(d_) and cls.is_run_dir(d_) for d_ in ds)):
                 return False
             else:
                 return None
 
-    @staticmethod
-    def check_pp_cores_d(pp_cores_d,dom):
-        if not hasattr(pp_cores_d.values()[0],'vstr'):
-            logger.warn("Old format, has no vstr .. re-analyze")
-            return pp_cores_d.analyze(dom,covs_d=None)
-        else:
-            return pp_cores_d
-
     @classmethod
-    def construct_configs_d(cls, dts):
-        configs_d = CC.Configs_d()
-        for dt in dts:
-            for c in dt.cconfigs_d:
-                configs_d[c] = dt.cconfigs_d[c]
-        return configs_d
-            
-    @staticmethod
-    def replay(dir_, show_iters, do_min_configs, cmp_gt, cmp_rand):
+    def replay(cls, dir_, show_iters, do_min_configs, cmp_gt, cmp_rand):
         """
         Replay and analyze execution info from saved info in dir_
         do_min_configs has 3 possible values
@@ -74,13 +60,13 @@ class Analysis(object):
         3. anything else: find min configs using existing configs
         """
         assert isinstance(dir_,str), dir_
-        assert isinstance(show_iters,bool),show_iters
-        assert cmp_gt is None or isinstance(cmp_gt,str), cmp_gt
+        assert isinstance(show_iters, bool), show_iters
+        assert cmp_gt is None or isinstance(cmp_gt, str), cmp_gt
         assert cmp_rand is None or callable(cmp_rand), cmp_rand
 
-        import alg as IA
+        import alg
         logger.info("replay dir: '{}'".format(dir_))
-        seed,dom,dts,pp_cores_d,itime_total = IA.DTrace.load_dir(dir_)
+        seed, dom, dts, pp_cores_d, itime_total = alg.DTrace.load_dir(dir_)
         logger.info('seed: {}'.format(seed))
         logger.debug(dom.__str__())
 
@@ -89,9 +75,11 @@ class Analysis(object):
             for dt in dts:
                 dt.show()
 
-        pp_cores_d = Analysis.check_pp_cores_d(pp_cores_d, dom)
+        if not hasattr(pp_cores_d.values()[0],'vstr'):
+            logger.warn("Old format, has no vstr .. re-analyze")
+            pp_cores_d = pp_cores_d.analyze(dom,covs_d=None)
+            
         mcores_d = pp_cores_d.merge(show_detail=True)
-        configs_d = None  #some analysis will create this
         
         #print summary
         xtime_total = itime_total - sum(dt.xtime for dt in dts)
@@ -99,38 +87,26 @@ class Analysis(object):
         nconfigs = last_dt.nconfigs
         ncovs = last_dt.ncovs
         
-        logger.info(IA.DTrace.str_of_summary(
+        logger.info(alg.DTrace.str_of_summary(
             seed,len(dts),itime_total,xtime_total,nconfigs,ncovs,dir_))
+
+        logger.info("*** Additional analysis ***")
 
         #min config
         from alg_miscs import HighCov
-        if not do_min_configs: #None
-            n_min_configs = 0
-            min_ncovs = 0
-        elif callable(do_min_configs):
-            f = do_min_configs
-            min_configs, min_ncovs = HighCov.get_minset_f(
-                mcores_d,set(pp_cores_d),f,dom)
-            n_min_configs = len(min_configs)            
-        else:
-            #reconstruct information
-            if configs_d is None:
-                configs_d = Analysis.construct_configs_d(dts)
-
-            min_configs, min_ncovs = HighCov.get_minset_configs_d(
-                mcores_d,set(pp_cores_d),configs_d,dom)
-            n_min_configs = len(min_configs)
-
-        logger.info("Additional analysis")
-        
+        min_configs, min_ncovs = HighCov.go(
+            do_min_configs, pp_cores_d, mcores_d, dts, dom, cls.configs_d)
+            
+        #influential settings
         from alg_miscs import Influence
         influence_scores = Influence.go(mcores_d, ncovs, dom)
 
+        #similarity scores
         from alg_miscs import SimilarityMetrics
-        fscores, vscores, gt_pp_cores_d = SimilarityMetrics.go(
-            dts, dom, cmp_gt)
-
-        #rand search
+        #compare against ground truths
+        fscores, vscores, gt_pp_cores_d = SimilarityMetrics.compare_gt(
+            cmp_gt, dts, dom)
+        #compare against rand search
         r_f = cmp_rand
         if callable(r_f):
             r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = r_f(nconfigs)
@@ -155,15 +131,21 @@ class Analysis(object):
 
 
         from alg_miscs import Undetermined
-        undetermined_d = Undetermined.go(mcores_d, dts)
-
+        ud = Undetermined(mcores_d, dts, dom)
+        checked_d = ud.go()
+        n_ud_locs = checked_d.values().count(False)
+        logger.info("undetermined locs: {}% ({}/{})"
+                    .format(100.0 * n_ud_locs / len(checked_d),
+                            n_ud_locs, len(checked_d)))
+                            
+        
         rs = Results(niters=len(dts),
                      ncores=len(mcores_d),
                      itime=itime_total,
                      xtime=xtime_total,
                      ncovs=ncovs,
                      nconfigs=nconfigs,
-                     n_min_configs=n_min_configs,
+                     n_min_configs=len(min_configs),
                      min_ncovs=min_ncovs,
                      vscores=vscores,
                      fscores=fscores,
@@ -174,8 +156,8 @@ class Analysis(object):
                      m_vtyps=mcores_d.vtyps)
         return rs
 
-    @staticmethod
-    def replay_dirs(dir_,show_iters,do_min_configs,cmp_gt,cmp_rand):
+    @classmethod
+    def replay_dirs(cls, dir_,show_iters,do_min_configs,cmp_gt,cmp_rand):
         dir_ = CM.getpath(dir_)
         logger.info("replay_dirs '{}'".format(dir_))
         
@@ -367,6 +349,10 @@ class Analysis(object):
 
         logger.info(cconfigs_d)
 
+
+
+
+    
 
 if __name__ == "__main__":
     import doctest

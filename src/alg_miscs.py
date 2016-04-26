@@ -1,7 +1,6 @@
 """
 Analyses on the resulting interactions
 """
-
 import itertools
 from time import time
 import vu_common as CM
@@ -15,6 +14,53 @@ CM.VLog.PRINT_TIME = True
 
 import z3
 import z3util
+
+class CovUtils(object):
+    @staticmethod
+    def compute_configs_d(dts, configs_d):
+        assert isinstance(configs_d, CC.Configs_d) and not configs_d
+        for dt in dts:
+            for c in dt.cconfigs_d:
+                configs_d[c] = dt.cconfigs_d[c]
+    @staticmethod
+    def compute_covs_ds(configs_d, covs, covs_d, ncovs_d):
+        assert isinstance(covs, set) and not covs
+        assert isinstance(covs_d, dict) and not covs_d
+        assert isinstance(ncovs_d, dict) and not ncovs_d
+        
+        covs = set()
+        for config in configs_d:
+            for cov in configs_d[config]:
+                covs.add(cov)
+
+        for cov in covs:
+            covs_d[cov] = set()
+            ncovs_d[cov] = set()
+            
+        for config in configs_d:
+            covered = configs_d[config]
+            ncovered = covs - covered
+            
+            for cov in covered:
+                covs_d[cov].add(config)
+                
+            for cov in ncovered:
+                ncovs_d[cov].add(config)
+                
+
+    @staticmethod
+    def compute_same_covs(covs_d):
+        d = {}
+        for loc, configs in covs_d.iteritems():
+            k = frozenset(configs)
+            if k not in d:
+                d[k] = set()
+            d[k].add(loc)
+
+        rs = set(frozenset(s) for s in d.itervalues())
+        return rs
+        
+        
 class HighCov(object):
     """
     Use interactions to generate high cov configs
@@ -67,16 +113,34 @@ class HighCov(object):
     ...
     AssertionError: {'a': None}
     """
+
+    @classmethod
+    def go(cls, do_min_configs, pp_cores_d, mcores_d, dts, dom, configs_d):
+        if not do_min_configs: #None
+            min_configs = []
+            min_ncovs = 0
+        elif callable(do_min_configs):
+            f = do_min_configs
+            min_configs, min_ncovs = cls.get_minset_f(
+                mcores_d, set(pp_cores_d),f,dom)
+        else:
+            #reconstruct information
+            if not configs_d:
+                CovUtils.compute_configs_d(dts, configs_d)
+
+            min_configs, min_ncovs = cls.get_minset_configs_d(
+                mcores_d,set(pp_cores_d), configs_d, dom)
+
+
+        return min_configs, min_ncovs
     
     @staticmethod
-
     def prune(d):
         """
         Ret the strongest elements by removing those implied by others
         """
-        if __debug__:
-            assert (d and isinstance(d,dict) and
-                    all(z3.is_expr(v) for v in d.itervalues())), d
+        assert (d and isinstance(d,dict) and
+                all(z3.is_expr(v) for v in d.itervalues())), d
         
         def _len(e):
             #simply heuristic to try most restrict conjs first
@@ -121,10 +185,9 @@ class HighCov(object):
 
     @staticmethod
     def pack2(fs,d):
-        if __debug__:
-            assert all(isinstance(f,tuple) for f in fs),fs
-            assert all(f in d and z3.is_expr(d[f])
-                       for f in fs), (fs, d)
+        assert all(isinstance(f,tuple) for f in fs),fs
+        assert all(f in d and z3.is_expr(d[f]) for f in fs), (fs, d)
+                   
         fs_ = []
         packed = set()
         for f,g in itertools.combinations(fs,2):
@@ -150,8 +213,7 @@ class HighCov(object):
         The results are {tuple -> z3expr}
         It's good to first prune them (call prune()).
         """
-        if __debug__:
-            assert all(z3.is_expr(v) for v in d.itervalues()), d
+        assert all(z3.is_expr(v) for v in d.itervalues()), d
                        
         #change format, results are tuple(elems)
         d = dict((tuple([f]),d[f]) for f in d)
@@ -440,7 +502,7 @@ class SimilarityMetrics(object):
         return f_sum/len(gt)
 
     @classmethod
-    def go(cls, dts, dom, cmp_gt):
+    def compare_gt(cls, cmp_gt, dts, dom):
         #Evol scores        
         #Using f-score when ground truth is avail
         #Note here we use analyzed pp_cores_d instead of just cores_d
@@ -555,37 +617,67 @@ class Influence(object):
     
 class Undetermined(object):
     """
-    Computes how incorrect "true" interactions.
-    In several cases an interaction of a location cannot be determined 
-    (e.g., due to unsupported form), but iGen still treated it as True. 
-    So this analysis attempts to identify those interactions.
+    Determine potentially imprecise invariants (too weak).
+    E.g., if a location has true invbut there exist some config 
+    that does not cover it then true is too weak.
+
+    Essentially this method can determine that an inferred inv of a loc 
+    having the form conj1 & .. & conjn is too weak if the real inv of 
+    that loc is conj1 & .. & conj2 & some_other_expr
     """
-    @classmethod
-    def go(cls, mcores_d, dts):
-        def all_cover(dts, loc):
-            rs = True
-            for dt in dts:
-                for c in dt.cconfigs_d:
-                    if loc not in dt.cconfigs_d[c]:
-                        return False
+
+    def __init__(self, mcores_d, dts, dom):
+        self.mcores_d = mcores_d
+        self.dts = dts
+        self.dom = dom
+        self.z3db = dom.z3db
+        
+    def go(self):
+        configs_d = CC.Configs_d()
+        CovUtils.compute_configs_d(self.dts, configs_d)
+        
+        covs = set()
+        covs_d, ncovs_d = dict(), dict()
+        CovUtils.compute_covs_ds(configs_d, covs, covs_d, ncovs_d)
+        
+        def check(configs, expr, cache):
+            k = hash((frozenset(configs), z3util.fhash(expr)))
+            if k in cache: return cache[k]
+            
+            rs = []
+            for config in configs:
+                try:
+                    cexpr = cache[config]
+                except KeyError:
+                    cexpr = config.z3expr(self.z3db)
+                    cache[config] = cexpr
+                rs.append(z3.Implies(cexpr, expr))
+                
+            rs = z3util.is_tautology(z3util.myAnd(rs))
+            cache[k] = rs
             return rs
 
-        undetermined_d = {}
-        true_interaction = IA.PNCore.mk_default()
-        if true_interaction not in mcores_d:
-            return undetermined_d
+        checked = {}
+        cache = {}
+        for pncore in self.mcores_d:
+            expr = pncore.z3expr(self.z3db, self.dom)  #None = True
+            nexpr = expr if expr is None else z3.Not(expr)
+            covs = self.mcores_d[pncore]
+            for cov in covs:
+                nconfigs = ncovs_d[cov]
+                if not nconfigs:
+                    isOK = True
+                elif expr is None and nconfigs:
+                    isOK = False
+                else:
+                    isOK = check(ncovs_d[cov], nexpr, cache)
 
-        undetermined_d[true_interaction] = set()
-        for loc in mcores_d[true_interaction]:
-            if not all_cover(dts, loc):
-                undetermined_d[true_interaction].add(loc)
+                assert cov not in checked
+                checked[cov] = isOK
 
-        
-        print(true_interaction,
-              len(undetermined_d[true_interaction]),
-              len(mcores_d[true_interaction]),
-              len(undetermined_d[true_interaction]) /
-              float(len(mcores_d[true_interaction])))
+        return checked
+
+            
         
 if __name__ == "__main__":
     import doctest
