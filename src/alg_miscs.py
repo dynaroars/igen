@@ -641,6 +641,7 @@ class Undetermined(object):
         CovUtils.compute_covs_ds(configs_d, covs, covs_d, ncovs_d)
         
         def check(configs, expr, cache):
+            #check if forall c in configs. c => expr 
             k = hash((frozenset(configs), z3util.fhash(expr)))
             if k in cache: return cache[k]
             
@@ -651,9 +652,9 @@ class Undetermined(object):
                 except KeyError:
                     cexpr = config.z3expr(self.z3db)
                     cache[config] = cexpr
-                rs.append(z3.Implies(cexpr, expr))
-                
-            rs = z3util.is_tautology(z3util.myAnd(rs))
+                rs.append(cexpr)
+
+            rs = z3util.is_tautology(z3.Implies(z3util.myOr(rs), expr))
             cache[k] = rs
             return rs
 
