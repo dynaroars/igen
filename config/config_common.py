@@ -38,7 +38,7 @@ class CustDict(MutableMapping):
         self.__dict__[key].add(val)
         
 is_cov = lambda cov: (isinstance(cov, (set, frozenset)) and
-                      all(isinstance(s, str) for s in cov))
+                      all(isinstance(c, str) for c in cov))
 def str_of_cov(cov):
     """
     >>> assert str_of_cov(set("L2 L1 L3".split())) == '(3) L1,L2,L3'
@@ -262,7 +262,7 @@ class Dom(OrderedDict):
         Ret a config from a model
         """
         assert isinstance(model, dict), model
-        assert config_cls, config_clcs
+        assert config_cls, config_cls
             
         _f = lambda k: (model[k] if k in model
                         else random.choice(list(self[k])))
@@ -425,13 +425,16 @@ class Covs_d(CustDict):
     >>> assert covs_d['l1'] == set([c1,c2])
     """
 
-    def add(self,sid,config):
+    def add(self,sid, config):
         assert isinstance(sid, str),sid
         assert isinstance(config, Config),config
         
         super(Covs_d, self).add_set(sid, config)
 
 class Configs_d(CustDict):
+    """
+    A mapping from config -> {covs}
+    """
     def __setitem__(self, config, cov):
         assert isinstance(config, Config), config
         assert is_cov(cov), cov

@@ -1,12 +1,13 @@
 """
 Analyses on the resulting interactions
 """
+import abc
 import itertools
 from time import time
 import vu_common as CM
 import config_common as CC
 import alg as IA
-import config as IA_alg
+import config as IA_OLD  #old data
 
 logger = CM.VLog('alg_miscs')
 logger.level = CC.logger_level
@@ -15,53 +16,70 @@ CM.VLog.PRINT_TIME = True
 import z3
 import z3util
 
-class CovUtils(object):
-    @staticmethod
-    def compute_configs_d(dts, configs_d):
-        assert isinstance(configs_d, CC.Configs_d) and not configs_d
-        for dt in dts:
-            for c in dt.cconfigs_d:
-                configs_d[c] = dt.cconfigs_d[c]
-    @staticmethod
-    def compute_covs_ds(configs_d, covs, covs_d, ncovs_d):
-        assert isinstance(covs, set) and not covs
-        assert isinstance(covs_d, dict) and not covs_d
-        assert isinstance(ncovs_d, dict) and not ncovs_d
+class AddOns(object):
+    __metaclass__ = abc.ABCMeta
+    
+    #init vars
+    dts = None
+    dom = None
+    mcores_d = None
+    pp_cores_d = None
+    z3db = None
+    
+    #to be computed
+    configs_d = CC.Configs_d()  #{config -> set(cov)}
+    ccovs_d = CC.Covs_d()  #{cov -> set(configs)}
+    ncovs_d = CC.Covs_d()  #{cov -> set(configs)}
+    
+    @classmethod
+    def compute_configs_d(cls):
+        if cls.configs_d:
+            return
+
+        assert isinstance(cls.configs_d, CC.Configs_d) and not cls.configs_d
+        assert cls.dts
         
+        for dt in cls.dts:
+            for config in dt.cconfigs_d:
+                cls.configs_d[config] = dt.cconfigs_d[config]
+                
+    @classmethod
+    def compute_covs_ds(cls):
+        if cls.ccovs_d or cls.ncovs_d:
+            return
+
+        assert isinstance(cls.configs_d, CC.Configs_d) and cls.configs_d        
+        assert isinstance(cls.ccovs_d, CC.Covs_d) and not cls.ccovs_d
+        assert isinstance(cls.ncovs_d, CC.Covs_d) and not cls.ncovs_d
+
         covs = set()
-        for config in configs_d:
-            for cov in configs_d[config]:
+        for config in cls.configs_d:
+            for cov in cls.configs_d[config]:
                 covs.add(cov)
 
-        for cov in covs:
-            covs_d[cov] = set()
-            ncovs_d[cov] = set()
-            
-        for config in configs_d:
-            covered = configs_d[config]
-            ncovered = covs - covered
-            
-            for cov in covered:
-                covs_d[cov].add(config)
-                
-            for cov in ncovered:
-                ncovs_d[cov].add(config)
-                
+        for config in cls.configs_d:
+            covered = cls.configs_d[config]            
+            for loc in covered:
+                cls.ccovs_d.add(loc, config)
 
-    @staticmethod
-    def compute_same_covs(covs_d):
-        d = {}
-        for loc, configs in covs_d.iteritems():
-            k = frozenset(configs)
-            if k not in d:
-                d[k] = set()
-            d[k].add(loc)
+            ncovered = covs - covered                
+            for loc in ncovered:
+                cls.ncovs_d.add(loc, config)
+                
+    # @staticmethod
+    # def compute_same_covs(covs_d):
+    #     d = {}
+    #     for loc, configs in covs_d.iteritems():
+    #         k = frozenset(configs)
+    #         if k not in d:
+    #             d[k] = set()
+    #         d[k].add(loc)
 
-        rs = set(frozenset(s) for s in d.itervalues())
-        return rs
+    #     rs = set(frozenset(s) for s in d.itervalues())
+    #     return rs
         
         
-class HighCov(object):
+class HighCov(AddOns):
     """
     Use interactions to generate high cov configs
 
@@ -104,43 +122,38 @@ class HighCov(object):
 
 
     >>> HighCov.prune({'a':None})
-    Traceback (most recent call last):
-    ...
-    AssertionError: {'a': None}
+    {}
+
+    >>> HighCov.pack({})
+    {}
 
     >>> HighCov.pack({'a':None})
     Traceback (most recent call last):
     ...
     AssertionError: {'a': None}
+    
     """
 
     @classmethod
-    def go(cls, do_min_configs, pp_cores_d, mcores_d, dts, dom, configs_d):
-        if not do_min_configs: #None
-            min_configs = []
-            min_ncovs = 0
-        elif callable(do_min_configs):
-            f = do_min_configs
-            min_configs, min_ncovs = cls.get_minset_f(
-                mcores_d, set(pp_cores_d),f,dom)
+    def go(cls, do_min_configs):
+        assert do_min_configs is not None
+
+        cores = set(cls.pp_cores_d)
+        if callable(do_min_configs):
+            return cls.get_minset_f(cores, f=do_min_configs)
         else:
-            #reconstruct information
-            if not configs_d:
-                CovUtils.compute_configs_d(dts, configs_d)
-
-            min_configs, min_ncovs = cls.get_minset_configs_d(
-                mcores_d,set(pp_cores_d), configs_d, dom)
-
+            cls.compute_configs_d()
+            return cls.get_minset_configs_d(cores)
 
         return min_configs, min_ncovs
     
-    @staticmethod
-    def prune(d):
+    @classmethod
+    def prune(cls, d):
         """
         Ret the strongest elements by removing those implied by others
         """
-        assert (d and isinstance(d,dict) and
-                all(z3.is_expr(v) for v in d.itervalues())), d
+        assert d and isinstance(d, dict)
+        assert all(v is None or z3.is_expr(v) for v in d.itervalues()), d
         
         def _len(e):
             #simply heuristic to try most restrict conjs first
@@ -164,7 +177,7 @@ class HighCov(object):
 
         #sort by most restrict conj, also remove None ("true")
         fs = sorted([f for f in d if d[f]],
-                    key=lambda f: _len(d[f]),reverse=True)
+                    key=lambda f: _len(d[f]), reverse=True)
 
         implied = set()
         for f in fs:
@@ -180,11 +193,10 @@ class HighCov(object):
                     implied.add(g)
                 #print "{} => {} {}".format(f,g,is_implied)
                 
-                
         return dict((f,d[f]) for f in fs if f not in implied)
 
-    @staticmethod
-    def pack2(fs,d):
+    @classmethod
+    def pack2(cls, fs, d):
         assert all(isinstance(f,tuple) for f in fs),fs
         assert all(f in d and z3.is_expr(d[f]) for f in fs), (fs, d)
                    
@@ -206,8 +218,8 @@ class HighCov(object):
         fs = [f for f in fs if f not in packed]
         return fs_ + fs
                 
-    @staticmethod
-    def pack(d):
+    @classmethod
+    def pack(cls, d):
         """
         Pack together elements that have no conflicts.
         The results are {tuple -> z3expr}
@@ -218,41 +230,39 @@ class HighCov(object):
         #change format, results are tuple(elems)
         d = dict((tuple([f]),d[f]) for f in d)
         fs = d.keys()
-        fs_ = HighCov.pack2(fs,d)        
+        fs_ = cls.pack2(fs,d)        
         while len(fs_) < len(fs):
             fs = fs_
-            fs_ = HighCov.pack2(fs,d)
+            fs_ = cls.pack2(fs,d)
 
         fs = set(fs_)
         return dict((f,d[f]) for f in d if f in fs_)
 
-    @staticmethod
-    def indep(fs,dom):
+    @classmethod
+    def indep(cls, fs):
         """
         Apply prune and pack on fs
         """
-        z3db = dom.z3db
-
         #prune
-        d = dict((c,c.z3expr(z3db,dom)) for c in fs)
-        d = HighCov.prune(d)
+        d = dict((c, c.z3expr(cls.z3db, cls.dom)) for c in fs)
+        d = cls.prune(d)
         logger.debug("prune: {} remains".format(len(d)))
         logger.debug("\n{}".format('\n'.join(
             "{}. {}".format(i+1,str(c)) for i,c
             in enumerate(sorted(d)))))
 
         #pack
-        d = HighCov.pack(d)
+        d = cls.pack(d)
         logger.debug("pack: {} remains".format(len(d)))
         logger.debug("\n{}".format('\n'.join(
-            "{}. {}".format(i+1,HighCov.str_of_pack(c))
+            "{}. {}".format(i+1, cls.str_of_pack(c))
             for i,c in enumerate(d))))
 
         assert all(v for v in d.itervalues())
-        return d,z3db
+        return d
     
-    @staticmethod
-    def str_of_pack(pack):
+    @classmethod
+    def str_of_pack(cls, pack):
         #c is a tuple
         def f(c):
             try:
@@ -263,9 +273,9 @@ class HighCov(object):
         return '({})'.format('; '.join(map(f,pack)))
 
     
-    @staticmethod
-    def get_minset_f(mcores_d,remain_covs,f,dom):
-        d,z3db = HighCov.indep(mcores_d.keys(),dom)
+    @classmethod
+    def get_minset_f(cls, remain_covs, f):
+        d = cls.indep(cls.mcores_d.keys())
 
         st = time()
         ncovs = len(remain_covs)  #orig covs
@@ -274,12 +284,12 @@ class HighCov(object):
         for pack,expr in d.iteritems():
             #Todo: and not one of the existing ones
             nexpr = z3util.myOr(minset_d)            
-            configs = dom.gen_configs_exprs(
+            configs = cls.dom.gen_configs_exprs(
                 [expr], [nexpr], k=1, config_cls=IA.Config)
                 
             if not configs:
                 logger.warn("Cannot create configs from {}"
-                            .format(HighCov.str_of_pack(pack)))
+                            .format(cls.str_of_pack(pack)))
             else:
                 config = configs[0]
                 covs,xtime = f(config)
@@ -294,8 +304,8 @@ class HighCov(object):
         return minset_d.keys(), minset_ncovs
         
     
-    @staticmethod
-    def get_minset_configs_d(mcores_d,remain_covs,configs_d,dom):
+    @classmethod
+    def get_minset_configs_d(cls, remain_covs):
         """
         Use interactions to generate a min set of configs 
         from configs_d that cover remain_covs locations.
@@ -304,19 +314,19 @@ class HighCov(object):
         If use packed elems then could be slow because
         have to check that all generated configs satisfy packed elem
         """
-        d,z3db = HighCov.indep(mcores_d.keys(),dom)
+        d = cls.indep(cls.mcores_d.keys())
         packs = set(d)  #{(pack,expr)}
         ncovs = len(remain_covs)  #orig covs
-        remain_configs = set(configs_d)
+        remain_configs = set(cls.configs_d)
         minset_d = CC.Configs_d()  #results
         
         #some init setup
-        exprs_d = [(c,c.z3expr(z3db)) for c in configs_d] #slow
+        exprs_d = [(c, c.z3expr(cls.z3db)) for c in cls.configs_d] #slow
         exprs_d = exprs_d + d.items()
         exprs_d = dict(exprs_d)
 
         def _f(pack,covs):
-            covs_ = set.union(*(mcores_d[c] for c in pack))
+            covs_ = set.union(*(cls.mcores_d[c] for c in pack))
             return len(covs - covs_)  #smaller better
 
         def _g(pack,e_configs):
@@ -327,7 +337,7 @@ class HighCov(object):
             e_expr = z3util.myOr([exprs_d[c] for c in e_configs])
             p_expr = exprs_d[pack]
             expr = z3.And(p_expr,e_expr)
-            configs = dom.gen_configs_expr(expr, k=1, config_cls=IA.Config)
+            configs = cls.dom.gen_configs_expr(expr, k=1, config_cls=IA.Config)
             if not configs:
                 return None
             else:
@@ -339,7 +349,7 @@ class HighCov(object):
                 return config
 
         def _get_min(configs,covs):
-            return min(configs,key=lambda c: len(covs - configs_d[c]))
+            return min(configs,key=lambda c: len(covs - cls.configs_d[c]))
 
         st = time()
         while remain_covs and remain_configs:
@@ -350,17 +360,17 @@ class HighCov(object):
                 
                 config = _g(pack,remain_configs)
                 if config is None:
-                    logger.warn("none of the avail configs => {}"
-                                .format(HighCov.str_of_pack(pack)))
+                    logger.warn("no avail configs => {}"
+                                .format(cls.str_of_pack(pack)))
                     config = _get_min(remain_configs,remain_covs)
             else:
                 config = _get_min(remain_configs,remain_covs)                
 
             assert config and config not in minset_d, config
-            minset_d[config]=configs_d[config]
-            remain_covs = remain_covs - configs_d[config]
+            minset_d[config] = cls.configs_d[config]
+            remain_covs = remain_covs - cls.configs_d[config]
             remain_configs = [c for c in remain_configs
-                              if len(remain_covs - configs_d[c])
+                              if len(remain_covs - cls.configs_d[c])
                               != len(remain_covs)]
 
         minset_ncovs = ncovs - len(remain_covs)
@@ -371,28 +381,27 @@ class HighCov(object):
 
         return minset_d.keys(), minset_ncovs
 
-class SimilarityMetrics(object):
+class Similarity(AddOns):
     @classmethod
-    def vscore_core(cls, core, dom):
-        vs = [len(core[k] if k in core else dom[k]) for k in dom]
+    def vscore_core(cls, core):
+        vs = [len(core[k] if k in core else cls.dom[k]) for k in cls.dom]
         return sum(vs)
 
     @classmethod
-    def vscore_pncore(cls, pncore, dom):
+    def vscore_pncore(cls, pncore):
         #"is not None" is correct because empty Core is valid
         #and in fact has max score
-        vs = [cls.vscore_core(c,dom) for c in pncore
-              if c is not None]
+        vs = [cls.vscore_core(c) for c in pncore if c is not None]
         return sum(vs)
 
     @classmethod
-    def vscore_cores_d(cls, cores_d,dom):
-        vs = [cls.vscore_pncore(c,dom) for c in cores_d.itervalues()]
+    def vscore_cores_d(cls, cores_d):
+        vs = [cls.vscore_pncore(c) for c in cores_d.itervalues()]
         return sum(vs)
 
     #f-score    
     @classmethod
-    def get_settings(cls, c,dom):
+    def get_settings(cls, c):
         """
         If a var k is not in c, then that means k = all_poss_of_k
         """
@@ -401,15 +410,15 @@ class SimilarityMetrics(object):
             settings = set()
         elif isinstance(c,IA.Core):
             #if a Core is empty then it will have max settings
-            rs = [k for k in dom if k not in c]
-            rs = [(k,v) for k in rs for v in dom[k]]
+            rs = [k for k in cls.dom if k not in c]
+            rs = [(k,v) for k in rs for v in cls.dom[k]]
             settings = set(c.settings + rs)
         else:
             settings = c
         return settings
         
     @classmethod    
-    def fscore_core(cls, me,gt,dom):
+    def fscore_core(cls, me, gt):
         def fscore(me,gt):
             """
             #false pos: in me but not in gt
@@ -421,21 +430,21 @@ class SimilarityMetrics(object):
             fp = len([s for s in me if s not in gt])
             fn = len([s for s in gt if s not in me])
             return tp,fp,fn
-        me = cls.get_settings(me, dom)
-        gt = cls.get_settings(gt, dom)
+        me = cls.get_settings(me)
+        gt = cls.get_settings(gt)
         return fscore(me, gt)
 
     @classmethod
-    def fscore_pncore(cls, me, gt, dom):
+    def fscore_pncore(cls, me, gt):
         #me and gt are pncore's (c,d,cd,dc)
-        rs = [cls.fscore_core(m,g,dom) for m,g in zip(me,gt)]
+        rs = [cls.fscore_core(m, g) for m,g in zip(me, gt)]
         tp = sum(x for x,_,_ in rs)
         fp = sum(x for _,x,_ in rs)
         fn = sum(x for _,_,x in rs)
         return tp,fp,fn
 
     @classmethod
-    def fscore_cores_d(cls, me, gt, dom):
+    def fscore_cores_d(cls, me, gt):
         """
         Precision(p) = tp / (tp+fp)
         Recall(r) = tp / (tp+fn)
@@ -474,21 +483,21 @@ class SimilarityMetrics(object):
 
         >>> me = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2], 'l5': [pn5,pd5,nc5,nd5]}
         >>> gt = {'l1': [pn3,pd3,nc3,nd3], 'l2': [pn4,pd4,nc4,nd4], 'l6': [pn6,pd6,nc6,nd6]}
-        >>> SimilarityMetrics.fscore_cores_d(me,gt,{})
+        >>> Similarity.fscore_cores_d(me,gt,{})
         0.5714285714285714
 
         >>> me = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2]}
         >>> gt = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2], 'l6': [pn6,pd6,nc6,nd6]}
-        >>> SimilarityMetrics.fscore_cores_d(me,gt,{})
+        >>> Similarity.fscore_cores_d(me,gt,{})
         0.6666666666666666
 
         >>> me = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2]}
         >>> gt = {'l1': [pn1,pd1,nc1,nd1], 'l2': [pn2,pd2,nc2,nd2]}
-        >>> SimilarityMetrics.fscore_cores_d(me,gt,{})
+        >>> Similarity.fscore_cores_d(me,gt,{})
         1.0
 
         """
-        rs = [cls.fscore_pncore(me[k],gt[k],dom)
+        rs = [cls.fscore_pncore(me[k], gt[k])
               for k in gt if k in me]
         f_sum = 0.0        
         for tp,fp,fn in rs:
@@ -502,7 +511,7 @@ class SimilarityMetrics(object):
         return f_sum/len(gt)
 
     @classmethod
-    def compare_gt(cls, cmp_gt, dts, dom):
+    def compare_gt(cls, cmp_gt):
         #Evol scores        
         #Using f-score when ground truth is avail
         #Note here we use analyzed pp_cores_d instead of just cores_d
@@ -514,8 +523,8 @@ class SimilarityMetrics(object):
 
             #get pp_cores_d at each iteration
             pp_cores_ds = []
-            for dt in dts:
-                configs_ds = [dt_.cconfigs_d for dt_ in dts
+            for dt in cls.dts:
+                configs_ds = [dt_.cconfigs_d for dt_ in cls.dts
                               if dt_.citer <= dt.citer]
                 covs_d = CC.Covs_d()
                 for configs_d in configs_ds:
@@ -523,24 +532,25 @@ class SimilarityMetrics(object):
                         for sid in cov:
                             covs_d.add(sid,config)
 
-                pp_cores_d = dt.cores_d.analyze(dom,covs_d)
+                pp_cores_d = dt.cores_d.analyze(cls.dom, covs_d)
                 pp_cores_ds.append(pp_cores_d)
 
             fscores = [
                 (dt.citer,
-                 cls.fscore_cores_d(pp_cores_d,gt_pp_cores_d,dom),
+                 cls.fscore_cores_d(pp_cores_d,gt_pp_cores_d),
                  dt.nconfigs)
-                for dt, pp_cores_d in zip(dts,pp_cores_ds)]
+                for dt, pp_cores_d in zip(cls.dts, pp_cores_ds)]
 
             fscores_ = []
-            for dt, pp_cores_d in zip(dts,pp_cores_ds):
+            for dt, pp_cores_d in zip(cls.dts, pp_cores_ds):
                 rs = (dt.citer,
-                      cls.fscore_cores_d(pp_cores_d,gt_pp_cores_d,dom),
+                      cls.fscore_cores_d(pp_cores_d, gt_pp_cores_d),
                       dt.nconfigs)
                 fscores_.append(rs)
 
             logger.info("fscores (iter, fscore, configs): {}".format(
                 ' -> '.join(map(str,fscores))))
+            
         else:
             gt_pp_cores_d=None
             fscores = None
@@ -548,15 +558,15 @@ class SimilarityMetrics(object):
         #Using  a simple metrics that just gives more pts for more
         #info (new cov or new results). Note here we use cores_d
         vscores = [(dt.citer,
-                    cls.vscore_cores_d(dt.cores_d,dom),
+                    cls.vscore_cores_d(dt.cores_d),
                     dt.nconfigs)
-                   for dt in dts]
+                   for dt in cls.dts]
         logger.info("vscores (iter, vscore, configs): {}".format(
-            ' -> '.join(map(str,vscores))))
+            ' -> '.join(map(str, vscores))))
 
-        return fscores,vscores,gt_pp_cores_d
+        return fscores, vscores, gt_pp_cores_d
     
-class Influence(object):
+class Influence(AddOns):
     """
     Compute influence metrics of options. 
     Returns a dict of (opt, uniq, %), e.g., 
@@ -564,26 +574,23 @@ class Influence(object):
     which is 25% of the 8 covered locations.
     """
     
-    @staticmethod
-    def go(mcores_d, ncovs, dom, do_settings=True):
-        assert (mcores_d and
-                isinstance(mcores_d, (IA.Mcores_d, IA_alg.Mcores_d))), mcores_d
+    @classmethod
+    def go(cls, ncovs, do_settings=True):
         assert ncovs > 0, ncovs
-        assert isinstance(dom, IA.Dom), dom            
         assert isinstance(do_settings, bool), do_settings
         
         if do_settings:
-            ks = set((k,v) for k,vs in dom.iteritems() for v in vs)
+            ks = set((k,v) for k,vs in cls.dom.iteritems() for v in vs)
             def g(core):
                 pc,pd,nc,nd = core
                 settings = []
                 if pc:
                     settings.extend(pc.settings)
                 if pd:
-                    settings.extend(pd.neg(dom).settings)
+                    settings.extend(pd.neg(cls.dom).settings)
                 #nd | neg(nc) 
                 if nc:
-                    settings.extend(nc.neg(dom).settings)
+                    settings.extend(nc.neg(cls.dom).settings)
                 if nd:
                     settings.extend(nd.settings)
 
@@ -592,30 +599,30 @@ class Influence(object):
             _str = CC.str_of_setting
 
         else:
-            ks = dom.keys()
+            ks = cls.dom.keys()
             def g(core):
                 core = (c for c in core if c)
                 return set(s for c in core for s in c)
             _str = str
 
 
-        g_d = dict((pncore,g(pncore)) for pncore in mcores_d)
+        g_d = dict((pncore, g(pncore)) for pncore in cls.mcores_d)
         rs = []
         for k in ks:
-            v = sum(len(mcores_d[pncore])
+            v = sum(len(cls.mcores_d[pncore])
                     for pncore in g_d if k in g_d[pncore])
             rs.append((k,v))
             
-        rs = sorted(rs,key=lambda (k,v):(v,k),reverse=True)
-        rs = [(k,v,float(v)/ncovs) for k,v in rs]
+        rs = sorted(rs, key = lambda (k, v) : (v, k), reverse=True)
+        rs = [(k, v, 100. * v / ncovs) for k, v in rs]
         logger.info("influence opts (opt, uniq, %) {}"
                     .format(', '.join(map(
-                        lambda (k,v,p): "({}, {}, {})"
-                        .format(_str(k),v,p),rs))))
+                        lambda (k, v, p): "({}, {}, {})"
+                        .format(_str(k), v, p), rs))))
         return rs
 
     
-class Undetermined(object):
+class Undetermined(AddOns):
     """
     Determine potentially imprecise invariants (too weak).
     E.g., if a location has true invbut there exist some config 
@@ -625,21 +632,8 @@ class Undetermined(object):
     having the form conj1 & .. & conjn is too weak if the real inv of 
     that loc is conj1 & .. & conj2 & some_other_expr
     """
-
-    def __init__(self, mcores_d, dts, dom):
-        self.mcores_d = mcores_d
-        self.dts = dts
-        self.dom = dom
-        self.z3db = dom.z3db
-        
-    def go(self):
-        configs_d = CC.Configs_d()
-        CovUtils.compute_configs_d(self.dts, configs_d)
-        
-        covs = set()
-        covs_d, ncovs_d = dict(), dict()
-        CovUtils.compute_covs_ds(configs_d, covs, covs_d, ncovs_d)
-        
+    @classmethod
+    def go(cls):
         def check(configs, expr, cache):
             #check if forall c in configs. c => expr 
             k = hash((frozenset(configs), z3util.fhash(expr)))
@@ -650,7 +644,7 @@ class Undetermined(object):
                 try:
                     cexpr = cache[config]
                 except KeyError:
-                    cexpr = config.z3expr(self.z3db)
+                    cexpr = config.z3expr(cls.z3db)
                     cache[config] = cexpr
                 rs.append(cexpr)
 
@@ -658,25 +652,37 @@ class Undetermined(object):
             cache[k] = rs
             return rs
 
-        checked = {}
-        cache = {}
-        for pncore in self.mcores_d:
-            expr = pncore.z3expr(self.z3db, self.dom)  #None = True
+        cls.compute_configs_d()
+        cls.compute_covs_ds()
+
+        cache = {}        
+        ok_mcores_d, weak_mcores_d = IA.Mcores_d(), IA.Mcores_d()
+        for pncore in cls.mcores_d:
+            if isinstance(pncore, IA_OLD.PNCore):
+                pncore_ = IA.PNCore((
+                    pncore.pc if pncore.pc is None else IA.Core(pncore.pc),
+                    pncore.pd if pncore.pd is None else IA.Core(pncore.pd),
+                    pncore.nc if pncore.nc is None else IA.Core(pncore.nc),
+                    pncore.nd if pncore.nd is None else IA.Core(pncore.nd)))
+                pncore_.vtyp = pncore.vtyp
+                pncore = pncore_
+                
+            expr = pncore.z3expr(cls.z3db, cls.dom)  #None = True
             nexpr = expr if expr is None else z3.Not(expr)
-            covs = self.mcores_d[pncore]
+            covs = cls.mcores_d[pncore]
             for cov in covs:
-                nconfigs = ncovs_d[cov]
-                if not nconfigs:
+                if cov not in cls.ncovs_d:
                     isOK = True
-                elif expr is None and nconfigs:
-                    isOK = False
                 else:
-                    isOK = check(ncovs_d[cov], nexpr, cache)
+                    if expr is None: #true interaction but some locs are not covered
+                        isOK = False
+                    else:
+                        assert cls.ncovs_d[cov]
+                        isOK = check(cls.ncovs_d[cov], nexpr, cache)
 
-                assert cov not in checked
-                checked[cov] = isOK
-
-        return checked
+                (ok_mcores_d if isOK else weak_mcores_d).add(pncore, cov)
+                
+        return ok_mcores_d, weak_mcores_d
 
             
         

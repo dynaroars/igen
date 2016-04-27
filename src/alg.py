@@ -9,7 +9,6 @@ from vu_common import HDict
 import vu_common as CM
 import config_common as CC
 from config_common import Configs_d #do not del, needed to read existing results
-
 logger = CM.VLog('igen_alg')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
@@ -663,7 +662,8 @@ class Cores_d(CC.CustDict):
                 logger.debug("sid {}: {} ~~> {}".
                              format(sid,old_c,new_c))
         logger.debug("analyze results for {} sids".format(len(self)))
-        cores_d = Cores_d()                
+        cores_d = Cores_d()
+
         if covs_d:
             logger.debug("verify ...")
             cache = {}
@@ -700,7 +700,7 @@ class Mcores_d(CC.CustDict):
     A mapping from core -> {sids}
     """
     def add(self,core,sid):
-        assert isinstance(core,PNCore),core
+        assert isinstance(core, PNCore),core
         assert isinstance(sid,str),str
         
         super(Mcores_d,self).add_set(core,sid)
