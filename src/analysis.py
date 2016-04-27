@@ -2,6 +2,8 @@ import os.path
 import numpy
 import vu_common as CM
 import config_common as CC
+import alg as IA
+import config as IA_OLD  #old data
 
 logger = CM.VLog('analysis')
 logger.level = CC.logger_level
@@ -26,7 +28,6 @@ fields = ['niters',
 Results = namedtuple("Results",' '.join(fields))
                      
 class Analysis(object):
-    configs_d = CC.Configs_d()  #{config : set(locs)}
     
     @classmethod
     def is_run_dir(cls, d):
@@ -54,6 +55,7 @@ class Analysis(object):
     def replay(cls, dir_, show_iters, do_min_configs, cmp_gt, cmp_rand):
         """
         Replay and analyze execution info from saved info in dir_
+
         do_min_configs has 3 possible values
         1. None: don't find min configs
         2. f: (callable(f)) find min configs using f
@@ -75,9 +77,12 @@ class Analysis(object):
             for dt in dts:
                 dt.show()
 
-        if not hasattr(pp_cores_d.values()[0],'vstr'):
+        if isinstance(pp_cores_d, IA_OLD.Cores_d):
+            assert not hasattr(pp_cores_d.values()[0],'vstr')
             logger.warn("Old format, has no vstr .. re-analyze")
-            pp_cores_d = pp_cores_d.analyze(dom,covs_d=None)
+            pp_cores_d = pp_cores_d.analyze(dom, covs_d=None)
+            #note that this doesn't change the type of 
+            #pp_cores_d to newer one
             
         mcores_d = pp_cores_d.merge(show_detail=True)
         
@@ -91,32 +96,41 @@ class Analysis(object):
             seed,len(dts),itime_total,xtime_total,nconfigs,ncovs,dir_))
 
         logger.info("*** Additional analysis ***")
-
-        #min config
-        from alg_miscs import HighCov
-        min_configs, min_ncovs = HighCov.go(
-            do_min_configs, pp_cores_d, mcores_d, dts, dom, cls.configs_d)
+        from alg_miscs import AddOns
+        AddOns.dts = dts
+        AddOns.dom = IA.Dom(dom) if isinstance(dom, IA_OLD.Dom) else dom
+        AddOns.z3db = dom.z3db
+        AddOns.mcores_d = mcores_d
+        AddOns.pp_cores_d = pp_cores_d
+        
+        #Min Configs
+        if do_min_configs is None:
+            min_configs = []
+            min_ncovs = 0
+        else:
+            from alg_miscs import HighCov
+            min_configs, min_ncovs = HighCov.go(do_min_configs)
             
-        #influential settings
+        #Influential settings
         from alg_miscs import Influence
-        influence_scores = Influence.go(mcores_d, ncovs, dom)
+        influence_scores = Influence.go(ncovs)
 
         #similarity scores
-        from alg_miscs import SimilarityMetrics
+        from alg_miscs import Similarity
         #compare against ground truths
-        fscores, vscores, gt_pp_cores_d = SimilarityMetrics.compare_gt(
-            cmp_gt, dts, dom)
+        fscores, vscores, gt_pp_cores_d = Similarity.compare_gt(cmp_gt)
+            
         #compare against rand search
         r_f = cmp_rand
         if callable(r_f):
             r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = r_f(nconfigs)
             if gt_pp_cores_d:
-                r_fscore = SimilarityMetrics.fscore_cores_d(
+                r_fscore = Similarity.fscore_cores_d(
                     r_pp_cores_d, gt_pp_cores_d, dom)
             else:
                 r_fscore = None
                 
-            r_vscore = SimilarityMetrics.vscore_cores_d(r_cores_d, dom)
+            r_vscore = Similarity.vscore_cores_d(r_cores_d, dom)
             logger.info("rand: configs {} cov {} vscore {} fscore {}"
                         .format(len(r_configs_d),len(r_covs_d),
                                 r_vscore,r_fscore))
@@ -131,14 +145,15 @@ class Analysis(object):
 
 
         from alg_miscs import Undetermined
-        ud = Undetermined(mcores_d, dts, dom)
-        checked_d = ud.go()
-        n_ud_locs = checked_d.values().count(False)
-        logger.info("undetermined locs: {}% ({}/{})"
-                    .format(100.0 * n_ud_locs / len(checked_d),
-                            n_ud_locs, len(checked_d)))
-                            
+        ok_mcores_d, weak_mcores_d = Undetermined.go()
+        nweaks = sum(len(v) for v in weak_mcores_d.itervalues())
+        logger.info("locs with weak results: {}% ({}/{})"
+                    .format(100. * nweaks / ncovs, nweaks, ncovs))
         
+        if nweaks:
+            logger.info("weak results\n{}".format(weak_mcores_d))
+            logger.info("ok results\n{}".format(ok_mcores_d))
+
         rs = Results(niters=len(dts),
                      ncores=len(mcores_d),
                      itime=itime_total,
