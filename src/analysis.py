@@ -126,11 +126,11 @@ class Analysis(object):
             r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = r_f(nconfigs)
             if gt_pp_cores_d:
                 r_fscore = Similarity.fscore_cores_d(
-                    r_pp_cores_d, gt_pp_cores_d, dom)
+                    r_pp_cores_d, gt_pp_cores_d)
             else:
                 r_fscore = None
                 
-            r_vscore = Similarity.vscore_cores_d(r_cores_d, dom)
+            r_vscore = Similarity.vscore_cores_d(r_cores_d)
             logger.info("rand: configs {} cov {} vscore {} fscore {}"
                         .format(len(r_configs_d),len(r_covs_d),
                                 r_vscore,r_fscore))
@@ -203,7 +203,7 @@ class Analysis(object):
         for rdir in sorted(os.listdir(dir_)):
             rdir = os.path.join(dir_,rdir)
             rs = Analysis.replay(
-                rdir,show_iters,do_min_configs,cmp_gt,cmp_rand)
+                rdir, show_iters, do_min_configs, cmp_gt, cmp_rand)
             
             niters_total += rs.niters
             ncores_total += rs.ncores
