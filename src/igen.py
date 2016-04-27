@@ -89,7 +89,7 @@ def get_run_otter(args, IA):
     import get_cov_otter as Otter
     dom, get_cov_f, pathconds_d = Otter.prepare(prog, IA.Dom.get_dom)
     igen = IA.IGen(dom, get_cov_f, sids=get_sids(args.sids))
-
+    econfigs = []
     if sids:
         if args.no_ga:
             run_f = lambda seed,tdir: igen.go(seed=seed, tmpdir=tdir)
@@ -141,7 +141,6 @@ def get_run_default_coreutils(args, IA):
             ec = EC(dom, cfg, get_cov_f, sids)
             run_f = combine_runs(econfigs, ec.go, igen.go, args.only_ga)
 
-            
     elif args.cmp_rand:
         run_f = lambda seed, tdir, rand_n: igen.go_rand(
             rand_n=rand_n, seed=seed, econfigs=econfigs, tmpdir=tdir)
@@ -300,6 +299,12 @@ if __name__ == "__main__":
                          default=None,
                          type=str)
 
+    aparser.add_argument("--gt", "-gt",
+                         help=("for use with analysis, "
+                               "specify a ground truth dir"),
+                         action="store",
+                         type=str)
+    
     args = aparser.parse_args()
     CC.logger_level = args.logger_level
     logger = CM.VLog(igen_name)

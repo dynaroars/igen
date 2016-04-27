@@ -145,8 +145,6 @@ class HighCov(AddOns):
             cls.compute_configs_d()
             return cls.get_minset_configs_d(cores)
 
-        return min_configs, min_ncovs
-    
     @classmethod
     def prune(cls, d):
         """
