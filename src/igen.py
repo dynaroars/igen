@@ -294,17 +294,11 @@ if __name__ == "__main__":
     
     aparser.add_argument("--cmp_gt", "-cmp_gt",
                          help=("for use with analysis, "
-                               "cmp results against ground truth"),
+                               "cmp results against ground truth dir"),
                          action="store",
                          default=None,
                          type=str)
 
-    aparser.add_argument("--gt", "-gt",
-                         help=("for use with analysis, "
-                               "specify a ground truth dir"),
-                         action="store",
-                         type=str)
-    
     args = aparser.parse_args()
     CC.logger_level = args.logger_level
     logger = CM.VLog(igen_name)

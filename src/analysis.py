@@ -3,12 +3,135 @@ import numpy
 import vu_common as CM
 import config_common as CC
 import alg as IA
-import config as IA_OLD  #old data
 
 logger = CM.VLog('analysis')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
 
+class LoadData(object):
+    data = {}
+    
+    def __init__(self, seed, dom, dts, pp_cores_d, itime_total):
+        self._seed = seed
+        self._dom = dom
+        self._dts = dts
+        self._pp_cores_d = pp_cores_d
+        self._itime_total = itime_total
+
+    @property
+    def seed(self): return self._seed
+    @property
+    def dom(self): return self._dom
+    @property
+    def dts(self): return self._dts
+    @property
+    def pp_cores_d(self): return self._pp_cores_d
+    @pp_cores_d.setter
+    def pp_cores_d(self, d):
+        assert IA.compat(d, IA.Cores_d)
+        self._pp_cores_d = d
+    @property
+    def itime_total(self): return self._itime_total
+
+    @property
+    def mcores_d(self): return self._mcores_d
+    @mcores_d.setter
+    def mcores_d(self, d):
+        assert IA.compat(d, IA.Mcores_d)
+        self._mcores_d = d
+    #data computed on demand 
+    @property
+    def z3db(self):
+        try:
+            return self._z3db
+        except AttributeError:
+            self._z3db = self.dom.z3db
+            return self._z3db
+
+    @property
+    def configs_d(self):
+        try:
+            return self._configs_d
+        except AttributeError:
+            assert self.dts
+            configs_d = CC.Configs_d()
+            for dt in self.dts:
+                for config in dt.cconfigs_d:
+                    configs_d[config] = dt.cconfigs_d[config]
+
+            self._configs_d = configs_d
+            return self._configs_d
+
+    @property
+    def covs(self):
+        try:
+            return self._covs
+        except AttributeError:
+            covs = set()
+            for config in self.configs_d:
+                for cov in self.configs_d[config]:
+                    covs.add(cov)
+            self._covs = covs
+            return self._covs
+
+    @property
+    def ccovs_d(self):
+        try:
+            return self._ccovs_d
+        except AttributeError:
+            ccovs_d = CC.Covs_d()
+            for config in self.configs_d:
+                covered = self.configs_d[config]            
+                for loc in covered:
+                    ccovs_d.add(loc, config)
+            self._ccovs_d = ccovs_d
+            return self._ccovs_d
+
+    @property
+    def ncovs_d(self):
+        try:
+            return self._ncovs_d
+        except AttributeError:
+            ncovs_d = CC.Covs_d()
+            for config in self.configs_d:
+                covered = self.configs_d[config]
+                ncovered = self.covs - covered
+                for loc in ncovered:
+                    ncovs_d.add(loc, config)    
+            self._ncovs_d = ncovs_d
+            return self._ncovs_d
+
+    # @staticmethod
+    # def compute_same_covs(covs_d):
+    #     d = {}
+    #     for loc, configs in covs_d.iteritems():
+    #         k = frozenset(configs)
+    #         if k not in d:
+    #             d[k] = set()
+    #         d[k].add(loc)
+
+    #     rs = set(frozenset(s) for s in d.itervalues())
+    #     return rs
+    
+        
+    #class methods
+    @classmethod
+    def load_dir(cls, dir_):
+        assert dir_
+        if dir_ in cls.data:
+            return cls.data[dir_]
+        else:
+            seed, dom, dts, pp_cores_d, itime_total = IA.DTrace.load_dir(dir_)
+            ld = LoadData(seed,dom,dts,pp_cores_d,itime_total)
+            cls.data[dir_] = ld
+            return ld
+
+    @classmethod
+    def load_cmp_dir(cls, dir_):
+        ld = cls.load_dir(dir_)
+        assert len(ld.dts) == 1, "correct cmp dir??"
+        return ld
+    
 from collections import namedtuple
 fields = ['niters',
           'ncores',
@@ -25,8 +148,8 @@ fields = ['niters',
           'm_strens',
           'm_strens_str',
           'm_vtyps']
-Results = namedtuple("Results",' '.join(fields))
-                     
+AnalysisResults = namedtuple("AnalysisResults",' '.join(fields))
+
 class Analysis(object):
     
     @classmethod
@@ -56,81 +179,94 @@ class Analysis(object):
         """
         Replay and analyze execution info from saved info in dir_
 
-        do_min_configs has 3 possible values
-        1. None: don't find min configs
-        2. f: (callable(f)) find min configs using f
-        3. anything else: find min configs using existing configs
         """
         assert isinstance(dir_,str), dir_
         assert isinstance(show_iters, bool), show_iters
         assert cmp_gt is None or isinstance(cmp_gt, str), cmp_gt
         assert cmp_rand is None or callable(cmp_rand), cmp_rand
 
-        import alg
         logger.info("replay dir: '{}'".format(dir_))
-        seed, dom, dts, pp_cores_d, itime_total = alg.DTrace.load_dir(dir_)
-        logger.info('seed: {}'.format(seed))
-        logger.debug(dom.__str__())
+        ld = LoadData.load_dir(dir_)
+        
+        logger.info('seed: {}'.format(ld.seed))
+        logger.debug(ld.dom.__str__())
 
-        dts = sorted(dts,key=lambda dt: dt.citer)        
+        dts = sorted(ld.dts, key=lambda dt: dt.citer)        
         if show_iters:
             for dt in dts:
                 dt.show()
 
-        if isinstance(pp_cores_d, IA_OLD.Cores_d):
-            assert not hasattr(pp_cores_d.values()[0],'vstr')
+        if not hasattr(ld.pp_cores_d.values()[0], 'vstr'):
             logger.warn("Old format, has no vstr .. re-analyze")
-            pp_cores_d = pp_cores_d.analyze(dom, covs_d=None)
-            #note that this doesn't change the type of 
-            #pp_cores_d to newer one
-            
-        mcores_d = pp_cores_d.merge(show_detail=True)
+            ld.pp_cores_d = ld.pp_cores_d.analyze(ld.dom, covs_d=None)
+
+        ld.mcores_d = ld.pp_cores_d.merge(show_detail=True)
         
         #print summary
-        xtime_total = itime_total - sum(dt.xtime for dt in dts)
-        last_dt = max(dts,key=lambda dt: dt.citer) #last iteration
+        xtime_total = ld.itime_total - sum(dt.xtime for dt in dts)
+        last_dt = max(ld.dts, key=lambda dt: dt.citer) #last iteration
         nconfigs = last_dt.nconfigs
         ncovs = last_dt.ncovs
         
-        logger.info(alg.DTrace.str_of_summary(
-            seed,len(dts),itime_total,xtime_total,nconfigs,ncovs,dir_))
+        logger.info(IA.DTrace.str_of_summary(
+            ld.seed,
+            len(ld.dts),
+            ld.itime_total,
+            xtime_total,
+            nconfigs,
+            ncovs,
+            dir_))
 
         logger.info("*** Additional analysis ***")
-        from alg_miscs import AddOns
-        AddOns.dts = dts
-        AddOns.dom = IA.Dom(dom) if isinstance(dom, IA_OLD.Dom) else dom
-        AddOns.z3db = dom.z3db
-        AddOns.mcores_d = mcores_d
-        AddOns.pp_cores_d = pp_cores_d
-        
-        #Min Configs
+
+        # do_min_configs has 3 possible values
+        # 1. None: don't find min configs
+        # 2. f: (callable(f)) find min configs using f
+        # 3. anything else: find min configs using existing configs
         if do_min_configs is None:
             min_configs = []
             min_ncovs = 0
         else:
-            from alg_miscs import HighCov
-            min_configs, min_ncovs = HighCov.go(do_min_configs)
+            logger.info("Finding Min Configs")
+            from alg_miscs import MinConfigs
+            mc = MinConfigs(ld)
+            if callable(do_min_configs):
+                min_configs, min_ncovs = mc.search_f(f=do_min_configs)
+            else:
+                min_configs, min_ncovs = mc.search_existing()
             
-        #Influential settings
+        logger.info("Influential Options")
         from alg_miscs import Influence
-        influence_scores = Influence.go(ncovs)
+        influence_scores = Influence(ld).search(ncovs)
 
-        #similarity scores
+        logger.info("Check Precision")
+        from alg_miscs import Precision
+        ud = Precision(ld)
+        strong_mcores_d = {}
+        ok_mcores_d, weak_mcores_d = ud.check_existing()
+        if cmp_gt: #compare against ground truths
+            logger.info("against results in '{}'".format(cmp_gt))
+            equivs, weaks, strongs, nones = ud.check_gt(cmp_dir=cmp_gt)
+            
+        logger.info("Measure Similarity")
         from alg_miscs import Similarity
-        #compare against ground truths
-        fscores, vscores, gt_pp_cores_d = Similarity.compare_gt(cmp_gt)
+        sl = Similarity(ld)
+        vscores = sl.get_vscores()
+        fscores, gt_pp_cores_d = None, None
+        if cmp_gt: #compare against ground truths
+            logger.info("against results in '{}'".format(cmp_gt))
+            fscores, gt_pp_cores_d = sl.get_fscores(cmp_dir=cmp_gt)
             
         #compare against rand search
         r_f = cmp_rand
         if callable(r_f):
             r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = r_f(nconfigs)
             if gt_pp_cores_d:
-                r_fscore = Similarity.fscore_cores_d(
-                    r_pp_cores_d, gt_pp_cores_d)
+                r_fscore = sl.fscore_cores_d(r_pp_cores_d, gt_pp_cores_d)
             else:
                 r_fscore = None
                 
-            r_vscore = Similarity.vscore_cores_d(r_cores_d)
+            r_vscore = sl.vscore_cores_d(r_cores_d)
             logger.info("rand: configs {} cov {} vscore {} fscore {}"
                         .format(len(r_configs_d),len(r_covs_d),
                                 r_vscore,r_fscore))
@@ -144,31 +280,22 @@ class Analysis(object):
             r_fvscores = None
 
 
-        from alg_miscs import Undetermined
-        ok_mcores_d, weak_mcores_d = Undetermined.go()
-        nweaks = sum(len(v) for v in weak_mcores_d.itervalues())
-        logger.info("locs with weak results: {}% ({}/{})"
-                    .format(100. * nweaks / ncovs, nweaks, ncovs))
-        
-        if nweaks:
-            logger.info("weak results\n{}".format(weak_mcores_d))
-            logger.info("ok results\n{}".format(ok_mcores_d))
-
-        rs = Results(niters=len(dts),
-                     ncores=len(mcores_d),
-                     itime=itime_total,
-                     xtime=xtime_total,
-                     ncovs=ncovs,
-                     nconfigs=nconfigs,
-                     n_min_configs=len(min_configs),
-                     min_ncovs=min_ncovs,
-                     vscores=vscores,
-                     fscores=fscores,
-                     r_fvscores=r_fvscores,
-                     influence_scores=influence_scores,
-                     m_strens=mcores_d.strens,
-                     m_strens_str=mcores_d.strens_str,
-                     m_vtyps=mcores_d.vtyps)
+        #return analyzed results
+        rs = AnalysisResults(niters=len(dts),
+                             ncores=len(ld.mcores_d),
+                             itime=ld.itime_total,
+                             xtime=xtime_total,
+                             ncovs=ncovs,
+                             nconfigs=nconfigs,
+                             n_min_configs=len(min_configs),
+                             min_ncovs=min_ncovs,
+                             vscores=vscores,
+                             fscores=fscores,
+                             r_fvscores=r_fvscores,
+                             influence_scores=influence_scores,
+                             m_strens=ld.mcores_d.strens,
+                             m_strens_str=ld.mcores_d.strens_str,
+                             m_vtyps=ld.mcores_d.vtyps)
         return rs
 
     @classmethod
@@ -293,12 +420,20 @@ class Analysis(object):
             for num in range(length,int(nruns_total_f)):
                 inters.append(0)
                 covs.append(0)
-            ss.append("({}, {}, {})".format(strength,sum(inters)/nruns_total_f,sum(covs)/nruns_total_f))
-            medians.append("({}, {}, {})".format(strength, numpy.median(inters), numpy.median(covs)))
-            siqrs.append("({}, {}, {})".format(strength, Analysis.siqr(inters), Analysis.siqr(covs)))
-            tmp.append("{},{})".format(strength,','.join(map(str, inters))))
-            tex_table4.append("{} \\mso{{{}}}{{{}}}".format(strength,numpy.median(inters),Analysis.siqr(inters)))
-            tex_table5.append("{} \\mso{{{}}}{{{}}}".format(strength,numpy.median(covs),Analysis.siqr(covs)))
+            ss.append("({}, {}, {})"
+                      .format(strength,
+                              sum(inters)/nruns_total_f,
+                              sum(covs)/nruns_total_f))
+            medians.append("({}, {}, {})"
+                           .format(strength, numpy.median(inters), numpy.median(covs)))
+            siqrs.append("({}, {}, {})"
+                         .format(strength, Analysis.siqr(inters), Analysis.siqr(covs)))
+            tmp.append("{},{})"
+                       .format(strength,','.join(map(str, inters))))
+            tex_table4.append("{} \\mso{{{}}}{{{}}}"
+                              .format(strength,numpy.median(inters),Analysis.siqr(inters)))
+            tex_table5.append("{} \\mso{{{}}}{{{}}}"
+                              .format(strength,numpy.median(covs),Analysis.siqr(covs)))
         
         logger.info("interaction strens averages: {}".format(', '.join(ss)))
         logger.info("interaction strens medians : {}".format(', '.join(medians)))
@@ -364,10 +499,6 @@ class Analysis(object):
 
         logger.info(cconfigs_d)
 
-
-
-
-    
 
 if __name__ == "__main__":
     import doctest

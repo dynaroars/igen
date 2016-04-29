@@ -9,9 +9,16 @@ from vu_common import HDict
 import vu_common as CM
 import config_common as CC
 from config_common import Configs_d #do not del, needed to read existing results
+
 logger = CM.VLog('igen_alg')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
+
+def compat(obj, cls):
+    """
+    For compatibility with old data
+    """
+    return isinstance(obj, cls) or obj.__class__.__name__ == cls.__name__
 
 #Data Structures
 class Dom(CC.Dom):
@@ -75,7 +82,7 @@ class Dom(CC.Dom):
         x=0,y=1  =>  [x=0,y=0,z=rand;x=0,y=2,z=rand;x=1,y=1;z=rand]
         """
         
-        assert isinstance(sel_core,SCore),sel_core 
+        assert isinstance(sel_core, SCore), sel_core 
         
         configs = []            
         c_core,s_core = sel_core
@@ -205,7 +212,7 @@ class Core(HDict):
         try:
             return self._neg
         except AttributeError:
-            assert isinstance(dom, Dom), dom
+            assert compat(dom, Dom), dom
             ncore = ((k,dom[k] - self[k]) for k in self)
             self._neg = Core((k,vs) for k,vs in ncore if vs)
             return self._neg
@@ -700,8 +707,8 @@ class Mcores_d(CC.CustDict):
     A mapping from core -> {sids}
     """
     def add(self,core,sid):
-        assert isinstance(core, PNCore),core
-        assert isinstance(sid,str),str
+        assert compat(core, PNCore),core
+        assert isinstance(sid, str),str
         
         super(Mcores_d,self).add_set(core,sid)
 
@@ -792,11 +799,11 @@ class Infer(object):
     @classmethod
     def infer_sid(cls,sid,core,cconfigs_d,configs_d,covs_d,dom,cache):
         assert isinstance(sid,str),sid
-        assert isinstance(core,PNCore),core
+        assert isinstance(core, PNCore),core
         assert (cconfigs_d and
-                isinstance(cconfigs_d,CC.Configs_d)), cconfigs_d
+                isinstance(cconfigs_d, CC.Configs_d)), cconfigs_d
         assert isinstance(configs_d, CC.Configs_d), configs_d
-        assert isinstance(covs_d,CC.Covs_d),covs_d
+        assert isinstance(covs_d, CC.Covs_d),covs_d
         assert isinstance(dom,Dom),dom        
         assert isinstance(cache,dict),cache
         
@@ -1130,6 +1137,7 @@ class IGen(object):
 
         return sel_core
 
+
 class DTrace(object):
     """
     Object for saving information (for later analysis)
@@ -1188,10 +1196,12 @@ class DTrace(object):
     def load_pre(dir_):
         seed,dom = CM.vload(os.path.join(dir_,'pre'))
         return seed,dom
+
     @staticmethod
     def load_post(dir_):
         pp_cores_d,itime_total = CM.vload(os.path.join(dir_,'post'))
         return pp_cores_d,itime_total
+
     @staticmethod
     def load_iter(dir_,f):
         dtrace = CM.vload(os.path.join(dir_,f))
@@ -1208,16 +1218,16 @@ class DTrace(object):
         return "Summary: " + ', '.join(ss)    
 
     @classmethod
-    def load_dir(cls, dir_):
+    def load_dir(cls, dir_):        
         seed,dom = cls.load_pre(dir_)
         dts = [cls.load_iter(dir_,f)
                for f in os.listdir(dir_) if f.endswith('.tvn')]
         try:
-            pp_cores_d,itime_total = DTrace.load_post(dir_)
+            pp_cores_d,itime_total = cls.load_post(dir_)
         except IOError:
             logger.error("post info not avail")
-            pp_cores_d,itime_total = None,None
-        return seed,dom,dts,pp_cores_d,itime_total
+            pp_cores_d, itime_total = None, None
+        return seed, dom, dts, pp_cores_d, itime_total
     
 if __name__ == "__main__":
     import doctest
