@@ -7,7 +7,7 @@ from time import time
 import vu_common as CM
 import config_common as CC
 import alg as IA
-import config as IA_OLD  #old data
+#import config as IA_OLD  #old data
 
 logger = CM.VLog('alg_miscs')
 logger.level = CC.logger_level
@@ -16,70 +16,11 @@ CM.VLog.PRINT_TIME = True
 import z3
 import z3util
 
-class AddOns(object):
-    __metaclass__ = abc.ABCMeta
-    
-    #init vars
-    dts = None
-    dom = None
-    mcores_d = None
-    pp_cores_d = None
-    z3db = None
-    
-    #to be computed
-    configs_d = CC.Configs_d()  #{config -> set(cov)}
-    ccovs_d = CC.Covs_d()  #{cov -> set(configs)}
-    ncovs_d = CC.Covs_d()  #{cov -> set(configs)}
-    
-    @classmethod
-    def compute_configs_d(cls):
-        if cls.configs_d:
-            return
+class XAnalysis(object):
+    def __init__(self, ld):
+        self.ld = ld
 
-        assert isinstance(cls.configs_d, CC.Configs_d) and not cls.configs_d
-        assert cls.dts
-        
-        for dt in cls.dts:
-            for config in dt.cconfigs_d:
-                cls.configs_d[config] = dt.cconfigs_d[config]
-                
-    @classmethod
-    def compute_covs_ds(cls):
-        if cls.ccovs_d or cls.ncovs_d:
-            return
-
-        assert isinstance(cls.configs_d, CC.Configs_d) and cls.configs_d        
-        assert isinstance(cls.ccovs_d, CC.Covs_d) and not cls.ccovs_d
-        assert isinstance(cls.ncovs_d, CC.Covs_d) and not cls.ncovs_d
-
-        covs = set()
-        for config in cls.configs_d:
-            for cov in cls.configs_d[config]:
-                covs.add(cov)
-
-        for config in cls.configs_d:
-            covered = cls.configs_d[config]            
-            for loc in covered:
-                cls.ccovs_d.add(loc, config)
-
-            ncovered = covs - covered                
-            for loc in ncovered:
-                cls.ncovs_d.add(loc, config)
-                
-    # @staticmethod
-    # def compute_same_covs(covs_d):
-    #     d = {}
-    #     for loc, configs in covs_d.iteritems():
-    #         k = frozenset(configs)
-    #         if k not in d:
-    #             d[k] = set()
-    #         d[k].add(loc)
-
-    #     rs = set(frozenset(s) for s in d.itervalues())
-    #     return rs
-        
-        
-class HighCov(AddOns):
+class MinConfigs(XAnalysis):
     """
     Use interactions to generate high cov configs
 
@@ -108,42 +49,37 @@ class HighCov(AddOns):
     e & !a
     f & a
     
-    >>> exprs_d = HighCov.prune(exprs_d)
+    >>> exprs_d = MinConfigs.prune(exprs_d)
     >>> print '\\n'.join(map(str,sorted(exprs_d)))
     a & b & (c|d)
     b & c
     e & !a
     f & a
     
-    >>> fs = HighCov.pack(exprs_d)
-    >>> print '\\n'.join(sorted(map(HighCov.str_of_pack,fs)))
+    >>> fs = MinConfigs.pack(exprs_d)
+    >>> print '\\n'.join(sorted(map(MinConfigs.str_of_pack,fs)))
     (a & b & (c|d); b & c; f & a)
     (e & !a)
 
 
-    >>> HighCov.prune({'a':None})
+    >>> MinConfigs.prune({'a':None})
     {}
 
-    >>> HighCov.pack({})
+    >>> MinConfigs.pack({})
     {}
 
-    >>> HighCov.pack({'a':None})
+    >>> MinConfigs.pack({'a':None})
     Traceback (most recent call last):
     ...
     AssertionError: {'a': None}
-    
     """
+    def search_f(self, f):
+        assert callable(f)
+        return self.get_minset_f(set(self.ld.pp_cores_d), f)
 
-    @classmethod
-    def go(cls, do_min_configs):
-        assert do_min_configs is not None
+    def search_existing(self):
+        return self.get_minset_configs_d(set(self.ld.pp_cores_d))
 
-        cores = set(cls.pp_cores_d)
-        if callable(do_min_configs):
-            return cls.get_minset_f(cores, f=do_min_configs)
-        else:
-            cls.compute_configs_d()
-            return cls.get_minset_configs_d(cores)
 
     @classmethod
     def prune(cls, d):
@@ -236,24 +172,23 @@ class HighCov(AddOns):
         fs = set(fs_)
         return dict((f,d[f]) for f in d if f in fs_)
 
-    @classmethod
-    def indep(cls, fs):
+    def indep(self, fs):
         """
         Apply prune and pack on fs
         """
         #prune
-        d = dict((c, c.z3expr(cls.z3db, cls.dom)) for c in fs)
-        d = cls.prune(d)
+        d = dict((c, c.z3expr(self.ld.z3db, self.ld.dom)) for c in fs)
+        d = self.prune(d)
         logger.debug("prune: {} remains".format(len(d)))
         logger.debug("\n{}".format('\n'.join(
             "{}. {}".format(i+1,str(c)) for i,c
             in enumerate(sorted(d)))))
 
         #pack
-        d = cls.pack(d)
+        d = self.pack(d)
         logger.debug("pack: {} remains".format(len(d)))
         logger.debug("\n{}".format('\n'.join(
-            "{}. {}".format(i+1, cls.str_of_pack(c))
+            "{}. {}".format(i+1, self.str_of_pack(c))
             for i,c in enumerate(d))))
 
         assert all(v for v in d.itervalues())
@@ -271,9 +206,8 @@ class HighCov(AddOns):
         return '({})'.format('; '.join(map(f,pack)))
 
     
-    @classmethod
-    def get_minset_f(cls, remain_covs, f):
-        d = cls.indep(cls.mcores_d.keys())
+    def get_minset_f(self, remain_covs, f):
+        d = self.indep(self.ld.mcores_d.keys())
 
         st = time()
         ncovs = len(remain_covs)  #orig covs
@@ -282,12 +216,12 @@ class HighCov(AddOns):
         for pack,expr in d.iteritems():
             #Todo: and not one of the existing ones
             nexpr = z3util.myOr(minset_d)            
-            configs = cls.dom.gen_configs_exprs(
+            configs = self.ld.dom.gen_configs_exprs(
                 [expr], [nexpr], k=1, config_cls=IA.Config)
                 
             if not configs:
                 logger.warn("Cannot create configs from {}"
-                            .format(cls.str_of_pack(pack)))
+                            .format(self.str_of_pack(pack)))
             else:
                 config = configs[0]
                 covs,xtime = f(config)
@@ -302,8 +236,7 @@ class HighCov(AddOns):
         return minset_d.keys(), minset_ncovs
         
     
-    @classmethod
-    def get_minset_configs_d(cls, remain_covs):
+    def get_minset_configs_d(self, remain_covs):
         """
         Use interactions to generate a min set of configs 
         from configs_d that cover remain_covs locations.
@@ -312,19 +245,19 @@ class HighCov(AddOns):
         If use packed elems then could be slow because
         have to check that all generated configs satisfy packed elem
         """
-        d = cls.indep(cls.mcores_d.keys())
+        d = self.indep(self.ld.mcores_d.keys())
         packs = set(d)  #{(pack,expr)}
         ncovs = len(remain_covs)  #orig covs
-        remain_configs = set(cls.configs_d)
+        remain_configs = set(self.ld.configs_d)
         minset_d = CC.Configs_d()  #results
         
         #some init setup
-        exprs_d = [(c, c.z3expr(cls.z3db)) for c in cls.configs_d] #slow
+        exprs_d = [(c, c.z3expr(self.ld.z3db)) for c in self.ld.configs_d] #slow
         exprs_d = exprs_d + d.items()
         exprs_d = dict(exprs_d)
 
         def _f(pack,covs):
-            covs_ = set.union(*(cls.mcores_d[c] for c in pack))
+            covs_ = set.union(*(self.ld.mcores_d[c] for c in pack))
             return len(covs - covs_)  #smaller better
 
         def _g(pack,e_configs):
@@ -335,7 +268,7 @@ class HighCov(AddOns):
             e_expr = z3util.myOr([exprs_d[c] for c in e_configs])
             p_expr = exprs_d[pack]
             expr = z3.And(p_expr,e_expr)
-            configs = cls.dom.gen_configs_expr(expr, k=1, config_cls=IA.Config)
+            configs = self.ld.dom.gen_configs_expr(expr, k=1, config_cls=IA.Config)
             if not configs:
                 return None
             else:
@@ -347,7 +280,7 @@ class HighCov(AddOns):
                 return config
 
         def _get_min(configs,covs):
-            return min(configs,key=lambda c: len(covs - cls.configs_d[c]))
+            return min(configs,key=lambda c: len(covs - self.ld.configs_d[c]))
 
         st = time()
         while remain_covs and remain_configs:
@@ -359,16 +292,16 @@ class HighCov(AddOns):
                 config = _g(pack,remain_configs)
                 if config is None:
                     logger.warn("no avail configs => {}"
-                                .format(cls.str_of_pack(pack)))
+                                .format(self.str_of_pack(pack)))
                     config = _get_min(remain_configs,remain_covs)
             else:
                 config = _get_min(remain_configs,remain_covs)                
 
             assert config and config not in minset_d, config
-            minset_d[config] = cls.configs_d[config]
-            remain_covs = remain_covs - cls.configs_d[config]
+            minset_d[config] = self.ld.configs_d[config]
+            remain_covs = remain_covs - self.ld.configs_d[config]
             remain_configs = [c for c in remain_configs
-                              if len(remain_covs - cls.configs_d[c])
+                              if len(remain_covs - self.ld.configs_d[c])
                               != len(remain_covs)]
 
         minset_ncovs = ncovs - len(remain_covs)
@@ -379,27 +312,23 @@ class HighCov(AddOns):
 
         return minset_d.keys(), minset_ncovs
 
-class Similarity(AddOns):
-    @classmethod
-    def vscore_core(cls, core):
-        vs = [len(core[k] if k in core else cls.dom[k]) for k in cls.dom]
+class Similarity(XAnalysis):
+    def vscore_core(self, core):
+        vs = [len(core[k] if k in core else self.ld.dom[k]) for k in self.ld.dom]
         return sum(vs)
 
-    @classmethod
-    def vscore_pncore(cls, pncore):
+    def vscore_pncore(self, pncore):
         #"is not None" is correct because empty Core is valid
         #and in fact has max score
-        vs = [cls.vscore_core(c) for c in pncore if c is not None]
+        vs = [self.vscore_core(c) for c in pncore if c is not None]
         return sum(vs)
 
-    @classmethod
-    def vscore_cores_d(cls, cores_d):
-        vs = [cls.vscore_pncore(c) for c in cores_d.itervalues()]
+    def vscore_cores_d(self, cores_d):
+        vs = [self.vscore_pncore(c) for c in cores_d.itervalues()]
         return sum(vs)
 
     #f-score    
-    @classmethod
-    def get_settings(cls, c):
+    def get_settings(self, c):
         """
         If a var k is not in c, then that means k = all_poss_of_k
         """
@@ -408,15 +337,14 @@ class Similarity(AddOns):
             settings = set()
         elif isinstance(c,IA.Core):
             #if a Core is empty then it will have max settings
-            rs = [k for k in cls.dom if k not in c]
-            rs = [(k,v) for k in rs for v in cls.dom[k]]
+            rs = [k for k in self.ld.dom if k not in c]
+            rs = [(k,v) for k in rs for v in self.ld.dom[k]]
             settings = set(c.settings + rs)
         else:
             settings = c
         return settings
         
-    @classmethod    
-    def fscore_core(cls, me, gt):
+    def fscore_core(self, me, gt):
         def fscore(me,gt):
             """
             #false pos: in me but not in gt
@@ -428,21 +356,19 @@ class Similarity(AddOns):
             fp = len([s for s in me if s not in gt])
             fn = len([s for s in gt if s not in me])
             return tp,fp,fn
-        me = cls.get_settings(me)
-        gt = cls.get_settings(gt)
+        me = self.get_settings(me)
+        gt = self.get_settings(gt)
         return fscore(me, gt)
 
-    @classmethod
-    def fscore_pncore(cls, me, gt):
+    def fscore_pncore(self, me, gt):
         #me and gt are pncore's (c,d,cd,dc)
-        rs = [cls.fscore_core(m, g) for m,g in zip(me, gt)]
+        rs = [self.fscore_core(m, g) for m,g in zip(me, gt)]
         tp = sum(x for x,_,_ in rs)
         fp = sum(x for _,x,_ in rs)
         fn = sum(x for _,_,x in rs)
         return tp,fp,fn
 
-    @classmethod
-    def fscore_cores_d(cls, me, gt):
+    def fscore_cores_d(self, me, gt):
         """
         Precision(p) = tp / (tp+fp)
         Recall(r) = tp / (tp+fn)
@@ -495,7 +421,7 @@ class Similarity(AddOns):
         1.0
 
         """
-        rs = [cls.fscore_pncore(me[k], gt[k])
+        rs = [self.fscore_pncore(me[k], gt[k])
               for k in gt if k in me]
         f_sum = 0.0        
         for tp,fp,fn in rs:
@@ -508,63 +434,50 @@ class Similarity(AddOns):
             f_sum += f
         return f_sum/len(gt)
 
-    @classmethod
-    def compare_gt(cls, cmp_gt):
+    def get_fscores(self, cmp_dir):
         #Evol scores        
-        #Using f-score when ground truth is avail
+        #Using f-score when ground truth (cmp_dir) is avail
         #Note here we use analyzed pp_cores_d instead of just cores_d
-        if cmp_gt:
-            gt_dir = cmp_gt
-            logger.debug("load gt dir '{}'".format(gt_dir))            
-            _,_,gt_dts,gt_pp_cores_d,_ = IA.DTrace.load_dir(gt_dir)
-            assert len(gt_dts)==1, "is this the ground truth dir ??"
 
-            #get pp_cores_d at each iteration
-            pp_cores_ds = []
-            for dt in cls.dts:
-                configs_ds = [dt_.cconfigs_d for dt_ in cls.dts
-                              if dt_.citer <= dt.citer]
-                covs_d = CC.Covs_d()
-                for configs_d in configs_ds:
-                    for config,cov in configs_d.iteritems():
-                        for sid in cov:
-                            covs_d.add(sid,config)
+        cd = self.ld.load_cmp_dir(cmp_dir)
 
-                pp_cores_d = dt.cores_d.analyze(cls.dom, covs_d)
-                pp_cores_ds.append(pp_cores_d)
+        #get pp_cores_d at each iteration
+        pp_cores_ds = []
+        for dt in self.ld.dts:
+            configs_ds = [dt_.cconfigs_d for dt_ in self.ld.dts
+                          if dt_.citer <= dt.citer]
+            covs_d = CC.Covs_d()
+            for configs_d in configs_ds:
+                for config,cov in configs_d.iteritems():
+                    for sid in cov:
+                        covs_d.add(sid,config)
 
-            fscores = [
-                (dt.citer,
-                 cls.fscore_cores_d(pp_cores_d,gt_pp_cores_d),
-                 dt.nconfigs)
-                for dt, pp_cores_d in zip(cls.dts, pp_cores_ds)]
+            pp_cores_d = dt.cores_d.analyze(self.ld.dom, covs_d)
+            pp_cores_ds.append(pp_cores_d)
 
-            fscores_ = []
-            for dt, pp_cores_d in zip(cls.dts, pp_cores_ds):
-                rs = (dt.citer,
-                      cls.fscore_cores_d(pp_cores_d, gt_pp_cores_d),
-                      dt.nconfigs)
-                fscores_.append(rs)
+        fscores = [
+            (dt.citer,
+             self.fscore_cores_d(pp_cores_d, cd.pp_cores_d),
+             dt.nconfigs)
+            for dt, pp_cores_d in zip(self.ld.dts, pp_cores_ds)]
 
-            logger.info("fscores (iter, fscore, configs): {}".format(
-                ' -> '.join(map(str,fscores))))
+        logger.info("fscores (iter, fscore, configs): {}".format(
+            ' -> '.join(map(str,fscores))))
             
-        else:
-            gt_pp_cores_d=None
-            fscores = None
-            
-        #Using  a simple metrics that just gives more pts for more
-        #info (new cov or new results). Note here we use cores_d
+        return fscores, cd.pp_cores_d
+
+    def get_vscores(self):
+        #Simple metrics giving more pts for more info
+        #(new cov or new results). Note here we use cores_d
         vscores = [(dt.citer,
-                    cls.vscore_cores_d(dt.cores_d),
+                    self.vscore_cores_d(dt.cores_d),
                     dt.nconfigs)
-                   for dt in cls.dts]
+                   for dt in self.ld.dts]
         logger.info("vscores (iter, vscore, configs): {}".format(
             ' -> '.join(map(str, vscores))))
-
-        return fscores, vscores, gt_pp_cores_d
+        return vscores
     
-class Influence(AddOns):
+class Influence(XAnalysis):
     """
     Compute influence metrics of options. 
     Returns a dict of (opt, uniq, %), e.g., 
@@ -572,23 +485,22 @@ class Influence(AddOns):
     which is 25% of the 8 covered locations.
     """
     
-    @classmethod
-    def go(cls, ncovs, do_settings=True):
+    def search(self, ncovs, do_settings=True):
         assert ncovs > 0, ncovs
         assert isinstance(do_settings, bool), do_settings
         
         if do_settings:
-            ks = set((k,v) for k,vs in cls.dom.iteritems() for v in vs)
+            ks = set((k,v) for k,vs in self.ld.dom.iteritems() for v in vs)
             def g(core):
                 pc,pd,nc,nd = core
                 settings = []
                 if pc:
                     settings.extend(pc.settings)
                 if pd:
-                    settings.extend(pd.neg(cls.dom).settings)
+                    settings.extend(pd.neg(self.ld.dom).settings)
                 #nd | neg(nc) 
                 if nc:
-                    settings.extend(nc.neg(cls.dom).settings)
+                    settings.extend(nc.neg(self.ld.dom).settings)
                 if nd:
                     settings.extend(nd.settings)
 
@@ -597,41 +509,41 @@ class Influence(AddOns):
             _str = CC.str_of_setting
 
         else:
-            ks = cls.dom.keys()
+            ks = self.ld.dom.keys()
             def g(core):
                 core = (c for c in core if c)
                 return set(s for c in core for s in c)
             _str = str
 
 
-        g_d = dict((pncore, g(pncore)) for pncore in cls.mcores_d)
+        g_d = dict((pncore, g(pncore)) for pncore in self.ld.mcores_d)
         rs = []
         for k in ks:
-            v = sum(len(cls.mcores_d[pncore])
+            v = sum(len(self.ld.mcores_d[pncore])
                     for pncore in g_d if k in g_d[pncore])
             rs.append((k,v))
             
         rs = sorted(rs, key = lambda (k, v) : (v, k), reverse=True)
         rs = [(k, v, 100. * v / ncovs) for k, v in rs]
-        logger.info("influence opts (opt, uniq, %) {}"
+        logger.info("influence (opt, uniq, %) {}"
                     .format(', '.join(map(
                         lambda (k, v, p): "({}, {}, {})"
                         .format(_str(k), v, p), rs))))
         return rs
 
     
-class Undetermined(AddOns):
+class Precision(XAnalysis):
     """
-    Determine potentially imprecise invariants (too weak).
+    Check for potentially imprecise invariants (too weak or too strong).
     E.g., if a location has true invbut there exist some config 
     that does not cover it then true is too weak.
-
-    Essentially this method can determine that an inferred inv of a loc 
-    having the form conj1 & .. & conjn is too weak if the real inv of 
-    that loc is conj1 & .. & conj2 & some_other_expr
     """
-    @classmethod
-    def go(cls):
+
+    strong = 0
+    equiv = 1    
+    weak = 2
+    
+    def check_existing(self):
         def check(configs, expr, cache):
             #check if forall c in configs. c => expr 
             k = hash((frozenset(configs), z3util.fhash(expr)))
@@ -642,7 +554,7 @@ class Undetermined(AddOns):
                 try:
                     cexpr = cache[config]
                 except KeyError:
-                    cexpr = config.z3expr(cls.z3db)
+                    cexpr = config.z3expr(self.ld.z3db)
                     cache[config] = cexpr
                 rs.append(cexpr)
 
@@ -650,40 +562,108 @@ class Undetermined(AddOns):
             cache[k] = rs
             return rs
 
-        cls.compute_configs_d()
-        cls.compute_covs_ds()
-
         cache = {}        
-        ok_mcores_d, weak_mcores_d = IA.Mcores_d(), IA.Mcores_d()
-        for pncore in cls.mcores_d:
-            if isinstance(pncore, IA_OLD.PNCore):
-                pncore_ = IA.PNCore((
-                    pncore.pc if pncore.pc is None else IA.Core(pncore.pc),
-                    pncore.pd if pncore.pd is None else IA.Core(pncore.pd),
-                    pncore.nc if pncore.nc is None else IA.Core(pncore.nc),
-                    pncore.nd if pncore.nd is None else IA.Core(pncore.nd)))
-                pncore_.vtyp = pncore.vtyp
-                pncore = pncore_
-                
-            expr = pncore.z3expr(cls.z3db, cls.dom)  #None = True
+        equivs, nones = IA.Mcores_d(), IA.Mcores_d()
+        for pncore in self.ld.mcores_d:
+            expr = pncore.z3expr(self.ld.z3db, self.ld.dom)  #None = True
             nexpr = expr if expr is None else z3.Not(expr)
-            covs = cls.mcores_d[pncore]
+            covs = self.ld.mcores_d[pncore]
             for cov in covs:
-                if cov not in cls.ncovs_d:
-                    isOK = True
+                if cov not in self.ld.ncovs_d: #no neg configs for cov
+                    stat = True
                 else:
                     if expr is None: #true interaction but some locs are not covered
-                        isOK = False
+                        stat = False
                     else:
-                        assert cls.ncovs_d[cov]
-                        isOK = check(cls.ncovs_d[cov], nexpr, cache)
+                        assert self.ld.ncovs_d[cov]
+                        stat = check(self.ld.ncovs_d[cov], nexpr, cache)
 
-                (ok_mcores_d if isOK else weak_mcores_d).add(pncore, cov)
+                (equivs if stat else nones).add(pncore, cov)
+
+        nuds = self.show(nones, 'undetermined')
+        if nuds:
+            logger.info("equiv results\n{}".format(equivs))
                 
-        return ok_mcores_d, weak_mcores_d
+        return equivs, nones
 
+    def check_gt(self, cmp_dir):
+
+        def check(configs, expr, cache):
+            k = hash((frozenset(configs), z3util.fhash(expr)))
+            if k in cache: return cache[k]
+
+            rs = []
+            for config in configs:
+                try:
+                    cexpr = cache[config]
+                except KeyError:
+                    cexpr = config.z3expr(self.ld.z3db)
+                    cache[config] = cexpr
+                rs.append(cexpr)
+            rs = z3util.myOr(rs)  #truth
             
+            if z3util.is_tautology(rs == expr):
+                stat = self.equiv
+            elif z3util.is_tautology(z3.Implies(expr, rs)):
+                stat = self.strong
+            elif z3util.is_tautology(z3.Implies(rs, expr)):
+                stat = self.weak
+            else:
+                # print z3.prove(z3.Implies(rs,expr))
+                # print z3.prove(z3.Implies(expr,rs))                
+                stat = None
+            cache[k] = stat
+            return stat
+
+        cd = self.ld.load_cmp_dir(cmp_dir)
+        cache = {}
+        strongs = IA.Mcores_d()
+        equivs = IA.Mcores_d()
+        weaks = IA.Mcores_d()
+        nones = IA.Mcores_d()
+        for pncore in self.ld.mcores_d:
+            expr = pncore.z3expr(self.ld.z3db, self.ld.dom)
+            covs = self.ld.mcores_d[pncore]
+            for cov in covs:
+                if expr is None:
+                    if cov in cd.ncovs_d:
+                        stat = self.weak
+                    else:
+                        stat = self.equiv
+                else:
+                    assert cd.ccovs_d[cov]
+                    stat = check(cd.ccovs_d[cov], expr, cache)
+
+                assert stat in (self.weak, self.equiv, self.strong, None), stat
+                if stat == self.weak:
+                    weaks.add(pncore, cov)
+                elif stat == self.equiv:
+                    equivs.add(pncore, cov)
+                elif stat == self.strong:
+                    strongs.add(pncore, cov)
+                else:
+                    nones.add(pncore, cov)
+
+        nweaks = self.show(weaks, 'weaks')
+        nstrongs = self.show(strongs, 'strongs')
+        nundetermineds = self.show(nones, 'undetermined')
+        if nweaks + nstrongs + nundetermineds:
+            logger.info("equiv results\n{}".format(equivs))
+            
+        return weaks, equivs, strongs, nones
+
+
+    def show(self, rs_d, s):
+        n = sum(len(v) for v in rs_d.itervalues())
+        if n:            
+            logger.info("locs with '{}' results: {}% ({}/{})"
+                        .format(s, 100. * n / len(self.ld.covs),
+                                n, len(self.ld.covs)))
+            logger.info("'{}' results\n{}".format(s, rs_d))
+        return n
         
+    
+    
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
