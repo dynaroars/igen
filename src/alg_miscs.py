@@ -582,7 +582,7 @@ class Precision(XAnalysis):
 
         nuds = self.show(nones, 'undetermined')
         if nuds:
-            logger.info("equiv results\n{}".format(equivs))
+            self.show(equivs, 'equivs')
                 
         return equivs, nones
 
@@ -648,7 +648,7 @@ class Precision(XAnalysis):
         nstrongs = self.show(strongs, 'strongs')
         nundetermineds = self.show(nones, 'undetermined')
         if nweaks + nstrongs + nundetermineds:
-            logger.info("equiv results\n{}".format(equivs))
+            self.show(equivs, 'equivs')
             
         return weaks, equivs, strongs, nones
 
