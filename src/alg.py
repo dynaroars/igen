@@ -219,10 +219,9 @@ class Core(HDict):
         
     def z3expr(self,z3db, myf):
         f = []
-        for vn,vs in self.iteritems():
-            vn_,vs_ = z3db[vn]
+        for vn, vs in self.iteritems():
+            vn_, vs_ = z3db[vn]
             f.append(z3util.myOr([vn_ == vs_[v] for v in vs]))
-
         return myf(f)
     
     @staticmethod
@@ -426,6 +425,10 @@ class PNCore(MCore):
     
     @staticmethod
     def _get_expr(cc,cd,dom,z3db,is_and):
+        assert Core.is_maybe_core(cc)
+        assert Core.is_maybe_core(cd)
+        assert isinstance(dom, Dom)
+        
         fs = []
         if cc:
             f = cc.z3expr(z3db, myf=z3util.myAnd)
@@ -629,13 +632,15 @@ class Cores_d(CC.CustDict):
                          for i,sid in enumerate(sorted(self)))
 
     def merge(self, z3db, dom, show_detail=False):
+        assert isinstance(dom, Dom)
+        assert not isinstance(z3db, Dom)
+
         mcores_d = Mcores_d()
         cache = {}
         for sid, core in self.iteritems():
             try:
                 key = core.vstr 
             except AttributeError:
-                logger.warn("W: merging old format .. might be imprecise")
                 key = core
                 
             if key not in cache:
@@ -721,6 +726,9 @@ class Mcores_d(CC.CustDict):
         return '\n'.join(ss)
 
     def fix_duplicates(self, z3db, dom):
+        assert isinstance(dom, Dom)
+        assert not isinstance(z3db, Dom)
+        
         def find_dup(expr, d, cache):
             for pc in d:
                 expr_ = cache[pc]
@@ -1061,10 +1069,10 @@ class IGen(object):
                     for c in covs_d[sid]:
                         covs_d_.add(sid, c)
             pp_cores_d = cores_d_.analyze(self.dom, covs_d_)
-            _ = pp_cores_d.merge(self.dom, self.z3db, show_detail=True)
+            _ = pp_cores_d.merge(self.z3db, self.dom, show_detail=True)
         else:
             pp_cores_d = cores_d.analyze(self.dom, covs_d)
-            _ = pp_cores_d.merge(self.dom, self.z3db, show_detail=True)
+            _ = pp_cores_d.merge(self.z3db, self.dom, show_detail=True)
         
         itime_total = time() - st
         logger.debug(DTrace.str_of_summary(
@@ -1205,6 +1213,8 @@ class DTrace(object):
         self.cores_d = cores_d
         
     def show(self, z3db, dom):
+        assert isinstance(dom, Dom)
+        
         logger.debug("ITER {}, ".format(self.citer) +
                     "{}s, ".format(self.itime) +
                     "{}s eval, ".format(self.xtime) +
