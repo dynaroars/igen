@@ -565,7 +565,7 @@ class Precision(XAnalysis):
         cache = {}        
         equivs, nones = IA.Mcores_d(), IA.Mcores_d()
         for pncore in self.ld.mcores_d:
-            expr = pncore.z3expr(self.ld.z3db, self.ld.dom)  #None = True
+            expr = pncore.z3expr(self.ld.dom, self.ld.z3db)  #None = True
             nexpr = expr if expr is None else z3.Not(expr)
             covs = self.ld.mcores_d[pncore]
             for cov in covs:

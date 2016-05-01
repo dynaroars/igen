@@ -85,6 +85,22 @@ def str_of_csetting((k,vs)):
     
     return '{}={}'.format(k, str_of_valset(vs))
 
+class Z3DB(dict):
+    def __init__(self, db):
+        dict.__init__(self, db)
+        
+        assert (self and
+                all(isinstance(k, str) and
+                    (isinstance(v, tuple) and len(v) == 2)
+                    for k,v in self.iteritems())), self
+
+        self._exprs_cache = {}
+
+    @property
+    def exprs(self): return self._exprs_cache
+        
+    
+    
 class Dom(OrderedDict):
     """
     >>> dom = Dom([('x',frozenset(['1','2'])),\
@@ -176,13 +192,16 @@ class Dom(OrderedDict):
     
     @property
     def z3db(self):
-        z3db = dict()
+        z3db = []
         for k, vs in self.iteritems():
             vs = sorted(list(vs))
             ttyp, tvals=z3.EnumSort(k,vs)
             rs = [vv for vv in zip(vs, tvals)]
             rs.append(('typ', ttyp))
-            z3db[k] = (z3.Const(k, ttyp),dict(rs))
+            z3db.append((k, (z3.Const(k, ttyp), dict(rs))))
+        print "created z3db"
+        CM.pause()
+        z3db = Z3DB(z3db)
         return z3db
     
     @classmethod
@@ -276,7 +295,7 @@ class Dom(OrderedDict):
         assert z3.is_expr(expr), expr
         assert k > 0, k
         assert config_cls, config_cls
-            
+        
         def _f(m):
             m = dict((str(v), str(m[v])) for v in m)
             return None if not m else self.config_of_model(m, config_cls)
@@ -294,10 +313,8 @@ class Dom(OrderedDict):
         """
         Return a config satisfying yexprs but not nexprs
         """
-        assert all(e is None or z3.is_expr(e)
-                   for e in yexprs),yexprs
-        assert all(e is None or z3.is_expr(e)
-                   for e in nexprs),nexprs
+        assert all(e is None or z3.is_expr(e) for e in yexprs),yexprs
+        assert all(e is None or z3.is_expr(e) for e in nexprs),nexprs
         assert k > 0, k
         assert config_cls, config_cls
 
@@ -378,7 +395,7 @@ class Config(HDict):
         #assert len(self) == len(z3db), (len(self), len(z3db))
         #not true when using partial config from Otter
         assert all(e in z3db for e in self), (self, z3db)
-
+        
         f = []
         for vn,vv in self.iteritems():
             vn_,vs_ = z3db[vn]
