@@ -1,0 +1,111 @@
+#!/usr/bin/env python2.7
+
+"""
+Get coverage of grin
+"""
+
+import argparse
+import os.path
+import vu_common as CM
+
+def run(cmd):
+    if args.verbose: print cmd
+    rs, rs_err = CM.vcmd(cmd)
+    rs_err = rs_err.strip()
+    assert rs_err == "grin 1.2.1" or not rs_err, "SERIOUS ERROR:\n{}".format(rs_err)
+    assert "Bug reports to" not in rs, rs
+    
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("inputs", help="input configurations")
+    parser.add_argument("--verbose", action="store_true")    
+    args = parser.parse_args()
+    inputs = args.inputs.strip()  #  "x 0, y 1, z 0"
+    parts = [p.split() for p in inputs.split(",")]
+    varnames, varvals = zip(*parts)
+    assert len(varnames) == len(varvals)
+
+    prog_name = "grin"    
+    tmp_dir = os.path.join("/var/tmp", prog_name + "_cov")
+    if not os.path.exists(tmp_dir): os.mkdir(tmp_dir)
+
+    main_dir = os.path.join(os.environ["IGEN_EXPS"], prog_name)
+    assert os.path.isdir(main_dir), main_dir        
+    tests_dir = os.path.join(main_dir, "tests")
+    assert os.path.isdir(tests_dir), tests_dir
+    
+    prog_exe = os.path.join(main_dir, prog_name)
+    prog_out = os.path.join(tmp_dir, 'out.txt')
+    
+    inps = []
+    for n,v in zip(varnames, varvals):
+        if v == "off":
+            pass
+        elif v == "on":
+            inps.append(n)
+        else:
+            inps.append("{} {}".format(n,v))
+        
+    prog_inp = ' '.join(inps)
+
+
+    #begin
+    assert "COVERAGE_FILE" not in os.environ, os.environ["COVERAGE_FILE"]
+    os.environ["COVERAGE_FILE"] = os.path.join(tmp_dir, "cov.bin")
+    
+    cmd = "python-coverage erase"
+    CM.vcmd(cmd)
+
+    #run coverage on tests
+    opts = '--pylib -a --include "*{}*" {}'.format(prog_name, prog_exe)
+    tests_dir = os.path.join(tests_dir, "hello-world")
+    
+    inp = prog_inp + " " + '"hello-world" {}'.format(tests_dir)
+    cmd = "python-coverage run {} {}".format(opts, inp)
+    run(cmd)
+
+    inp = prog_inp + " " + '"hEllO-WoRlD" {}/*'.format(tests_dir)
+    cmd = "python-coverage run {} {}".format(opts, inp)
+    run(cmd)
+
+
+    inp = prog_inp + " " + '"[0-9]" {}'.format(
+        os.path.join(tests_dir, "e/ebuild.ebuild"))
+    cmd = "python-coverage run {} {}".format(opts, inp)
+    run(cmd)
+    
+    #get coverage
+    cov_xml = os.path.join(tmp_dir, "cov.xml")
+    cmd = "python-coverage xml -o {}".format(cov_xml)
+    CM.vcmd(cmd)
+    
+    from get_cov_python_xml import parse, cleanup
+    covered, _ = parse(cov_xml)
+    covered = cleanup(covered)
+    if args.verbose: print len(covered)
+    covered = '\n'.join(sorted(covered))
+    CM.vwrite(prog_out, covered)
+    
+    try:
+        _,rs_err = CM.vcmd(cmd)
+        assert len(rs_err) == 0, rs_err
+    except:
+        print("cmd '{}' failed".format(cmd))
+
+    print prog_out
+
+
+
+# ack.pl $settings "[0-9]" hello-world/ >> $buildFile 2>&1`;
+# ack.pl $settings "hello world" hello-world/ >> $buildFile 2>&1`;
+# ack.pl $settings --version >> $buildFile 2>&1`;
+# ack.pl $settings --help >> $buildFile 2>&1`;
+# ack.pl $settings --help-types >> $buildFile 2>&1`;
+# ack.pl $settings --bar >> $buildFile 2>&1`;
+# ack.pl $settings --thpppt "hello world" hello-world/ >> $buildFile 2>&1`;
+# ack.pl $settings --nofilter "hello world" hello-world/ >> $buildFile 2>&1`;
+# ack.pl $settings --create-ackrc "hello world" hello-world/ >> $buildFile 2>&1`;
+# ack.pl $settings --type-del xml "hello world" hello-world/ >> $buildFile 2>&1`;
+# ack.pl $settings --ignore-dir=/hello-world/c "hello world" hello-world/ >> $buildFile 2>&1`;
+# ack.pl $settings --ignore-file=/hello-world/g/go.go "hello world" hello-world/ >> $buildFile 2>&1`
