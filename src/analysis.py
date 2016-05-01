@@ -11,9 +11,10 @@ CM.VLog.PRINT_TIME = True
 class LoadData(object):
     data = {}
     
-    def __init__(self, seed, dom, dts, pp_cores_d, itime_total):
+    def __init__(self, seed, dom, z3db, dts, pp_cores_d, itime_total):
         self._seed = seed
-        self._dom = dom
+        self._dom = dom        
+        self._z3db = z3db
         self._dts = dts
         self._pp_cores_d = pp_cores_d
         self._itime_total = itime_total
@@ -22,6 +23,8 @@ class LoadData(object):
     def seed(self): return self._seed
     @property
     def dom(self): return self._dom
+    @property
+    def z3db(self): return self._z3db
     @property
     def dts(self): return self._dts
     @property
@@ -39,14 +42,8 @@ class LoadData(object):
     def mcores_d(self, d):
         assert IA.compat(d, IA.Mcores_d)
         self._mcores_d = d
+
     #data computed on demand 
-    @property
-    def z3db(self):
-        try:
-            return self._z3db
-        except AttributeError:
-            self._z3db = self.dom.z3db
-            return self._z3db
 
     @property
     def configs_d(self):
@@ -122,7 +119,7 @@ class LoadData(object):
             return cls.data[dir_]
         else:
             seed, dom, dts, pp_cores_d, itime_total = IA.DTrace.load_dir(dir_)
-            ld = LoadData(seed,dom,dts,pp_cores_d,itime_total)
+            ld = LoadData(seed,dom,dom.z3db,dts,pp_cores_d,itime_total)
             cls.data[dir_] = ld
             return ld
 
@@ -187,7 +184,6 @@ class Analysis(object):
 
         logger.info("replay dir: '{}'".format(dir_))
         ld = LoadData.load_dir(dir_)
-        z3db = ld.dom.z3db
         
         logger.info('seed: {}'.format(ld.seed))
         logger.debug(ld.dom.__str__())
@@ -195,13 +191,13 @@ class Analysis(object):
         dts = sorted(ld.dts, key=lambda dt: dt.citer)        
         if show_iters:
             for dt in dts:
-                dt.show(z3db, ld.dom)
+                dt.show(ld.dom, ld.z3db)
 
         if not hasattr(ld.pp_cores_d.values()[0], 'vstr'):
             logger.warn("Old format, has no vstr .. re-analyze")
-            ld.pp_cores_d = ld.pp_cores_d.analyze(ld.dom, covs_d=None)
+            ld.pp_cores_d = ld.pp_cores_d.analyze(ld.dom, ld.z3db, covs_d=None)
 
-        ld.mcores_d = ld.pp_cores_d.merge(z3db, ld.dom)
+        ld.mcores_d = ld.pp_cores_d.merge(ld.dom, ld.z3db)
         ld.mcores_d.show_results()
         
         #print summary

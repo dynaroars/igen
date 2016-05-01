@@ -177,6 +177,8 @@ class Dom(OrderedDict):
     @property
     def z3db(self):
         z3db = dict()
+        z3db['expr_cache'] = {}
+        
         for k, vs in self.iteritems():
             vs = sorted(list(vs))
             ttyp, tvals=z3.EnumSort(k,vs)
@@ -184,7 +186,7 @@ class Dom(OrderedDict):
             rs.append(('typ', ttyp))
             z3db[k] = (z3.Const(k, ttyp),dict(rs))
         return z3db
-    
+
     @classmethod
     def get_dom(cls, dom_file):
         """
