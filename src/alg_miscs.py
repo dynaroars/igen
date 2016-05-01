@@ -177,7 +177,7 @@ class MinConfigs(XAnalysis):
         Apply prune and pack on fs
         """
         #prune
-        d = dict((c, c.z3expr(self.ld.z3db, self.ld.dom)) for c in fs)
+        d = dict((c, c.z3expr(self.ld.dom, self.ld.z3db)) for c in fs)
         d = self.prune(d)
         logger.debug("prune: {} remains".format(len(d)))
         logger.debug("\n{}".format('\n'.join(
@@ -452,7 +452,7 @@ class Similarity(XAnalysis):
                     for sid in cov:
                         covs_d.add(sid,config)
 
-            pp_cores_d = dt.cores_d.analyze(self.ld.dom, covs_d)
+            pp_cores_d = dt.cores_d.analyze(self.ld.dom, self.ld.z3db, covs_d)
             pp_cores_ds.append(pp_cores_d)
 
         fscores = [
@@ -565,7 +565,7 @@ class Precision(XAnalysis):
         cache = {}        
         equivs, nones = IA.Mcores_d(), IA.Mcores_d()
         for pncore in self.ld.mcores_d:
-            expr = pncore.z3expr(self.ld.z3db, self.ld.dom)  #None = True
+            expr = pncore.z3expr(self.ld.dom, self.ld.z3db)  #None = True
             nexpr = expr if expr is None else z3.Not(expr)
             covs = self.ld.mcores_d[pncore]
             for cov in covs:
@@ -622,7 +622,7 @@ class Precision(XAnalysis):
         weaks = IA.Mcores_d()
         nones = IA.Mcores_d()
         for pncore in self.ld.mcores_d:
-            expr = pncore.z3expr(self.ld.z3db, self.ld.dom)
+            expr = pncore.z3expr(self.ld.dom, self.ld.z3db)
             covs = self.ld.mcores_d[pncore]
             for cov in covs:
                 if expr is None:
