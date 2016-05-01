@@ -39,6 +39,7 @@ class LoadData(object):
     def mcores_d(self, d):
         assert IA.compat(d, IA.Mcores_d)
         self._mcores_d = d
+
     #data computed on demand 
     @property
     def z3db(self):
@@ -199,7 +200,7 @@ class Analysis(object):
 
         if not hasattr(ld.pp_cores_d.values()[0], 'vstr'):
             logger.warn("Old format, has no vstr .. re-analyze")
-            ld.pp_cores_d = ld.pp_cores_d.analyze(ld.dom, covs_d=None)
+            ld.pp_cores_d = ld.pp_cores_d.analyze(ld.dom, z3db, covs_d=None)
 
         ld.mcores_d = ld.pp_cores_d.merge(z3db, ld.dom)
         ld.mcores_d.show_results()

@@ -327,7 +327,7 @@ class PNCore(MCore):
     z=0
     >>> print PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
     z == 0
-    >>> print pncore.z3expr(z3db, dom)
+    >>> print pncore.z3expr(dom, z3db)
     And(And(Or(x == 1, x == 0), y == 1), z == 0)
 
     >>> pc = Core([])
@@ -340,7 +340,7 @@ class PNCore(MCore):
     >>> assert PNCore._get_str(nd,nc,dom,is_and=False) == 'true'
     >>> assert PNCore._get_expr(pc,pd,dom,z3db,is_and=True) is None
     >>> assert PNCore._get_expr(nd,nc,dom,z3db,is_and=True) is None
-    >>> assert pncore.z3expr(z3db,dom) is None
+    >>> assert pncore.z3expr(dom, z3db) is None
 
     """
 
@@ -474,7 +474,7 @@ class PNCore(MCore):
         return expr,vstr
 
     
-    def simplify(self, dom, do_firsttime=True):
+    def simplify(self, dom, z3db, do_firsttime=True):
         """
         Compare between (pc,pd) and (nc,nd) and return the stronger one.
         This will set either (pc,pd) or (nc,nd) to (None,None)
@@ -487,8 +487,8 @@ class PNCore(MCore):
         inv1 = pc & not(pd)
         inv2 = not(nc & not(nd)) = nd | not(nc)
         """
-        assert isinstance(dom,Dom),dom
-
+        assert isinstance(dom, Dom), dom
+        assert isinstance(z3db, CC.Z3DB), dom
         if __debug__:
             if do_firsttime:
                 assert self.pc is not None, self.pc #this never could happen
@@ -505,7 +505,6 @@ class PNCore(MCore):
         if not nc: nc = None
         if not nd: nd = None
 
-        z3db = dom.z3db
         if pc is None and pd is None:
             expr,vstr = PNCore._get_expr_str(nd,nc,dom,z3db,is_and=False)
         elif nc is None and nd is None:
@@ -553,10 +552,13 @@ class PNCore(MCore):
         return ((self.pc is None and self.pd is None) or
                 (self.nc is None and self.nd is None))
 
-    def z3expr(self,z3db, dom):
+    def z3expr(self, dom, z3db):
         """
         Note: z3 expr "true" is represented (and returned) as None
         """
+        assert isinstance(dom, Dom)
+        assert isinstance(z3db, CC.Z3DB)        
+        
         pc,pd,nc,nd = self
         if pc is None and pd is None:
             expr = PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
@@ -655,12 +657,12 @@ class Cores_d(CC.CustDict):
             
         return mcores_d
 
-    def analyze(self, dom, covs_d):
+    def analyze(self, dom, z3db, covs_d):
         """
         Simplify cores. If covs_d then also check that cores are valid invs
         """
-        assert isinstance(dom,Dom), dom
-        
+        assert isinstance(dom, Dom), dom
+        assert isinstance(z3db, CC.Z3DB)
         if __debug__:
             if covs_d is not None:
                 assert isinstance(covs_d, CC.Covs_d) and covs_d, covs_d
@@ -698,7 +700,8 @@ class Cores_d(CC.CustDict):
         for sid in cores_d:
             core = cores_d[sid]
             if core not in cache:
-                core_,expr = core.simplify(dom, do_firsttime=(covs_d is not None))
+                core_,expr = core.simplify(
+                    dom, z3db, do_firsttime=(covs_d is not None))
                 cache[core]=core_
                 show_compare(sid,core,core_)
             else:
@@ -741,7 +744,7 @@ class Mcores_d(CC.CustDict):
         cache = {}  
         uniqs = {}
         for pc in self:
-            expr = pc.z3expr(z3db, dom)
+            expr = pc.z3expr(dom, z3db)
             cache[pc] = expr
             
             dup = find_dup(expr, uniqs, cache)
@@ -1026,7 +1029,7 @@ class IGen(object):
                 new_covs, new_cores,
                 sel_core,
                 cores_d)
-            dtrace.show(self.z3db, self.dom)
+            dtrace.show(self.dom, self.z3db)
             DTrace.save_iter(cur_iter, dtrace, tmpdir)
 
             if rand_n is not None:
@@ -1068,10 +1071,10 @@ class IGen(object):
                     cores_d_[sid] = cores_d[sid]
                     for c in covs_d[sid]:
                         covs_d_.add(sid, c)
-            pp_cores_d = cores_d_.analyze(self.dom, covs_d_)
+            pp_cores_d = cores_d_.analyze(self.dom, self.z3db, covs_d_)
             _ = pp_cores_d.merge(self.z3db, self.dom, show_detail=True)
         else:
-            pp_cores_d = cores_d.analyze(self.dom, covs_d)
+            pp_cores_d = cores_d.analyze(self.dom, self.z3db, covs_d)
             _ = pp_cores_d.merge(self.z3db, self.dom, show_detail=True)
         
         itime_total = time() - st
@@ -1212,8 +1215,9 @@ class DTrace(object):
         self.sel_core = sel_core
         self.cores_d = cores_d
         
-    def show(self, z3db, dom):
+    def show(self, dom, z3db):
         assert isinstance(dom, Dom)
+        assert isinstance(z3db, CC.Z3DB)
         
         logger.debug("ITER {}, ".format(self.citer) +
                     "{}s, ".format(self.itime) +
