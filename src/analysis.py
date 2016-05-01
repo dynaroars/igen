@@ -188,7 +188,6 @@ class Analysis(object):
 
         logger.info("replay dir: '{}'".format(dir_))
         ld = LoadData.load_dir(dir_)
-        z3db = ld.dom.z3db
         
         logger.info('seed: {}'.format(ld.seed))
         logger.debug(ld.dom.__str__())
@@ -196,13 +195,13 @@ class Analysis(object):
         dts = sorted(ld.dts, key=lambda dt: dt.citer)        
         if show_iters:
             for dt in dts:
-                dt.show(z3db, ld.dom)
+                dt.show(ld.z3db, ld.dom)
 
         if not hasattr(ld.pp_cores_d.values()[0], 'vstr'):
             logger.warn("Old format, has no vstr .. re-analyze")
-            ld.pp_cores_d = ld.pp_cores_d.analyze(ld.dom, z3db, covs_d=None)
+            ld.pp_cores_d = ld.pp_cores_d.analyze(ld.dom, ld.z3db, covs_d=None)
 
-        ld.mcores_d = ld.pp_cores_d.merge(z3db, ld.dom)
+        ld.mcores_d = ld.pp_cores_d.merge(ld.dom, ld.z3db)
         ld.mcores_d.show_results()
         
         #print summary

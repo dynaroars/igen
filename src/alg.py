@@ -83,6 +83,7 @@ class Dom(CC.Dom):
         """
         
         assert isinstance(sel_core, SCore), sel_core 
+        assert isinstance(z3db, CC.Z3DB)
         
         configs = []            
         c_core,s_core = sel_core
@@ -122,7 +123,6 @@ class Dom(CC.Dom):
             e_configs.append(config.z3expr(z3db))
 
         return configs
-
 
 class Config(CC.Config):
     """
@@ -217,13 +217,10 @@ class Core(HDict):
             self._neg = Core((k,vs) for k,vs in ncore if vs)
             return self._neg
         
-    def z3expr(self,z3db, myf):
-        f = []
-        for vn, vs in self.iteritems():
-            vn_, vs_ = z3db[vn]
-            f.append(z3util.myOr([vn_ == vs_[v] for v in vs]))
-        return myf(f)
-    
+    def z3expr(self, z3db, is_and):
+        assert isinstance(z3db, CC.Z3DB)
+        return z3db.expr_of_dict_dict(self, is_and)
+
     @staticmethod
     def is_maybe_core(c): return c is None or isinstance(c,Core)
 
@@ -424,22 +421,29 @@ class PNCore(MCore):
         return PNCore((pc, pd, nc, nd))
     
     @staticmethod
-    def _get_expr(cc,cd,dom,z3db,is_and):
+    def _get_expr(cc, cd, dom, z3db, is_and):
         assert Core.is_maybe_core(cc)
         assert Core.is_maybe_core(cd)
         assert isinstance(dom, Dom)
+        assert isinstance(z3db, CC.Z3DB)
         
+        k = (cc, cd, is_and)
+        if k in z3db.cache: return z3db.cache[k]
+
         fs = []
         if cc:
-            f = cc.z3expr(z3db, myf=z3util.myAnd)
+            f = cc.z3expr(z3db, is_and=True)
             fs.append(f)
         if cd:
             cd_n = cd.neg(dom)
-            f = cd_n.z3expr(z3db, myf=z3util.myOr)
+            f = cd_n.z3expr(z3db, is_and=False)
             fs.append(f)
 
         myf = z3util.myAnd if is_and else z3util.myOr
-        return myf(fs)
+        expr = myf(fs)
+        
+        z3db.add(k, expr)
+        return expr
 
     @staticmethod
     def _get_str(cc, cd, dom, is_and):
@@ -558,6 +562,9 @@ class PNCore(MCore):
         """
         assert isinstance(dom, Dom)
         assert isinstance(z3db, CC.Z3DB)        
+
+        if self in z3db.cache:
+            return z3db.cache[self]
         
         pc,pd,nc,nd = self
         if pc is None and pd is None:
@@ -568,6 +575,8 @@ class PNCore(MCore):
             pexpr = PNCore._get_expr(pc,pd,dom,z3db,is_and=True)
             nexpr = PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
             expr = z3util.myAnd([pexpr,nexpr])
+
+        z3db.add(self, expr)
         return expr
 
     @staticmethod
@@ -602,10 +611,9 @@ class Cores_d(CC.CustDict):
     1. L1: pc: a=1; pd: b=0; nc: true; nd: true
     2. L2: pc: b=1; pd: a=0; nc: true; nd: true
 
-    >>> print cores_d.merge(z3db, dom)
-    1. (2) pc: a=1; pd: b=0; nc: true; nd: true: (1) L1
-    2. (2) pc: b=1; pd: a=0; nc: true; nd: true: (1) L2
-
+    >>> logger.level = CM.VLog.WARN
+    >>> print cores_d.merge(dom, z3db)
+    1. (2) pc: a=1; pd: b=0; nc: true; nd: true: (2) L1,L2
 
     >>> covs_d = CC.Covs_d()
     >>> config = Config([('a', '1'), ('b', '1')])
@@ -613,12 +621,12 @@ class Cores_d(CC.CustDict):
     >>> covs_d.add('L2',config)
 
     >>> logger.level = CM.VLog.WARN
-    >>> cores_d = cores_d.analyze(dom,covs_d)
-    >>> print cores_d.merge(z3db, dom, show_detail=False)
+    >>> cores_d = cores_d.analyze(dom, z3db, covs_d)
+    >>> print cores_d.merge(dom, z3db, show_detail=False)
     1. (2) a=1 & b=1 (conj): (2) L1,L2
 
-    >>> cores_d = cores_d.analyze(dom,covs_d=None)
-    >>> print cores_d.merge(z3db, dom, show_detail=False)
+    >>> cores_d = cores_d.analyze(dom, z3db, covs_d=None)
+    >>> print cores_d.merge(dom, z3db, show_detail=False)
     1. (2) a=1 & b=1 (conj): (2) L1,L2
 
     """
@@ -633,9 +641,9 @@ class Cores_d(CC.CustDict):
                          .format(i+1,sid,self[sid])
                          for i,sid in enumerate(sorted(self)))
 
-    def merge(self, z3db, dom, show_detail=False):
+    def merge(self, dom, z3db, show_detail=False):
         assert isinstance(dom, Dom)
-        assert not isinstance(z3db, Dom)
+        assert isinstance(z3db, CC.Z3DB)
 
         mcores_d = Mcores_d()
         cache = {}
@@ -650,7 +658,7 @@ class Cores_d(CC.CustDict):
 
             mcores_d.add(cache[key], sid)
 
-        mcores_d = mcores_d.fix_duplicates(z3db, dom)
+        mcores_d = mcores_d.fix_duplicates(dom, z3db)
         
         if show_detail:
             mcores_d.show_results()
@@ -685,7 +693,7 @@ class Cores_d(CC.CustDict):
                 configs = frozenset(covs_d[sid])
                 key = (core, configs)
                 if key not in cache:
-                    core_ = core.verify(configs,dom)
+                    core_ = core.verify(configs, dom)
                     cache[key]=core_
                     show_compare(sid,core,core_)
                 else:
@@ -728,7 +736,7 @@ class Mcores_d(CC.CustDict):
               for i,(core,cov) in enumerate(mc))
         return '\n'.join(ss)
 
-    def fix_duplicates(self, z3db, dom):
+    def fix_duplicates(self, dom, z3db):
         assert isinstance(dom, Dom)
         assert not isinstance(z3db, Dom)
         
@@ -756,7 +764,7 @@ class Mcores_d(CC.CustDict):
         if len(uniqs) == len(self):  #no duplicates
             return self
         else:
-            logger.info('merge {} dups'.format(len(self) - len(uniqs)))
+            logger.debug('merge {} dups'.format(len(self) - len(uniqs)))
             mc_d = Mcores_d()
             for pc in uniqs:
                 for sid in self[pc]:
@@ -775,7 +783,7 @@ class Mcores_d(CC.CustDict):
             d = {'conj' : 0, 'disj' : 0, 'mix' : 0}
             for core in self:
                 vtyp = core.vtyp
-                d[vtyp] = d[vtyp] + 1
+                d[vtyp] += 1
 
             self._vtyps = (d['conj'], d['disj'], d['mix'])
             return self._vtyps
@@ -969,7 +977,7 @@ class IGen(object):
         random.seed(seed)
         logger.debug("seed: {}, tmpdir: {}".format(seed, tmpdir))
 
-        DTrace.save_pre(seed,self.dom,tmpdir)
+        DTrace.save_pre(seed, self.dom, tmpdir)
 
         #some settings
         cur_iter = 1
@@ -1072,10 +1080,10 @@ class IGen(object):
                     for c in covs_d[sid]:
                         covs_d_.add(sid, c)
             pp_cores_d = cores_d_.analyze(self.dom, self.z3db, covs_d_)
-            _ = pp_cores_d.merge(self.z3db, self.dom, show_detail=True)
+            _ = pp_cores_d.merge(self.dom, self.z3db, show_detail=True)
         else:
             pp_cores_d = cores_d.analyze(self.dom, self.z3db, covs_d)
-            _ = pp_cores_d.merge(self.z3db, self.dom, show_detail=True)
+            _ = pp_cores_d.merge(self.dom, self.z3db, show_detail=True)
         
         itime_total = time() - st
         logger.debug(DTrace.str_of_summary(
@@ -1091,14 +1099,13 @@ class IGen(object):
     def go_full(self, tmpdir=None):
         return self.go(seed=0, rand_n=-1, tmpdir=tmpdir)
                        
-    def go_rand(self,rand_n, seed=None, tmpdir=None):
-        return self.go(seed=seed, rand_n=rand_n, tmpdir=tmpdir)
+    def go_rand(self,rand_n, seed=None, econfigs=None, tmpdir=None):
+        return self.go(seed=seed, rand_n=rand_n, econfigs=econfigs, tmpdir=tmpdir)
 
     #Helper functions
     def eval_configs(self, configs):
-        assert (isinstance(configs, list) and
-                all(isinstance(c, Config) for c in configs)
-                and configs), configs
+        assert isinstance(configs, list) and configs, configs
+        assert  all(isinstance(c, Config) for c in configs), configs
         
         st = time()
         results = CC.eval_configs(configs, self.get_cov)
@@ -1113,7 +1120,8 @@ class IGen(object):
             configs = self.dom.gen_configs_tcover1(config_cls=Config)
             logger.debug("gen {} configs using tcover 1".format(len(configs)))
         elif rand_n > 0 and rand_n < self.dom.siz:        
-            configs = self.dom.gen_configs_rand_smt(rand_n)
+            configs = self.dom.gen_configs_rand_smt(
+                rand_n, self.z3db, config_cls=Config)
             logger.debug("gen {} rand configs".format(len(configs)))
         else:
             configs = self.dom.gen_configs_full(config_cls=Config)
@@ -1234,7 +1242,7 @@ class DTrace(object):
                                                    self.sel_core))
         logger.debug('create {} configs'.format(len(self.cconfigs_d)))
         logger.detail("\n"+str(self.cconfigs_d))
-        mcores_d = self.cores_d.merge(z3db, dom)
+        mcores_d = self.cores_d.merge(dom, z3db)
         logger.debug("infer {} interactions".format(len(mcores_d)))
         logger.detail('\n{}'.format(mcores_d))
         logger.debug("strens: {}".format(mcores_d.strens_str))

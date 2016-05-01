@@ -86,20 +86,60 @@ def str_of_csetting((k,vs)):
     return '{}={}'.format(k, str_of_valset(vs))
 
 class Z3DB(dict):
-    def __init__(self, db):
-        dict.__init__(self, db)
+    def __init__(self, dom):
+        assert isinstance(dom, Dom)
         
-        assert (self and
-                all(isinstance(k, str) and
-                    (isinstance(v, tuple) and len(v) == 2)
-                    for k,v in self.iteritems())), self
-
+        db = {}
+        for k, vs in dom.iteritems():
+            vs = sorted(list(vs))
+            ttyp, tvals=z3.EnumSort(k,vs)
+            rs = [vv for vv in zip(vs, tvals)]
+            rs.append(('typ', ttyp))
+            db[k] = (z3.Const(k, ttyp), dict(rs))
+        dict.__init__(self, db)
         self._exprs_cache = {}
 
     @property
-    def exprs(self): return self._exprs_cache
+    def cache(self):
+        return self._exprs_cache
+
+    def add(self, k, v):
+        assert v is None or z3.is_expr(v), v 
+        self.cache[k] = v
+
+    def expr_of_dict(self, d):
+        #s=1 t=1 u=1 v=1 x=0 y=0 z=4
+        assert all(k in self for k in d), (d, self)
         
+        if d in self.cache:
+            return self.cache[d]
+            
+        rs = []
+        for k,v in d.iteritems():
+            k_,d_ = self[k] #var and dict 
+            rs.append(k_ == d_[v])
+            
+        expr = z3util.myAnd(rs)
+        self.add(d, expr)
+        return expr
     
+    def expr_of_dict_dict(self, d, is_and):
+        #s=0 t=0 u=0 v=0 x=1 y=1 z=0,1,2  =>  ... (z=0 or z=1 or z=2)
+        key = (d, is_and)
+        if key in self.cache:
+            return self.cache[key]
+        
+        rs = []
+        for k, vs in d.iteritems():
+            k_, vs_ = self[k]
+            rs.append(z3util.myOr([k_ == vs_[v] for v in vs]))
+            
+        myf =  z3util.myAnd if is_and else z3util.myOr
+        expr = myf(rs)
+        
+        self.add(key, expr)
+        return expr
+        
     
 class Dom(OrderedDict):
     """
@@ -119,6 +159,7 @@ class Dom(OrderedDict):
     >>> assert dom.siz == len(dom.gen_configs_full()) == 18
     >>> assert dom.max_fsiz ==  3
 
+ 
     >>> random.seed(0)
     >>> configs = dom.gen_configs_rand(5)
     >>> print "\\n".join(map(str,configs))
@@ -135,10 +176,11 @@ class Dom(OrderedDict):
     x=1 y=1 z=2 w=c
     x=1 y=1 z=1 w=b
 
-    >>> assert len(dom.z3db) == len(dom) and set(dom.z3db) == set(dom)
+   >>> z3db = Z3DB(dom)
+    >>> assert len(z3db) == len(dom) and set(z3db) == set(dom)
 
     >>> random.seed(0)
-    >>> configs = dom.gen_configs_rand_smt(5)
+    >>> configs = dom.gen_configs_rand_smt(5, z3db)
     >>> print "\\n".join(map(str,configs))
     x=2 y=1 z=0 w=a
     x=1 y=1 z=0 w=b
@@ -147,7 +189,7 @@ class Dom(OrderedDict):
     x=1 y=1 z=0 w=a
 
     >>> random.seed(0)
-    >>> configs = dom.gen_configs_rand_smt(5, configs+configs)
+    >>> configs = dom.gen_configs_rand_smt(5, z3db, configs+configs)
     >>> print "\\n".join(map(str, configs))
     x=1 y=1 z=0 w=c
     x=2 y=1 z=0 w=b
@@ -155,13 +197,13 @@ class Dom(OrderedDict):
     x=2 y=1 z=2 w=c
     x=2 y=1 z=2 w=b
 
-    >>> new_configs = dom.gen_configs_rand_smt(dom.siz, configs)
+    >>> new_configs = dom.gen_configs_rand_smt(dom.siz, z3db, configs)
     >>> assert len(new_configs) == dom.siz - len(configs), (len(new_configs), dom.siz, len(configs))
 
-    >>> configs = dom.gen_configs_rand_smt(dom.siz)
+    >>> configs = dom.gen_configs_rand_smt(dom.siz, z3db)
     >>> assert len(configs) == dom.siz    
 
-    >>> configs = dom.gen_configs_rand_smt(dom.siz, configs)
+    >>> configs = dom.gen_configs_rand_smt(dom.siz, z3db, configs)
     >>> assert not configs
 
     """
@@ -191,18 +233,7 @@ class Dom(OrderedDict):
         return max(len(vs) for vs in self.itervalues())
     
     @property
-    def z3db(self):
-        z3db = []
-        for k, vs in self.iteritems():
-            vs = sorted(list(vs))
-            ttyp, tvals=z3.EnumSort(k,vs)
-            rs = [vv for vv in zip(vs, tvals)]
-            rs.append(('typ', ttyp))
-            z3db.append((k, (z3.Const(k, ttyp), dict(rs))))
-        print "created z3db"
-        CM.pause()
-        z3db = Z3DB(z3db)
-        return z3db
+    def z3db(self): return Z3DB(self)
     
     @classmethod
     def get_dom(cls, dom_file):
@@ -327,17 +358,17 @@ class Dom(OrderedDict):
         return self.gen_configs_expr(expr, k, config_cls)
 
 
-    def gen_configs_rand_smt(self, rand_n, existing_configs=[], config_cls=None):
+    def gen_configs_rand_smt(self, rand_n, z3db, existing_configs=[], config_cls=None):
         """
         Create rand_n uniq configs
         """
         assert 0 < rand_n <= self.siz, (rand_n, self.siz)
+        assert isinstance(z3db, Z3DB)
         assert isinstance(existing_configs, list), existing_configs
             
         if config_cls is None:
             config_cls = Config
 
-        z3db = self.z3db
         exprs = []
             
         existing_configs = set(existing_configs)
@@ -375,7 +406,7 @@ class Config(HDict):
     >>> dom = Dom([('a',frozenset(['1','2'])),\
     ('b',frozenset(['0','1'])),\
     ('c',frozenset(['0','1','2']))])
-    >>> c.z3expr(dom.z3db)
+    >>> c.z3expr(Z3DB(dom))
     And(a == 1, b == 0, c == 1)
     """
     def __init__(self,config=HDict()):
@@ -392,16 +423,8 @@ class Config(HDict):
         return s
 
     def z3expr(self, z3db):
-        #assert len(self) == len(z3db), (len(self), len(z3db))
-        #not true when using partial config from Otter
-        assert all(e in z3db for e in self), (self, z3db)
-        
-        f = []
-        for vn,vv in self.iteritems():
-            vn_,vs_ = z3db[vn]
-            f.append(vn_==vs_[vv])
-
-        return z3util.myAnd(f)
+        assert isinstance(z3db, Z3DB)
+        return z3db.expr_of_dict(self)
 
     @staticmethod
     def mk(n, f):
