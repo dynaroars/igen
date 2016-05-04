@@ -83,6 +83,7 @@ class Dom(CC.Dom):
         """
         
         assert isinstance(sel_core, SCore), sel_core 
+        assert isinstance(z3db, CC.Z3DB)
         
         configs = []            
         c_core,s_core = sel_core
@@ -122,7 +123,6 @@ class Dom(CC.Dom):
             e_configs.append(config.z3expr(z3db))
 
         return configs
-
 
 class Config(CC.Config):
     """
@@ -217,20 +217,10 @@ class Core(HDict):
             self._neg = Core((k,vs) for k,vs in ncore if vs)
             return self._neg
         
-    def z3expr(self, z3db, myf):
-        assert not isinstance(z3db, Dom)
-        try:
-            expr = z3db['expr_cache'][self]
-            return expr
-        except KeyError:
-            f = []
-            for vn, vs in self.iteritems():
-                vn_, vs_ = z3db[vn]
-                f.append(z3util.myOr([vn_ == vs_[v] for v in vs]))
-            expr =  myf(f)
-            z3db['expr_cache'][self] = expr
-            return expr
-    
+    def z3expr(self, z3db, is_and):
+        assert isinstance(z3db, CC.Z3DB)
+        return z3db.expr_of_dict_dict(self, is_and)
+
     @staticmethod
     def is_maybe_core(c): return c is None or isinstance(c,Core)
 
@@ -334,7 +324,7 @@ class PNCore(MCore):
     z=0
     >>> print PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
     z == 0
-    >>> print pncore.z3expr(z3db, dom)
+    >>> print pncore.z3expr(dom, z3db)
     And(And(Or(x == 1, x == 0), y == 1), z == 0)
 
     >>> pc = Core([])
@@ -431,22 +421,29 @@ class PNCore(MCore):
         return PNCore((pc, pd, nc, nd))
     
     @staticmethod
-    def _get_expr(cc,cd,dom,z3db,is_and):
+    def _get_expr(cc, cd, dom, z3db, is_and):
         assert Core.is_maybe_core(cc)
         assert Core.is_maybe_core(cd)
         assert isinstance(dom, Dom)
+        assert isinstance(z3db, CC.Z3DB)
         
+        k = (cc, cd, is_and)
+        if k in z3db.cache: return z3db.cache[k]
+
         fs = []
         if cc:
-            f = cc.z3expr(z3db, myf=z3util.myAnd)
+            f = cc.z3expr(z3db, is_and=True)
             fs.append(f)
         if cd:
             cd_n = cd.neg(dom)
-            f = cd_n.z3expr(z3db, myf=z3util.myOr)
+            f = cd_n.z3expr(z3db, is_and=False)
             fs.append(f)
 
         myf = z3util.myAnd if is_and else z3util.myOr
-        return myf(fs)
+        expr = myf(fs)
+        
+        z3db.add(k, expr)
+        return expr
 
     @staticmethod
     def _get_str(cc, cd, dom, is_and):
@@ -495,7 +492,7 @@ class PNCore(MCore):
         inv2 = not(nc & not(nd)) = nd | not(nc)
         """
         assert isinstance(dom, Dom), dom
-
+        assert isinstance(z3db, CC.Z3DB), dom
         if __debug__:
             if do_firsttime:
                 assert self.pc is not None, self.pc #this never could happen
@@ -563,23 +560,24 @@ class PNCore(MCore):
         """
         Note: z3 expr "true" is represented (and returned) as None
         """
-        assert isinstance(dom, Dom), dom
-        try:
-            expr = z3db['expr_cache'][self]
-            return expr
-        except KeyError:
-            pc,pd,nc,nd = self
-            if pc is None and pd is None:
-                expr = PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
-            elif nc is None and nd is None:
-                expr = PNCore._get_expr(pc,pd,dom,z3db,is_and=True)
-            else:
-                pexpr = PNCore._get_expr(pc,pd,dom,z3db,is_and=True)
-                nexpr = PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
-                expr = z3util.myAnd([pexpr,nexpr])
+        assert isinstance(dom, Dom)
+        assert isinstance(z3db, CC.Z3DB)        
 
-            z3db['expr_cache'][self] = expr
-            return expr
+        if self in z3db.cache:
+            return z3db.cache[self]
+        
+        pc,pd,nc,nd = self
+        if pc is None and pd is None:
+            expr = PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
+        elif nc is None and nd is None:
+            expr = PNCore._get_expr(pc,pd,dom,z3db,is_and=True)
+        else:
+            pexpr = PNCore._get_expr(pc,pd,dom,z3db,is_and=True)
+            nexpr = PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
+            expr = z3util.myAnd([pexpr,nexpr])
+
+        z3db.add(self, expr)
+        return expr
 
     @staticmethod
     def is_expr(expr):
@@ -613,7 +611,7 @@ class Cores_d(CC.CustDict):
     1. L1: pc: a=1; pd: b=0; nc: true; nd: true
     2. L2: pc: b=1; pd: a=0; nc: true; nd: true
 
-    >>> logger.level = CM.VLog.INFO
+    >>> logger.level = CM.VLog.WARN
     >>> print cores_d.merge(dom, z3db)
     1. (2) pc: a=1; pd: b=0; nc: true; nd: true: (2) L1,L2
 
@@ -645,6 +643,7 @@ class Cores_d(CC.CustDict):
 
     def merge(self, dom, z3db, show_detail=False):
         assert isinstance(dom, Dom)
+        assert isinstance(z3db, CC.Z3DB)
 
         mcores_d = Mcores_d()
         cache = {}
@@ -671,7 +670,7 @@ class Cores_d(CC.CustDict):
         Simplify cores. If covs_d then also check that cores are valid invs
         """
         assert isinstance(dom, Dom), dom
-        
+        assert isinstance(z3db, CC.Z3DB)
         if __debug__:
             if covs_d is not None:
                 assert isinstance(covs_d, CC.Covs_d) and covs_d, covs_d
@@ -694,7 +693,7 @@ class Cores_d(CC.CustDict):
                 configs = frozenset(covs_d[sid])
                 key = (core, configs)
                 if key not in cache:
-                    core_ = core.verify(configs,dom)
+                    core_ = core.verify(configs, dom)
                     cache[key]=core_
                     show_compare(sid,core,core_)
                 else:
@@ -784,7 +783,7 @@ class Mcores_d(CC.CustDict):
             d = {'conj' : 0, 'disj' : 0, 'mix' : 0}
             for core in self:
                 vtyp = core.vtyp
-                d[vtyp] = d[vtyp] + 1
+                d[vtyp] += 1
 
             self._vtyps = (d['conj'], d['disj'], d['mix'])
             return self._vtyps
@@ -1100,14 +1099,13 @@ class IGen(object):
     def go_full(self, tmpdir=None):
         return self.go(seed=0, rand_n=-1, tmpdir=tmpdir)
                        
-    def go_rand(self,rand_n, seed=None, tmpdir=None):
-        return self.go(seed=seed, rand_n=rand_n, tmpdir=tmpdir)
+    def go_rand(self,rand_n, seed=None, econfigs=None, tmpdir=None):
+        return self.go(seed=seed, rand_n=rand_n, econfigs=econfigs, tmpdir=tmpdir)
 
     #Helper functions
     def eval_configs(self, configs):
-        assert (isinstance(configs, list) and
-                all(isinstance(c, Config) for c in configs)
-                and configs), configs
+        assert isinstance(configs, list) and configs, configs
+        assert  all(isinstance(c, Config) for c in configs), configs
         
         st = time()
         results = CC.eval_configs(configs, self.get_cov)
@@ -1122,7 +1120,8 @@ class IGen(object):
             configs = self.dom.gen_configs_tcover1(config_cls=Config)
             logger.debug("gen {} configs using tcover 1".format(len(configs)))
         elif rand_n > 0 and rand_n < self.dom.siz:        
-            configs = self.dom.gen_configs_rand_smt(rand_n)
+            configs = self.dom.gen_configs_rand_smt(
+                rand_n, self.z3db, config_cls=Config)
             logger.debug("gen {} rand configs".format(len(configs)))
         else:
             configs = self.dom.gen_configs_full(config_cls=Config)
@@ -1226,6 +1225,7 @@ class DTrace(object):
         
     def show(self, dom, z3db):
         assert isinstance(dom, Dom)
+        assert isinstance(z3db, CC.Z3DB)
         
         logger.debug("ITER {}, ".format(self.citer) +
                     "{}s, ".format(self.itime) +
