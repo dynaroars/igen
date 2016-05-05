@@ -17,26 +17,6 @@ show_cov = True
 analyze_outps = False
 
 #Data Structures
-class CustDict(MutableMapping):
-    """
-    MuttableMapping ex: https://stackoverflow.com/questions/21361106/how-would-i-implement-a-dict-with-abstract-base-classes-in-python
-    TODO: use MyDict in CM instead
-    """
-    __metaclass__ = abc.ABCMeta
-    def __init__(self): self.__dict__ = {}
-    def __len__(self): return len(self.__dict__)
-    def __getitem__(self, key): return self.__dict__[key]
-    def __iter__(self): return iter(self.__dict__)    
-    def __setitem__(self, key, val): raise NotImplementedError("setitem")
-    def __delitem__(self, key): raise NotImplementedError("delitem")
-    def add_set(self, key, val):
-        """
-        For mapping from key to set
-        """
-        if key not in self.__dict__:
-            self.__dict__[key] = set()
-        self.__dict__[key].add(val)
-        
 is_cov = lambda cov: (isinstance(cov, (set, frozenset)) and
                       all(isinstance(c, str) for c in cov))
 def str_of_cov(cov):
@@ -76,69 +56,34 @@ is_csetting = lambda (k,vs): isinstance(k, str) and is_valset(vs)
 
 def str_of_csetting((k,vs)):
     """
-    >>> print str_of_csetting(('x',frozenset(['1'])))
+    >>> print str_of_csetting(('x', frozenset(['1'])))
     x=1
-    >>> print str_of_csetting(('x',frozenset(['3','1'])))
+    >>> print str_of_csetting(('x', frozenset(['3','1'])))
     x=1,3
     """
     assert is_csetting((k, vs)), (k, vs)
     
     return '{}={}'.format(k, str_of_valset(vs))
 
-class Z3DB(dict):
-    def __init__(self, dom):
-        assert isinstance(dom, Dom)
-        
-        db = {}
-        for k, vs in dom.iteritems():
-            vs = sorted(list(vs))
-            ttyp, tvals=z3.EnumSort(k,vs)
-            rs = [vv for vv in zip(vs, tvals)]
-            rs.append(('typ', ttyp))
-            db[k] = (z3.Const(k, ttyp), dict(rs))
-        dict.__init__(self, db)
-        self._exprs_cache = {}
 
-    @property
-    def cache(self):
-        return self._exprs_cache
-
-    def add(self, k, v):
-        assert v is None or z3.is_expr(v), v 
-        self.cache[k] = v
-
-    def expr_of_dict(self, d):
-        #s=1 t=1 u=1 v=1 x=0 y=0 z=4
-        assert all(k in self for k in d), (d, self)
-        
-        if d in self.cache:
-            return self.cache[d]
-            
-        rs = []
-        for k,v in d.iteritems():
-            k_,d_ = self[k] #var and dict 
-            rs.append(k_ == d_[v])
-            
-        expr = z3util.myAnd(rs)
-        self.add(d, expr)
-        return expr
-    
-    def expr_of_dict_dict(self, d, is_and):
-        #s=0 t=0 u=0 v=0 x=1 y=1 z=0,1,2  =>  ... (z=0 or z=1 or z=2)
-        key = (d, is_and)
-        if key in self.cache:
-            return self.cache[key]
-        
-        rs = []
-        for k, vs in d.iteritems():
-            k_, vs_ = self[k]
-            rs.append(z3util.myOr([k_ == vs_[v] for v in vs]))
-            
-        myf =  z3util.myAnd if is_and else z3util.myOr
-        expr = myf(rs)
-        
-        self.add(key, expr)
-        return expr
+class CustDict(MutableMapping):
+    """
+    MuttableMapping ex: https://stackoverflow.com/questions/21361106/how-would-i-implement-a-dict-with-abstract-base-classes-in-python
+    """
+    __metaclass__ = abc.ABCMeta
+    def __init__(self): self.__dict__ = {}
+    def __len__(self): return len(self.__dict__)
+    def __getitem__(self, key): return self.__dict__[key]
+    def __iter__(self): return iter(self.__dict__)    
+    def __setitem__(self, key, val): raise NotImplementedError("setitem")
+    def __delitem__(self, key): raise NotImplementedError("delitem")
+    def add_set(self, key, val):
+        """
+        For mapping from key to set
+        """
+        if key not in self.__dict__:
+            self.__dict__[key] = set()
+        self.__dict__[key].add(val)
         
     
 class Dom(OrderedDict):
@@ -231,9 +176,6 @@ class Dom(OrderedDict):
         Size of the largest finite domain
         """
         return max(len(vs) for vs in self.itervalues())
-    
-    @property
-    def z3db(self): return Z3DB(self)
     
     @classmethod
     def get_dom(cls, dom_file):
@@ -344,8 +286,8 @@ class Dom(OrderedDict):
         """
         Return a config satisfying yexprs but not nexprs
         """
-        assert all(e is None or z3.is_expr(e) for e in yexprs),yexprs
-        assert all(e is None or z3.is_expr(e) for e in nexprs),nexprs
+        assert all(Z3DB.maybe_expr(e) for e in yexprs),yexprs
+        assert all(Z3DB.maybe_expr(e) for e in nexprs),nexprs
         assert k > 0, k
         assert config_cls, config_cls
 
@@ -396,7 +338,83 @@ class Dom(OrderedDict):
             
         return configs    
         
+class Z3DB(dict):
+    def __init__(self, dom):
+        assert isinstance(dom, Dom)
+        
+        db = {}
+        for k, vs in dom.iteritems():
+            vs = sorted(list(vs))
+            ttyp, tvals=z3.EnumSort(k,vs)
+            rs = [vv for vv in zip(vs, tvals)]
+            rs.append(('typ', ttyp))
+            db[k] = (z3.Const(k, ttyp), dict(rs))
+        dict.__init__(self, db)
+        
+        
+    @property
+    def cache(self):
+        try:
+            return self._exprs_cache
+        except AttributeError:
+            self._exprs_cache = {}
+            return self._exprs_cache
+
+    @property
+    def solver(self):
+        try:
+            solver = self._solver
+            return solver
+        except AttributeError:
+            self._solver = z3.Solver()
+            return self._solver
+
+    def add(self, k, v):
+        assert self.maybe_expr(v), v 
+        self.cache[k] = v
+
+    def expr_of_dict(self, d):
+        #s=1 t=1 u=1 v=1 x=0 y=0 z=4
+        assert all(k in self for k in d), (d, self)
+        
+        if d in self.cache:
+            #print "hitme2"
+            return self.cache[d]
             
+        rs = []
+        for k,v in d.iteritems():
+            k_,d_ = self[k] #var and dict 
+            rs.append(k_ == d_[v])
+            
+        expr = z3util.myAnd(rs)
+        self.add(d, expr)
+        return expr
+    
+    def expr_of_dict_dict(self, d, is_and):
+        #s=0 t=0 u=0 v=0 x=1 y=1 z=0,1,2  =>  ... (z=0 or z=1 or z=2)
+        assert all(k in self for k in d), (d, self)
+        
+        key = (d, is_and)
+        if key in self.cache:
+            return self.cache[key]
+        
+        rs = []
+        for k, vs in d.iteritems():
+            k_, vs_ = self[k]
+            rs.append(z3util.myOr([k_ == vs_[v] for v in vs]))
+            
+        myf =  z3util.myAnd if is_and else z3util.myOr
+        expr = myf(rs)
+        
+        self.add(key, expr)
+        return expr
+
+    @staticmethod
+    def maybe_expr(expr):
+        #not None => z3expr
+        return expr is None or z3.is_expr(expr)
+    
+
 class Config(HDict):
     """
     >>> c = Config([('a', '1'), ('b', '0'), ('c', '1')])

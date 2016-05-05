@@ -46,7 +46,7 @@ class LoadData(object):
         try:
             return self._z3db
         except AttributeError:
-            self._z3db = self.dom.z3db
+            self._z3db = CC.Z3DB(self.dom)
             return self._z3db
 
     @property
@@ -192,9 +192,9 @@ class Analysis(object):
         logger.info('seed: {}'.format(ld.seed))
         logger.debug(ld.dom.__str__())
 
-        dts = sorted(ld.dts, key=lambda dt: dt.citer)        
+        ld.dts.sort(key=lambda dt: dt.citer)        
         if show_iters:
-            for dt in dts:
+            for dt in ld.dts:
                 dt.show(ld.z3db, ld.dom)
 
         if not hasattr(ld.pp_cores_d.values()[0], 'vstr'):
@@ -205,7 +205,7 @@ class Analysis(object):
         ld.mcores_d.show_results()
         
         #print summary
-        xtime_total = ld.itime_total - sum(dt.xtime for dt in dts)
+        xtime_total = ld.itime_total - sum(dt.xtime for dt in ld.dts)
         last_dt = max(ld.dts, key=lambda dt: dt.citer) #last iteration
         nconfigs = last_dt.nconfigs
         ncovs = last_dt.ncovs
@@ -229,7 +229,7 @@ class Analysis(object):
             min_configs = []
             min_ncovs = 0
         else:
-            logger.info("Finding Min Configs")
+            logger.info("* Finding Min Configs")
             from alg_miscs import MinConfigs
             mc = MinConfigs(ld)
             if callable(do_min_configs):
@@ -237,11 +237,11 @@ class Analysis(object):
             else:
                 min_configs, min_ncovs = mc.search_existing()
             
-        logger.info("Influential Options")
+        logger.info("* Influential Options")
         from alg_miscs import Influence
         influence_scores = Influence(ld).search(ncovs)
 
-        logger.info("Check Precision")
+        logger.info("* Check Precision")
         from alg_miscs import Precision
         ud = Precision(ld)
         strong_mcores_d = {}
@@ -250,7 +250,7 @@ class Analysis(object):
             logger.info("against results in '{}'".format(cmp_gt))
             equivs, weaks, strongs, nones = ud.check_gt(cmp_dir=cmp_gt)
             
-        logger.info("Measure Similarity")
+        logger.info("* Measure Similarity")
         from alg_miscs import Similarity
         sl = Similarity(ld)
         vscores = sl.get_vscores()
@@ -283,7 +283,7 @@ class Analysis(object):
 
 
         #return analyzed results
-        rs = AnalysisResults(niters=len(dts),
+        rs = AnalysisResults(niters=len(ld.dts),
                              ncores=len(ld.mcores_d),
                              itime=ld.itime_total,
                              xtime=xtime_total,
