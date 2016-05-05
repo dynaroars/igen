@@ -735,24 +735,20 @@ class Mcores_d(CC.CustDict):
         assert isinstance(dom, Dom)
         assert not isinstance(z3db, Dom)
         
-        def find_dup(expr, d, cache, solver):
+        def find_dup(expr, d):
             for pc in d:
-                expr_ = cache[pc]
+                expr_ = pc.z3expr(dom, z3db)
                 if ((expr is None and expr_ is None) or 
                     (expr and expr_ and
-                     z3util.is_tautology(expr == expr_, solver))):
+                     z3util.is_tautology(expr == expr_, z3db.solver))):
                     return pc
                     
             return None #no dup
 
-        cache = {}
-        solver = z3db.solver
         uniqs = {}
         for pc in self:
             expr = pc.z3expr(dom, z3db)
-            cache[pc] = expr
-            
-            dup = find_dup(expr, uniqs, cache, solver)
+            dup = find_dup(expr, uniqs)
             if dup:
                 uniqs[dup].add(pc)
             else:

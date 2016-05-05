@@ -454,14 +454,14 @@ class Similarity(XAnalysis):
             pp_cores_d = dt.cores_d.analyze(self.ld.dom, self.ld.z3db, covs_d)
             pp_cores_ds.append(pp_cores_d)
 
+
         fscores = [
             (dt.citer,
              self.fscore_cores_d(pp_cores_d, cd.pp_cores_d),
              dt.nconfigs)
             for dt, pp_cores_d in zip(self.ld.dts, pp_cores_ds)]
-
         logger.info("fscores (iter, fscore, configs): {}".format(
-            ' -> '.join(map(str,fscores))))
+            ' -> '.join(map(str, fscores))))
             
         return fscores, cd.pp_cores_d
 
@@ -522,7 +522,7 @@ class Influence(XAnalysis):
                     for pncore in g_d if k in g_d[pncore])
             rs.append((k,v))
             
-        rs = sorted(rs, key = lambda (k, v) : (v, k), reverse=True)
+        rs.sort(key = lambda (k, v) : (v, k), reverse=True)
         rs = [(k, v, 100. * v / ncovs) for k, v in rs]
         logger.info("influence (opt, uniq, %) {}"
                     .format(', '.join(map(
@@ -600,7 +600,6 @@ class Precision(XAnalysis):
 
         cd = self.ld.load_cmp_dir(cmp_dir)
         cache = {}
-        solver = self.ld.z3db.solver
         strongs = IA.Mcores_d()
         equivs = IA.Mcores_d()
         weaks = IA.Mcores_d()
@@ -616,7 +615,7 @@ class Precision(XAnalysis):
                         stat = self.equiv
                 else:
                     assert cd.ccovs_d[cov]
-                    stat = check(cd.ccovs_d[cov], expr, cache, solver)
+                    stat = check(cd.ccovs_d[cov], expr, cache, self.ld.z3db.solver)
                     
                 assert stat in (self.weak, self.equiv, self.strong, None), stat
                 if stat == self.weak:
@@ -643,7 +642,7 @@ class Precision(XAnalysis):
             logger.info("locs with '{}' results: {}% ({}/{})"
                         .format(s, 100. * n / len(self.ld.covs),
                                 n, len(self.ld.covs)))
-            logger.info("'{}' results\n{}".format(s, rs_d))
+            logger.detail("'{}' results\n{}".format(s, rs_d))
         return n
         
     
