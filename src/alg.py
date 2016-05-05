@@ -497,7 +497,7 @@ class PNCore(MCore):
             if do_firsttime:
                 assert self.pc is not None, self.pc #this never could happen
                 #nc is None => pd is None
-                assert self.nc is not None or self.pd is None, (self.nc,self.nd)
+                assert self.nc is not None or self.pd is None, (self.nc, self.nd)
 
         #pf = pc & neg(pd)
         #nf = neg(nc & neg(nd)) = nd | neg(nc)
@@ -519,7 +519,7 @@ class PNCore(MCore):
             
             assert pexpr is not None
             assert nexpr is not None
-
+            
             if z3util.is_tautology(z3.Implies(pexpr, nexpr), z3db.solver):
                 nc = None
                 nd = None
@@ -735,23 +735,24 @@ class Mcores_d(CC.CustDict):
         assert isinstance(dom, Dom)
         assert not isinstance(z3db, Dom)
         
-        def find_dup(expr, d, cache):
+        def find_dup(expr, d, cache, solver):
             for pc in d:
                 expr_ = cache[pc]
                 if ((expr is None and expr_ is None) or 
                     (expr and expr_ and
-                     z3util.is_tautology(expr == expr_), z3db.solver)):
+                     z3util.is_tautology(expr == expr_, solver))):
                     return pc
                     
             return None #no dup
 
-        cache = {}  
+        cache = {}
+        solver = z3db.solver
         uniqs = {}
         for pc in self:
             expr = pc.z3expr(dom, z3db)
             cache[pc] = expr
             
-            dup = find_dup(expr, uniqs, cache)
+            dup = find_dup(expr, uniqs, cache, solver)
             if dup:
                 uniqs[dup].add(pc)
             else:
