@@ -10,7 +10,7 @@ import vu_common as CM
 import config_common as CC
 from config_common import Configs_d #do not del, needed to read existing results
 
-logger = CM.VLog('igen_alg')
+logger = CM.VLog('alg')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
 
@@ -193,14 +193,14 @@ class Core(HDict):
     x=1 z=2 w=b,c
 
     """
-    def __init__(self,core=HDict()):
-        HDict.__init__(self,core)
+    def __init__(self, core=HDict()):
+        HDict.__init__(self, core)
         
         assert all(CC.is_csetting(s) for s in self.iteritems()), self
 
-    def __str__(self,delim=' '):
+    def __str__(self, delim=' '):
         if self:
-            return delim.join(map(CC.str_of_csetting,self.iteritems()))
+            return delim.join(map(CC.str_of_csetting, self.iteritems()))
         else:
             return 'true'
 
@@ -222,7 +222,7 @@ class Core(HDict):
         return z3db.expr_of_dict_dict(self, is_and)
 
     @staticmethod
-    def is_maybe_core(c): return c is None or isinstance(c,Core)
+    def maybe_core(c): return c is None or isinstance(c,Core)
 
 class MCore(tuple):
     """
@@ -232,7 +232,7 @@ class MCore(tuple):
         tuple.__init__(self,cores)
 
         assert len(self) == 2 or len(self) == 4, self
-        assert all(Core.is_maybe_core(c) for c in self), self
+        assert all(Core.maybe_core(c) for c in self), self
 
     @property
     def settings(self):
@@ -422,8 +422,8 @@ class PNCore(MCore):
     
     @staticmethod
     def _get_expr(cc, cd, dom, z3db, is_and):
-        assert Core.is_maybe_core(cc)
-        assert Core.is_maybe_core(cd)
+        assert Core.maybe_core(cc)
+        assert Core.maybe_core(cd)
         assert isinstance(dom, Dom)
         assert isinstance(z3db, CC.Z3DB)
         
@@ -473,8 +473,8 @@ class PNCore(MCore):
 
     @staticmethod
     def _get_expr_str(cc,cd,dom,z3db,is_and):
-        expr = PNCore._get_expr(cc,cd,dom,z3db,is_and)
-        vstr = PNCore._get_str(cc,cd,dom,is_and)
+        expr = PNCore._get_expr(cc, cd, dom, z3db, is_and)
+        vstr = PNCore._get_str(cc, cd, dom, is_and)
         return expr,vstr
 
     
@@ -492,7 +492,7 @@ class PNCore(MCore):
         inv2 = not(nc & not(nd)) = nd | not(nc)
         """
         assert isinstance(dom, Dom), dom
-        assert isinstance(z3db, CC.Z3DB), dom
+        assert isinstance(z3db, CC.Z3DB), z3db
         if __debug__:
             if do_firsttime:
                 assert self.pc is not None, self.pc #this never could happen
@@ -520,12 +520,12 @@ class PNCore(MCore):
             assert pexpr is not None
             assert nexpr is not None
 
-            if z3util.is_tautology(z3.Implies(pexpr,nexpr)):
+            if z3util.is_tautology(z3.Implies(pexpr, nexpr), z3db.solver):
                 nc = None
                 nd = None
                 expr = pexpr
                 vstr = pvstr
-            elif z3util.is_tautology(z3.Implies(nexpr,pexpr)):
+            elif z3util.is_tautology(z3.Implies(nexpr, pexpr), z3db.solver):
                 pc = None
                 pd = None
                 expr = nexpr
@@ -568,22 +568,17 @@ class PNCore(MCore):
         
         pc,pd,nc,nd = self
         if pc is None and pd is None:
-            expr = PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
+            expr = PNCore._get_expr(nd, nc, dom, z3db, is_and=False)
         elif nc is None and nd is None:
-            expr = PNCore._get_expr(pc,pd,dom,z3db,is_and=True)
+            expr = PNCore._get_expr(pc, pd, dom, z3db, is_and=True)
         else:
-            pexpr = PNCore._get_expr(pc,pd,dom,z3db,is_and=True)
-            nexpr = PNCore._get_expr(nd,nc,dom,z3db,is_and=False)
+            pexpr = PNCore._get_expr(pc, pd, dom, z3db, is_and=True)
+            nexpr = PNCore._get_expr(nd, nc, dom, z3db, is_and=False)
             expr = z3util.myAnd([pexpr,nexpr])
 
         z3db.add(self, expr)
         return expr
 
-    @staticmethod
-    def is_expr(expr):
-        #not None => z3expr
-        return expr is None or z3.is_expr(expr)
-    
 class Cores_d(CC.CustDict):
     """
     rare case when diff c1 and c2 became equiv after simplification
@@ -744,7 +739,8 @@ class Mcores_d(CC.CustDict):
             for pc in d:
                 expr_ = cache[pc]
                 if ((expr is None and expr_ is None) or 
-                    (expr and expr_ and z3util.is_equiv(expr, expr_))):
+                    (expr and expr_ and
+                     z3util.is_tautology(expr == expr_), z3db.solver)):
                     return pc
                     
             return None #no dup
@@ -824,7 +820,7 @@ class Infer(object):
         """
         assert (all(isinstance(c, Config) for c in configs)
                 and configs), configs
-        assert Core.is_maybe_core(core), core
+        assert Core.maybe_core(core), core
         assert isinstance(dom, Dom), dom
         
         if core is None:  #not yet set
@@ -958,9 +954,9 @@ class IGen(object):
         assert not sids or CC.is_cov(sids), sids
             
         self.dom = dom
-        self.z3db = self.dom.z3db
         self.get_cov = get_cov
         self.sids = sids
+        self.z3db = CC.Z3DB(self.dom)        
         
     def go(self, seed, rand_n=None, econfigs=None, tmpdir=None):
         """
@@ -1200,7 +1196,6 @@ class IGen(object):
             sel_core = None
 
         return sel_core
-
 
 class DTrace(object):
     """
