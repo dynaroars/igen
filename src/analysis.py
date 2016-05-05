@@ -46,7 +46,7 @@ class LoadData(object):
         try:
             return self._z3db
         except AttributeError:
-            self._z3db = self.dom.z3db
+            self._z3db = CC.Z3DB(self.dom)
             return self._z3db
 
     @property

@@ -87,7 +87,7 @@ class MinConfigs(XAnalysis):
         Ret the strongest elements by removing those implied by others
         """
         assert d and isinstance(d, dict)
-        assert all(v is None or z3.is_expr(v) for v in d.itervalues()), d
+        assert all(CC.Z3DB.maybe_expr(v) for v in d.itervalues()), d
         
         def _len(e):
             #simply heuristic to try most restrict conjs first
@@ -205,7 +205,6 @@ class MinConfigs(XAnalysis):
 
         return '({})'.format('; '.join(map(f,pack)))
 
-    
     def get_minset_f(self, remain_covs, f):
         d = self.indep(self.ld.mcores_d.keys())
 
@@ -544,25 +543,18 @@ class Precision(XAnalysis):
     weak = 2
     
     def check_existing(self):
-        def check(configs, expr, cache):
+        def check(configs, expr, cache, solver):
             #check if forall c in configs. c => expr 
             k = hash((frozenset(configs), z3util.fhash(expr)))
             if k in cache: return cache[k]
-            
-            rs = []
-            for config in configs:
-                try:
-                    cexpr = cache[config]
-                except KeyError:
-                    cexpr = config.z3expr(self.ld.z3db)
-                    cache[config] = cexpr
-                rs.append(cexpr)
 
-            rs = z3util.is_tautology(z3.Implies(z3util.myOr(rs), expr))
+            rs = [config.z3expr(self.ld.z3db) for config in configs]
+            rs = z3util.is_tautology(z3.Implies(z3util.myOr(rs), expr), solver)
             cache[k] = rs
             return rs
 
-        cache = {}        
+        cache = {}
+        solver = self.ld.z3db.solver
         equivs, nones = IA.Mcores_d(), IA.Mcores_d()
         for pncore in self.ld.mcores_d:
             expr = pncore.z3expr(self.ld.dom, self.ld.z3db)  #None = True
@@ -576,7 +568,7 @@ class Precision(XAnalysis):
                         stat = False
                     else:
                         assert self.ld.ncovs_d[cov]
-                        stat = check(self.ld.ncovs_d[cov], nexpr, cache)
+                        stat = check(self.ld.ncovs_d[cov], nexpr, cache, solver)
 
                 (equivs if stat else nones).add(pncore, cov)
 
@@ -587,36 +579,28 @@ class Precision(XAnalysis):
         return equivs, nones
 
     def check_gt(self, cmp_dir):
-
-        def check(configs, expr, cache):
+        def check(configs, expr, cache, solver):
             k = hash((frozenset(configs), z3util.fhash(expr)))
             if k in cache: return cache[k]
 
-            rs = []
-            for config in configs:
-                try:
-                    cexpr = cache[config]
-                except KeyError:
-                    cexpr = config.z3expr(self.ld.z3db)
-                    cache[config] = cexpr
-                rs.append(cexpr)
+            rs = [config.z3expr(self.ld.z3db) for config in configs]
             rs = z3util.myOr(rs)  #truth
             
-            if z3util.is_tautology(rs == expr):
+            if z3util.is_tautology(rs == expr, solver):
                 stat = self.equiv
-            elif z3util.is_tautology(z3.Implies(expr, rs)):
+            elif z3util.is_tautology(z3.Implies(expr, rs), solver):
                 stat = self.strong
-            elif z3util.is_tautology(z3.Implies(rs, expr)):
+            elif z3util.is_tautology(z3.Implies(rs, expr), solver):
                 stat = self.weak
             else:
-                # print z3.prove(z3.Implies(rs,expr))
-                # print z3.prove(z3.Implies(expr,rs))                
                 stat = None
+
             cache[k] = stat
             return stat
 
         cd = self.ld.load_cmp_dir(cmp_dir)
         cache = {}
+        solver = self.ld.z3db.solver
         strongs = IA.Mcores_d()
         equivs = IA.Mcores_d()
         weaks = IA.Mcores_d()
@@ -632,8 +616,8 @@ class Precision(XAnalysis):
                         stat = self.equiv
                 else:
                     assert cd.ccovs_d[cov]
-                    stat = check(cd.ccovs_d[cov], expr, cache)
-
+                    stat = check(cd.ccovs_d[cov], expr, cache, solver)
+                    
                 assert stat in (self.weak, self.equiv, self.strong, None), stat
                 if stat == self.weak:
                     weaks.add(pncore, cov)

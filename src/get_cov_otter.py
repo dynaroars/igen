@@ -77,8 +77,9 @@ def do_full(dom, pathconds_d, tmpdir, n=None):
     cores_d,configs_d,covs_d = IA.Cores_d(),CC.Configs_d(),CC.Covs_d()
     new_covs,new_cores = IA.Infer.infer_covs(
         cores_d,cconfigs_d,configs_d,covs_d,dom)
-    pp_cores_d = cores_d.analyze(dom,covs_d)
-    _ = pp_cores_d.merge(show_detail=True)    
+    z3db = CC.Z3DB(dom)
+    pp_cores_d = cores_d.analyze(dom, z3db, covs_d)
+    _ = pp_cores_d.merge(dom, z3db, show_detail=True)    
     itime_total = time() - st
     assert len(pp_cores_d) == len(covs_d), (len(pp_cores_d),len(covs_d))
     
