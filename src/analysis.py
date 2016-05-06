@@ -3,6 +3,7 @@ import numpy
 import vu_common as CM
 import config_common as CC
 import alg as IA
+import alg_igen
 
 logger = CM.VLog('analysis')
 logger.level = CC.logger_level
@@ -122,7 +123,7 @@ class LoadData(object):
         if dir_ in cls.data:
             return cls.data[dir_]
         else:
-            seed, dom, dts, pp_cores_d, itime_total = IA.DTrace.load_dir(dir_)
+            seed, dom, dts, pp_cores_d, itime_total = alg_igen.DTrace.load_dir(dir_)
             ld = LoadData(seed,dom,dts,pp_cores_d,itime_total)
             cls.data[dir_] = ld
             return ld
@@ -152,28 +153,29 @@ fields = ['niters',
 AnalysisResults = namedtuple("AnalysisResults",' '.join(fields))
 
 class Analysis(object):
-    
+    NOTDIR = 0
+    RUNDIR = 1
+    BENCHMARKDIR = 2
     @classmethod
-    def is_run_dir(cls, d):
+    def get_dir_stat(cls, d):
         """
-        ret True if d is a run_dir that consists of *.tvn, pre, post files
-        ret False if d is a benchmark dir that consists of run_dirs
-        ret None otherwise
+        ret RUNDIR if d is a run_dir that consists of *.tvn, pre, post files
+        ret BECHMARKDIR if d is a benchmark dir that consists of run_dirs
+        ret NOTDIR otherwise
         """
-        if __debug__:
-            assert os.path.isdir(d), d
+        assert os.path.isdir(d), d
             
         fs = os.listdir(d)
         if (fs.count('pre') == 1 and fs.count('post') == 1 and
             any(f.endswith('.tvn') for f in fs)):
-            return True
+            return cls.RUNDIR
         else:
             ds = [os.path.join(d,f) for f in fs]
             if (ds and
                 all(os.path.isdir(d_) and cls.is_run_dir(d_) for d_ in ds)):
-                return False
+                return cls.BENCHMARKDIR
             else:
-                return None
+                return cls.NOTDIR
 
     @classmethod
     def replay(cls, dir_, show_iters, do_min_configs, cmp_gt, cmp_rand):
@@ -210,7 +212,7 @@ class Analysis(object):
         nconfigs = last_dt.nconfigs
         ncovs = last_dt.ncovs
         
-        logger.info(IA.DTrace.str_of_summary(
+        logger.info(alg_igen.DTrace.str_of_summary(
             ld.seed,
             len(ld.dts),
             ld.itime_total,
