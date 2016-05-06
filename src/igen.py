@@ -59,7 +59,7 @@ def get_run_otter(args, IA, ALG_IGEN):
     sids = get_sids(args.sids)
     import get_cov_otter as Otter
     dom, get_cov_f, pathconds_d = Otter.prepare(prog, IA.Dom.get_dom)
-    igen = ALG_IGEN.IGen(dom, get_cov_f, sids=get_sids(args.sids))
+    igen = ALG_IGEN.IGen(dom, get_cov_f, sids)
     econfigs = []
     if sids:
         run_f = lambda seed,tdir: igen.go(seed=seed, tmpdir=tdir)
@@ -87,7 +87,7 @@ def get_run_default(args, IA, ALG_IGEN):
     sids = get_sids(args.sids)
     dom, default_configs, get_cov_f = get_cov_default(sids, args, IA)
     econfigs = [(c, None) for c in default_configs] if default_configs else []
-    igen = ALG_IGEN.IGen(dom, get_cov_f, sids=sids)
+    igen = ALG_IGEN.IGen(dom, get_cov_f, sids)
     
     if sids:
         run_f = lambda seed, tdir: igen.go(
@@ -206,7 +206,7 @@ if __name__ == "__main__":
                          action="store_true")
 
     aparser.add_argument("--sids", "-sids",
-                         help="find interactions for sids",
+                         help="find interactions for sids, e.g., -sids \"L1 L2\"",
                          action="store")
     
     aparser.add_argument("--cfg", "-cfg",
