@@ -17,6 +17,7 @@ import z3
 import z3util
 
 class XAnalysis(object):
+    __metaclass__ = abc.ABCMeta
     def __init__(self, ld):
         self.ld = ld
 
@@ -455,11 +456,10 @@ class Similarity(XAnalysis):
             pp_cores_ds.append(pp_cores_d)
 
 
-        fscores = [
-            (dt.citer,
-             self.fscore_cores_d(pp_cores_d, cd.pp_cores_d),
-             dt.nconfigs)
-            for dt, pp_cores_d in zip(self.ld.dts, pp_cores_ds)]
+        fscores = [(dt.citer,
+                    self.fscore_cores_d(pp_cores_d, cd.pp_cores_d),
+                    dt.nconfigs)
+                   for dt, pp_cores_d in zip(self.ld.dts, pp_cores_ds)]
         logger.info("fscores (iter, fscore, configs): {}".format(
             ' -> '.join(map(str, fscores))))
             

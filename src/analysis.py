@@ -141,12 +141,12 @@ fields = ['niters',
           'xtime',
           'ncovs',          
           'nconfigs',
-          'n_min_configs',
+          'n_minconfigs',
           'min_ncovs',
           'vscores',
           'fscores',
           'r_fvscores',
-          'influence_scores',
+          'influences',
           'm_strens',
           'm_strens_str',
           'm_vtyps']
@@ -156,6 +156,7 @@ class Analysis(object):
     NOTDIR = 0
     RUNDIR = 1
     BENCHMARKDIR = 2
+
     @classmethod
     def get_dir_stat(cls, d):
         """
@@ -172,21 +173,32 @@ class Analysis(object):
         else:
             ds = [os.path.join(d,f) for f in fs]
             if (ds and
-                all(os.path.isdir(d_) and cls.is_run_dir(d_) for d_ in ds)):
+                all(os.path.isdir(d_) and
+                    cls.get_dir_stat(d_) == cls.RUNDIR for d_ in ds)):
                 return cls.BENCHMARKDIR
             else:
                 return cls.NOTDIR
 
     @classmethod
-    def replay(cls, dir_, show_iters, do_min_configs, cmp_gt, cmp_rand):
+    def replay(cls, dir_, show_iters,
+               do_minconfigs,
+               do_influence,
+               do_evolution,
+               do_precision,
+               cmp_rand, cmp_dir):
         """
         Replay and analyze execution info from saved info in dir_
 
         """
         assert isinstance(dir_,str), dir_
         assert isinstance(show_iters, bool), show_iters
-        assert cmp_gt is None or isinstance(cmp_gt, str), cmp_gt
+        assert isinstance(do_influence, bool), do_influence
+        assert isinstance(do_evolution, bool), do_evolution
+        assert isinstance(do_precision, bool), do_precision
+        assert cmp_dir is None or isinstance(cmp_dir, str), cmp_dir
+        
         assert cmp_rand is None or callable(cmp_rand), cmp_rand
+
 
         logger.info("replay dir: '{}'".format(dir_))
         ld = LoadData.load_dir(dir_)
@@ -221,67 +233,74 @@ class Analysis(object):
             ncovs,
             dir_))
 
-        logger.info("*** Additional analysis ***")
+        logger.info("***Additional Analysis***")
 
-        # do_min_configs has 3 possible values
+        # do_minconfigs has 3 possible values
         # 1. None: don't find min configs
         # 2. f: (callable(f)) find min configs using f
         # 3. anything else: find min configs using existing configs
-        if do_min_configs is None:
-            min_configs = []
+        if do_minconfigs is None:
+            minconfigs = []
             min_ncovs = 0
         else:
-            logger.info("* Finding Min Configs")
+            logger.info("*Min Configs")
             from alg_miscs import MinConfigs
             mc = MinConfigs(ld)
-            if callable(do_min_configs):
-                min_configs, min_ncovs = mc.search_f(f=do_min_configs)
+            if callable(do_minconfigs):
+                minconfigs, min_ncovs = mc.search_f(f=do_minconfigs)
             else:
-                min_configs, min_ncovs = mc.search_existing()
-            
-        logger.info("* Influential Options")
-        from alg_miscs import Influence
-        influence_scores = Influence(ld).search(ncovs)
+                minconfigs, min_ncovs = mc.search_existing()
 
-        logger.info("* Check Precision")
-        from alg_miscs import Precision
-        ud = Precision(ld)
-        strong_mcores_d = {}
-        ok_mcores_d, weak_mcores_d = ud.check_existing()
-        if cmp_gt: #compare against ground truths
-            logger.info("against results in '{}'".format(cmp_gt))
-            equivs, weaks, strongs, nones = ud.check_gt(cmp_dir=cmp_gt)
-            
-        logger.info("* Measure Similarity")
-        from alg_miscs import Similarity
-        sl = Similarity(ld)
-        vscores = sl.get_vscores()
-        fscores, gt_pp_cores_d = None, None
-        if cmp_gt: #compare against ground truths
-            logger.info("against results in '{}'".format(cmp_gt))
-            fscores, gt_pp_cores_d = sl.get_fscores(cmp_dir=cmp_gt)
-            
-        #compare against rand search
-        r_f = cmp_rand
-        if callable(r_f):
-            r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = r_f(nconfigs)
-            if gt_pp_cores_d:
-                r_fscore = sl.fscore_cores_d(r_pp_cores_d, gt_pp_cores_d)
-            else:
-                r_fscore = None
-                
-            r_vscore = sl.vscore_cores_d(r_cores_d)
-            logger.info("rand: configs {} cov {} vscore {} fscore {}"
-                        .format(len(r_configs_d),len(r_covs_d),
-                                r_vscore,r_fscore))
-            last_elem_f = lambda l: l[-1][1] if l and len(l) > 0 else None
-            logger.info("cegir: configs {} cov {} vscore {} fscore {}"
-                        .format(nconfigs,ncovs,
-                                last_elem_f(vscores),last_elem_f(fscores)))
+        ### Influential Options/Settings ###
+        influences = None
+        if do_influence:
+            logger.info("*Influence")
+            from alg_miscs import Influence
+            influences = Influence(ld).search(ncovs)
 
-            r_fvscores = (r_fscore,r_vscore)
-        else:
-            r_fvscores = None
+        ### Precision ###
+        equivs, weaks, strongs, nones = None, None, None, None
+        if do_precision:
+            logger.info("*Precision")
+            from alg_miscs import Precision
+            ud = Precision(ld)
+            equivs, weaks = ud.check_existing()
+            if cmp_dir: #compare to ground truths
+                logger.info("cmp to results in '{}'".format(cmp_dir))
+                equivs, weaks, strongs, nones = ud.check_gt(cmp_dir)
+
+        ### Evolutionar: V- and F-scores ###
+        vscores, fscores, gt_pp_cores_d = None, None, None
+        r_fvscores = None  #for random comparision
+        if do_evolution:
+            logger.info("* Evolution")
+            from alg_miscs import Similarity
+            sl = Similarity(ld)
+            vscores = sl.get_vscores()
+            fscores, gt_pp_cores_d = None, None
+            if cmp_dir: #compare to ground truths
+                logger.info("cmp to results in '{}'".format(cmp_dir))
+                fscores, gt_pp_cores_d = sl.get_fscores(cmp_dir=cmp_dir)
+            
+            #compare to rand search
+            r_f = cmp_rand
+            if callable(r_f):
+                r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = r_f(nconfigs)
+                if gt_pp_cores_d:
+                    r_fscore = sl.fscore_cores_d(r_pp_cores_d, gt_pp_cores_d)
+                else:
+                    r_fscore = None
+
+                r_vscore = sl.vscore_cores_d(r_cores_d)
+                logger.info("rand: configs {} cov {} vscore {} fscore {}"
+                            .format(len(r_configs_d),len(r_covs_d),
+                                    r_vscore,r_fscore))
+                last_elem_f = lambda l: l[-1][1] if l and len(l) > 0 else None
+                logger.info("cegir: configs {} cov {} vscore {} fscore {}"
+                            .format(nconfigs,ncovs,
+                                    last_elem_f(vscores),last_elem_f(fscores)))
+
+                r_fvscores = (r_fscore,r_vscore)
 
 
         #return analyzed results
@@ -291,19 +310,26 @@ class Analysis(object):
                              xtime=xtime_total,
                              ncovs=ncovs,
                              nconfigs=nconfigs,
-                             n_min_configs=len(min_configs),
+                             n_minconfigs=len(minconfigs),
                              min_ncovs=min_ncovs,
                              vscores=vscores,
                              fscores=fscores,
                              r_fvscores=r_fvscores,
-                             influence_scores=influence_scores,
+                             influences=influences,
                              m_strens=ld.mcores_d.strens,
                              m_strens_str=ld.mcores_d.strens_str,
                              m_vtyps=ld.mcores_d.vtyps)
         return rs
 
     @classmethod
-    def replay_dirs(cls, dir_,show_iters,do_min_configs,cmp_gt,cmp_rand):
+    def replay_dirs(cls, dir_, show_iters,
+                    do_minconfigs,
+                    do_influence,
+                    do_evolution,
+                    do_precision,
+                    cmp_rand,
+                    cmp_dir):
+        
         dir_ = CM.getpath(dir_)
         logger.info("replay_dirs '{}'".format(dir_))
         
@@ -333,8 +359,12 @@ class Analysis(object):
 
         for rdir in sorted(os.listdir(dir_)):
             rdir = os.path.join(dir_,rdir)
-            rs = Analysis.replay(
-                rdir, show_iters, do_min_configs, cmp_gt, cmp_rand)
+            rs = Analysis.replay(rdir, show_iters,
+                                 do_minconfigs,
+                                 do_influence,
+                                 do_evolution,
+                                 do_precision,
+                                 cmp_rand, cmp_dir)
             
             niters_total += rs.niters
             ncores_total += rs.ncores
@@ -343,7 +373,7 @@ class Analysis(object):
             ncovs_total += rs.ncovs            
             nconfigs_total += rs.nconfigs
             min_ncovs_total += rs.min_ncovs
-            nminconfigs_total += rs.n_min_configs
+            nminconfigs_total += rs.n_minconfigs
             strens_s.append(rs.m_strens)
             strens_str_s.append(rs.m_strens_str)
             vtyps_s.append(rs.m_vtyps)
@@ -355,10 +385,10 @@ class Analysis(object):
             nconfigs_arr.append(rs.nconfigs)
             ncovs_arr.append(rs.ncovs)
             min_ncovs_arr.append(rs.min_ncovs)
-            nminconfigs_arr.append(rs.n_min_configs)
+            nminconfigs_arr.append(rs.n_minconfigs)
             csv_arr.append("{},{},{},{},{},{},{},{},{},{},{}".format(
                 counter,rs.niters,rs.ncores,rs.itime,rs.xtime,
-                rs.nconfigs,rs.ncovs,rs.n_min_configs,rs.min_ncovs,
+                rs.nconfigs,rs.ncovs,rs.n_minconfigs,rs.min_ncovs,
                 ','.join(map(str, rs.m_vtyps)),
                 ','.join(map(str, rs.m_strens))))
             counter += 1

@@ -173,7 +173,7 @@ class IGen(object):
         assert  all(isinstance(c, Config) for c in configs), configs
         
         st = time()
-        results = CC.eval_configs(configs, self.get_cov)
+        results = Config.eval(configs, self.get_cov, self.dom)
         cconfigs_d = CC.Configs_d()
         for c,rs in results:
             cconfigs_d[c] = rs
@@ -266,3 +266,5 @@ class IGen(object):
 
         return sel_core
 
+
+    

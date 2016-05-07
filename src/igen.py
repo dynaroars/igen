@@ -218,12 +218,32 @@ if __name__ == "__main__":
                          help="for use with analysis, show stats of all iters",
                          action="store_true")
 
-    aparser.add_argument("--do_min_configs", "-do_min_configs",
+    aparser.add_argument("--minconfigs", "-minconfigs",
                          help=("for use with analysis, "
                                "compute a set of min configs"),
                          action="store",
                          nargs='?',
                          const='use_existing',
+                         default=None,
+                         type=str)
+
+    aparser.add_argument("--influence", "-influence",
+                         help="determine influential options/settings",
+                         action="store_true")
+
+    aparser.add_argument("--evolution", "-evolution",
+                         help=("compute evolution progress using "
+                               "v- and f- scores"),
+                         action="store_true")
+
+    aparser.add_argument("--precision", "-precision",
+                         help="check if interactions are precise",
+                         action="store_true")
+    
+    aparser.add_argument("--cmp_dir", "-cmp_dir",
+                         help=("analyze (e.g., evolution, precision)"
+                               "with to this dir"),
+                         action="store",
                          default=None,
                          type=str)
 
@@ -234,13 +254,6 @@ if __name__ == "__main__":
                          default=None,
                          type=str)
     
-    aparser.add_argument("--cmp_gt", "-cmp_gt",
-                         help=("for use with analysis, "
-                               "cmp results against ground truth dir"),
-                         action="store",
-                         default=None,
-                         type=str)
-
     args = aparser.parse_args()
     CC.logger_level = args.logger_level
     logger = CM.VLog(igen_name)
@@ -290,10 +303,10 @@ if __name__ == "__main__":
                     .format(args.benchmark, seed, time() - st, tdir))
                             
     else: #run analysis
-        do_min_configs = args.do_min_configs  
-        if do_min_configs and (do_min_configs != 'use_existing' or args.dom_file):
-            _, get_cov_f = get_run_f(do_min_configs, args, logger)
-            do_min_configs = get_cov_f
+        do_minconfigs = args.minconfigs  
+        if do_minconfigs and (do_minconfigs != 'use_existing' or args.dom_file):
+            _, get_cov_f = get_run_f(do_minconfigs, args, logger)
+            do_minconfigs = get_cov_f
 
         cmp_rand = args.cmp_rand
         if cmp_rand:
@@ -302,8 +315,12 @@ if __name__ == "__main__":
                                     prefix=cmp_rand + "igen_cmp_rand")
             cmp_rand = lambda rand_n: run_f(seed, tdir, rand_n)
 
+        cmp_dir = args.cmp_dir
         analysis_f(args.inp,
                    show_iters=args.show_iters,
-                   do_min_configs=do_min_configs,
-                   cmp_gt=args.cmp_gt,
-                   cmp_rand=cmp_rand)
+                   do_minconfigs=do_minconfigs,
+                   do_influence=args.influence,
+                   do_evolution=args.evolution,
+                   do_precision=args.precision,
+                   cmp_rand=cmp_rand,
+                   cmp_dir=cmp_dir)

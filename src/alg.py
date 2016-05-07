@@ -30,7 +30,19 @@ class Dom(CC.Dom):
     ])
     >>> assert dom.siz == len(dom.gen_configs_full()) == 18
     """
+    EqZero = "=0"
+    LtZero = "<0"
+    GtZero = ">0"
 
+    @property
+    def infs(self):
+        return self._infs
+    @infs.setter
+    def infs(self, infs):
+        assert isinstance(infs, set) and all(k in self for k in infs), infs
+        self._infs = infs
+
+    
     def gen_configs_cex(self, sel_core, existing_configs, z3db):
         """
         >>> dom = Dom([('a', frozenset(['1', '0'])), \
@@ -124,6 +136,52 @@ class Dom(CC.Dom):
 
         return configs
 
+    @classmethod
+    def get_dom(cls, dom_file):
+        """
+        Read domain info from a file. 
+        Also read default configs (.default*) if given
+        """
+        assert os.path.isfile(dom_file), dom_file
+
+        def get_lines(lines):
+            infs = set()
+            rs = (line.split() for line in lines)
+            rs_ = []
+            for parts in rs:
+                key = parts[0]
+                vals = frozenset(parts[1:])
+                if len(vals) == 1 and list(vals)[0] == "inf":
+                    vals = frozenset([cls.EqZero, cls.LtZero, cls.GtZero])
+                    infs.add(key)
+                rs_.append((key, vals))
+            return rs_, infs
+
+        dom, infs = get_lines(CM.iread_strip(dom_file))
+        dom = cls(dom)
+        dom.infs = infs
+
+        #default configs
+        dom_name = os.path.basename(dom_file)
+        dom_dir = os.path.dirname(dom_file)
+        configs = [os.path.join(dom_dir, f) for f in os.listdir(dom_dir)
+                   if dom_name in f and '.default' in f]
+        configs = [dict(get_lines(CM.iread_strip(f))[0]) for f in configs
+                   if os.path.isfile(f)]
+        configs = [[(k, list(c[k])[0]) for k in dom] for c in configs]
+        return dom, configs
+
+    @classmethod
+    def mkConcr(cls, pred):
+        if pred == cls.EqZero:
+            return 0
+        elif pred == cls.GtZero:
+            return random.randint(1,1000)
+        elif pred == cls.LtZero:
+            return -1 * cls.mkConcr(cls.GtZero)
+        else:
+            raise AssertionError("{} ??".format(pred))
+        
 class Config(CC.Config):
     """
     >>> c = Config([('a', '1'), ('b', '0'), ('c', '1')])
@@ -147,6 +205,14 @@ class Config(CC.Config):
     And(a == 1, b == 0, c == 1)
     """
 
+    def real(self, dom):
+        if dom.infs:
+            config = [(k, dom.mkConcr(v) if k in dom.infs else v)
+                      for k,v  in self.iteritems()]
+            return self.__class__(config)
+        else:
+            return self
+
     def c_implies(self, core):
         """
         self => conj core
@@ -166,6 +232,37 @@ class Config(CC.Config):
 
         return (not core or
                 any(k in self and self[k] in core[k] for k in core))
+
+    @classmethod
+    def eval(cls, configs, get_cov_f, dom):
+        """
+        Eval (e.g., get coverage) configurations using function get_cov_f
+        Ret a list of configs and their results
+        """
+        assert (isinstance(configs, list) and
+                all(isinstance(c, (cls, CC.Config)) for c in configs)
+                and configs), configs
+        assert callable(get_cov_f), get_cov_f
+
+        cache = set()
+        results = []
+        for c in configs:
+            c_real = c.real(dom)
+            if c_real in cache:
+                continue
+            cache.add(c_real)
+
+            sids, outps = get_cov_f(c_real)
+            rs = outps if CC.analyze_outps else sids
+            if not rs:
+                logger.warn("config {}{} produces nothing"
+                            .format(c, '' if c == c_real
+                                    else ' ({})'.format(c_real)))
+                                    
+            results.append((c, rs))
+
+        return results
+    
 
 class Core(HDict):
     """
@@ -251,12 +348,12 @@ class MCore(tuple):
     def vstren(self): return sum(map(len, self.values))
 
 class SCore(MCore):
-    def __init__(self,(mc,sc)):
+    def __init__(self, (mc,sc)):
         """
         mc: main core that will generate cex's
         sc (if not None): sat core that is satisfied by all generated cex'
         """
-        super(SCore,self).__init__((mc,sc))
+        super(SCore, self).__init__((mc,sc))
         #additional assertion
         assert mc is None or isinstance(mc, Core) and mc, mc
         #sc is not None => ...
@@ -342,7 +439,7 @@ class PNCore(MCore):
     """
 
     def __init__(self,(pc,pd,nc,nd)):
-        super(PNCore,self).__init__((pc,pd,nc,nd))
+        super(PNCore, self).__init__((pc,pd,nc,nd))
 
     @property
     def pc(self): return self[0]
