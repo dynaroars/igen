@@ -30,13 +30,14 @@ class Dom(CC.Dom):
     ])
     >>> assert dom.siz == len(dom.gen_configs_full()) == 18
     """
-    EqZero = "=0"
-    LtZero = "<0"
-    GtZero = ">0"
+    EqZero = "Eq0"
+    LtZero = "Lt0"
+    GtZero = "Gt0"
 
     @property
     def infs(self):
         return self._infs
+    
     @infs.setter
     def infs(self, infs):
         assert isinstance(infs, set) and all(k in self for k in infs), infs
@@ -152,8 +153,9 @@ class Dom(CC.Dom):
                 key = parts[0]
                 vals = frozenset(parts[1:])
                 if len(vals) == 1 and list(vals)[0] == "inf":
-                    vals = frozenset([cls.EqZero, cls.LtZero, cls.GtZero])
+                    vals = frozenset([cls.EqZero, cls.GtZero, cls.LtZero])
                     infs.add(key)
+                    
                 rs_.append((key, vals))
             return rs_, infs
 
@@ -206,12 +208,12 @@ class Config(CC.Config):
     """
 
     def real(self, dom):
-        if dom.infs:
-            config = [(k, dom.mkConcr(v) if k in dom.infs else v)
-                      for k,v  in self.iteritems()]
-            return self.__class__(config)
-        else:
-            return self
+        assert dom.infs
+        
+        config = [(k, dom.mkConcr(v) if k in dom.infs else v)
+                  for k,v  in self.iteritems()]
+        return self.__class__(config)
+    
 
     def c_implies(self, core):
         """
@@ -243,24 +245,21 @@ class Config(CC.Config):
                 all(isinstance(c, (cls, CC.Config)) for c in configs)
                 and configs), configs
         assert callable(get_cov_f), get_cov_f
-
-        cache = set()
-        results = []
-        for c in configs:
-            c_real = c.real(dom)
-            if c_real in cache:
-                continue
-            cache.add(c_real)
-
-            sids, outps = get_cov_f(c_real)
+        assert isinstance(dom, Dom)
+        
+        def eval_f(c):
+            sids, outps = get_cov_f(c)
             rs = outps if CC.analyze_outps else sids
             if not rs:
-                logger.warn("config {}{} produces nothing"
-                            .format(c, '' if c == c_real
-                                    else ' ({})'.format(c_real)))
-                                    
-            results.append((c, rs))
+                logger.warn("'{}' produces nothing".format(c))
+            return rs
 
+        results = []
+        configs = set(configs)
+        if dom.infs:
+            results = [(c, eval_f(c.real(dom))) for c in configs]
+        else:
+            results = [(c, eval_f(c)) for c in configs]
         return results
     
 
