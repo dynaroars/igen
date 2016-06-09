@@ -10,6 +10,8 @@ import vu_common as CM
 import config_common as CC
 from config_common import Configs_d #do not del, needed to read existing results
 
+import string
+
 logger = CM.VLog('alg_ds')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
@@ -33,6 +35,12 @@ class Dom(CC.Dom):
     EqZero = "Eq0"
     LtZero = "Lt0"
     GtZero = "Gt0"
+    inf_preds = frozenset([EqZero, LtZero, GtZero])
+    
+    TStr = "TStr"
+    TInt = "TInt"
+    TFloat = "TFloat"
+    typ_preds = frozenset([TStr, TInt, TFloat])
 
     @property
     def infs(self):
@@ -150,13 +158,18 @@ class Dom(CC.Dom):
             rs = (line.split() for line in lines)
             rs_ = []
             for parts in rs:
-                key = parts[0]
+                var = parts[0]
                 vals = frozenset(parts[1:])
-                if len(vals) == 1 and list(vals)[0] == "inf":
-                    vals = frozenset([cls.EqZero, cls.GtZero, cls.LtZero])
-                    infs.add(key)
-                    
-                rs_.append((key, vals))
+                if len(vals) == 1:                    
+                    val = list(vals)[0]
+                    if val == "inf":
+                        vals = cls.inf_preds
+                        infs.add(var)
+                    elif val == "type":
+                        vals = cls.typ_preds
+                        infs.add(var)
+                        
+                rs_.append((var, vals))
             return rs_, infs
 
         dom, infs = get_lines(CM.iread_strip(dom_file))
@@ -181,8 +194,16 @@ class Dom(CC.Dom):
             return random.randint(1,1000)
         elif pred == cls.LtZero:
             return -1 * cls.mkConcr(cls.GtZero)
+
+        elif pred == cls.TStr:
+            return "'{}'".format(random.choice(string.ascii_letters))
+        elif pred == cls.TInt:
+            return random.randint(-100,100)
+        elif pred  == cls.TFloat:
+            return random.random()
         else:
             raise AssertionError("{} ??".format(pred))
+
         
 class Config(CC.Config):
     """
