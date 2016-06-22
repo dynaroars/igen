@@ -209,10 +209,6 @@ if __name__ == "__main__":
                          help="find interactions for sids, e.g., -sids \"L1 L2\"",
                          action="store")
     
-    aparser.add_argument("--cfg", "-cfg",
-                         help="file containing predecessors from cfg",
-                         action="store")
-
     #analysis options
     aparser.add_argument("--show_iters", "-show_iters",
                          help="for use with analysis, show stats of all iters",
