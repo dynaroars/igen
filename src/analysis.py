@@ -396,18 +396,6 @@ class Analysis(object):
         nruns_total = len(strens_s)
         nruns_total_f = float(nruns_total)
 
-        ss = ["iter {}".format(niters_total/nruns_total_f),
-              "results {}".format(ncores_total/nruns_total_f),
-              "time {}".format(nitime_total/nruns_total_f),
-              "xtime {}".format(nxtime_total/nruns_total_f),
-              "configs {}".format(nconfigs_total/nruns_total_f),
-              "covs {}".format(ncovs_total/nruns_total_f),
-              "minconfigs {}".format(nminconfigs_total/nruns_total_f),
-              "nmincovs {}".format(min_ncovs_total/nruns_total_f)]
-        
-        logger.info("STAT of {} runs (avg): {}"
-                    .format(nruns_total, ', '.join(ss)))
-        
         ssMed = ["iter {}".format(numpy.median(niters_arr)),
                  "results {}".format(numpy.median(ncores_arr)),
                  "time {}".format(numpy.median(nitime_arr)),
@@ -468,11 +456,10 @@ class Analysis(object):
                               .format(strength,numpy.median(inters),Analysis.siqr(inters)))
             tex_table5.append("{} \\mso{{{}}}{{{}}}"
                               .format(strength,numpy.median(covs),Analysis.siqr(covs)))
-        
-        logger.info("interaction strens averages: {}".format(', '.join(ss)))
+
         logger.info("interaction strens medians : {}".format(', '.join(medians)))
         logger.info("interaction strens SIQRs   : {}".format(', '.join(siqrs)))
-        #logger.info("interactions arrays   : {}".format('\n'.join(tmp)))
+
         
         conjs = [c for c,_,_ in vtyps_s]
         disjs = [d for _,d,_ in vtyps_s]
@@ -497,9 +484,6 @@ class Analysis(object):
         nconjs = sum(conjs)/nruns_total_f
         ndisjs = sum(disjs)/nruns_total_f
         nmixs  = sum(mixs)/nruns_total_f
-        
-        logger.info("interaction typs (averages): conjs {}, disjs {}, mixeds {}"
-                    .format(nconjs,ndisjs,nmixs))            
         
         logger.info("interaction typs (medians) : conjs {}, disjs {}, mixeds {}"
                     .format(numpy.median(conjs),numpy.median(disjs),numpy.median(mixs)))
