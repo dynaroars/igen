@@ -103,20 +103,6 @@ class LoadData(object):
             self._ncovs_d = ncovs_d
             return self._ncovs_d
 
-    # @staticmethod
-    # def compute_same_covs(covs_d):
-    #     d = {}
-    #     for loc, configs in covs_d.iteritems():
-    #         k = frozenset(configs)
-    #         if k not in d:
-    #             d[k] = set()
-    #         d[k].add(loc)
-
-    #     rs = set(frozenset(s) for s in d.itervalues())
-    #     return rs
-    
-        
-    #class methods
     @classmethod
     def load_dir(cls, dir_):
         assert dir_
