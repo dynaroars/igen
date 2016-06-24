@@ -55,7 +55,7 @@ def get_alt_file(orig_file, base_file, ext):
         name_ = CM.file_basename(base_file)
         return os.path.join(dir_, name_ + ext)
 
-def get_run_otter(args, IA, ALG_IGEN):
+def get_run_otter(prog, args, IA, ALG_IGEN):
     sids = get_sids(args.sids)
     import get_cov_otter as Otter
     dom, get_cov_f, pathconds_d = Otter.prepare(prog, IA.Dom.get_dom)
@@ -83,9 +83,9 @@ def get_run_otter(args, IA, ALG_IGEN):
 
     return dom, get_cov_f, run_f
 
-def get_run_default(args, IA, ALG_IGEN):
+def get_run_default(prog, args, IA, ALG_IGEN):
     sids = get_sids(args.sids)
-    dom, default_configs, get_cov_f = get_cov_default(sids, args, IA)
+    dom, default_configs, get_cov_f = get_cov_default(prog, sids, args, IA)
     econfigs = [(c, None) for c in default_configs] if default_configs else []
     igen = ALG_IGEN.IGen(dom, get_cov_f, sids)
     
@@ -109,7 +109,7 @@ def get_run_default(args, IA, ALG_IGEN):
 
     return dom, get_cov_f, run_f
 
-def get_cov_default(sids, args, IA):
+def get_cov_default(prog, sids, args, IA):
     if args.dom_file:
         #general way to run prog using dom_file/runscript
         dom_file = CM.getpath(args.dom_file)
@@ -121,7 +121,8 @@ def get_cov_default(sids, args, IA):
             config, run_script)
     else:
         import igen_settings
-        import get_cov_coreutils as Coreutils            
+        import get_cov_coreutils as Coreutils
+
         dom, default_configs, get_cov_f = Coreutils.prepare(
             prog,
             IA.Dom.get_dom,
@@ -136,13 +137,12 @@ def get_run_f(prog, args, logger):
     Ret f that takes inputs seed, tmpdir 
     and call appropriate iGen function on those inputs
     """
-    
     import alg as IA
     import alg_igen as ALG_IGEN
     if prog in igen_settings.otter_progs:
-        dom, get_cov_f, run_f = get_run_otter(args, IA, ALG_IGEN)
+        dom, get_cov_f, run_f = get_run_otter(prog, args, IA, ALG_IGEN)
     else:
-        dom, get_cov_f, run_f = get_run_default(args, IA, ALG_IGEN)
+        dom, get_cov_f, run_f = get_run_default(prog, args, IA, ALG_IGEN)
         
     logger.debug("dom:\n{}".format(dom))
     return run_f, get_cov_f
@@ -237,15 +237,15 @@ if __name__ == "__main__":
                          action="store_true")
     
     aparser.add_argument("--cmp_dir", "-cmp_dir",
-                         help=("analyze (e.g., evolution, precision)"
-                               "with to this dir"),
+                         help=("compare (-evolution or -precision) "
+                               "to this dir"),
                          action="store",
                          default=None,
                          type=str)
 
     aparser.add_argument("--cmp_rand", "-cmp_rand",
-                         help=("for use with analysis, "
-                               "cmp results against rand configs"),
+                         help=("cmp results against rand configs "
+                               "(req -evolution)"),
                          action="store",
                          default=None,
                          type=str)
