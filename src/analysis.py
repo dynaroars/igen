@@ -26,6 +26,10 @@ class LoadData(object):
     @property
     def dts(self): return self._dts
     @property
+    def last_dt(self):
+        return max(self.dts, key=lambda dt: dt.citer) #last iteration
+        
+    @property
     def pp_cores_d(self): return self._pp_cores_d
     @pp_cores_d.setter
     def pp_cores_d(self, d):
@@ -129,9 +133,8 @@ fields = ['niters',
           'nconfigs',
           'n_minconfigs',
           'min_ncovs',
-          'vscores',
-          'fscores',
-          'r_fvscores',
+          'gt_fscore',
+          'rd_fscore',
           'influences',
           'm_strens',
           'm_strens_str',
@@ -206,9 +209,8 @@ class Analysis(object):
         
         #print summary
         xtime_total = ld.itime_total - sum(dt.xtime for dt in ld.dts)
-        last_dt = max(ld.dts, key=lambda dt: dt.citer) #last iteration
-        nconfigs = last_dt.nconfigs
-        ncovs = last_dt.ncovs
+        nconfigs = ld.last_dt.nconfigs
+        ncovs = ld.last_dt.ncovs
         
         logger.info(alg_igen.DTrace.str_of_summary(
             ld.seed,
@@ -218,7 +220,6 @@ class Analysis(object):
             nconfigs,
             ncovs,
             dir_))
-
 
         # do_minconfigs has 3 possible values
         # 1. None: don't find min configs
@@ -254,39 +255,32 @@ class Analysis(object):
                 logger.info("cmp to results in '{}'".format(cmp_dir))
                 equivs, weaks, strongs, nones = ud.check_gt(cmp_dir)
 
-        ### Evolutionar: V- and F-scores ###
-        vscores, fscores, gt_pp_cores_d = None, None, None
-        r_fvscores = None  #for random comparision
+        ### Evolutionar: F-scores ###
+        rd_fscore, gt_fscore, gt_pp_cores_d = None, None, None
+
         if do_evolution:
             logger.info("* Evolution")
             from alg_miscs import Similarity
             sl = Similarity(ld)
-            vscores = sl.get_vscores()
-            fscores, gt_pp_cores_d = None, None
-            if cmp_dir: #compare to ground truths
+
+            #compare to ground truths
+            if cmp_dir: 
                 logger.info("cmp to results in '{}'".format(cmp_dir))
-                fscores, gt_pp_cores_d = sl.get_fscores(cmp_dir=cmp_dir)
-            
-            #compare to rand search
-            r_f = cmp_rand
-            if callable(r_f):
-                r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = r_f(nconfigs)
-                if gt_pp_cores_d:
-                    r_fscore = sl.fscore_cores_d(r_pp_cores_d, gt_pp_cores_d)
-                else:
-                    r_fscore = None
-
-                r_vscore = sl.vscore_cores_d(r_cores_d)
-                logger.info("rand: configs {} cov {} vscore {} fscore {}"
-                            .format(len(r_configs_d),len(r_covs_d),
-                                    r_vscore,r_fscore))
+                gt_fscores, gt_pp_cores_d, gt_ncovs, gt_nconfigs = sl.get_fscores(cmp_dir)
+                
                 last_elem_f = lambda l: l[-1][1] if l and len(l) > 0 else None
-                logger.info("cegir: configs {} cov {} vscore {} fscore {}"
-                            .format(nconfigs,ncovs,
-                                    last_elem_f(vscores),last_elem_f(fscores)))
+                gt_fscore = last_elem_f(gt_fscores)
+                logger.info("cegir: configs {} cov {} fscore {}"
+                            .format(gt_nconfigs, gt_ncovs, gt_fscore))
+                
+            #compare to rand search
+            callf = cmp_rand
+            if callable(callf) and gt_pp_cores_d:
+                r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = callf(ld.seed, nconfigs)
+                rd_fscore = sl.fscore_cores_d(r_pp_cores_d, gt_pp_cores_d)
 
-                r_fvscores = (r_fscore,r_vscore)
-
+                logger.info("rand: configs {} cov {} fscore {}"
+                            .format(len(r_configs_d),len(r_covs_d), rd_fscore))
 
         #return analyzed results
         rs = AnalysisResults(niters=len(ld.dts),
@@ -297,9 +291,8 @@ class Analysis(object):
                              nconfigs=nconfigs,
                              n_minconfigs=len(minconfigs),
                              min_ncovs=min_ncovs,
-                             vscores=vscores,
-                             fscores=fscores,
-                             r_fvscores=r_fvscores,
+                             gt_fscore=gt_fscore,
+                             rd_fscore=rd_fscore,
                              influences=influences,
                              m_strens=ld.mcores_d.strens,
                              m_strens_str=ld.mcores_d.strens_str,
@@ -327,30 +320,33 @@ class Analysis(object):
         nxtime_arr = [] 
         nconfigs_arr = []
         ncovs_arr = []
+        fscores = []
+        rfscores = []
         nminconfigs_arr = []
         min_ncovs_arr = []        
         for rdir in sorted(os.listdir(dir_)):
             rdir = os.path.join(dir_,rdir)
-            rs = Analysis.replay(rdir, show_iters,
-                                 do_minconfigs,
-                                 do_influence,
-                                 do_evolution,
-                                 do_precision,
-                                 cmp_rand, cmp_dir)
+            o = Analysis.replay(rdir, show_iters,
+                                do_minconfigs,
+                                do_influence,
+                                do_evolution,
+                                do_precision,
+                                cmp_rand, cmp_dir)
             
-            strens_arr.append(rs.m_strens)
-            strens_str_arr.append(rs.m_strens_str)
-            vtyps_arr.append(rs.m_vtyps)
-
-            niters_arr.append(rs.niters)
-            ncores_arr.append(rs.ncores)
-            nitime_arr.append(rs.itime)
-            nxtime_arr.append(rs.xtime)
-            nconfigs_arr.append(rs.nconfigs)
-            ncovs_arr.append(rs.ncovs)
-            nminconfigs_arr.append(rs.n_minconfigs)
-            min_ncovs_arr.append(rs.min_ncovs)            
-
+            strens_arr.append(o.m_strens)
+            strens_str_arr.append(o.m_strens_str)
+            vtyps_arr.append(o.m_vtyps)
+            fscores.append(o.gt_fscore)
+            rfscores.append(o.rd_fscore)
+            
+            niters_arr.append(o.niters)
+            ncores_arr.append(o.ncores)
+            nitime_arr.append(o.itime)
+            nxtime_arr.append(o.xtime)
+            nconfigs_arr.append(o.nconfigs)
+            ncovs_arr.append(o.ncovs)
+            nminconfigs_arr.append(o.n_minconfigs)
+            min_ncovs_arr.append(o.min_ncovs)            
 
         def median_siqr((s, arr)):
             return "{} {} ({})".format(s, numpy.median(arr), Analysis.siqr(arr))
@@ -369,7 +365,6 @@ class Analysis(object):
               ("nminconfigs", nminconfigs_arr),
               ("nmincovs", min_ncovs_arr)]
         logger.info(', '.join(median_siqr(r) for r in rs))
-                    
 
         #vtyps_arr= [(c,d,m), ... ]
         conjs, disjs, mixs = zip(*vtyps_arr)
@@ -403,7 +398,15 @@ class Analysis(object):
                               numpy.median(covs), Analysis.siqr(covs)))
 
         logger.info("Int strens: {}".format(', '.join(rs)))
+        
 
+        #fscores
+        fscores = [-1 if s is None else s for s in fscores]
+        rfscores = [-1 if s is None else s for s in rfscores]        
+        rs = [("gt", fscores), ("rand", rfscores)]
+        logger.info("fscores: {}".format(', '.join(median_siqr(r) for r in rs)))
+
+        
 
     @staticmethod
     def siqr(arr):

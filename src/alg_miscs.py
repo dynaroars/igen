@@ -313,20 +313,6 @@ class MinConfigs(XAnalysis):
         return minset_d.keys(), minset_ncovs
 
 class Similarity(XAnalysis):
-    def vscore_core(self, core):
-        vs = [len(core[k] if k in core else self.ld.dom[k]) for k in self.ld.dom]
-        return sum(vs)
-
-    def vscore_pncore(self, pncore):
-        #"is not None" is correct because empty Core is valid
-        #and in fact has max score
-        vs = [self.vscore_core(c) for c in pncore if c is not None]
-        return sum(vs)
-
-    def vscore_cores_d(self, cores_d):
-        vs = [self.vscore_pncore(c) for c in cores_d.itervalues()]
-        return sum(vs)
-
     #f-score    
     def get_settings(self, c):
         """
@@ -440,7 +426,7 @@ class Similarity(XAnalysis):
         #Note here we use analyzed pp_cores_d instead of just cores_d
 
         cd = self.ld.load_cmp_dir(cmp_dir)
-
+        
         #get pp_cores_d at each iteration
         pp_cores_ds = []
         for dt in self.ld.dts:
@@ -462,19 +448,9 @@ class Similarity(XAnalysis):
                    for dt, pp_cores_d in zip(self.ld.dts, pp_cores_ds)]
         logger.info("fscores (iter, fscore, configs): {}".format(
             ' -> '.join(map(str, fscores))))
-            
-        return fscores, cd.pp_cores_d
 
-    def get_vscores(self):
-        #Simple metrics giving more pts for more info
-        #(new cov or new results). Note here we use cores_d
-        vscores = [(dt.citer,
-                    self.vscore_cores_d(dt.cores_d),
-                    dt.nconfigs)
-                   for dt in self.ld.dts]
-        logger.info("vscores (iter, vscore, configs): {}".format(
-            ' -> '.join(map(str, vscores))))
-        return vscores
+        return fscores, cd.pp_cores_d, cd.last_dt.ncovs, cd.last_dt.nconfigs
+
     
 class Influence(XAnalysis):
     """

@@ -1,4 +1,3 @@
-from time import time
 import os.path
 import random
 
@@ -103,11 +102,11 @@ class Dom(CC.Dom):
         x=0,y=1  =>  [x=0,y=0,z=rand;x=0,y=2,z=rand;x=1,y=1;z=rand]
         """
         
-        assert isinstance(sel_core, SCore), sel_core 
+        assert isinstance(sel_core, SCore), sel_core
         assert isinstance(z3db, CC.Z3DB)
         
-        configs = []            
-        c_core,s_core = sel_core
+        configs = []
+        c_core, s_core = sel_core
 
         #keep
         changes = []        
@@ -115,7 +114,7 @@ class Dom(CC.Dom):
             changes.append(c_core)
 
         #change
-        _new = lambda : Core((k,c_core[k]) for k in c_core)
+        _new = lambda: Core((k, c_core[k]) for k in c_core)
         for k in c_core:
             vs = self[k] - c_core[k]
             for v in vs:
