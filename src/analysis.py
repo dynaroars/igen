@@ -185,7 +185,6 @@ class Analysis(object):
         assert isinstance(do_evolution, bool), do_evolution
         assert isinstance(do_precision, bool), do_precision
         assert cmp_dir is None or isinstance(cmp_dir, str), cmp_dir
-        
         assert cmp_rand is None or callable(cmp_rand), cmp_rand
 
 

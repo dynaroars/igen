@@ -203,7 +203,6 @@ class Dom(CC.Dom):
         else:
             raise AssertionError("{} ??".format(pred))
 
-        
 class Config(CC.Config):
     """
     >>> c = Config([('a', '1'), ('b', '0'), ('c', '1')])
