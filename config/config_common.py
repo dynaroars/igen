@@ -177,31 +177,6 @@ class Dom(OrderedDict):
         """
         return max(len(vs) for vs in self.itervalues())
     
-    @classmethod
-    def get_dom(cls, dom_file):
-        """
-        Read domain info from a file. 
-        Also read default configs (.default*) if given
-        """
-        assert os.path.isfile(dom_file), dom_file
-
-        def get_lines(lines):
-            rs = (line.split() for line in lines)
-            rs = [(parts[0], frozenset(parts[1:])) for parts in rs]
-            return rs
-
-        dom = cls(get_lines(CM.iread_strip(dom_file)))
-
-        #default configs
-        dom_name = os.path.basename(dom_file)
-        dom_dir = os.path.dirname(dom_file)
-        configs = [os.path.join(dom_dir, f) for f in os.listdir(dom_dir)
-                   if dom_name in f and '.default' in f]
-        configs = [dict(get_lines(CM.iread_strip(f))) for f in configs
-                   if os.path.isfile(f)]
-        configs = [[(k, list(c[k])[0]) for k in dom] for c in configs]
-        return dom, configs
-
     #Methods to generate configurations
     def gen_configs_full(self, config_cls=None):
         if config_cls is None:
@@ -218,7 +193,7 @@ class Dom(OrderedDict):
         if config_cls is None:
             config_cls = Config
             
-        dom_used = dict((k,set(self[k])) for k in self)
+        dom_used = dict((k, set(self[k])) for k in self)
 
         def mk():
             config = []
@@ -503,31 +478,6 @@ class Configs_d(CustDict):
         ss = (c.__str__(self[c]) for c in self.__dict__)
         return '\n'.join("{}. {}".format(i+1, s) for i, s in enumerate(ss))
 
-
-def eval_configs(configs, get_cov_f):
-    """
-    Eval (e.g., get coverage) configurations using function get_cov_f
-    Ret a list of configs and their results
-    """
-    assert (isinstance(configs, list) and
-            all(isinstance(c, Config) for c in configs)
-            and configs), configs
-    assert callable(get_cov_f), get_cov_f
-
-    cache = set()
-    results = []
-    for c in configs:
-        if c in cache:
-            continue
-        cache.add(c)
-        
-        sids, outps = get_cov_f(c)
-        rs = outps if analyze_outps else sids
-        if not rs:
-            print("config {} produces nothing".format(c))
-        results.append((c, rs))
-        
-    return results
 
 if __name__ == "__main__":
     import doctest

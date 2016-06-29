@@ -1,4 +1,3 @@
-from time import time
 import os.path
 import random
 
@@ -10,7 +9,9 @@ import vu_common as CM
 import config_common as CC
 from config_common import Configs_d #do not del, needed to read existing results
 
-logger = CM.VLog('alg')
+import string
+
+logger = CM.VLog('alg_ds')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
 
@@ -30,7 +31,26 @@ class Dom(CC.Dom):
     ])
     >>> assert dom.siz == len(dom.gen_configs_full()) == 18
     """
+    EqZero = "Eq0"
+    LtZero = "Lt0"
+    GtZero = "Gt0"
+    inf_preds = frozenset([EqZero, LtZero, GtZero])
+    
+    TStr = "TStr"
+    TInt = "TInt"
+    TFloat = "TFloat"
+    typ_preds = frozenset([TStr, TInt, TFloat])
 
+    @property
+    def infs(self):
+        return self._infs
+    
+    @infs.setter
+    def infs(self, infs):
+        assert isinstance(infs, set) and all(k in self for k in infs), infs
+        self._infs = infs
+
+    
     def gen_configs_cex(self, sel_core, existing_configs, z3db):
         """
         >>> dom = Dom([('a', frozenset(['1', '0'])), \
@@ -82,11 +102,11 @@ class Dom(CC.Dom):
         x=0,y=1  =>  [x=0,y=0,z=rand;x=0,y=2,z=rand;x=1,y=1;z=rand]
         """
         
-        assert isinstance(sel_core, SCore), sel_core 
+        assert isinstance(sel_core, SCore), sel_core
         assert isinstance(z3db, CC.Z3DB)
         
-        configs = []            
-        c_core,s_core = sel_core
+        configs = []
+        c_core, s_core = sel_core
 
         #keep
         changes = []        
@@ -94,7 +114,7 @@ class Dom(CC.Dom):
             changes.append(c_core)
 
         #change
-        _new = lambda : Core((k,c_core[k]) for k in c_core)
+        _new = lambda: Core((k, c_core[k]) for k in c_core)
         for k in c_core:
             vs = self[k] - c_core[k]
             for v in vs:
@@ -124,6 +144,66 @@ class Dom(CC.Dom):
 
         return configs
 
+    @classmethod
+    def get_dom(cls, dom_file):
+        """
+        Read domain info from a file. 
+        Also read default configs (.default*) if given
+        """
+        assert os.path.isfile(dom_file), dom_file
+
+        def get_lines(lines):
+            infs = set()
+            rs = (line.split() for line in lines)
+            rs_ = []
+            for parts in rs:
+                var = parts[0]
+                vals = frozenset(parts[1:])
+                if len(vals) == 1:                    
+                    val = list(vals)[0]
+                    if val == "inf":
+                        vals = cls.inf_preds
+                        infs.add(var)
+                    elif val == "type":
+                        vals = cls.typ_preds
+                        infs.add(var)
+                        
+                rs_.append((var, vals))
+            return rs_, infs
+
+        dom, infs = get_lines(CM.iread_strip(dom_file))
+        dom = cls(dom)
+        dom.infs = infs
+
+        #default configs
+        dom_name = os.path.basename(dom_file)
+        dom_dir = os.path.dirname(dom_file)
+        configs = [os.path.join(dom_dir, f) for f in os.listdir(dom_dir)
+                   if dom_name in f and '.default' in f]
+        configs = [dict(get_lines(CM.iread_strip(f))[0]) for f in configs
+                   if os.path.isfile(f)]
+        configs = [[(k, list(c[k])[0]) for k in dom] for c in configs]
+        return dom, configs
+
+    @classmethod
+    def mkConcr(cls, pred):
+        if pred == cls.EqZero:
+            return 0
+        elif pred == cls.GtZero:
+            return random.randint(1,1000)
+        elif pred == cls.LtZero:
+            return -1 * cls.mkConcr(cls.GtZero)
+
+        elif pred == cls.TStr:
+            return "'{}'".format(random.choice(string.ascii_letters))
+        elif pred == cls.TInt:
+            return random.randint(-100,100)
+        elif pred  == cls.TFloat:
+            return random.random()
+        else:
+            raise AssertionError("{} ??".format(pred))
+
+        
 class Config(CC.Config):
     """
     >>> c = Config([('a', '1'), ('b', '0'), ('c', '1')])
@@ -147,6 +227,14 @@ class Config(CC.Config):
     And(a == 1, b == 0, c == 1)
     """
 
+    def real(self, dom):
+        assert dom.infs
+        
+        config = [(k, dom.mkConcr(v) if k in dom.infs else v)
+                  for k,v  in self.iteritems()]
+        return self.__class__(config)
+    
+
     def c_implies(self, core):
         """
         self => conj core
@@ -166,6 +254,34 @@ class Config(CC.Config):
 
         return (not core or
                 any(k in self and self[k] in core[k] for k in core))
+
+    @classmethod
+    def eval(cls, configs, get_cov_f, dom):
+        """
+        Eval (e.g., get coverage) configurations using function get_cov_f
+        Ret a list of configs and their results
+        """
+        assert (isinstance(configs, list) and
+                all(isinstance(c, (cls, CC.Config)) for c in configs)
+                and configs), configs
+        assert callable(get_cov_f), get_cov_f
+        assert isinstance(dom, Dom)
+        
+        def eval_f(c):
+            sids, outps = get_cov_f(c)
+            rs = outps if CC.analyze_outps else sids
+            if not rs:
+                logger.warn("'{}' produces nothing".format(c))
+            return rs
+
+        results = []
+        configs = set(configs)
+        if dom.infs:
+            results = [(c, eval_f(c.real(dom))) for c in configs]
+        else:
+            results = [(c, eval_f(c)) for c in configs]
+        return results
+    
 
 class Core(HDict):
     """
@@ -251,12 +367,12 @@ class MCore(tuple):
     def vstren(self): return sum(map(len, self.values))
 
 class SCore(MCore):
-    def __init__(self,(mc,sc)):
+    def __init__(self, (mc,sc)):
         """
         mc: main core that will generate cex's
         sc (if not None): sat core that is satisfied by all generated cex'
         """
-        super(SCore,self).__init__((mc,sc))
+        super(SCore, self).__init__((mc,sc))
         #additional assertion
         assert mc is None or isinstance(mc, Core) and mc, mc
         #sc is not None => ...
@@ -342,7 +458,7 @@ class PNCore(MCore):
     """
 
     def __init__(self,(pc,pd,nc,nd)):
-        super(PNCore,self).__init__((pc,pd,nc,nd))
+        super(PNCore, self).__init__((pc,pd,nc,nd))
 
     @property
     def pc(self): return self[0]
@@ -940,259 +1056,6 @@ class Infer(object):
                 cores_d[sid] = core_
 
         return new_covs, new_cores
-
-class IGen(object):
-    """
-    Main algorithm
-    """
-    def __init__(self, dom, get_cov, sids=None):
-        assert isinstance(dom, Dom), dom
-        assert callable(get_cov), get_cov
-        assert not sids or CC.is_cov(sids), sids
-            
-        self.dom = dom
-        self.get_cov = get_cov
-        self.sids = sids
-        self.z3db = CC.Z3DB(self.dom)        
-        
-    def go(self, seed, rand_n=None, econfigs=None, tmpdir=None):
-        """
-        rand_n = None: use default CEGIR mode
-        rand_n = 0  : use init configs
-        rand_n > 0  : use rand_n configs
-        rand_n < 0  : use all possible configs
-        """
-        assert isinstance(seed,(float, int)), seed
-        assert rand_n is None or isinstance(rand_n, int), rand_n
-        assert not econfigs or isinstance(econfigs, list), econfigs
-        assert isinstance(tmpdir, str) and os.path.isdir(tmpdir), tmpdir
-            
-        random.seed(seed)
-        logger.debug("seed: {}, tmpdir: {}".format(seed, tmpdir))
-
-        DTrace.save_pre(seed, self.dom, tmpdir)
-
-        #some settings
-        cur_iter = 1
-        min_stren = 1
-        cur_min_stren = min_stren
-        cur_stuck = 0
-        max_stuck = 3
-        cores_d, configs_d, covs_d = Cores_d(), CC.Configs_d(), CC.Covs_d()
-        sel_core = SCore.mk_default()
-        ignore_sel_cores = set()
-
-        #begin
-        st = time()
-        ct = st
-        xtime_total = 0.0
-
-        cconfigs_d = CC.Configs_d()
-        configs = []
-        xtime = 0.0
-
-        #init configs
-        if econfigs:
-            for c, cov in econfigs:
-                c = Config(c)
-                if cov is None:
-                    configs.append(c)
-                else:
-                    cconfigs_d[c] = cov
-                    
-        configs = [c for c in configs if c not in cconfigs_d]
-
-        logger.debug("existing configs {} evaled, {} not evaled"
-                     .format(len(cconfigs_d), len(configs)))
-
-        if not cconfigs_d:
-            configs_ = self.gen_configs_init(rand_n, seed)
-            configs.extend(configs_)
-
-        if configs:
-            cconfigs_d_, xtime = self.eval_configs(configs)
-            xtime_total += xtime
-            for c in cconfigs_d_:
-                assert c not in cconfigs_d
-                cconfigs_d[c]  = cconfigs_d_[c]
-                
-        logger.debug("init configs {}".format(len(cconfigs_d)))
-        
-        new_covs, new_cores = Infer.infer_covs(
-            cores_d, cconfigs_d, configs_d, covs_d, self.dom, self.sids)
-            
-        while True:
-            ct_ = time(); itime = ct_ - ct; ct = ct_
-            dtrace = DTrace(
-                cur_iter, itime, xtime,
-                len(configs_d), len(covs_d), len(cores_d),
-                cconfigs_d,
-                new_covs, new_cores,
-                sel_core,
-                cores_d)
-            dtrace.show(self.dom, self.z3db)
-            DTrace.save_iter(cur_iter, dtrace, tmpdir)
-
-            if rand_n is not None:
-                break
-
-            cur_iter += 1
-            sel_core, configs = self.gen_configs_iter(
-                set(cores_d.values()), ignore_sel_cores,
-                cur_min_stren, configs_d)
-
-            if sel_core is None:
-                cur_iter -= 1
-                logger.debug('done after iter {}'.format(cur_iter))
-                break
-
-            assert configs, configs
-                
-            cconfigs_d, xtime = self.eval_configs(configs)
-            xtime_total += xtime
-            new_covs, new_cores = Infer.infer_covs(
-                cores_d, cconfigs_d, configs_d, covs_d, self.dom, self.sids)
-
-            if new_covs or new_cores: #progress
-                cur_stuck = 0
-                cur_min_stren = min_stren
-            else: #no progress
-                cur_stuck += 1
-                if cur_stuck > max_stuck:
-                    cur_stuck = 0
-                    cur_min_stren += 1
-                    logger.detail('cur_min_stren is {}'.format(cur_min_stren))
-
-        #postprocess
-        #only analyze sids
-        if self.sids:
-            cores_d_, covs_d_ = Cores_d(), CC.Covs_d()
-            for sid in self.sids:
-                if sid in cores_d:
-                    cores_d_[sid] = cores_d[sid]
-                    for c in covs_d[sid]:
-                        covs_d_.add(sid, c)
-            pp_cores_d = cores_d_.analyze(self.dom, self.z3db, covs_d_)
-            _ = pp_cores_d.merge(self.dom, self.z3db, show_detail=True)
-        else:
-            pp_cores_d = cores_d.analyze(self.dom, self.z3db, covs_d)
-            _ = pp_cores_d.merge(self.dom, self.z3db, show_detail=True)
-        
-        itime_total = time() - st
-        logger.debug(DTrace.str_of_summary(
-            seed, cur_iter, itime_total, xtime_total,
-            len(configs_d), len(covs_d), tmpdir))
-        logger.debug("Done (seed {}, test {})"
-                    .format(seed, random.randrange(100)))
-        DTrace.save_post(pp_cores_d, itime_total, tmpdir)
-        
-        return pp_cores_d, cores_d, configs_d, covs_d, self.dom
-
-    #Shortcuts
-    def go_full(self, tmpdir=None):
-        return self.go(seed=0, rand_n=-1, tmpdir=tmpdir)
-                       
-    def go_rand(self,rand_n, seed=None, econfigs=None, tmpdir=None):
-        return self.go(seed=seed, rand_n=rand_n, econfigs=econfigs, tmpdir=tmpdir)
-
-    #Helper functions
-    def eval_configs(self, configs):
-        assert isinstance(configs, list) and configs, configs
-        assert  all(isinstance(c, Config) for c in configs), configs
-        
-        st = time()
-        results = CC.eval_configs(configs, self.get_cov)
-        cconfigs_d = CC.Configs_d()
-        for c,rs in results:
-            cconfigs_d[c] = rs
-        return cconfigs_d, time() - st
-
-    def gen_configs_init(self, rand_n, seed):
-        #return []
-        if not rand_n: #None or 0
-            configs = self.dom.gen_configs_tcover1(config_cls=Config)
-            logger.debug("gen {} configs using tcover 1".format(len(configs)))
-        elif rand_n > 0 and rand_n < self.dom.siz:        
-            configs = self.dom.gen_configs_rand_smt(
-                rand_n, self.z3db, config_cls=Config)
-            logger.debug("gen {} rand configs".format(len(configs)))
-        else:
-            configs = self.dom.gen_configs_full(config_cls=Config)
-            logger.debug("gen all {} configs".format(len(configs)))
-
-        configs = list(set(configs))
-        assert configs, 'no initial configs created'
-        return configs
-        
-    def gen_configs_iter(self, cores, ignore_sel_cores, min_stren, configs_d):
-        assert (isinstance(cores, set) and 
-                all(isinstance(c, PNCore) for c in cores)), cores
-        assert (isinstance(ignore_sel_cores, set) and 
-                all(isinstance(c, SCore) for c in ignore_sel_cores)),\
-                ignore_sel_cores
-        assert isinstance(configs_d, CC.Configs_d),configs_d
-
-        configs = []
-        while True:
-            sel_core = self.select_core(cores, ignore_sel_cores, min_stren)
-            if sel_core is None:
-                break
-
-            configs = self.dom.gen_configs_cex(sel_core, configs_d, self.z3db)
-            configs = list(set(configs)) 
-            if configs:
-                break
-            else:
-                logger.debug("no cex's created for sel_core {}, try new core"
-                             .format(sel_core))
-
-        #self_core -> configs
-        assert not sel_core or configs, (sel_core,configs)
-        assert all(c not in configs_d for c in configs), configs
-
-        return sel_core, configs
-
-    @staticmethod
-    def select_core(pncores, ignore_sel_cores, min_stren):
-        """
-        Returns either None or SCore
-        """
-        assert (all(isinstance(c, PNCore) for c in pncores) and
-                pncores), pncores
-        assert (isinstance(ignore_sel_cores, set) and
-                all(isinstance(c, SCore) for c in ignore_sel_cores)),\
-            ignore_sel_cores
-
-        sel_cores = []
-        for (pc,pd,nc,nd) in pncores:
-            #if can add pc then don't cosider pd (i.e., refine pc first)
-            if pc and (pc,None) not in ignore_sel_cores:
-                sc = SCore((pc, None))
-                if pd is None: sc.set_keep()
-                sel_cores.append(sc)
-                    
-            elif pd and (pd,pc) not in ignore_sel_cores:
-                sc = SCore((pd,pc))
-                sel_cores.append(sc)
-
-            if nc and (nc, None) not in ignore_sel_cores:
-                sc = SCore((nc,None))
-                if nd is None: sc.set_keep()
-                sel_cores.append(sc)
-
-            elif nd and (nd,nc) not in ignore_sel_cores:
-                sc = SCore((nd,nc))
-                sel_cores.append(sc)
-                
-        sel_cores = [c for c in sel_cores if c.sstren >= min_stren]
-
-        if sel_cores:
-            sel_core = max(sel_cores, key=lambda c: (c.sstren, c.vstren))
-            ignore_sel_cores.add(sel_core)
-        else:
-            sel_core = None
-
-        return sel_core
 
 class DTrace(object):
     """

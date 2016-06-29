@@ -43,7 +43,8 @@ def get_sids(inp):
 
 def get_alt_file(orig_file, base_file, ext):
     """
-    If orig_file is not valid, try to get file by appending ext to the filename in base_file
+    If orig_file is not valid, try to get an alt file 
+    by appending ext to the filename in base_file
     """
     if orig_file:
         return CM.getpath(orig_file)
@@ -54,53 +55,14 @@ def get_alt_file(orig_file, base_file, ext):
         name_ = CM.file_basename(base_file)
         return os.path.join(dir_, name_ + ext)
 
-def get_cfg_file(cfg_file, dom_file):
-    ext = ".c.011t.cfg.preds"
-    if dom_file:
-        cfg_file = get_alt_file(cfg_file, dom_file, ext)
-    else:
-        #coreutils
-        cfg_file = CM.getpath(os.path.join(
-            igen_settings.coreutils_main_dir,
-            'coreutils','obj-gcov', 'src', prog + ext))
-    return cfg_file
-
-def combine_runs(econfigs, iec_f, igen_f, only_iea):
-    """
-    Return a function that first runs function ieac_f thens run igen_f
-    """
-    assert callable(iec_f), iec_f
-    assert callable(igen_f), igen_f
-    assert isinstance(only_iea, bool), only_iea
-    
-    def run_f(seed, tdir):
-        is_success, _, configs_d = iec_f(
-            seed=seed, econfigs=econfigs,tmpdir=tdir)
-        
-        if not only_iea and is_success:
-            return igen_f(seed=seed, econfigs=configs_d.items(), tmpdir=tdir)
-        else:
-            return None
-
-    return run_f
-
-def get_run_otter(args, IA):
+def get_run_otter(prog, args, IA, ALG_IGEN):
     sids = get_sids(args.sids)
     import get_cov_otter as Otter
     dom, get_cov_f, pathconds_d = Otter.prepare(prog, IA.Dom.get_dom)
-    igen = IA.IGen(dom, get_cov_f, sids=get_sids(args.sids))
+    igen = ALG_IGEN.IGen(dom, get_cov_f, sids)
     econfigs = []
     if sids:
-        if args.no_ga:
-            run_f = lambda seed,tdir: igen.go(seed=seed, tmpdir=tdir)
-        else:
-            #find sids using EC
-            from cfg import CFG
-            from ec_alg import EC
-            cfg_file = get_cfg_file(args.cfg, args.dom_file)
-            cfg = CFG.mk_from_lines(CM.iread_strip(cfg_file))
-            ec = EC(dom, cfg, get_cov_f, sids)
-            run_f = combine_runs(econfigs, ec.go, igen.go, args.only_ga)
+        run_f = lambda seed,tdir: igen.go(seed=seed, tmpdir=tdir)
             
     elif args.cmp_rand:
         #TODO: test this 
@@ -121,25 +83,16 @@ def get_run_otter(args, IA):
 
     return dom, get_cov_f, run_f
 
-
-def get_run_default_coreutils(args, IA):
-    sids=get_sids(args.sids)
-    dom, default_configs, get_cov_f = get_cov_default_coreutils(sids, args, IA)
+def get_run_default(prog, args, IA, ALG_IGEN):
+    
+    sids = get_sids(args.sids)
+    dom, default_configs, get_cov_f = get_cov_default(prog, sids, args, IA)
     econfigs = [(c, None) for c in default_configs] if default_configs else []
-    igen = IA.IGen(dom, get_cov_f, sids=sids)
+    igen = ALG_IGEN.IGen(dom, get_cov_f, sids)
     
     if sids:
-        if args.no_ga:  #TEST the econfigs thing
-            run_f = lambda seed, tdir: igen.go(seed=seed, econfigs=econfigs, tmpdir=tdir)
-
-        else:
-            #find sids using EC
-            from cfg import CFG
-            from ec_alg import EC
-            cfg_file = get_cfg_file(args.cfg, args.dom_file)
-            cfg = CFG.mk_from_lines(CM.iread_strip(cfg_file))
-            ec = EC(dom, cfg, get_cov_f, sids)
-            run_f = combine_runs(econfigs, ec.go, igen.go, args.only_ga)
+        run_f = lambda seed, tdir: igen.go(
+            seed=seed, econfigs=econfigs, tmpdir=tdir)
 
     elif args.cmp_rand:
         run_f = lambda seed, tdir, rand_n: igen.go_rand(
@@ -157,7 +110,7 @@ def get_run_default_coreutils(args, IA):
 
     return dom, get_cov_f, run_f
 
-def get_cov_default_coreutils(sids, args, IA):
+def get_cov_default(prog, sids, args, IA):
     if args.dom_file:
         #general way to run prog using dom_file/runscript
         dom_file = CM.getpath(args.dom_file)
@@ -167,10 +120,10 @@ def get_cov_default_coreutils(sids, args, IA):
         import get_cov
         get_cov_f = lambda config: get_cov.runscript_get_cov(
             config, run_script)
-
     else:
         import igen_settings
-        import get_cov_coreutils as Coreutils            
+        import get_cov_coreutils as Coreutils
+
         dom, default_configs, get_cov_f = Coreutils.prepare(
             prog,
             IA.Dom.get_dom,
@@ -185,12 +138,12 @@ def get_run_f(prog, args, logger):
     Ret f that takes inputs seed, tmpdir 
     and call appropriate iGen function on those inputs
     """
-    
-    import alg as IA    
+    import alg as IA
+    import alg_igen as ALG_IGEN
     if prog in igen_settings.otter_progs:
-        dom, get_cov_f, run_f = get_run_otter(args, IA)
+        dom, get_cov_f, run_f = get_run_otter(prog, args, IA, ALG_IGEN)
     else:
-        dom, get_cov_f, run_f = get_run_default_coreutils(args, IA)
+        dom, get_cov_f, run_f = get_run_default(prog, args, IA, ALG_IGEN)
         
     logger.debug("dom:\n{}".format(dom))
     return run_f, get_cov_f
@@ -239,7 +192,7 @@ if __name__ == "__main__":
     aparser.add_argument("--benchmark", "-benchmark",
                          type=lambda v: check_range(v, min_n=1),
                          default=1,
-                         help="run benchmark program n times")
+                         help="benchmark program n times")
 
     aparser.add_argument("--dom_file", "-dom_file",
                          help="file containing config domains",
@@ -254,29 +207,15 @@ if __name__ == "__main__":
                          action="store_true")
 
     aparser.add_argument("--sids", "-sids",
-                         help="find interactions for sids",
+                         help="find interactions for sids, e.g., -sids \"L1 L2\"",
                          action="store")
     
-    aparser.add_argument("--cfg", "-cfg",
-                         help="file containing predecessors from cfg",
-                         action="store")
-
-    aparser.add_argument("--only_ga", "-only_ga",
-                         help="don't find interactions",
-                         default=False,
-                         action="store_true")
-
-    aparser.add_argument("--no_ga", "-no_ga",
-                         help="don't find interactions",
-                         default=False,
-                         action="store_true")
-    
-    #replay options
+    #analysis options
     aparser.add_argument("--show_iters", "-show_iters",
                          help="for use with analysis, show stats of all iters",
                          action="store_true")
 
-    aparser.add_argument("--do_min_configs", "-do_min_configs",
+    aparser.add_argument("--minconfigs", "-minconfigs",
                          help=("for use with analysis, "
                                "compute a set of min configs"),
                          action="store",
@@ -285,52 +224,64 @@ if __name__ == "__main__":
                          default=None,
                          type=str)
 
-    aparser.add_argument("--cmp_rand", "-cmp_rand",
-                         help=("for use with analysis, "
-                               "cmp results against rand configs"),
-                         action="store",
-                         default=None,
-                         type=str)
+    aparser.add_argument("--influence", "-influence",
+                         help="determine influential options/settings",
+                         action="store_true")
+
+    aparser.add_argument("--evolution", "-evolution",
+                         help=("compute evolution progress using "
+                               "v- and f- scores"),
+                         action="store_true")
+
+    aparser.add_argument("--precision", "-precision",
+                         help="check if interactions are precise",
+                         action="store_true")
     
-    aparser.add_argument("--cmp_gt", "-cmp_gt",
-                         help=("for use with analysis, "
-                               "cmp results against ground truth dir"),
+    aparser.add_argument("--cmp_dir", "-cmp_dir",
+                         help=("compare (-evolution or -precision) "
+                               "to this dir"),
                          action="store",
                          default=None,
                          type=str)
 
+    aparser.add_argument("--cmp_rand", "-cmp_rand",
+                         help=("cmp results against rand configs "
+                               "(req -evolution)"),
+                         action="store",
+                         default=None,
+                         type=str)
+    
     args = aparser.parse_args()
     CC.logger_level = args.logger_level
     logger = CM.VLog(igen_name)
     logger.level = CC.logger_level
-    if __debug__: logger.warn("DEBUG MODE ON. Can be slow !")    
+    if __debug__:
+        logger.warn("DEBUG MODE ON. Can be slow !")    
     if args.allows_known_errors: CC.allows_known_errors = True
     if args.noshow_cov: CC.show_cov = False
     if args.analyze_outps: CC.analyze_outps = True
         
     seed = round(time(), 2) if args.seed is None else float(args.seed)
     
-    # two main modes: 1. run iGen to find interactions and
+    # two main modes:
+    # 1. run iGen to find interactions and
     # 2. run Analysis to analyze iGen's generated files    
     analysis_f = None
     if args.inp and os.path.isdir(args.inp):
         from analysis import Analysis
-        is_run_dir = Analysis.is_run_dir(args.inp)
-        if is_run_dir is not None:
-            if is_run_dir:
-                analysis_f = Analysis.replay
-            else:
-                analysis_f = Analysis.replay_dirs
-
-    if analysis_f is None: #run iGen
+        dirstat = Analysis.get_dir_stat(args.inp)
+        if dirstat == Analysis.RUNDIR:
+            analysis_f = Analysis.replay
+        elif dirstat == Analysis.BENCHMARKDIR:
+            analysis_f = Analysis.replay_dirs
+                
+    if not analysis_f: #run iGen
         prog = args.inp
-        _f, get_cov_f = get_run_f(prog, args, logger)
+        run_f, get_cov_f = get_run_f(prog, args, logger)
 
         prog_name = prog if prog else 'noname'
         prefix = "igen_{}_{}_{}_".format(
-            args.benchmark,
-            'full' if args.do_full else 'normal',
-            prog_name)
+            args.benchmark, 'full' if args.do_full else 'normal', prog_name)
         tdir = tempfile.mkdtemp(dir=igen_settings.tmp_dir, prefix=prefix)
 
         logger.debug("* benchmark '{}', {} runs, seed {}, results '{}'"
@@ -341,7 +292,7 @@ if __name__ == "__main__":
             seed_ = seed + i
             tdir_ = tempfile.mkdtemp(dir=tdir, prefix="run{}_".format(i))
             logger.debug("*run {}/{}".format(i+1, args.benchmark))
-            _ = _f(seed_, tdir_)
+            _ = run_f(seed_, tdir_)
             logger.debug("*run {}, seed {}, time {}s, '{}'".format(
                 i + 1, seed_, time() - st_, tdir_))
 
@@ -349,20 +300,24 @@ if __name__ == "__main__":
                     .format(args.benchmark, seed, time() - st, tdir))
                             
     else: #run analysis
-        do_min_configs = args.do_min_configs  
-        if do_min_configs and (do_min_configs != 'use_existing' or args.dom_file):
-            _,get_cov_f = get_run_f(do_min_configs, args, logger)
-            do_min_configs = get_cov_f
+        do_minconfigs = args.minconfigs  
+        if do_minconfigs and (do_minconfigs != 'use_existing' or args.dom_file):
+            _, get_cov_f = get_run_f(do_minconfigs, args, logger)
+            do_minconfigs = get_cov_f
 
         cmp_rand = args.cmp_rand
         if cmp_rand:
-            _f, _ = get_run_f(cmp_rand, args, logger)
+            run_f, _ = get_run_f(cmp_rand, args, logger)
             tdir = tempfile.mkdtemp(dir=igen_settings.tmp_dir,
                                     prefix=cmp_rand + "igen_cmp_rand")
-            cmp_rand = lambda rand_n: _f(seed, tdir, rand_n)
+            cmp_rand = lambda tseed, rand_n: run_f(tseed, tdir, rand_n)
 
+        cmp_dir = args.cmp_dir
         analysis_f(args.inp,
                    show_iters=args.show_iters,
-                   do_min_configs=do_min_configs,
-                   cmp_gt=args.cmp_gt,
-                   cmp_rand=cmp_rand)
+                   do_minconfigs=do_minconfigs,
+                   do_influence=args.influence,
+                   do_evolution=args.evolution,
+                   do_precision=args.precision,
+                   cmp_rand=cmp_rand,
+                   cmp_dir=cmp_dir)

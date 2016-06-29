@@ -3,6 +3,7 @@ import numpy
 import vu_common as CM
 import config_common as CC
 import alg as IA
+import alg_igen
 
 logger = CM.VLog('analysis')
 logger.level = CC.logger_level
@@ -24,6 +25,10 @@ class LoadData(object):
     def dom(self): return self._dom
     @property
     def dts(self): return self._dts
+    @property
+    def last_dt(self):
+        return max(self.dts, key=lambda dt: dt.citer) #last iteration
+        
     @property
     def pp_cores_d(self): return self._pp_cores_d
     @pp_cores_d.setter
@@ -102,27 +107,13 @@ class LoadData(object):
             self._ncovs_d = ncovs_d
             return self._ncovs_d
 
-    # @staticmethod
-    # def compute_same_covs(covs_d):
-    #     d = {}
-    #     for loc, configs in covs_d.iteritems():
-    #         k = frozenset(configs)
-    #         if k not in d:
-    #             d[k] = set()
-    #         d[k].add(loc)
-
-    #     rs = set(frozenset(s) for s in d.itervalues())
-    #     return rs
-    
-        
-    #class methods
     @classmethod
     def load_dir(cls, dir_):
         assert dir_
         if dir_ in cls.data:
             return cls.data[dir_]
         else:
-            seed, dom, dts, pp_cores_d, itime_total = IA.DTrace.load_dir(dir_)
+            seed, dom, dts, pp_cores_d, itime_total = alg_igen.DTrace.load_dir(dir_)
             ld = LoadData(seed,dom,dts,pp_cores_d,itime_total)
             cls.data[dir_] = ld
             return ld
@@ -140,51 +131,63 @@ fields = ['niters',
           'xtime',
           'ncovs',          
           'nconfigs',
-          'n_min_configs',
+          'n_minconfigs',
           'min_ncovs',
-          'vscores',
-          'fscores',
-          'r_fvscores',
-          'influence_scores',
+          'gt_fscore',
+          'rd_fscore',
+          'influences',
           'm_strens',
           'm_strens_str',
           'm_vtyps']
 AnalysisResults = namedtuple("AnalysisResults",' '.join(fields))
 
 class Analysis(object):
-    
+    NOTDIR = 0
+    RUNDIR = 1
+    BENCHMARKDIR = 2
+
     @classmethod
-    def is_run_dir(cls, d):
+    def get_dir_stat(cls, d):
         """
-        ret True if d is a run_dir that consists of *.tvn, pre, post files
-        ret False if d is a benchmark dir that consists of run_dirs
-        ret None otherwise
+        ret RUNDIR if d is a run_dir that consists of *.tvn, pre, post files
+        ret BECHMARKDIR if d is a benchmark dir that consists of run_dirs
+        ret NOTDIR otherwise
         """
-        if __debug__:
-            assert os.path.isdir(d), d
+        assert os.path.isdir(d), d
             
         fs = os.listdir(d)
         if (fs.count('pre') == 1 and fs.count('post') == 1 and
             any(f.endswith('.tvn') for f in fs)):
-            return True
+            return cls.RUNDIR
         else:
             ds = [os.path.join(d,f) for f in fs]
             if (ds and
-                all(os.path.isdir(d_) and cls.is_run_dir(d_) for d_ in ds)):
-                return False
+                all(os.path.isdir(d_) and
+                    cls.get_dir_stat(d_) == cls.RUNDIR for d_ in ds)):
+                return cls.BENCHMARKDIR
             else:
-                return None
+                return cls.NOTDIR
 
     @classmethod
-    def replay(cls, dir_, show_iters, do_min_configs, cmp_gt, cmp_rand):
+    def replay(cls, dir_, show_iters,
+               do_minconfigs,
+               do_influence,
+               do_evolution,
+               do_precision,
+               cmp_rand, cmp_dir):
         """
         Replay and analyze execution info from saved info in dir_
 
         """
         assert isinstance(dir_,str), dir_
         assert isinstance(show_iters, bool), show_iters
-        assert cmp_gt is None or isinstance(cmp_gt, str), cmp_gt
+        assert isinstance(do_influence, bool), do_influence
+        assert isinstance(do_evolution, bool), do_evolution
+        assert isinstance(do_precision, bool), do_precision
+        assert cmp_dir is None or isinstance(cmp_dir, str), cmp_dir
+        
         assert cmp_rand is None or callable(cmp_rand), cmp_rand
+
 
         logger.info("replay dir: '{}'".format(dir_))
         ld = LoadData.load_dir(dir_)
@@ -206,11 +209,10 @@ class Analysis(object):
         
         #print summary
         xtime_total = ld.itime_total - sum(dt.xtime for dt in ld.dts)
-        last_dt = max(ld.dts, key=lambda dt: dt.citer) #last iteration
-        nconfigs = last_dt.nconfigs
-        ncovs = last_dt.ncovs
+        nconfigs = ld.last_dt.nconfigs
+        ncovs = ld.last_dt.ncovs
         
-        logger.info(IA.DTrace.str_of_summary(
+        logger.info(alg_igen.DTrace.str_of_summary(
             ld.seed,
             len(ld.dts),
             ld.itime_total,
@@ -219,68 +221,66 @@ class Analysis(object):
             ncovs,
             dir_))
 
-        logger.info("*** Additional analysis ***")
-
-        # do_min_configs has 3 possible values
+        # do_minconfigs has 3 possible values
         # 1. None: don't find min configs
         # 2. f: (callable(f)) find min configs using f
         # 3. anything else: find min configs using existing configs
-        if do_min_configs is None:
-            min_configs = []
+        if do_minconfigs is None:
+            minconfigs = []
             min_ncovs = 0
         else:
-            logger.info("* Finding Min Configs")
+            logger.info("*Min Configs")
             from alg_miscs import MinConfigs
             mc = MinConfigs(ld)
-            if callable(do_min_configs):
-                min_configs, min_ncovs = mc.search_f(f=do_min_configs)
+            if callable(do_minconfigs):
+                minconfigs, min_ncovs = mc.search_f(f=do_minconfigs)
             else:
-                min_configs, min_ncovs = mc.search_existing()
-            
-        logger.info("* Influential Options")
-        from alg_miscs import Influence
-        influence_scores = Influence(ld).search(ncovs)
+                minconfigs, min_ncovs = mc.search_existing()
 
-        logger.info("* Check Precision")
-        from alg_miscs import Precision
-        ud = Precision(ld)
-        strong_mcores_d = {}
-        ok_mcores_d, weak_mcores_d = ud.check_existing()
-        if cmp_gt: #compare against ground truths
-            logger.info("against results in '{}'".format(cmp_gt))
-            equivs, weaks, strongs, nones = ud.check_gt(cmp_dir=cmp_gt)
-            
-        logger.info("* Measure Similarity")
-        from alg_miscs import Similarity
-        sl = Similarity(ld)
-        vscores = sl.get_vscores()
-        fscores, gt_pp_cores_d = None, None
-        if cmp_gt: #compare against ground truths
-            logger.info("against results in '{}'".format(cmp_gt))
-            fscores, gt_pp_cores_d = sl.get_fscores(cmp_dir=cmp_gt)
-            
-        #compare against rand search
-        r_f = cmp_rand
-        if callable(r_f):
-            r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = r_f(nconfigs)
-            if gt_pp_cores_d:
-                r_fscore = sl.fscore_cores_d(r_pp_cores_d, gt_pp_cores_d)
-            else:
-                r_fscore = None
+        ### Influential Options/Settings ###
+        influences = None
+        if do_influence:
+            logger.info("*Influence")
+            from alg_miscs import Influence
+            influences = Influence(ld).search(ncovs)
+
+        ### Precision ###
+        equivs, weaks, strongs, nones = None, None, None, None
+        if do_precision:
+            logger.info("*Precision")
+            from alg_miscs import Precision
+            ud = Precision(ld)
+            equivs, weaks = ud.check_existing()
+            if cmp_dir: #compare to ground truths
+                logger.info("cmp to results in '{}'".format(cmp_dir))
+                equivs, weaks, strongs, nones = ud.check_gt(cmp_dir)
+
+        ### Evolutionar: F-scores ###
+        rd_fscore, gt_fscore, gt_pp_cores_d = None, None, None
+
+        if do_evolution:
+            logger.info("* Evolution")
+            from alg_miscs import Similarity
+            sl = Similarity(ld)
+
+            #compare to ground truths
+            if cmp_dir: 
+                logger.info("cmp to results in '{}'".format(cmp_dir))
+                gt_fscores, gt_pp_cores_d, gt_ncovs, gt_nconfigs = sl.get_fscores(cmp_dir)
                 
-            r_vscore = sl.vscore_cores_d(r_cores_d)
-            logger.info("rand: configs {} cov {} vscore {} fscore {}"
-                        .format(len(r_configs_d),len(r_covs_d),
-                                r_vscore,r_fscore))
-            last_elem_f = lambda l: l[-1][1] if l and len(l) > 0 else None
-            logger.info("cegir: configs {} cov {} vscore {} fscore {}"
-                        .format(nconfigs,ncovs,
-                                last_elem_f(vscores),last_elem_f(fscores)))
+                last_elem_f = lambda l: l[-1][1] if l and len(l) > 0 else None
+                gt_fscore = last_elem_f(gt_fscores)
+                logger.info("cegir: configs {} cov {} fscore {}"
+                            .format(gt_nconfigs, gt_ncovs, gt_fscore))
+                
+            #compare to rand search
+            callf = cmp_rand
+            if callable(callf) and gt_pp_cores_d:
+                r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = callf(ld.seed, nconfigs)
+                rd_fscore = sl.fscore_cores_d(r_pp_cores_d, gt_pp_cores_d)
 
-            r_fvscores = (r_fscore,r_vscore)
-        else:
-            r_fvscores = None
-
+                logger.info("rand: configs {} cov {} fscore {}"
+                            .format(len(r_configs_d),len(r_covs_d), rd_fscore))
 
         #return analyzed results
         rs = AnalysisResults(niters=len(ld.dts),
@@ -289,205 +289,135 @@ class Analysis(object):
                              xtime=xtime_total,
                              ncovs=ncovs,
                              nconfigs=nconfigs,
-                             n_min_configs=len(min_configs),
+                             n_minconfigs=len(minconfigs),
                              min_ncovs=min_ncovs,
-                             vscores=vscores,
-                             fscores=fscores,
-                             r_fvscores=r_fvscores,
-                             influence_scores=influence_scores,
+                             gt_fscore=gt_fscore,
+                             rd_fscore=rd_fscore,
+                             influences=influences,
                              m_strens=ld.mcores_d.strens,
                              m_strens_str=ld.mcores_d.strens_str,
                              m_vtyps=ld.mcores_d.vtyps)
         return rs
 
     @classmethod
-    def replay_dirs(cls, dir_,show_iters,do_min_configs,cmp_gt,cmp_rand):
+    def replay_dirs(cls, dir_, show_iters,
+                    do_minconfigs,
+                    do_influence,
+                    do_evolution,
+                    do_precision,
+                    cmp_rand,
+                    cmp_dir):
+        
         dir_ = CM.getpath(dir_)
         logger.info("replay_dirs '{}'".format(dir_))
         
-        niters_total = 0
-        ncores_total = 0        
-        nitime_total = 0
-        nxtime_total = 0    
-        nconfigs_total = 0
-        ncovs_total = 0
-        nminconfigs_total = 0
-        min_ncovs_total = 0        
-        strens_s = []
-        strens_str_s = []
-        vtyps_s = []
-
-        #modified by ugur
+        strens_arr = []
+        strens_str_arr = []
+        vtyps_arr = []
         niters_arr = []
         ncores_arr = []
         nitime_arr = []
         nxtime_arr = [] 
         nconfigs_arr = []
         ncovs_arr = []
+        fscores = []
+        rfscores = []
         nminconfigs_arr = []
         min_ncovs_arr = []        
-        counter = 0
-        csv_arr = []
-
         for rdir in sorted(os.listdir(dir_)):
             rdir = os.path.join(dir_,rdir)
-            rs = Analysis.replay(
-                rdir, show_iters, do_min_configs, cmp_gt, cmp_rand)
+            o = Analysis.replay(rdir, show_iters,
+                                do_minconfigs,
+                                do_influence,
+                                do_evolution,
+                                do_precision,
+                                cmp_rand, cmp_dir)
             
-            niters_total += rs.niters
-            ncores_total += rs.ncores
-            nitime_total += rs.itime
-            nxtime_total += rs.xtime
-            ncovs_total += rs.ncovs            
-            nconfigs_total += rs.nconfigs
-            min_ncovs_total += rs.min_ncovs
-            nminconfigs_total += rs.n_min_configs
-            strens_s.append(rs.m_strens)
-            strens_str_s.append(rs.m_strens_str)
-            vtyps_s.append(rs.m_vtyps)
+            strens_arr.append(o.m_strens)
+            strens_str_arr.append(o.m_strens_str)
+            vtyps_arr.append(o.m_vtyps)
+            fscores.append(o.gt_fscore)
+            rfscores.append(o.rd_fscore)
+            
+            niters_arr.append(o.niters)
+            ncores_arr.append(o.ncores)
+            nitime_arr.append(o.itime)
+            nxtime_arr.append(o.xtime)
+            nconfigs_arr.append(o.nconfigs)
+            ncovs_arr.append(o.ncovs)
+            nminconfigs_arr.append(o.n_minconfigs)
+            min_ncovs_arr.append(o.min_ncovs)            
 
-            niters_arr.append(rs.niters)
-            ncores_arr.append(rs.ncores)
-            nitime_arr.append(rs.itime)
-            nxtime_arr.append(rs.xtime)
-            nconfigs_arr.append(rs.nconfigs)
-            ncovs_arr.append(rs.ncovs)
-            min_ncovs_arr.append(rs.min_ncovs)
-            nminconfigs_arr.append(rs.n_min_configs)
-            csv_arr.append("{},{},{},{},{},{},{},{},{},{},{}".format(
-                counter,rs.niters,rs.ncores,rs.itime,rs.xtime,
-                rs.nconfigs,rs.ncovs,rs.n_min_configs,rs.min_ncovs,
-                ','.join(map(str, rs.m_vtyps)),
-                ','.join(map(str, rs.m_strens))))
-            counter += 1
+        def median_siqr((s, arr)):
+            return "{} {} ({})".format(s, numpy.median(arr), Analysis.siqr(arr))
 
-        nruns_total = len(strens_s)
-        nruns_total_f = float(nruns_total)
 
-        ss = ["iter {}".format(niters_total/nruns_total_f),
-              "results {}".format(ncores_total/nruns_total_f),
-              "time {}".format(nitime_total/nruns_total_f),
-              "xtime {}".format(nxtime_total/nruns_total_f),
-              "configs {}".format(nconfigs_total/nruns_total_f),
-              "covs {}".format(ncovs_total/nruns_total_f),
-              "minconfigs {}".format(nminconfigs_total/nruns_total_f),
-              "nmincovs {}".format(min_ncovs_total/nruns_total_f)]
-        
-        logger.info("STAT of {} runs (avg): {}"
-                    .format(nruns_total, ', '.join(ss)))
-        
-        ssMed = ["iter {}".format(numpy.median(niters_arr)),
-                 "results {}".format(numpy.median(ncores_arr)),
-                 "time {}".format(numpy.median(nitime_arr)),
-                 "xtime {}".format(numpy.median(nxtime_arr)),
-                 "configs {}".format(numpy.median(nconfigs_arr)),
-                 "nminconfigs {}".format(numpy.median(nminconfigs_arr)),
-                 "covs {}".format(numpy.median(ncovs_arr)),
-                 "nmincovs {}".format(numpy.median(min_ncovs_arr))]
-        logger.info("STAT of {} runs (median): {}"
-                    .format(nruns_total, ', '.join(ssMed)))
-        
-        ssSIQR = ["iter {}".format(Analysis.siqr(niters_arr)),
-                  "results {}".format(Analysis.siqr(ncores_arr)),
-                  "time {}".format(Analysis.siqr(nitime_arr)),
-                  "xtime {}".format(Analysis.siqr(nxtime_arr)),
-                  "configs {}".format(Analysis.siqr(nconfigs_arr)),
-                  "nminconfigs {}".format(Analysis.siqr(nminconfigs_arr)),                  
-                  "covs {}".format(Analysis.siqr(ncovs_arr)),
-                  "nmincovs {}".format(Analysis.siqr(min_ncovs_arr))]
-        
-        logger.info("STATS of {} runs (SIQR): {}"
-                    .format(nruns_total_f,', '.join(ssSIQR)))
+        nruns = len(strens_arr)
+        nruns_f = float(nruns)
+        logger.info("*** Analysis over {} runs ***".format(nruns))
 
+        rs = [("iter", niters_arr),
+              ("ints", ncores_arr),
+              ("time", nitime_arr),
+              ("xtime", nxtime_arr),
+              ("configs", nconfigs_arr),
+              ("covs", ncovs_arr),
+              ("nminconfigs", nminconfigs_arr),
+              ("nmincovs", min_ncovs_arr)]
+        logger.info(', '.join(median_siqr(r) for r in rs))
+
+        #vtyps_arr= [(c,d,m), ... ]
+        conjs, disjs, mixs = zip(*vtyps_arr)
+        rs = [("conjs", conjs),("disjs", disjs), ("mixed", mixs) ]
+        logger.info("Int types: {}".format(', '.join(median_siqr(r) for r in rs)))
+        
         sres = {}
-        for i,(strens,strens_str) in enumerate(zip(strens_s,strens_str_s)):
+        for i,(strens,strens_str) in enumerate(zip(strens_arr,strens_str_arr)):
             logger.debug("run {}: {}".format(i+1,strens_str))
             for strength,ninters,ncov in strens:
                 if strength not in sres:
-                    sres[strength] = ([ninters],[ncov])
-                else:
-                    inters,covs = sres[strength]
-                    inters.append(ninters)
-                    covs.append(ncov)
+                    sres[strength] = ([],[])
 
-        ss = []
-        medians = []
-        siqrs = []
-        tmp = []
-        tex_table4=[]
-        tex_table5=[]
+                inters,covs = sres[strength]
+                inters.append(ninters)
+                covs.append(ncov)
+
+
+        rs = []
         for strength in sorted(sres):
             inters,covs = sres[strength]
-            length=len(inters)
-            for num in range(length,int(nruns_total_f)):
-                inters.append(0)
-                covs.append(0)
-            ss.append("({}, {}, {})"
+            assert len(inters) == len(covs)
+            ndiffs = nruns - len(inters)
+            if ndiffs:
+                inters.extend([0,] * ndiffs)
+                covs.extend([0,] * ndiffs)
+
+            rs.append("({}, {} ({}), {} ({}))"
                       .format(strength,
-                              sum(inters)/nruns_total_f,
-                              sum(covs)/nruns_total_f))
-            medians.append("({}, {}, {})"
-                           .format(strength, numpy.median(inters), numpy.median(covs)))
-            siqrs.append("({}, {}, {})"
-                         .format(strength, Analysis.siqr(inters), Analysis.siqr(covs)))
-            tmp.append("{},{})"
-                       .format(strength,','.join(map(str, inters))))
-            tex_table4.append("{} \\mso{{{}}}{{{}}}"
-                              .format(strength,numpy.median(inters),Analysis.siqr(inters)))
-            tex_table5.append("{} \\mso{{{}}}{{{}}}"
-                              .format(strength,numpy.median(covs),Analysis.siqr(covs)))
-        
-        logger.info("interaction strens averages: {}".format(', '.join(ss)))
-        logger.info("interaction strens medians : {}".format(', '.join(medians)))
-        logger.info("interaction strens SIQRs   : {}".format(', '.join(siqrs)))
-        #logger.info("interactions arrays   : {}".format('\n'.join(tmp)))
-        
-        conjs = [c for c,_,_ in vtyps_s]
-        disjs = [d for _,d,_ in vtyps_s]
-        mixs = [m for _,_,m in vtyps_s]
-        
-        length=len(conjs)
-        for num in range(length,int(nruns_total_f)):
-            conjs.append(0)
-        
-        length=len(disjs)
-        for num in range(length,int(nruns_total_f)):
-            disjs.append(0)
-        
-        length=len(mixs)
-        for num in range(length,int(nruns_total_f)):
-            mixs.append(0)
-        
-        #logger.info("conjs array: {}".format(', '.join(map(str, conjs))))
-        #logger.info("disjs array: {}".format(', '.join(map(str, disjs))))
-        #logger.info("mixs  array: {}".format(', '.join(map(str, mixs))))
+                              numpy.median(inters), Analysis.siqr(inters),
+                              numpy.median(covs), Analysis.siqr(covs)))
 
-        nconjs = sum(conjs)/nruns_total_f
-        ndisjs = sum(disjs)/nruns_total_f
-        nmixs  = sum(mixs)/nruns_total_f
+        logger.info("Int strens: {}".format(', '.join(rs)))
         
-        logger.info("interaction typs (averages): conjs {}, disjs {}, mixeds {}"
-                    .format(nconjs,ndisjs,nmixs))            
-        
-        logger.info("interaction typs (medians) : conjs {}, disjs {}, mixeds {}"
-                    .format(numpy.median(conjs),numpy.median(disjs),numpy.median(mixs)))
-        
-        logger.info("interaction typs (SIQRs)   : conjs {}, disjs {}, mixeds {}"
-                    .format(Analysis.siqr(conjs),Analysis.siqr(disjs),Analysis.siqr(mixs)))
 
-        logger.info("tex_table4:{}".format(' & '.join(tex_table4)))
-        logger.info("tex_table5:{}".format(' & '.join(tex_table5)))
+        #fscores
+        fscores = [-1 if s is None else s for s in fscores]
+        rfscores = [-1 if s is None else s for s in rfscores]        
+        rs = [("gt", fscores), ("rand", rfscores)]
+        logger.info("fscores: {}".format(', '.join(median_siqr(r) for r in rs)))
 
-        logger.info("CVSs\n{}".format('\n'.join(csv_arr)))
-        #end of modification
+        
 
     @staticmethod
     def siqr(arr):
+        """
+        Older version of numpy percentile method has no interploation option
+        """
         try:
             return (numpy.percentile(arr, 75, interpolation='higher') - 
-                    numpy.percentile(arr, 25, interpolation='lower'))/2
+                    numpy.percentile(arr, 25, interpolation='lower')) / 2
         except TypeError:
-            return (numpy.percentile(arr, 75) - numpy.percentile(arr, 25))/2
+            return (numpy.percentile(arr, 75) - numpy.percentile(arr, 25)) / 2
                     
     
     @staticmethod
