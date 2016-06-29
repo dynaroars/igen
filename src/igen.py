@@ -84,7 +84,6 @@ def get_run_otter(prog, args, IA, ALG_IGEN):
     return dom, get_cov_f, run_f
 
 def get_run_default(prog, args, IA, ALG_IGEN):
-    
     sids = get_sids(args.sids)
     dom, default_configs, get_cov_f = get_cov_default(prog, sids, args, IA)
     econfigs = [(c, None) for c in default_configs] if default_configs else []
@@ -248,6 +247,8 @@ if __name__ == "__main__":
                          help=("cmp results against rand configs "
                                "(req -evolution)"),
                          action="store",
+                         nargs='?',
+                         const='use_dom',
                          default=None,
                          type=str)
     
