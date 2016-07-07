@@ -269,8 +269,8 @@ class Analysis(object):
                 
                 last_elem_f = lambda l: l[-1][1] if l and len(l) > 0 else None
                 gt_fscore = last_elem_f(gt_fscores)
-                logger.info("cegir: configs {} cov {} fscore {}"
-                            .format(gt_nconfigs, gt_ncovs, gt_fscore))
+                logger.info("configs ({}/{}) cov ({}/{}) fscore {}"
+                            .format(nconfigs, gt_nconfigs, ncovs, gt_ncovs, gt_fscore))
                 
             #compare to rand search
             callf = cmp_rand
