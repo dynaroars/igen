@@ -256,6 +256,7 @@ if __name__ == "__main__":
     CC.logger_level = args.logger_level
     logger = CM.VLog(igen_name)
     logger.level = CC.logger_level
+    
     if __debug__:
         logger.warn("DEBUG MODE ON. Can be slow !")    
     if args.allows_known_errors: CC.allows_known_errors = True
