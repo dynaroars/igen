@@ -13,7 +13,9 @@ my $igenIn=$ARGV[0];
 my $SUT_DIR="/home/ugur/igen_exps/ppt";
 
 #To extract program name
-my($prog_name) = $igenIn =~ m/@@@(.*)\s/;
+my @tmpArr = split(" ", substr($igenIn, index($igenIn, "@@@")+3));
+my $prog_name = $tmpArr[0];
+#my($prog_name) = $igenIn =~ m/@@@(.*)\s/;
 
 # Replacing @@@ with perl -MDevel::Cover ppt-0.14/bin/
 substr($igenIn, index($igenIn, '@@@'), 3, 'perl -MDevel::Cover ppt-0.14/bin/');
