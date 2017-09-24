@@ -144,6 +144,70 @@ class Dom(CC.Dom):
 
         return configs
 
+    def gen_configs_cex2(self, sel_cores, existing_configs, z3db):
+        assert isinstance(z3db, CC.Z3DB)
+        print "---gen_configs_cex2---"
+        changes_map={}
+        #change
+        _newX = lambda x: Core((k, x[k]) for k in x)
+        for sel_core in sel_cores:
+            c_core, s_core = sel_core
+
+            #keep
+            changes = []
+            if sel_core.keep and (len(self) - len(c_core)):
+                changes.append(c_core)
+
+            for k in c_core:
+                vs = self[k] - c_core[k]
+                for v in vs:
+                    new_core = _newX(c_core)
+                    new_core[k] = frozenset([v])
+                    if s_core:
+                        for sk,sv in s_core.iteritems():
+                            assert sk not in new_core, sk
+                            new_core[sk] = sv
+                    changes.append(new_core)
+            changes_map[sel_core]=changes
+
+        merged_changes=[]
+        while len(changes_map)>0:
+            keysNoRemove=[]
+            seed=[]
+
+            for key_core, changes in changes_map.iteritems():
+                if len(changes) == 0:
+                    keysNoRemove.append(key_core)
+                else:
+                    seed.append(changes.pop(0))
+            if len(seed) !=0:
+                merged_core=_newX(seed.pop(0))
+                for s in seed:
+                    merged_core.update(s)
+                merged_changes.append(merged_core)
+
+            for key in keysNoRemove:
+                changes_map.pop(key, None)
+
+        
+        e_configs = [c.z3expr(z3db) for c in existing_configs]
+        configs = []
+        for changed_core in merged_changes:
+            yexpr = changed_core.z3expr(z3db, z3util.myAnd)
+            nexpr = z3util.myOr(e_configs)
+            configs_ = self.gen_configs_exprs([yexpr],[nexpr],k=1, config_cls=Config)
+            if not configs_:
+                continue
+            config=configs_[0]
+            assert config.c_implies(changed_core)
+            assert config not in existing_configs, \
+                ("ERR: gen existing config {}".format(config))
+                     
+            configs.append(config)
+            e_configs.append(config.z3expr(z3db))
+
+        return configs
+
     @classmethod
     def get_dom(cls, dom_file):
         """
