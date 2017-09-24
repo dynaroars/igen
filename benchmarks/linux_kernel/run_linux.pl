@@ -15,7 +15,7 @@ my @filesArr=("0988c4c.c", "218ad12.c", "60e233a.c", "76baeeb.c", "c708c57.c", "
               "ee3f34e.c", "1f758a4.c", "472a474.c", "6651791.c", "ae249b5.c", "d7e9711.c", 
               "f3d83e2.c", "208d898.c", "51fd36f.c", "6e2b757.c", "bc8cec0.c", "e1fbd92.c", "f48ec1d.c");
 
-my $SUT_DIR="/fs/buzz/ukoc/igen/benchmarks/linux_kernel";
+my $SUT_DIR="/home/ugur/igen/benchmarks/linux_kernel";
 my $SRC_DIR="$SUT_DIR/src";
 my $TEST_DIR="$SUT_DIR/test";
 
@@ -44,7 +44,8 @@ sub buildSUT($){
    foreach my $file (@filesArr){
       if (system("cd $SRC_DIR && $cc $config $file >> $logFile 2>&1") == 0) {
          if (system("$SRC_DIR/temp.out >> $logFile 2>&1") == 0) {
-            `rm $SRC_DIR/temp.out >> $logFile`;
+	     `echo $file.succes>>$errLogFile`;
+	     `rm $SRC_DIR/temp.out >> $logFile`;
          } else {
             `echo $file.runtimeFailure>>$errLogFile`;
          }
