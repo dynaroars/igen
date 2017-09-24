@@ -206,11 +206,18 @@ class IGen(object):
 
         configs = []
         while True:
-            sel_core = self.select_core(cores, ignore_sel_cores, min_stren)
-            if sel_core is None:
-                break
+            sel_cores=[]
+            sel_core = self.select_core(cores, sel_cores, ignore_sel_cores, min_stren)
+            while sel_core is not None:
+                sel_cores.append(sel_core)
+                sel_core = self.select_core(cores, sel_cores, ignore_sel_cores, min_stren)
 
-            configs = self.dom.gen_configs_cex(sel_core, configs_d, self.z3db)
+            if len(sel_cores) == 0:
+                break
+            sel_core=sel_cores[0]
+
+            #configs = self.dom.gen_configs_cex(sel_core, configs_d, self.z3db)
+            configs = self.dom.gen_configs_cex2(sel_cores, configs_d, self.z3db)
             configs = list(set(configs)) 
             if configs:
                 break
@@ -225,7 +232,7 @@ class IGen(object):
         return sel_core, configs
 
     @staticmethod
-    def select_core(pncores, ignore_sel_cores, min_stren):
+    def select_core(pncores, current_sel_cores, ignore_sel_cores, min_stren):
         """
         Returns either None or SCore
         """
@@ -238,21 +245,23 @@ class IGen(object):
         sel_cores = []
         for (pc,pd,nc,nd) in pncores:
             #if can add pc then don't cosider pd (i.e., refine pc first)
-            if pc and (pc,None) not in ignore_sel_cores:
+            noOverlapPc=IGen.check_no_overlap(current_sel_cores, pc)
+            if pc and (pc,None) not in ignore_sel_cores and noOverlapPc:
                 sc = SCore((pc, None))
                 if pd is None: sc.set_keep()
                 sel_cores.append(sc)
                     
-            elif pd and (pd,pc) not in ignore_sel_cores:
+            elif pd and (pd,pc) not in ignore_sel_cores and noOverlapPc and IGen.check_no_overlap(current_sel_cores, pd):
                 sc = SCore((pd,pc))
                 sel_cores.append(sc)
 
-            if nc and (nc, None) not in ignore_sel_cores:
+            noOverlapNc=IGen.check_no_overlap(current_sel_cores, nc)
+            if nc and (nc, None) not in ignore_sel_cores and noOverlapNc:
                 sc = SCore((nc,None))
                 if nd is None: sc.set_keep()
                 sel_cores.append(sc)
 
-            elif nd and (nd,nc) not in ignore_sel_cores:
+            elif nd and (nd,nc) not in ignore_sel_cores and noOverlapNc and IGen.check_no_overlap(current_sel_cores, nd):
                 sc = SCore((nd,nc))
                 sel_cores.append(sc)
                 
@@ -266,5 +275,12 @@ class IGen(object):
 
         return sel_core
 
-
-    
+    @staticmethod
+    def check_no_overlap(core_list, pc):
+        if pc is not None:
+            for i in core_list:
+                for opt in pc.settings:
+                    for x in i.settings:
+                        if opt[0] == x[0]:
+                            return False
+        return True
