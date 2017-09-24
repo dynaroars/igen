@@ -12,10 +12,14 @@ e.g.,
 """
 import argparse
 import os.path
-import vu_common as CM
+import subprocess as sp
+
+def vcmd(cmd, inp=None, shell=True):
+    proc = sp.Popen(cmd,shell=shell,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE)
+    return proc.communicate(input=inp)
 
 if __name__ == "__main__":
-    me_file = CM.getpath(__file__)
+    me_file = os.path.realpath(os.path.expanduser(__file__))
     me_dir = os.path.dirname(me_file)
     
     parser = argparse.ArgumentParser()
@@ -32,8 +36,8 @@ if __name__ == "__main__":
     prog_out = "/var/tmp/tvn.out"
     cmd = "{} {} > {}".format(prog_exe, prog_inp, prog_out)
     try:
-        _,rs_err = CM.vcmd(cmd)
-        assert len(rs_err) == 0, rs_err
+        _,rs_err = vcmd(cmd)
+        assert not rs_err, rs_err
     except:
         print("cmd '{}' failed".format(cmd))
 
