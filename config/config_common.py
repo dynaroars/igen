@@ -266,8 +266,8 @@ class Dom(OrderedDict):
         assert k > 0, k
         assert config_cls, config_cls
 
-        yexprs = [e for e in yexprs if e]
-        nexprs = [z3.Not(e) for e in nexprs if e]
+        yexprs = [e for e in yexprs if e is not None]
+        nexprs = [z3.Not(e) for e in nexprs if e is not None]
         exprs = yexprs + nexprs
         assert exprs, 'empty exprs'
             

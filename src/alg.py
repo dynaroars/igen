@@ -854,7 +854,7 @@ class Mcores_d(CC.CustDict):
             for pc in d:
                 expr_ = pc.z3expr(dom, z3db)
                 if ((expr is None and expr_ is None) or 
-                    (expr and expr_ and
+                    (expr is not None and expr_ is not None and
                      z3util.is_tautology(expr == expr_, z3db.solver))):
                     return pc
                     
