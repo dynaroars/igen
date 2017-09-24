@@ -146,7 +146,6 @@ class Dom(CC.Dom):
 
     def gen_configs_cex2(self, sel_cores, existing_configs, z3db):
         assert isinstance(z3db, CC.Z3DB)
-        print "---gen_configs_cex2---"
         changes_map={}
         #change
         _newX = lambda x: Core((k, x[k]) for k in x)
