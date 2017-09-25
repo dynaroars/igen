@@ -26,6 +26,7 @@ class IGen(object):
         self.get_cov = get_cov
         self.sids = sids
         self.z3db = CC.Z3DB(self.dom)        
+        self.bs_level_d = {}
         
     def go(self, seed, rand_n=None, econfigs=None, tmpdir=None):
         """
@@ -108,10 +109,9 @@ class IGen(object):
             if rand_n is not None:
                 break
 
+            sel_core, configs = self.gen_configs_iter(set(cores_d.values()), cur_iter, ignore_sel_cores,cur_min_stren, configs_d)
+            #sel_core, configs = self.gen_configs_iter_bs(cores_d, ignore_sel_cores, cur_min_stren, configs_d)
             cur_iter += 1
-            sel_core, configs = self.gen_configs_iter(
-                set(cores_d.values()), ignore_sel_cores,
-                cur_min_stren, configs_d)
 
             if sel_core is None:
                 cur_iter -= 1
@@ -196,7 +196,7 @@ class IGen(object):
         assert configs, 'no initial configs created'
         return configs
         
-    def gen_configs_iter(self, cores, ignore_sel_cores, min_stren, configs_d):
+    def gen_configs_iter(self, cores, cur_iter, ignore_sel_cores, min_stren, configs_d):
         assert (isinstance(cores, set) and 
                 all(isinstance(c, PNCore) for c in cores)), cores
         assert (isinstance(ignore_sel_cores, set) and 
@@ -217,7 +217,49 @@ class IGen(object):
             sel_core=sel_cores[0]
 
             #configs = self.dom.gen_configs_cex(sel_core, configs_d, self.z3db)
-            configs = self.dom.gen_configs_cex2(sel_cores, configs_d, self.z3db)
+            configs = self.dom.gen_configs_cex_grouping(sel_cores, configs_d, self.z3db)
+            #configs = self.dom.gen_configs_cex_bs2(sel_cores, cur_iter, configs_d, self.z3db)
+            
+            configs = list(set(configs)) 
+            if configs:
+                break
+            else:
+                logger.debug("no cex's created for sel_core {}, try new core"
+                             .format(sel_core))
+
+        #self_core -> configs
+        assert not sel_core or configs, (sel_core,configs)
+        assert all(c not in configs_d for c in configs), configs
+
+        return sel_core, configs
+
+    def gen_configs_iter_bs(self, cores_d, ignore_sel_cores, min_stren, configs_d):
+        assert (isinstance(ignore_sel_cores, set) and 
+                all(isinstance(c, SCore) for c in ignore_sel_cores)),\
+                ignore_sel_cores
+        assert isinstance(configs_d, CC.Configs_d),configs_d
+
+        configs = []
+        while True:
+            sel_cores=[]
+            sids=[]
+            sid, sel_core = self.select_core_bs(cores_d, sel_cores, ignore_sel_cores, min_stren)
+            while sel_core is not None:
+                if sid in self.bs_level_d:
+                    self.bs_level_d[sid]+=1
+                else:
+                    self.bs_level_d[sid]=1
+                
+                sel_cores.append(sel_core)
+                sids.append(sid)
+                sid, sel_core = self.select_core_bs(cores_d, sel_cores, ignore_sel_cores, min_stren)
+
+            if len(sel_cores) == 0:
+                break
+            sel_core=sel_cores[0]
+
+            #configs = self.dom.gen_configs_cex(sel_core, configs_d, self.z3db)
+            configs = self.dom.gen_configs_cex_bs(sel_cores, self.bs_level_d, sids, configs_d, self.z3db)
             configs = list(set(configs)) 
             if configs:
                 break
@@ -274,6 +316,35 @@ class IGen(object):
             sel_core = None
 
         return sel_core
+
+    @staticmethod
+    def select_core_bs(cores_d, current_sel_cores, ignore_sel_cores, min_stren):
+        """
+        Returns either None or SCore
+        """
+        assert (isinstance(ignore_sel_cores, set) and
+                all(isinstance(c, SCore) for c in ignore_sel_cores)),\
+            ignore_sel_cores
+
+        sel_cores = []
+        sel_cores_d = {}
+        for sid in cores_d:
+            for cc in cores_d[sid]:
+                if cc and (cc,None) not in ignore_sel_cores and IGen.check_no_overlap(current_sel_cores, cc):
+                    sc = SCore((cc, None))
+                    sc.set_keep()
+                    sel_cores.append(sc)
+                    sel_cores_d[sc]=sid
+                
+        sel_cores = [c for c in sel_cores if c.sstren >= min_stren]
+
+        if sel_cores:
+            sel_core = max(sel_cores, key=lambda c: (c.sstren, c.vstren))
+            ignore_sel_cores.add(sel_core)
+            return sel_cores_d[sel_core], sel_core
+        else:
+            sel_core = None
+            return None, sel_core
 
     @staticmethod
     def check_no_overlap(core_list, pc):
