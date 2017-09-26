@@ -148,7 +148,7 @@ class Dom(CC.Dom):
         changes_map={}
         #change
         _newX = lambda x: Core((k, x[k]) for k in x)
-        if len(sel_cores)>=1:
+        if len(sel_cores)>1:
             print "---sel_cores---"
             print sel_cores
             
@@ -208,7 +208,7 @@ class Dom(CC.Dom):
             configs.append(config)
             e_configs.append(config.z3expr(z3db))
 
-        if len(sel_cores)>=1:
+        if len(sel_cores)>1:
             print "---configs---"
             print configs
 
