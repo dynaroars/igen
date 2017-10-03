@@ -215,40 +215,31 @@ class Dom(CC.Dom):
         for sel_core in sel_cores:
             c_core, s_core = sel_core
             ddLevel = dd_level_d[sel_core]
-            logger.debug('generating new cores for {} DD level {}'.format(sel_core, ddLevel))
+            chunk_count = 2**ddLevel
+            chunk_size = (len(c_core) + chunk_count - 1)/chunk_count
+            logger.debug('generating new cores for {} DD level {}, chunk_count {}, chunk_size {}'
+                .format(sel_core, ddLevel, chunk_count, chunk_size))
 
             #keep
             changes = []
             if sel_core.keep and (len(self) - len(c_core)):
                 changes.append(c_core)
             
-            chunk_size = (len(c_core)+1)/(2**ddLevel)
-            if chunk_size == 0: #TODO should not be necessary
-                chunk_size = 1
             opt_counter = 0
-            new_cores=[]
-            for x in xrange(0,2**ddLevel):
-                new_cores.append([_newX(c_core)])
+            new_cores = [[_newX(c_core)] for x in xrange(0,2**ddLevel)]
             for k in c_core:
                 indx=opt_counter/chunk_size
-                opt_counter += 1
+                opt_counter+=1
                 vs = self[k] - c_core[k]
-                if len(vs) == 1:
-                    new_cores[indx][0][k] = frozenset(next(iter(vs)))
+                for v in vs:
+                    nc = _newX(new_cores[indx][0])
+                    nc[k] = frozenset([v])
                     if s_core:
                         for sk,sv in s_core.iteritems():
-                            assert sk not in new_cores[indx][0], sk
-                            new_cores[indx][0][sk] = sv
-                else:
-                    for v in vs:
-                        nc = _newX(new_cores[indx][0])
-                        nc[k] = frozenset([v])
-                        if s_core:
-                            for sk,sv in s_core.iteritems():
-                                assert sk not in nc, sk
-                                nc[sk] = sv
-                        new_cores[indx].append(nc)
-                    new_cores[indx][0] = new_cores[indx].pop()
+                            assert sk not in nc, sk
+                            nc[sk] = sv
+                    new_cores[indx].append(nc)
+                new_cores[indx][0] = new_cores[indx].pop()
             
             changes.extend(new_cores[0])
             changes.extend(new_cores[1])
