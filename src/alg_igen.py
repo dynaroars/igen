@@ -52,7 +52,7 @@ class IGen(object):
         cur_stuck = 0
         max_stuck = 3
         cores_d, configs_d, covs_d = Cores_d(), CC.Configs_d(), CC.Covs_d()
-        sel_core = SCore.mk_default()
+        sel_cores = []
         ignore_sel_cores = set()
 
         #begin
@@ -93,7 +93,7 @@ class IGen(object):
         
         new_covs, new_cores = Infer.infer_covs(
             cores_d, cconfigs_d, configs_d, covs_d, self.dom, self.sids)
-            
+        
         while True:
             ct_ = time(); itime = ct_ - ct; ct = ct_
             dtrace = DTrace(
@@ -101,7 +101,7 @@ class IGen(object):
                 len(configs_d), len(covs_d), len(cores_d),
                 cconfigs_d,
                 new_covs, new_cores,
-                sel_core,
+                sel_cores,
                 cores_d)
             dtrace.show(self.dom, self.z3db)
             DTrace.save_iter(cur_iter, dtrace, tmpdir)
@@ -109,11 +109,29 @@ class IGen(object):
             if rand_n is not None:
                 break
 
-            sel_core, configs = self.gen_configs_iter(set(cores_d.values()), cur_iter, ignore_sel_cores,cur_min_stren, configs_d)
-            #sel_core, configs = self.gen_configs_iter_bs(cores_d, ignore_sel_cores, cur_min_stren, configs_d)
+            cores = set(cores_d.values())
+            for s_core in sel_cores: # finding DD levels
+                opts_s = set(s_core[0].keys())
+                refined=True
+                for (pc,pd,nc,nd) in cores:
+                    if (set(pc.keys()) == opts_s \
+                        or (pd!=None and set(pd.keys()) == opts_s) \
+                        or (nc!=None and set(nc.keys()) == opts_s) \
+                        or (nd!=None and set(nd.keys()) == opts_s)) \
+                        and len(opts_s) > 2**self.bs_level_d[s_core]:
+                        logger.debug('{} was not refined! Increasing DD level'.format(s_core))
+                        self.bs_level_d[s_core] += 1
+                        ignore_sel_cores.remove(s_core)
+                        refined=False
+                        break
+
+                if refined:
+                    self.bs_level_d.pop(s_core, None)
+            
+            sel_cores, configs = self.gen_configs_iter(cores, cur_iter, ignore_sel_cores,cur_min_stren, configs_d)
             cur_iter += 1
 
-            if sel_core is None:
+            if len(sel_cores) == 0:
                 cur_iter -= 1
                 logger.debug('done after iter {}'.format(cur_iter))
                 break
@@ -125,6 +143,7 @@ class IGen(object):
             new_covs, new_cores = Infer.infer_covs(
                 cores_d, cconfigs_d, configs_d, covs_d, self.dom, self.sids)
 
+            sel_core = sel_cores[0]
             if new_covs or new_cores: #progress
                 cur_stuck = 0
                 cur_min_stren = min_stren
@@ -209,6 +228,8 @@ class IGen(object):
             sel_cores=[]
             sel_core = self.select_core(cores, sel_cores, ignore_sel_cores, min_stren)
             while sel_core is not None:
+                if sel_core not in self.bs_level_d:
+                    self.bs_level_d[sel_core] = 1
                 sel_cores.append(sel_core)
                 sel_core = self.select_core(cores, sel_cores, ignore_sel_cores, min_stren)
 
@@ -217,7 +238,8 @@ class IGen(object):
             sel_core=sel_cores[0]
 
             #configs = self.dom.gen_configs_cex(sel_core, configs_d, self.z3db)
-            configs = self.dom.gen_configs_cex_grouping(sel_cores, configs_d, self.z3db)
+            #configs = self.dom.gen_configs_cex_grouping(sel_cores, configs_d, self.z3db)
+            configs = self.dom.gen_configs_cex_bs1(sel_cores, self.bs_level_d, configs_d, self.z3db)
             #configs = self.dom.gen_configs_cex_bs2(sel_cores, cur_iter, configs_d, self.z3db)
             
             configs = list(set(configs)) 
@@ -231,47 +253,7 @@ class IGen(object):
         assert not sel_core or configs, (sel_core,configs)
         assert all(c not in configs_d for c in configs), configs
 
-        return sel_core, configs
-
-    def gen_configs_iter_bs(self, cores_d, ignore_sel_cores, min_stren, configs_d):
-        assert (isinstance(ignore_sel_cores, set) and 
-                all(isinstance(c, SCore) for c in ignore_sel_cores)),\
-                ignore_sel_cores
-        assert isinstance(configs_d, CC.Configs_d),configs_d
-
-        configs = []
-        while True:
-            sel_cores=[]
-            sids=[]
-            sid, sel_core = self.select_core_bs(cores_d, sel_cores, ignore_sel_cores, min_stren)
-            while sel_core is not None:
-                if sid in self.bs_level_d:
-                    self.bs_level_d[sid]+=1
-                else:
-                    self.bs_level_d[sid]=1
-                
-                sel_cores.append(sel_core)
-                sids.append(sid)
-                sid, sel_core = self.select_core_bs(cores_d, sel_cores, ignore_sel_cores, min_stren)
-
-            if len(sel_cores) == 0:
-                break
-            sel_core=sel_cores[0]
-
-            #configs = self.dom.gen_configs_cex(sel_core, configs_d, self.z3db)
-            configs = self.dom.gen_configs_cex_bs(sel_cores, self.bs_level_d, sids, configs_d, self.z3db)
-            configs = list(set(configs)) 
-            if configs:
-                break
-            else:
-                logger.debug("no cex's created for sel_core {}, try new core"
-                             .format(sel_core))
-
-        #self_core -> configs
-        assert not sel_core or configs, (sel_core,configs)
-        assert all(c not in configs_d for c in configs), configs
-
-        return sel_core, configs
+        return sel_cores, configs
 
     @staticmethod
     def select_core(pncores, current_sel_cores, ignore_sel_cores, min_stren):
@@ -316,35 +298,6 @@ class IGen(object):
             sel_core = None
 
         return sel_core
-
-    @staticmethod
-    def select_core_bs(cores_d, current_sel_cores, ignore_sel_cores, min_stren):
-        """
-        Returns either None or SCore
-        """
-        assert (isinstance(ignore_sel_cores, set) and
-                all(isinstance(c, SCore) for c in ignore_sel_cores)),\
-            ignore_sel_cores
-
-        sel_cores = []
-        sel_cores_d = {}
-        for sid in cores_d:
-            for cc in cores_d[sid]:
-                if cc and (cc,None) not in ignore_sel_cores and IGen.check_no_overlap(current_sel_cores, cc):
-                    sc = SCore((cc, None))
-                    sc.set_keep()
-                    sel_cores.append(sc)
-                    sel_cores_d[sc]=sid
-                
-        sel_cores = [c for c in sel_cores if c.sstren >= min_stren]
-
-        if sel_cores:
-            sel_core = max(sel_cores, key=lambda c: (c.sstren, c.vstren))
-            ignore_sel_cores.add(sel_core)
-            return sel_cores_d[sel_core], sel_core
-        else:
-            sel_core = None
-            return None, sel_core
 
     @staticmethod
     def check_no_overlap(core_list, pc):

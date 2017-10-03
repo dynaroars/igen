@@ -148,10 +148,7 @@ class Dom(CC.Dom):
         changes_map={}
         #change
         _newX = lambda x: Core((k, x[k]) for k in x)
-        if len(sel_cores)>1:
-            print "---sel_cores---"
-            print sel_cores
-            
+
         for sel_core in sel_cores:
             c_core, s_core = sel_core
 
@@ -208,57 +205,53 @@ class Dom(CC.Dom):
             configs.append(config)
             e_configs.append(config.z3expr(z3db))
 
-        if len(sel_cores)>1:
-            print "---configs---"
-            print configs
-
         return configs
 
-    def gen_configs_cex_bs1(self, sel_cores, dd_level_d, sids, existing_configs, z3db):
+    def gen_configs_cex_bs1(self, sel_cores, dd_level_d, existing_configs, z3db):
         assert isinstance(z3db, CC.Z3DB)
         changes_map={}
         #change
         _newX = lambda x: Core((k, x[k]) for k in x)
-        iter_counter=0
         for sel_core in sel_cores:
             c_core, s_core = sel_core
+            ddLevel = dd_level_d[sel_core]
+            logger.debug('generating new cores for {} DD level {}'.format(sel_core, ddLevel))
 
             #keep
             changes = []
             if sel_core.keep and (len(self) - len(c_core)):
                 changes.append(c_core)
-
-            ddLevel=dd_level_d[sids[iter_counter]]
-            chunk_size=(len(c_core)+1)/(2**ddLevel)
-            iter_counter+=1
-            if chunk_size==0:
-                chunk_size=1
-            optionCounter=0
+            
+            chunk_size = (len(c_core)+1)/(2**ddLevel)
+            if chunk_size == 0: #TODO should not be necessary
+                chunk_size = 1
+            opt_counter = 0
             new_cores=[]
             for x in xrange(0,2**ddLevel):
                 new_cores.append([_newX(c_core)])
             for k in c_core:
-                indx=optionCounter/chunk_size
+                indx=opt_counter/chunk_size
+                opt_counter += 1
                 vs = self[k] - c_core[k]
-                if len(vs)==1:
+                if len(vs) == 1:
                     new_cores[indx][0][k] = frozenset(next(iter(vs)))
+                    if s_core:
+                        for sk,sv in s_core.iteritems():
+                            assert sk not in new_cores[indx][0], sk
+                            new_cores[indx][0][sk] = sv
                 else:
                     for v in vs:
-                        nc=_newX(new_cores[indx][0])
-                        nc[k]=frozenset([v])
+                        nc = _newX(new_cores[indx][0])
+                        nc[k] = frozenset([v])
                         if s_core:
                             for sk,sv in s_core.iteritems():
                                 assert sk not in nc, sk
                                 nc[sk] = sv
                         new_cores[indx].append(nc)
-                    new_cores[indx][0]=new_cores[indx].pop()
-                    
-                optionCounter += 1
+                    new_cores[indx][0] = new_cores[indx].pop()
             
             changes.extend(new_cores[0])
             changes.extend(new_cores[1])
-            print "---changes---"
-            print changes
             changes_map[sel_core]=changes
 
         merged_changes=[]
@@ -295,98 +288,6 @@ class Dom(CC.Dom):
                      
             configs.append(config)
             e_configs.append(config.z3expr(z3db))
-
-        return configs
-
-    def gen_configs_cex_bs2(self, sel_cores, dd_level, existing_configs, z3db):
-        assert isinstance(z3db, CC.Z3DB)
-        changes_map={}
-        #change
-        _newX = lambda x: Core((k, x[k]) for k in x)
-        iter_counter=0
-        print "---sel_cores---"
-        print sel_cores
-        for sel_core in sel_cores:
-            c_core, s_core = sel_core
-
-            #keep
-            changes = []
-            if sel_core.keep and (len(self) - len(c_core)):
-                changes.append(c_core)
-
-            print "---dd_level---"
-            print dd_level
-            chunk_size=(len(c_core)+1)/(2**dd_level)
-            iter_counter+=1
-            if chunk_size==0:
-                chunk_size=1
-            optionCounter=0
-            new_cores=[]
-            for x in xrange(0,2**dd_level):
-                new_cores.append([_newX(c_core)])
-            print "---new_cores-brefore---"
-            print new_cores
-            for k in c_core:
-                indx=optionCounter/chunk_size
-                vs = self[k] - c_core[k]
-                if len(vs)==1:
-                    new_cores[indx][0][k] = frozenset(next(iter(vs)))
-                else:
-                    for v in vs:
-                        nc=_newX(new_cores[indx][0])
-                        nc[k]=frozenset([v])
-                        if s_core:
-                            for sk,sv in s_core.iteritems():
-                                assert sk not in nc, sk
-                                nc[sk] = sv
-                        new_cores[indx].append(nc)
-                    new_cores[indx][0]=new_cores[indx].pop()
-                    
-                optionCounter += 1
-
-            print "---new_cores-after---"
-            print new_cores
-            changes.extend(new_cores[0])
-            changes.extend(new_cores[1])
-            print "---changes---"
-            print changes
-            changes_map[sel_core]=changes
-
-        merged_changes=[]
-        while len(changes_map)>0:
-            keysNoRemove=[]
-            seed=[]
-
-            for key_core, changes in changes_map.iteritems():
-                if len(changes) == 0:
-                    keysNoRemove.append(key_core)
-                else:
-                    seed.append(changes.pop(0))
-            if len(seed) !=0:
-                merged_core=_newX(seed.pop(0))
-                for s in seed:
-                    merged_core.update(s)
-                merged_changes.append(merged_core)
-
-            for key in keysNoRemove:
-                changes_map.pop(key, None)
-
-        e_configs = [c.z3expr(z3db) for c in existing_configs]
-        configs = []
-        for changed_core in merged_changes:
-            yexpr = changed_core.z3expr(z3db, z3util.myAnd)
-            nexpr = z3util.myOr(e_configs)
-            configs_ = self.gen_configs_exprs([yexpr],[nexpr],k=1, config_cls=Config)
-            if not configs_:
-                continue
-            config=configs_[0]
-            assert config.c_implies(changed_core)
-            assert config not in existing_configs, \
-                ("ERR: gen existing config {}".format(config))
-                     
-            configs.append(config)
-            e_configs.append(config.z3expr(z3db))
-
         return configs
 
     @classmethod
@@ -1308,7 +1209,7 @@ class DTrace(object):
     def __init__(self,citer,itime,xtime,
                  nconfigs,ncovs,ncores,
                  cconfigs_d,new_covs,new_cores,
-                 sel_core,cores_d):
+                 sel_cores,cores_d):
 
         self.citer = citer
         self.itime = itime
@@ -1319,7 +1220,7 @@ class DTrace(object):
         self.cconfigs_d = cconfigs_d
         self.new_covs = new_covs
         self.new_cores = new_cores
-        self.sel_core = sel_core
+        self.sel_cores = sel_cores
         self.cores_d = cores_d
         
     def show(self, dom, z3db):
@@ -1336,9 +1237,10 @@ class DTrace(object):
                             len(self.new_covs),len(self.new_cores)) +
                     "{}".format("** progress **"
                                 if self.new_covs or self.new_cores else ""))
-
-        logger.debug('select core: ({}) {}'.format(self.sel_core.sstren,
-                                                   self.sel_core))
+        sel_core_str='select cores:'
+        for s_core in self.sel_cores:
+            sel_core_str += (' ({}) {} , '.format(s_core.sstren,s_core))
+        logger.debug(sel_core_str)
         logger.debug('create {} configs'.format(len(self.cconfigs_d)))
         logger.detail("\n"+str(self.cconfigs_d))
         mcores_d = self.cores_d.merge(dom, z3db)
