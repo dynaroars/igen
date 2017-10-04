@@ -42,9 +42,10 @@ int main(int argc, char **argv){
   if(u&&v){
     printf("L4\n"); //u&v
     if(s||t){
-      printf("L5\n");  // (s|t) & (u&v)
+	 printf("L5\n");  // (s|t) & (u&v)
     }
   }
+
   return 0;
 }
   
