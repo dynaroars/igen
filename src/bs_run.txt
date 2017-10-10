@@ -1,0 +1,351 @@
+Ugurs-MBP:igen ukoc$ python -O $IGEN/src/igen.py -dom_file ex.dom -run_script ex.run -logger_level 4 -seed 0
+igen.py:Debug:dom:
+7 vars and 320 pos configs
+1. s: (2) 0,1
+2. t: (2) 0,1
+3. u: (2) 0,1
+4. v: (2) 0,1
+5. x: (2) 0,1
+6. y: (2) 0,1
+7. z: (5) 0,1,2,3,4
+igen.py:Debug:* benchmark 'noname', 1 runs, seed 0.0, results '/var/tmp/igen_1_normal_noname_Vn0Jrt'
+igen.py:Debug:*run 1/1
+alg_main:Debug:seed: 0.0, tmpdir: /var/tmp/igen_1_normal_noname_Vn0Jrt/run0_k5ABsA
+alg_main:Debug:existing configs 0 evaled, 0 not evaled
+alg_main:Debug:gen 5 configs using tcover 1
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 0 , v 0 , x 1 , y 0 , z 4"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 0 , v 0 , x 1 , y 0 , z 4", read 3 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 1 , x 0 , y 1 , z 2"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 1 , x 0 , y 1 , z 2", read 4 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 1 , x 1 , y 1 , z 3"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 1 , x 1 , y 1 , z 3", read 3 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 1 , u 0 , v 0 , x 0 , y 0 , z 1"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 1 , u 0 , v 0 , x 0 , y 0 , z 1", read 3 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 0 , x 1 , y 0 , z 0"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 0 , x 1 , y 0 , z 0", read 3 covs from '/var/tmp/tvn.out'
+alg_main:Debug:init configs 5
+alg_ds:Debug:ITER 1, 0.280855178833s, 0.279643058777s eval, total: 5 configs, 6 covs, 6 cores, new: 5 configs, 6 covs, 6 updated cores, ** progress **
+alg_ds:Debug:select cores:
+alg_ds:Debug:create 5 configs
+alg_ds:Detail:
+1. s=1 t=1 u=0 v=0 x=1 y=0 z=4: (3) L2,L2a,L3
+2. s=0 t=0 u=1 v=1 x=0 y=1 z=2: (4) L2,L2a,L3,L4
+3. s=0 t=0 u=0 v=1 x=1 y=1 z=3: (3) L0,L1,L3
+4. s=0 t=1 u=0 v=0 x=0 y=0 z=1: (3) L2,L2a,L3
+5. s=0 t=0 u=1 v=0 x=1 y=0 z=0: (3) L2,L2a,L3
+alg_ds:Debug:infer 4 interactions
+alg_ds:Detail:
+1. (0) pc: true: (1) L3
+2. (8) pc: s=0 t=0 u=1 v=1 x=0 y=1 z=2; nc: z=0,1,3,4: (1) L4
+3. (8) pc: z=0,1,2,4; nc: s=0 t=0 u=0 v=1 x=1 y=1 z=3: (2) L2,L2a
+4. (8) pc: s=0 t=0 u=0 v=1 x=1 y=1 z=3; nc: z=0,1,2,4: (2) L0,L1
+alg_ds:Debug:strens: (0, 1, 1), (8, 3, 5)
+alg_ds:Debug:generating new cores for mc(keep): s=0 t=0 u=0 v=1 x=1 y=1 z=3 DD level 1, chunk_count 2, chunk_size 4
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 1 , x 0 , y 0 , z 4"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 1 , x 0 , y 0 , z 4", read 3 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 1 , x 0 , y 0 , z 2"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 1 , x 0 , y 0 , z 2", read 3 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 1 , v 0 , x 1 , y 1 , z 3"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 1 , v 0 , x 1 , y 1 , z 3", read 3 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 1 , x 0 , y 0 , z 0"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 1 , x 0 , y 0 , z 0", read 3 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 1 , x 0 , y 0 , z 1"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 1 , x 0 , y 0 , z 1", read 3 covs from '/var/tmp/tvn.out'
+alg_ds:Debug:ITER 2, 0.35194683075s, 0.273823022842s eval, total: 10 configs, 6 covs, 6 cores, new: 5 configs, 0 covs, 5 updated cores, ** progress **
+alg_ds:Debug:select cores: (7) mc(keep): s=0 t=0 u=0 v=1 x=1 y=1 z=3 , 
+alg_ds:Debug:create 5 configs
+alg_ds:Detail:
+1. s=0 t=0 u=0 v=1 x=0 y=0 z=4: (3) L2,L2a,L3
+2. s=0 t=0 u=0 v=1 x=0 y=0 z=2: (3) L2,L2a,L3
+3. s=1 t=1 u=1 v=0 x=1 y=1 z=3: (3) L0,L1,L3
+4. s=0 t=0 u=0 v=1 x=0 y=0 z=0: (3) L2,L2a,L3
+5. s=0 t=0 u=0 v=1 x=0 y=0 z=1: (3) L2,L2a,L3
+alg_ds:Debug:infer 4 interactions
+alg_ds:Detail:
+1. (0) pc: true: (1) L3
+2. (4) pc: x=1 y=1 z=3; nc: z=0,1,2,4: (2) L0,L1
+3. (4) pc: z=0,1,2,4; nc: x=1 y=1 z=3: (2) L2,L2a
+4. (7) pc: s=0 t=0 u=1 v=1 x=0 y=1 z=2; nc: true: (1) L4
+alg_ds:Debug:strens: (0, 1, 1), (4, 2, 4), (7, 1, 1)
+alg_main:Debug:mc(keep): s=0 t=0 u=0 v=1 x=1 y=1 z=3 was not refined! Increasing DD level
+alg_ds:Debug:generating new cores for mc(keep): s=0 t=0 u=1 v=1 x=0 y=1 z=2 DD level 1, chunk_count 2, chunk_size 4
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 1 , x 1 , y 0 , z 4"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 1 , x 1 , y 0 , z 4", read 4 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 0 , v 0 , x 0 , y 1 , z 2"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 0 , v 0 , x 0 , y 1 , z 2", read 3 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 1 , x 1 , y 0 , z 3"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 1 , x 1 , y 0 , z 3", read 4 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 1 , x 1 , y 0 , z 0"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 1 , x 1 , y 0 , z 0", read 4 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 1 , x 1 , y 0 , z 1"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 1 , x 1 , y 0 , z 1", read 4 covs from '/var/tmp/tvn.out'
+alg_ds:Debug:ITER 3, 0.356464147568s, 0.281358003616s eval, total: 15 configs, 6 covs, 6 cores, new: 5 configs, 0 covs, 5 updated cores, ** progress **
+alg_ds:Debug:select cores: (7) mc(keep): s=0 t=0 u=1 v=1 x=0 y=1 z=2 , 
+alg_ds:Debug:create 5 configs
+alg_ds:Detail:
+1. s=0 t=0 u=1 v=1 x=1 y=0 z=4: (4) L2,L2a,L3,L4
+2. s=1 t=1 u=0 v=0 x=0 y=1 z=2: (3) L2,L2a,L3
+3. s=0 t=0 u=1 v=1 x=1 y=0 z=3: (4) L2,L2a,L3,L4
+4. s=0 t=0 u=1 v=1 x=1 y=0 z=0: (4) L2,L2a,L3,L4
+5. s=0 t=0 u=1 v=1 x=1 y=0 z=1: (4) L2,L2a,L3,L4
+alg_ds:Debug:infer 4 interactions
+alg_ds:Detail:
+1. (0) pc: true: (1) L3
+2. (3) pc: x=1 y=1 z=3; nc: true: (2) L0,L1
+3. (3) pc: true; nc: x=1 y=1 z=3: (2) L2,L2a
+4. (4) pc: s=0 t=0 u=1 v=1; nc: true: (1) L4
+alg_ds:Debug:strens: (0, 1, 1), (3, 2, 4), (4, 1, 1)
+alg_ds:Debug:generating new cores for mc(keep): s=0 t=0 u=1 v=1 DD level 1, chunk_count 2, chunk_size 2
+alg_ds:Debug:generating new cores for mc(keep): x=1 y=1 z=3 DD level 1, chunk_count 2, chunk_size 2
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 1 , x 1 , y 1 , z 3"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 1 , x 1 , y 1 , z 3", read 4 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 0 , x 1 , y 1 , z 4"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 0 , x 1 , y 1 , z 4", read 3 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 1 , t 0 , u 1 , v 0 , x 1 , y 1 , z 1"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 1 , t 0 , u 1 , v 0 , x 1 , y 1 , z 1", read 2 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 1 , u 1 , v 0 , x 1 , y 1 , z 0"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 1 , u 1 , v 0 , x 1 , y 1 , z 0", read 3 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 0 , v 1 , x 1 , y 1 , z 2"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 0 , v 1 , x 1 , y 1 , z 2", read 2 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 1 , v 1 , x 0 , y 0 , z 3"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 1 , v 1 , x 0 , y 0 , z 3", read 5 covs from '/var/tmp/tvn.out'
+alg_ds:Debug:ITER 4, 0.423928976059s, 0.345757961273s eval, total: 21 configs, 7 covs, 7 cores, new: 6 configs, 1 covs, 6 updated cores, ** progress **
+alg_ds:Debug:select cores: (4) mc(keep): s=0 t=0 u=1 v=1 ,  (3) mc(keep): x=1 y=1 z=3 , 
+alg_ds:Debug:create 6 configs
+alg_ds:Detail:
+1. s=0 t=0 u=1 v=1 x=1 y=1 z=3: (4) L0,L1,L3,L4
+2. s=0 t=0 u=0 v=0 x=1 y=1 z=4: (3) L0,L1,L3
+3. s=1 t=0 u=1 v=0 x=1 y=1 z=1: (2) L0,L3
+4. s=0 t=1 u=1 v=0 x=1 y=1 z=0: (3) L0,L1,L3
+5. s=1 t=1 u=0 v=1 x=1 y=1 z=2: (2) L0,L3
+6. s=1 t=1 u=1 v=1 x=0 y=0 z=3: (5) L2,L2a,L3,L4,L5
+alg_ds:Debug:infer 6 interactions
+alg_ds:Detail:
+1. (0) pc: true: (1) L3
+2. (2) pc: u=1 v=1; nc: true: (1) L4
+3. (2) pc: x=1 y=1; nc: true: (1) L0
+4. (2) pc: true; nc: x=1 y=1: (2) L2,L2a
+5. (3) pc: x=1 y=1 z=0,3,4; nc: true: (1) L1
+6. (7) pc: s=1 t=1 u=1 v=1 x=0 y=0 z=3; nc: true: (1) L5
+alg_ds:Debug:strens: (0, 1, 1), (2, 3, 4), (3, 1, 1), (7, 1, 1)
+alg_main:Debug:mc(keep): x=1 y=1 z=3 was not refined! Increasing DD level
+alg_ds:Debug:generating new cores for mc(keep): s=1 t=1 u=1 v=1 x=0 y=0 z=3 DD level 1, chunk_count 2, chunk_size 4
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 1 , v 1 , x 1 , y 1 , z 4"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 1 , v 1 , x 1 , y 1 , z 4", read 5 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 0 , x 0 , y 0 , z 3"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 0 , x 0 , y 0 , z 3", read 3 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 1 , v 1 , x 1 , y 1 , z 2"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 1 , v 1 , x 1 , y 1 , z 2", read 4 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 1 , v 1 , x 1 , y 1 , z 1"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 1 , v 1 , x 1 , y 1 , z 1", read 4 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 1 , v 1 , x 1 , y 1 , z 0"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 1 , v 1 , x 1 , y 1 , z 0", read 5 covs from '/var/tmp/tvn.out'
+alg_ds:Debug:ITER 5, 0.400156974792s, 0.27899813652s eval, total: 26 configs, 7 covs, 7 cores, new: 5 configs, 0 covs, 1 updated cores, ** progress **
+alg_ds:Debug:select cores: (7) mc(keep): s=1 t=1 u=1 v=1 x=0 y=0 z=3 , 
+alg_ds:Debug:create 5 configs
+alg_ds:Detail:
+1. s=1 t=1 u=1 v=1 x=1 y=1 z=4: (5) L0,L1,L3,L4,L5
+2. s=0 t=0 u=0 v=0 x=0 y=0 z=3: (3) L2,L2a,L3
+3. s=1 t=1 u=1 v=1 x=1 y=1 z=2: (4) L0,L3,L4,L5
+4. s=1 t=1 u=1 v=1 x=1 y=1 z=1: (4) L0,L3,L4,L5
+5. s=1 t=1 u=1 v=1 x=1 y=1 z=0: (5) L0,L1,L3,L4,L5
+alg_ds:Debug:infer 6 interactions
+alg_ds:Detail:
+1. (0) pc: true: (1) L3
+2. (2) pc: u=1 v=1; nc: true: (1) L4
+3. (2) pc: x=1 y=1; nc: true: (1) L0
+4. (2) pc: true; nc: x=1 y=1: (2) L2,L2a
+5. (3) pc: x=1 y=1 z=0,3,4; nc: true: (1) L1
+6. (4) pc: s=1 t=1 u=1 v=1; nc: true: (1) L5
+alg_ds:Debug:strens: (0, 1, 1), (2, 3, 4), (3, 1, 1), (4, 1, 1)
+alg_ds:Debug:generating new cores for mc(keep): s=1 t=1 u=1 v=1 DD level 1, chunk_count 2, chunk_size 2
+alg_ds:Debug:generating new cores for mc(keep): x=1 y=1 z=0,3,4 DD level 1, chunk_count 2, chunk_size 2
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 1 , v 1 , x 1 , y 1 , z 3"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 1 , v 1 , x 1 , y 1 , z 3", read 5 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 0 , v 0 , x 1 , y 1 , z 2"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 1 , t 1 , u 0 , v 0 , x 1 , y 1 , z 2", read 2 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 0 , x 1 , y 1 , z 1"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 0 , x 1 , y 1 , z 1", read 2 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 1 , x 0 , y 0 , z 0"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 1 , v 1 , x 0 , y 0 , z 0", read 4 covs from '/var/tmp/tvn.out'
+alg_ds:Debug:ITER 6, 0.331907987595s, 0.223316907883s eval, total: 30 configs, 7 covs, 7 cores, new: 4 configs, 0 covs, 0 updated cores, 
+alg_ds:Debug:select cores: (4) mc(keep): s=1 t=1 u=1 v=1 ,  (3) mc(keep): x=1 y=1 z=0,3,4 , 
+alg_ds:Debug:create 4 configs
+alg_ds:Detail:
+1. s=1 t=1 u=1 v=1 x=1 y=1 z=3: (5) L0,L1,L3,L4,L5
+2. s=1 t=1 u=0 v=0 x=1 y=1 z=2: (2) L0,L3
+3. s=0 t=0 u=0 v=0 x=1 y=1 z=1: (2) L0,L3
+4. s=0 t=0 u=1 v=1 x=0 y=0 z=0: (4) L2,L2a,L3,L4
+alg_ds:Debug:infer 6 interactions
+alg_ds:Detail:
+1. (0) pc: true: (1) L3
+2. (2) pc: u=1 v=1; nc: true: (1) L4
+3. (2) pc: x=1 y=1; nc: true: (1) L0
+4. (2) pc: true; nc: x=1 y=1: (2) L2,L2a
+5. (3) pc: x=1 y=1 z=0,3,4; nc: true: (1) L1
+6. (4) pc: s=1 t=1 u=1 v=1; nc: true: (1) L5
+alg_ds:Debug:strens: (0, 1, 1), (2, 3, 4), (3, 1, 1), (4, 1, 1)
+alg_main:Debug:mc(keep): s=1 t=1 u=1 v=1 was not refined! Increasing DD level
+alg_main:Debug:mc(keep): x=1 y=1 z=0,3,4 was not refined! Increasing DD level
+alg_ds:Debug:generating new cores for mc(keep): s=1 t=1 u=1 v=1 DD level 2, chunk_count 4, chunk_size 1
+alg_ds:Debug:generating new cores for mc(keep): x=1 y=1 z=0,3,4 DD level 2, chunk_count 4, chunk_size 1
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 1 , u 1 , v 1 , x 0 , y 1 , z 0"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 1 , u 1 , v 1 , x 0 , y 1 , z 0", read 5 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 1 , t 0 , u 1 , v 1 , x 1 , y 0 , z 0"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 1 , t 0 , u 1 , v 1 , x 1 , y 0 , z 0", read 5 covs from '/var/tmp/tvn.out'
+alg_ds:Debug:ITER 7, 0.214520931244s, 0.117208957672s eval, total: 32 configs, 7 covs, 7 cores, new: 2 configs, 0 covs, 1 updated cores, ** progress **
+alg_ds:Debug:select cores: (4) mc(keep): s=1 t=1 u=1 v=1 ,  (3) mc(keep): x=1 y=1 z=0,3,4 , 
+alg_ds:Debug:create 2 configs
+alg_ds:Detail:
+1. s=1 t=0 u=1 v=1 x=1 y=0 z=0: (5) L2,L2a,L3,L4,L5
+2. s=0 t=1 u=1 v=1 x=0 y=1 z=0: (5) L2,L2a,L3,L4,L5
+alg_ds:Debug:infer 6 interactions
+alg_ds:Detail:
+1. (0) pc: true: (1) L3
+2. (2) pc: u=1 v=1; nc: true: (1) L4
+3. (2) pc: x=1 y=1; nc: true: (1) L0
+4. (2) pc: true; nc: x=1 y=1: (2) L2,L2a
+5. (3) pc: x=1 y=1 z=0,3,4; nc: true: (1) L1
+6. (4) pc: u=1 v=1; pd: s=0 t=0; nc: true: (1) L5
+alg_ds:Debug:strens: (0, 1, 1), (2, 3, 4), (3, 1, 1), (4, 1, 1)
+alg_ds:Debug:generating new cores for mc: u=1 v=1 DD level 1, chunk_count 2, chunk_size 1
+alg_ds:Debug:generating new cores for mc(keep): x=1 y=1 DD level 1, chunk_count 2, chunk_size 1
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 1 , u 1 , v 0 , x 0 , y 1 , z 4"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 1 , u 1 , v 0 , x 0 , y 1 , z 4", read 3 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 1 , x 1 , y 1 , z 0"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 0 , u 0 , v 1 , x 1 , y 1 , z 0", read 3 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 1 , u 0 , v 0 , x 1 , y 0 , z 0"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 1 , u 0 , v 0 , x 1 , y 0 , z 0", read 3 covs from '/var/tmp/tvn.out'
+alg_ds:Debug:ITER 8, 0.266410112381s, 0.171201944351s eval, total: 35 configs, 7 covs, 7 cores, new: 3 configs, 0 covs, 0 updated cores, 
+alg_ds:Debug:select cores: (2) mc: u=1 v=1 ,  (2) mc(keep): x=1 y=1 , 
+alg_ds:Debug:create 3 configs
+alg_ds:Detail:
+1. s=0 t=1 u=1 v=0 x=0 y=1 z=4: (3) L2,L2a,L3
+2. s=0 t=0 u=0 v=1 x=1 y=1 z=0: (3) L0,L1,L3
+3. s=0 t=1 u=0 v=0 x=1 y=0 z=0: (3) L2,L2a,L3
+alg_ds:Debug:infer 6 interactions
+alg_ds:Detail:
+1. (0) pc: true: (1) L3
+2. (2) pc: u=1 v=1; nc: true: (1) L4
+3. (2) pc: x=1 y=1; nc: true: (1) L0
+4. (2) pc: true; nc: x=1 y=1: (2) L2,L2a
+5. (3) pc: x=1 y=1 z=0,3,4; nc: true: (1) L1
+6. (4) pc: u=1 v=1; pd: s=0 t=0; nc: true: (1) L5
+alg_ds:Debug:strens: (0, 1, 1), (2, 3, 4), (3, 1, 1), (4, 1, 1)
+alg_ds:Debug:generating new cores for mc: s=0 t=0; sc: u=1 v=1 DD level 1, chunk_count 2, chunk_size 1
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 1 , t 0 , u 1 , v 1 , x 0 , y 0 , z 0"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 1 , t 0 , u 1 , v 1 , x 0 , y 0 , z 0", read 5 covs from '/var/tmp/tvn.out'
+get_cov:Detail:/Users/ukoc/igen/examples/igen/ex.run "s 0 , t 1 , u 1 , v 1 , x 0 , y 0 , z 0"
+get_cov:Detail:outp: /var/tmp/tvn.out
+
+get_cov:Detail:cmd /Users/ukoc/igen/examples/igen/ex.run "s 0 , t 1 , u 1 , v 1 , x 0 , y 0 , z 0", read 5 covs from '/var/tmp/tvn.out'
+alg_ds:Debug:ITER 9, 0.199229001999s, 0.114974975586s eval, total: 37 configs, 7 covs, 7 cores, new: 2 configs, 0 covs, 0 updated cores, 
+alg_ds:Debug:select cores: (4) mc: s=0 t=0; sc: u=1 v=1 , 
+alg_ds:Debug:create 2 configs
+alg_ds:Detail:
+1. s=1 t=0 u=1 v=1 x=0 y=0 z=0: (5) L2,L2a,L3,L4,L5
+2. s=0 t=1 u=1 v=1 x=0 y=0 z=0: (5) L2,L2a,L3,L4,L5
+alg_ds:Debug:infer 6 interactions
+alg_ds:Detail:
+1. (0) pc: true: (1) L3
+2. (2) pc: u=1 v=1; nc: true: (1) L4
+3. (2) pc: x=1 y=1; nc: true: (1) L0
+4. (2) pc: true; nc: x=1 y=1: (2) L2,L2a
+5. (3) pc: x=1 y=1 z=0,3,4; nc: true: (1) L1
+6. (4) pc: u=1 v=1; pd: s=0 t=0; nc: true: (1) L5
+alg_ds:Debug:strens: (0, 1, 1), (2, 3, 4), (3, 1, 1), (4, 1, 1)
+alg_main:Debug:done after iter 9
+alg_ds:Debug:analyze results for 7 sids
+alg_ds:Debug:verify ...
+alg_ds:Debug:simplify ...
+alg_ds:Debug:sid L2a: pc: true; nc: x=1 y=1 ~~> (x=0 | y=0) (disj)
+alg_ds:Debug:sid L4: pc: u=1 v=1; nc: true ~~> (u=1 & v=1) (conj)
+alg_ds:Debug:sid L5: pc: u=1 v=1; pd: s=0 t=0; nc: true ~~> (s=1 | t=1) & (u=1 & v=1) (mix)
+alg_ds:Debug:sid L3: pc: true ~~> true (conj)
+alg_ds:Debug:sid L0: pc: x=1 y=1; nc: true ~~> (x=1 & y=1) (conj)
+alg_ds:Debug:sid L1: pc: x=1 y=1 z=0,3,4; nc: true ~~> (x=1 & y=1 & z=0,3,4) (conj)
+alg_ds:Info:inferred results (6):
+1. (0) true (conj): (1) L3
+2. (2) (x=1 & y=1) (conj): (1) L0
+3. (2) (u=1 & v=1) (conj): (1) L4
+4. (2) (x=0 | y=0) (disj): (2) L2,L2a
+5. (3) (x=1 & y=1 & z=0,3,4) (conj): (1) L1
+6. (4) (s=1 | t=1) & (u=1 & v=1) (mix): (1) L5
+alg_ds:Debug:strens (stren, nresults, nsids): (0, 1, 1), (2, 3, 4), (3, 1, 1), (4, 1, 1)
+alg_main:Debug:Summary: Seed 0.0, Iters 9, Time (2.95063209534s, 2.08628296852s), Configs 37, Covs 7, Tmpdir /var/tmp/igen_1_normal_noname_Vn0Jrt/run0_k5ABsA
+alg_main:Debug:Done (seed 0.0, test 80)
+igen.py:Debug:*run 1, seed 0.0, time 2.95247387886s, '/var/tmp/igen_1_normal_noname_Vn0Jrt/run0_k5ABsA'
+igen.py:Info:** done 1 runs, seed 0.0, time 2.95250606537, results '/var/tmp/igen_1_normal_noname_Vn0Jrt'
+Ugurs-MBP:igen ukoc$ 

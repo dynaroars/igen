@@ -120,7 +120,7 @@ class IGen(object):
                         or (nd!=None and set(nd.keys()) == opts_s)) \
                         and len(opts_s) > 2**self.bs_level_d[s_core]:
                         logger.debug('{} was not refined! Increasing DD level'.format(s_core))
-                        self.bs_level_d[s_core] += 1
+                        self.bs_level_d[s_core] += 2
                         ignore_sel_cores.remove(s_core)
                         refined=False
                         break
@@ -238,8 +238,11 @@ class IGen(object):
             sel_core=sel_cores[0]
 
             #configs = self.dom.gen_configs_cex(sel_core, configs_d, self.z3db)
-            #configs = self.dom.gen_configs_cex_grouping(sel_cores, configs_d, self.z3db)
-            configs = self.dom.gen_configs_cex_bs1(sel_cores, self.bs_level_d, configs_d, self.z3db)
+            configs = None
+            if sel_core.sstren<8:
+                configs = self.dom.gen_configs_cex_grouping(sel_cores, configs_d, self.z3db)
+            else:
+                configs = self.dom.gen_configs_cex_bs1(sel_cores, self.bs_level_d, configs_d, self.z3db)
             #configs = self.dom.gen_configs_cex_bs2(sel_cores, cur_iter, configs_d, self.z3db)
             
             configs = list(set(configs)) 
