@@ -4,6 +4,7 @@ def read_csv(csv_file):
     import csv    
     with open(csv_file, 'rb') as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
+        
         for i,row in enumerate(reader):
             if i == 0:
                 myvars = row[:-1]
@@ -21,7 +22,10 @@ def read_csv(csv_file):
 
 
 if __name__ == "__main__":
-    csv_file = "invariants.csv"    
-    stmts = read_csv(csv_file)
+    import argparse
+    aparser = argparse.ArgumentParser("iGen (dynamic interaction generator)")    
+    aparser.add_argument("inp", help="inp")
+    args = aparser.parse_args()
+    stmts = read_csv(args.inp)
     print('\n'.join(stmts))
     
