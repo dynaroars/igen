@@ -8,6 +8,7 @@ logger.level = CC.logger_level
 # Real executions
 def run_single(cmd):
     logger.detail(cmd)
+    rs_err = "some error"
     try:
         rs_outp,rs_err = CM.vcmd(cmd)
         if rs_outp:
