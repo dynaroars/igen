@@ -159,6 +159,7 @@ if __name__ == "__main__":
     
     #0 Error #1 Warn #2 Info #3 Debug #4 Detail
     aparser.add_argument("--logger_level", "-logger_level",
+                         "-log", "--log",
                          help="set logger info",
                          type=int, 
                          choices=range(5),
@@ -194,10 +195,12 @@ if __name__ == "__main__":
                          help="benchmark program n times")
 
     aparser.add_argument("--dom_file", "-dom_file",
+                         "--domain", "-domain",
                          help="file containing config domains",
                          action="store")
 
     aparser.add_argument("--run_script", "-run_script",
+                         "--rscript", "-rscript",
                          help="script to obtain the program's coverage",
                          action="store")
 
