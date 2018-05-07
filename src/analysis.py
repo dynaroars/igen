@@ -1,13 +1,40 @@
 import os.path
-import numpy
 import vu_common as CM
 import config_common as CC
+import math
 import alg as IA
 import alg_igen
 
 logger = CM.VLog('analysis')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
+
+
+#Python implementation of the median and percentile functions
+#so that I don't have to use numpy.median in Python 2
+def percentile(l, percent, key=lambda x:x):
+    """
+    http://code.activestate.com/recipes/511478/ 
+    Find the percentile of a list of values.
+    @parameter percent - a float value from 0.0 to 1.0.
+    @parameter key - optional key function to compute value from each element of l.
+    @return - the percentile of the values
+    """
+    if not l:
+        return None
+    l = sorted(l)    
+    k = (len(l)-1) * percent
+    f = math.floor(k)
+    c = math.ceil(k)
+    if f == c:
+        return key(l[int(k)])
+    d0 = key(l[int(f)]) * (c-k)
+    d1 = key(l[int(c)]) * (k-f)
+    return d0 + d1
+
+median = lambda l: percentile(l, percent=0.5)
+siqr = lambda l: (percentile(l, 75) - percentile(l, 25)) / 2
+    
 
 class LoadData(object):
     data = {}
@@ -348,7 +375,7 @@ class Analysis(object):
             min_ncovs_arr.append(o.min_ncovs)            
 
         def median_siqr((s, arr)):
-            return "{} {} ({})".format(s, numpy.median(arr), Analysis.siqr(arr))
+            return "{} {} ({})".format(s, median(arr), siqr(arr))
 
 
         nruns = len(strens_arr)
@@ -393,8 +420,8 @@ class Analysis(object):
 
             rs.append("({}, {} ({}), {} ({}))"
                       .format(strength,
-                              numpy.median(inters), Analysis.siqr(inters),
-                              numpy.median(covs), Analysis.siqr(covs)))
+                              median(inters), siqr(inters),
+                              median(covs), siqr(covs)))
 
         logger.info("Int strens: {}".format(', '.join(rs)))
         
@@ -406,24 +433,11 @@ class Analysis(object):
         logger.info("fscores: {}".format(', '.join(median_siqr(r) for r in rs)))
 
         
-
-    @staticmethod
-    def siqr(arr):
-        """
-        Older version of numpy percentile method has no interploation option
-        """
-        try:
-            return (numpy.percentile(arr, 75, interpolation='higher') - 
-                    numpy.percentile(arr, 25, interpolation='lower')) / 2
-        except TypeError:
-            return (numpy.percentile(arr, 75) - numpy.percentile(arr, 25)) / 2
-                    
-    
     @staticmethod
     def debug_find_configs(sid, configs_d, find_in):
         if find_in:
             cconfigs_d = dict((c,cov) for c,cov in configs_d.iteritems()
-                           if sid in cov)
+                              if sid in cov)
         else:
             cconfigs_d = dict((c,cov) for c,cov in configs_d.iteritems()
                               if sid not in cov)
