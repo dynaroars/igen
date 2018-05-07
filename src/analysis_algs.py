@@ -9,7 +9,7 @@ import config_common as CC
 import alg as IA
 #import config as IA_OLD  #old data
 
-logger = CM.VLog('alg_miscs')
+logger = CM.VLog('analysis_algs')
 logger.level = CC.logger_level
 CM.VLog.PRINT_TIME = True
 

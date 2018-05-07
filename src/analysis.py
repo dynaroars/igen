@@ -256,7 +256,7 @@ class Analysis(object):
             min_ncovs = 0
         else:
             logger.info("*Min Configs")
-            from alg_miscs import MinConfigs
+            from analysis_algs import MinConfigs
             mc = MinConfigs(ld)
             if callable(do_minconfigs):
                 minconfigs, min_ncovs = mc.search_f(f=do_minconfigs)
@@ -267,14 +267,14 @@ class Analysis(object):
         influences = None
         if do_influence:
             logger.info("*Influence")
-            from alg_miscs import Influence
+            from analysis_algs import Influence
             influences = Influence(ld).search(ncovs)
 
         ### Precision ###
         equivs, weaks, strongs, nones = None, None, None, None
         if do_precision:
             logger.info("*Precision")
-            from alg_miscs import Precision
+            from analysis_algs import Precision
             ud = Precision(ld)
             equivs, weaks = ud.check_existing()
             if cmp_dir: #compare to ground truths
@@ -286,7 +286,7 @@ class Analysis(object):
 
         if do_evolution:
             logger.info("* Evolution")
-            from alg_miscs import Similarity
+            from analysis_algs import Similarity
             sl = Similarity(ld)
 
             #compare to ground truths
