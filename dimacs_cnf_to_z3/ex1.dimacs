@@ -1,0 +1,10 @@
+c format kmax_kconfig_v2
+c kconfig_variable 1 A bool
+c kconfig_variable 2 B bool
+c kconfig_variable 3 C string "hello"
+c kconfig_variable 4 D int 10
+p cnf 3 4
+-1 2
+2 3
+-3 1 2
+-4 3

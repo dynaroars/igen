@@ -1,0 +1,1899 @@
+c format kmax_kconfig_v2
+c kconfig_variable 1 CONFIG_KILL bool
+c kconfig_variable 2 CONFIG_FEATURE_LESS_ASK_TERMINAL bool
+c kconfig_variable 3 CONFIG_FEATURE_TRACEROUTE_USE_ICMP bool
+c kconfig_variable 4 CONFIG_PID_FILE_PATH string "/var/run"
+c kconfig_variable 5 CONFIG_SH_IS_NONE bool
+c kconfig_variable 6 CONFIG_FEATURE_TAB_COMPLETION bool
+c kconfig_variable 7 CONFIG_DEBUG_PESSIMIZE bool
+c kconfig_variable 8 CONFIG_FEATURE_INSTALL_LONG_OPTIONS bool
+c kconfig_variable 9 CONFIG_LOGGER bool
+c kconfig_variable 10 CONFIG_WHICH bool
+c kconfig_variable 11 CONFIG_FEATURE_PIDFILE bool
+c kconfig_variable 12 CONFIG_FEATURE_LESS_FLAGS bool
+c kconfig_variable 13 CONFIG_DHCPD_LEASES_FILE string "/var/lib/misc/udhcpd.leases"
+c kconfig_variable 14 CONFIG_RAIDAUTORUN bool
+c kconfig_variable 15 CONFIG_LSATTR bool
+c kconfig_variable 16 CONFIG_FEATURE_XARGS_SUPPORT_CONFIRMATION bool
+c kconfig_variable 17 CONFIG_ASH_MAIL bool
+c kconfig_variable 18 CONFIG_FEATURE_SEAMLESS_GZ bool
+c kconfig_variable 19 CONFIG_HUSH_ULIMIT bool
+c kconfig_variable 20 CONFIG_UBIUPDATEVOL bool
+c kconfig_variable 21 CONFIG_FEATURE_KILL_REMOVED bool
+c kconfig_variable 22 CONFIG_HUSH_INTERACTIVE bool
+c kconfig_variable 23 CONFIG_UNICODE_COMBINING_WCHARS bool
+c kconfig_variable 24 CONFIG_UUDECODE bool
+c kconfig_variable 25 CONFIG_HUSH_WAIT bool
+c kconfig_variable 26 CONFIG_FEATURE_EJECT_SCSI bool
+c kconfig_variable 27 CONFIG_FEATURE_SH_STANDALONE bool
+c kconfig_variable 28 CONFIG_FEATURE_IPV6 bool
+c kconfig_variable 29 CONFIG_ASH bool
+c kconfig_variable 30 CONFIG_IPNEIGH bool
+c kconfig_variable 31 CONFIG_FEATURE_IFCONFIG_MEMSTART_IOADDR_IRQ bool
+c kconfig_variable 32 CONFIG_UNSHARE bool
+c kconfig_variable 33 CONFIG_POWEROFF bool
+c kconfig_variable 34 CONFIG_OPENVT bool
+c kconfig_variable 35 CONFIG_IONICE bool
+c kconfig_variable 36 CONFIG_SWITCH_ROOT bool
+c kconfig_variable 37 CONFIG_FEATURE_BRCTL_FANCY bool
+c kconfig_variable 38 CONFIG_MPSTAT bool
+c kconfig_variable 39 CONFIG_FEATURE_PREFER_APPLETS bool
+c kconfig_variable 40 CONFIG_FEATURE_HTTPD_PROXY bool
+c kconfig_variable 41 CONFIG_ADJTIMEX bool
+c kconfig_variable 42 CONFIG_AR bool
+c kconfig_variable 43 CONFIG_CTTYHACK bool
+c kconfig_variable 44 CONFIG_WATCH bool
+c kconfig_variable 45 CONFIG_FEATURE_VI_UNDO_QUEUE_MAX int 256
+c kconfig_variable 46 CONFIG_FEATURE_INIT_QUIET bool
+c kconfig_variable 47 CONFIG_FEATURE_MAKEDEVS_TABLE bool
+c kconfig_variable 48 CONFIG_FEATURE_EDITING_MAX_LEN int 1024
+c kconfig_variable 49 CONFIG_FACTOR bool
+c kconfig_variable 50 CONFIG_NC_EXTRA bool
+c kconfig_variable 51 CONFIG_LINUXRC bool
+c kconfig_variable 52 CONFIG_FEATURE_TOPMEM bool
+c kconfig_variable 53 CONFIG_IFCONFIG bool
+c kconfig_variable 54 CONFIG_FEATURE_IP_LINK bool
+c kconfig_variable 55 CONFIG_FEATURE_ROTATE_LOGFILE bool
+c kconfig_variable 56 CONFIG_FEATURE_MODUTILS_ALIAS bool
+c kconfig_variable 57 CONFIG_GROUPS bool
+c kconfig_variable 58 CONFIG_SENDMAIL bool
+c kconfig_variable 59 CONFIG_FEATURE_MOUNT_LOOP bool
+c kconfig_variable 60 CONFIG_MKDIR bool
+c kconfig_variable 61 CONFIG_UNICODE_WIDE_WCHARS bool
+c kconfig_variable 62 CONFIG_FEATURE_TELNET_AUTOLOGIN bool
+c kconfig_variable 63 CONFIG_HEXDUMP bool
+c kconfig_variable 64 CONFIG_FEATURE_VI_UNDO bool
+c kconfig_variable 65 CONFIG_FEATURE_SEAMLESS_XZ bool
+c kconfig_variable 66 CONFIG_DEBUG_SANITIZE bool
+c kconfig_variable 67 CONFIG_FEATURE_TELNET_TTYPE bool
+c kconfig_variable 68 CONFIG_UNICODE_BIDI_SUPPORT bool
+c kconfig_variable 69 CONFIG_UDHCPC_DEFAULT_SCRIPT string "/usr/share/udhcpc/default.script"
+c kconfig_variable 70 CONFIG_MODINFO bool
+c kconfig_variable 71 CONFIG_FEATURE_WGET_LONG_OPTIONS bool
+c kconfig_variable 72 CONFIG_FEATURE_GREP_CONTEXT bool
+c kconfig_variable 73 CONFIG_FEATURE_DC_LIBM bool
+c kconfig_variable 74 CONFIG_FEATURE_TR_EQUIV bool
+c kconfig_variable 75 CONFIG_VOLNAME bool
+c kconfig_variable 76 CONFIG_PASSWORD_MINLEN int 6
+c kconfig_variable 77 CONFIG_TFTP_DEBUG bool
+c kconfig_variable 78 CONFIG_FEATURE_MD5_SHA1_SUM_CHECK bool
+c kconfig_variable 79 CONFIG_UNICODE_PRESERVE_BROKEN bool
+c kconfig_variable 80 CONFIG_FIRST_SYSTEM_ID int 100
+c kconfig_variable 81 CONFIG_IPCS bool
+c kconfig_variable 82 CONFIG_BUILD_LIBBUSYBOX bool
+c kconfig_variable 83 CONFIG_ASH_JOB_CONTROL bool
+c kconfig_variable 84 CONFIG_FTPD bool
+c kconfig_variable 85 CONFIG_HUSH_BRACE_EXPANSION bool
+c kconfig_variable 86 CONFIG_BASH_IS_HUSH bool
+c kconfig_variable 87 CONFIG_USE_PORTABLE_CODE bool
+c kconfig_variable 88 CONFIG_FEATURE_REMOTE_LOG bool
+c kconfig_variable 89 CONFIG_FREERAMDISK bool
+c kconfig_variable 90 CONFIG_FEATURE_EDITING_SAVEHISTORY bool
+c kconfig_variable 91 CONFIG_FEATURE_TASKSET_FANCY bool
+c kconfig_variable 92 CONFIG_FEATURE_FDISK_WRITABLE bool
+c kconfig_variable 93 CONFIG_FEATURE_BEEP_FREQ int 4000
+c kconfig_variable 94 CONFIG_FEATURE_HTTPD_BASIC_AUTH bool
+c kconfig_variable 95 CONFIG_SETKEYCODES bool
+c kconfig_variable 96 CONFIG_UNICODE_SUPPORT bool
+c kconfig_variable 97 CONFIG_FEATURE_ACPID_COMPAT bool
+c kconfig_variable 98 CONFIG_UNIX2DOS bool
+c kconfig_variable 99 CONFIG_SEQ bool
+c kconfig_variable 100 CONFIG_FEATURE_DD_THIRD_STATUS_LINE bool
+c kconfig_variable 101 CONFIG_FEATURE_MIME_CHARSET string "us-ascii"
+c kconfig_variable 102 CONFIG_FEATURE_FIND_XDEV bool
+c kconfig_variable 103 CONFIG_LSUSB bool
+c kconfig_variable 104 CONFIG_FEATURE_TFTP_PUT bool
+c kconfig_variable 105 CONFIG_FEATURE_WTMP bool
+c kconfig_variable 106 CONFIG_SHUF bool
+c kconfig_variable 107 CONFIG_PS bool
+c kconfig_variable 108 CONFIG_FEATURE_VI_MAX_LEN int 4096
+c kconfig_variable 109 CONFIG_FEATURE_PASSWD_WEAK_CHECK bool
+c kconfig_variable 110 CONFIG_SYNC bool
+c kconfig_variable 111 CONFIG_FEATURE_CLEAN_UP bool
+c kconfig_variable 112 CONFIG_FEATURE_INIT_MODIFY_CMDLINE bool
+c kconfig_variable 113 CONFIG_NBDCLIENT bool
+c kconfig_variable 114 CONFIG_FEATURE_FIND_PERM bool
+c kconfig_variable 115 CONFIG_FEATURE_FIND_MAXDEPTH bool
+c kconfig_variable 116 CONFIG_GZIP bool
+c kconfig_variable 117 CONFIG_CHRT bool
+c kconfig_variable 118 CONFIG_STATIC bool
+c kconfig_variable 119 CONFIG_FEATURE_VI_YANKMARK bool
+c kconfig_variable 120 CONFIG_FEATURE_TAR_FROM bool
+c kconfig_variable 121 CONFIG_FEATURE_FIND_CONTEXT bool
+c kconfig_variable 122 CONFIG_FEATURE_TFTP_PROGRESS_BAR bool
+c kconfig_variable 123 CONFIG_FEATURE_NON_POSIX_CP bool
+c kconfig_variable 124 CONFIG_FEATURE_UTMP bool
+c kconfig_variable 125 CONFIG_FTPGET bool
+c kconfig_variable 126 CONFIG_FEATURE_MDEV_LOAD_FIRMWARE bool
+c kconfig_variable 127 CONFIG_RMMOD bool
+c kconfig_variable 128 CONFIG_TAIL bool
+c kconfig_variable 129 CONFIG_RUN_PARTS bool
+c kconfig_variable 130 CONFIG_LAST_SUPPORTED_WCHAR int 767
+c kconfig_variable 131 CONFIG_NANDWRITE bool
+c kconfig_variable 132 CONFIG_HUSH_TICK bool
+c kconfig_variable 133 CONFIG_MORE bool
+c kconfig_variable 134 CONFIG_FEATURE_MDEV_RENAME_REGEXP bool
+c kconfig_variable 135 CONFIG_DNSD bool
+c kconfig_variable 136 CONFIG_I2CDETECT bool
+c kconfig_variable 137 CONFIG_CMP bool
+c kconfig_variable 138 CONFIG_RUN_INIT bool
+c kconfig_variable 139 CONFIG_UBIMKVOL bool
+c kconfig_variable 140 CONFIG_FEATURE_CALL_TELINIT bool
+c kconfig_variable 141 CONFIG_BUSYBOX bool
+c kconfig_variable 142 CONFIG_GUNZIP bool
+c kconfig_variable 143 CONFIG_FEDORA_COMPAT bool
+c kconfig_variable 144 CONFIG_UNAME bool
+c kconfig_variable 145 CONFIG_FEATURE_VOLUMEID_XFS bool
+c kconfig_variable 146 CONFIG_FBSPLASH bool
+c kconfig_variable 147 CONFIG_TAC bool
+c kconfig_variable 148 CONFIG_LOAD_POLICY bool
+c kconfig_variable 149 CONFIG_FEATURE_MODPROBE_BLACKLIST bool
+c kconfig_variable 150 CONFIG_FSFREEZE bool
+c kconfig_variable 151 CONFIG_I2CGET bool
+c kconfig_variable 152 CONFIG_FEATURE_SUID_CONFIG_QUIET bool
+c kconfig_variable 153 CONFIG_MV bool
+c kconfig_variable 154 CONFIG_PATCH bool
+c kconfig_variable 155 CONFIG_FEATURE_XARGS_SUPPORT_ZERO_TERM bool
+c kconfig_variable 156 CONFIG_FEATURE_FTPD_ACCEPT_BROKEN_LIST bool
+c kconfig_variable 157 CONFIG_PKILL bool
+c kconfig_variable 158 CONFIG_DOS2UNIX bool
+c kconfig_variable 159 CONFIG_CHAT bool
+c kconfig_variable 160 CONFIG_FEATURE_USE_SENDFILE bool
+c kconfig_variable 161 CONFIG_FEATURE_IP_ROUTE_DIR string "/etc/iproute2"
+c kconfig_variable 162 CONFIG_MKTEMP bool
+c kconfig_variable 163 CONFIG_FEATURE_LS_FILETYPES bool
+c kconfig_variable 164 CONFIG_FEATURE_SUID bool
+c kconfig_variable 165 CONFIG_IFUPDOWN_UDHCPC_CMD_OPTIONS string "-R -n"
+c kconfig_variable 166 CONFIG_READLINK bool
+c kconfig_variable 167 CONFIG_DMALLOC bool
+c kconfig_variable 168 CONFIG_SETSEBOOL bool
+c kconfig_variable 169 CONFIG_NOMMU bool
+c kconfig_variable 170 CONFIG_DF bool
+c kconfig_variable 171 CONFIG_RUNLEVEL bool
+c kconfig_variable 172 CONFIG_HUSH_CASE bool
+c kconfig_variable 173 CONFIG_FEATURE_UDHCP_PORT bool
+c kconfig_variable 174 CONFIG_FEATURE_CHAT_TTY_HIFI bool
+c kconfig_variable 175 CONFIG_FEATURE_UDHCPC6_RFC4833 bool
+c kconfig_variable 176 CONFIG_FEATURE_IP_ROUTE bool
+c kconfig_variable 177 CONFIG_FEATURE_BUFFERS_GO_ON_STACK bool
+c kconfig_variable 178 CONFIG_LFS bool
+c kconfig_variable 179 CONFIG_FEATURE_SYSLOGD_READ_BUFFER_SIZE int 256
+c kconfig_variable 180 CONFIG_SETLOGCONS bool
+c kconfig_variable 181 CONFIG_SESTATUS bool
+c kconfig_variable 182 CONFIG_LOGIN_SCRIPTS bool
+c kconfig_variable 183 CONFIG_SCRIPT bool
+c kconfig_variable 184 CONFIG_FEATURE_CHECK_TAINTED_MODULE bool
+c kconfig_variable 185 CONFIG_FEATURE_COPYBUF_KB int 4
+c kconfig_variable 186 CONFIG_RUNSVDIR bool
+c kconfig_variable 187 CONFIG_FEATURE_MOUNT_LOOP_CREATE bool
+c kconfig_variable 188 CONFIG_WALL bool
+c kconfig_variable 189 CONFIG_IPADDR bool
+c kconfig_variable 190 CONFIG_FEATURE_AWK_GNU_EXTENSIONS bool
+c kconfig_variable 191 CONFIG_FEATURE_SPLIT_FANCY bool
+c kconfig_variable 192 CONFIG_FEATURE_LAST_FANCY bool
+c kconfig_variable 193 CONFIG_FEATURE_HDPARM_HDIO_UNREGISTER_HWIF bool
+c kconfig_variable 194 CONFIG_BZCAT bool
+c kconfig_variable 195 CONFIG_DEVFSD_FG_NP bool
+c kconfig_variable 196 CONFIG_UNCOMPRESS bool
+c kconfig_variable 197 CONFIG_FEATURE_WGET_STATUSBAR bool
+c kconfig_variable 198 CONFIG_DIFF bool
+c kconfig_variable 199 CONFIG_UNZIP bool
+c kconfig_variable 200 CONFIG_TRUNCATE bool
+c kconfig_variable 201 CONFIG_DEFAULT_SETFONT_DIR string ""
+c kconfig_variable 202 CONFIG_FEATURE_PS_LONG bool
+c kconfig_variable 203 CONFIG_IPRULE bool
+c kconfig_variable 204 CONFIG_FEATURE_TAR_OLDSUN_COMPATIBILITY bool
+c kconfig_variable 205 CONFIG_RESIZE bool
+c kconfig_variable 206 CONFIG_YES bool
+c kconfig_variable 207 CONFIG_FEATURE_VOLUMEID_HFS bool
+c kconfig_variable 208 CONFIG_ARP bool
+c kconfig_variable 209 CONFIG_FEATURE_FIND_NEWER bool
+c kconfig_variable 210 CONFIG_FEATURE_BUFFERS_GO_IN_BSS bool
+c kconfig_variable 211 CONFIG_ADDUSER bool
+c kconfig_variable 212 CONFIG_FEATURE_SUN_LABEL bool
+c kconfig_variable 213 CONFIG_PSTREE bool
+c kconfig_variable 214 CONFIG_BZIP2 bool
+c kconfig_variable 215 CONFIG_FOLD bool
+c kconfig_variable 216 CONFIG_FEATURE_LS_COLOR_IS_DEFAULT bool
+c kconfig_variable 217 CONFIG_TRACEROUTE6 bool
+c kconfig_variable 218 CONFIG_FEATURE_SYSLOGD_DUP bool
+c kconfig_variable 219 CONFIG_FEATURE_HTTPD_CGI bool
+c kconfig_variable 220 CONFIG_LZCAT bool
+c kconfig_variable 221 CONFIG_SHA1SUM bool
+c kconfig_variable 222 CONFIG_FEATURE_AR_LONG_FILENAMES bool
+c kconfig_variable 223 CONFIG_FEATURE_FANCY_TAIL bool
+c kconfig_variable 224 CONFIG_HUSH_READ bool
+c kconfig_variable 225 CONFIG_FSTRIM bool
+c kconfig_variable 226 CONFIG_FEATURE_SORT_BIG bool
+c kconfig_variable 227 CONFIG_FEATURE_SH_MATH bool
+c kconfig_variable 228 CONFIG_LINUX32 bool
+c kconfig_variable 229 CONFIG_FGCONSOLE bool
+c kconfig_variable 230 CONFIG_TEST2 bool
+c kconfig_variable 231 CONFIG_FEATURE_BOOTCHARTD_CONFIG_FILE bool
+c kconfig_variable 232 CONFIG_USLEEP bool
+c kconfig_variable 233 CONFIG_NICE bool
+c kconfig_variable 234 CONFIG_RFKILL bool
+c kconfig_variable 235 CONFIG_INSTALL_APPLET_DONT bool
+c kconfig_variable 236 CONFIG_FEATURE_IP_RULE bool
+c kconfig_variable 237 CONFIG_VCONFIG bool
+c kconfig_variable 238 CONFIG_IFUP bool
+c kconfig_variable 239 CONFIG_ASH_GETOPTS bool
+c kconfig_variable 240 CONFIG_FEATURE_TUNCTL_UG bool
+c kconfig_variable 241 CONFIG_SETFATTR bool
+c kconfig_variable 242 CONFIG_FEATURE_MOUNT_FLAGS bool
+c kconfig_variable 243 CONFIG_FEATURE_XARGS_SUPPORT_REPL_STR bool
+c kconfig_variable 244 CONFIG_DEFAULT_DEPMOD_FILE string "modules.dep"
+c kconfig_variable 245 CONFIG_HTTPD bool
+c kconfig_variable 246 CONFIG_TRACEROUTE bool
+c kconfig_variable 247 CONFIG_HUSH_LOCAL bool
+c kconfig_variable 248 CONFIG_TEE bool
+c kconfig_variable 249 CONFIG_TEST bool
+c kconfig_variable 250 CONFIG_IFDOWN bool
+c kconfig_variable 251 CONFIG_NAMEIF bool
+c kconfig_variable 252 CONFIG_FEATURE_VOLUMEID_UBIFS bool
+c kconfig_variable 253 CONFIG_UDHCPC bool
+c kconfig_variable 254 CONFIG_FEATURE_SWAPON_PRI bool
+c kconfig_variable 255 CONFIG_ID bool
+c kconfig_variable 256 CONFIG_FEATURE_FANCY_SLEEP bool
+c kconfig_variable 257 CONFIG_MD5_SMALL int 1
+c kconfig_variable 258 CONFIG_BEEP bool
+c kconfig_variable 259 CONFIG_FEATURE_LZMA_FAST bool
+c kconfig_variable 260 CONFIG_FEATURE_FIND_MTIME bool
+c kconfig_variable 261 CONFIG_FEATURE_VI_WIN_RESIZE bool
+c kconfig_variable 262 CONFIG_INSTALL_SH_APPLET_SCRIPT_WRAPPER bool
+c kconfig_variable 263 CONFIG_TFTP bool
+c kconfig_variable 264 CONFIG_FEATURE_CPIO_O bool
+c kconfig_variable 265 CONFIG_FDISK bool
+c kconfig_variable 266 CONFIG_FEATURE_WGET_TIMEOUT bool
+c kconfig_variable 267 CONFIG_IPCALC bool
+c kconfig_variable 268 CONFIG_BUNZIP2 bool
+c kconfig_variable 269 CONFIG_MOUNT bool
+c kconfig_variable 270 CONFIG_FEATURE_RESIZE_PRINT bool
+c kconfig_variable 271 CONFIG_HUSH_PRINTF bool
+c kconfig_variable 272 CONFIG_FEATURE_VOLUMEID_BTRFS bool
+c kconfig_variable 273 CONFIG_HOSTID bool
+c kconfig_variable 274 CONFIG_EXPR bool
+c kconfig_variable 275 CONFIG_FEATURE_FIND_USER bool
+c kconfig_variable 276 CONFIG_FEATURE_DEVFS bool
+c kconfig_variable 277 CONFIG_FEATURE_RTMINMAX bool
+c kconfig_variable 278 CONFIG_DEFAULT_MODULES_DIR string "/lib/modules"
+c kconfig_variable 279 CONFIG_BLKDISCARD bool
+c kconfig_variable 280 CONFIG_CP bool
+c kconfig_variable 281 CONFIG_DHCPRELAY bool
+c kconfig_variable 282 CONFIG_MICROCOM bool
+c kconfig_variable 283 CONFIG_FEATURE_IP_TUNNEL bool
+c kconfig_variable 284 CONFIG_PARTPROBE bool
+c kconfig_variable 285 CONFIG_CHPST bool
+c kconfig_variable 286 CONFIG_PREFIX string "./_install"
+c kconfig_variable 287 CONFIG_FEATURE_IFUPDOWN_MAPPING bool
+c kconfig_variable 288 CONFIG_FEATURE_HTTPD_ERROR_PAGES bool
+c kconfig_variable 289 CONFIG_FEATURE_FANCY_ECHO bool
+c kconfig_variable 290 CONFIG_FEATURE_CHAT_IMPLICIT_CR bool
+c kconfig_variable 291 CONFIG_HUSH_FUNCTIONS bool
+c kconfig_variable 292 CONFIG_RUNCON bool
+c kconfig_variable 293 CONFIG_SPLIT bool
+c kconfig_variable 294 CONFIG_FEATURE_STAT_FILESYSTEM bool
+c kconfig_variable 295 CONFIG_INSTALL_SH_APPLET_SYMLINK bool
+c kconfig_variable 296 CONFIG_FEATURE_TELNETD_STANDALONE bool
+c kconfig_variable 297 CONFIG_FEATURE_SYSLOGD_CFG bool
+c kconfig_variable 298 CONFIG_ASH_INTERNAL_GLOB bool
+c kconfig_variable 299 CONFIG_SED bool
+c kconfig_variable 300 CONFIG_FEATURE_TFTP_BLOCKSIZE bool
+c kconfig_variable 301 CONFIG_HUSH_TRAP bool
+c kconfig_variable 302 CONFIG_RESET bool
+c kconfig_variable 303 CONFIG_BBCONFIG bool
+c kconfig_variable 304 CONFIG_FEATURE_MOUNT_NFS bool
+c kconfig_variable 305 CONFIG_FEATURE_DATE_NANO bool
+c kconfig_variable 306 CONFIG_FEATURE_FIND_PRUNE bool
+c kconfig_variable 307 CONFIG_FEATURE_SETFONT_TEXTUAL_MAP bool
+c kconfig_variable 308 CONFIG_SLATTACH bool
+c kconfig_variable 309 CONFIG_FEATURE_INSMOD_LOADINKMEM bool
+c kconfig_variable 310 CONFIG_TEST1 bool
+c kconfig_variable 311 CONFIG_FEATURE_UNIX_LOCAL bool
+c kconfig_variable 312 CONFIG_LSSCSI bool
+c kconfig_variable 313 CONFIG_FEATURE_READLINK_FOLLOW bool
+c kconfig_variable 314 CONFIG_WGET bool
+c kconfig_variable 315 CONFIG_RX bool
+c kconfig_variable 316 CONFIG_FEATURE_VOLUMEID_SYSV bool
+c kconfig_variable 317 CONFIG_FEATURE_IP_RARE_PROTOCOLS bool
+c kconfig_variable 318 CONFIG_FEATURE_FANCY_PING bool
+c kconfig_variable 319 CONFIG_EXTRA_CFLAGS string ""
+c kconfig_variable 320 CONFIG_ENVDIR bool
+c kconfig_variable 321 CONFIG_LOADFONT bool
+c kconfig_variable 322 CONFIG_FEATURE_VOLUMEID_ISO9660 bool
+c kconfig_variable 323 CONFIG_FEATURE_SETCONSOLE_LONG_OPTIONS bool
+c kconfig_variable 324 CONFIG_FEATURE_MTAB_SUPPORT bool
+c kconfig_variable 325 CONFIG_NOHUP bool
+c kconfig_variable 326 CONFIG_HUSH_RANDOM_SUPPORT bool
+c kconfig_variable 327 CONFIG_FEATURE_TOP_DECIMALS bool
+c kconfig_variable 328 CONFIG_IP bool
+c kconfig_variable 329 CONFIG_BUSYBOX_EXEC_PATH string "/proc/self/exe"
+c kconfig_variable 330 CONFIG_FEATURE_VI_COLON bool
+c kconfig_variable 331 CONFIG_LSPCI bool
+c kconfig_variable 332 CONFIG_HEAD bool
+c kconfig_variable 333 CONFIG_FEATURE_VOLUMEID_MINIX bool
+c kconfig_variable 334 CONFIG_MATCHPATHCON bool
+c kconfig_variable 335 CONFIG_FEATURE_USE_BSS_TAIL bool
+c kconfig_variable 336 CONFIG_UMOUNT bool
+c kconfig_variable 337 CONFIG_DIRNAME bool
+c kconfig_variable 338 CONFIG_FEATURE_SYNC_FANCY bool
+c kconfig_variable 339 CONFIG_FEATURE_INETD_SUPPORT_BUILTIN_CHARGEN bool
+c kconfig_variable 340 CONFIG_CLEAR bool
+c kconfig_variable 341 CONFIG_FEATURE_MOUNT_FAKE bool
+c kconfig_variable 342 CONFIG_FEATURE_TAR_NOPRESERVE_TIME bool
+c kconfig_variable 343 CONFIG_LOCALE_SUPPORT bool
+c kconfig_variable 344 CONFIG_PASTE bool
+c kconfig_variable 345 CONFIG_FEATURE_NAMEIF_EXTENDED bool
+c kconfig_variable 346 CONFIG_VI bool
+c kconfig_variable 347 CONFIG_TIMEOUT bool
+c kconfig_variable 348 CONFIG_FEATURE_FIND_PRINT0 bool
+c kconfig_variable 349 CONFIG_FEATURE_NETSTAT_PRG bool
+c kconfig_variable 350 CONFIG_FEATURE_HTTPD_RANGES bool
+c kconfig_variable 351 CONFIG_STRINGS bool
+c kconfig_variable 352 CONFIG_FEATURE_REFORMIME_COMPAT bool
+c kconfig_variable 353 CONFIG_FEATURE_EDITING bool
+c kconfig_variable 354 CONFIG_FEATURE_VI_SET bool
+c kconfig_variable 355 CONFIG_SULOGIN bool
+c kconfig_variable 356 CONFIG_RDATE bool
+c kconfig_variable 357 CONFIG_ASH_IDLE_TIMEOUT bool
+c kconfig_variable 358 CONFIG_FDFLUSH bool
+c kconfig_variable 359 CONFIG_SUM bool
+c kconfig_variable 360 CONFIG_UDHCPC6 bool
+c kconfig_variable 361 CONFIG_CKSUM bool
+c kconfig_variable 362 CONFIG_GZIP_FAST int 0
+c kconfig_variable 363 CONFIG_HUSH_EXPORT_N bool
+c kconfig_variable 364 CONFIG_SUBST_WCHAR int 63
+c kconfig_variable 365 CONFIG_I2CSET bool
+c kconfig_variable 366 CONFIG_FEATURE_EDITING_FANCY_PROMPT bool
+c kconfig_variable 367 CONFIG_KILLALL5 bool
+c kconfig_variable 368 CONFIG_FEATURE_USE_INITTAB bool
+c kconfig_variable 369 CONFIG_FEATURE_TAR_TO_COMMAND bool
+c kconfig_variable 370 CONFIG_SETSID bool
+c kconfig_variable 371 CONFIG_INSTALL_NO_USR bool
+c kconfig_variable 372 CONFIG_SVC bool
+c kconfig_variable 373 CONFIG_FEATURE_TR_CLASSES bool
+c kconfig_variable 374 CONFIG_UNXZ bool
+c kconfig_variable 375 CONFIG_FEATURE_AR_CREATE bool
+c kconfig_variable 376 CONFIG_FEATURE_LOGREAD_REDUCED_LOCKING bool
+c kconfig_variable 377 CONFIG_FEATURE_SECURETTY bool
+c kconfig_variable 378 CONFIG_FEATURE_INETD_SUPPORT_BUILTIN_TIME bool
+c kconfig_variable 379 CONFIG_ASH_HELP bool
+c kconfig_variable 380 CONFIG_FEATURE_CROND_DIR string "/var/spool/cron"
+c kconfig_variable 381 CONFIG_FEATURE_VOLUMEID_EXT bool
+c kconfig_variable 382 CONFIG_FEATURE_MDEV_RENAME bool
+c kconfig_variable 383 CONFIG_FEATURE_UDHCP_8021Q bool
+c kconfig_variable 384 CONFIG_LINUX64 bool
+c kconfig_variable 385 CONFIG_FEATURE_VI_SETOPTS bool
+c kconfig_variable 386 CONFIG_EFENCE bool
+c kconfig_variable 387 CONFIG_FEATURE_TFTP_GET bool
+c kconfig_variable 388 CONFIG_FGREP bool
+c kconfig_variable 389 CONFIG_FEATURE_VOLUMEID_SQUASHFS bool
+c kconfig_variable 390 CONFIG_FEATURE_VERBOSE_USAGE bool
+c kconfig_variable 391 CONFIG_SMEMCAP bool
+c kconfig_variable 392 CONFIG_FEATURE_INSMOD_TRY_MMAP bool
+c kconfig_variable 393 CONFIG_FEATURE_IPC_SYSLOG_BUFFER_SIZE int 16
+c kconfig_variable 394 CONFIG_FEATURE_FIND_PATH bool
+c kconfig_variable 395 CONFIG_FEATURE_DIFF_LONG_OPTIONS bool
+c kconfig_variable 396 CONFIG_FEATURE_VOLUMEID_LUKS bool
+c kconfig_variable 397 CONFIG_FDFORMAT bool
+c kconfig_variable 398 CONFIG_MKFIFO bool
+c kconfig_variable 399 CONFIG_DESKTOP bool
+c kconfig_variable 400 CONFIG_UBIRMVOL bool
+c kconfig_variable 401 CONFIG_FEATURE_SEAMLESS_BZ2 bool
+c kconfig_variable 402 CONFIG_PIPE_PROGRESS bool
+c kconfig_variable 403 CONFIG_RESTORECON bool
+c kconfig_variable 404 CONFIG_FEATURE_LS_TIMESTAMPS bool
+c kconfig_variable 405 CONFIG_UBIATTACH bool
+c kconfig_variable 406 CONFIG_FEATURE_AWK_LIBM bool
+c kconfig_variable 407 CONFIG_ASH_TEST bool
+c kconfig_variable 408 CONFIG_FEATURE_FIND_SIZE bool
+c kconfig_variable 409 CONFIG_FEATURE_SETPRIV_CAPABILITIES bool
+c kconfig_variable 410 CONFIG_NSENTER bool
+c kconfig_variable 411 CONFIG_ENV bool
+c kconfig_variable 412 CONFIG_STAT bool
+c kconfig_variable 413 CONFIG_LPD bool
+c kconfig_variable 414 CONFIG_VERBOSE_RESOLUTION_ERRORS bool
+c kconfig_variable 415 CONFIG_FEATURE_BRCTL_SHOW bool
+c kconfig_variable 416 CONFIG_TELNET bool
+c kconfig_variable 417 CONFIG_IPTUNNEL bool
+c kconfig_variable 418 CONFIG_FEATURE_SU_SYSLOG bool
+c kconfig_variable 419 CONFIG_UPTIME bool
+c kconfig_variable 420 CONFIG_LESS bool
+c kconfig_variable 421 CONFIG_TELINIT_PATH string "/sbin/telinit"
+c kconfig_variable 422 CONFIG_ASH_BASH_COMPAT bool
+c kconfig_variable 423 CONFIG_FEATURE_IFUPDOWN_IPV4 bool
+c kconfig_variable 424 CONFIG_HALT bool
+c kconfig_variable 425 CONFIG_LS bool
+c kconfig_variable 426 CONFIG_START_STOP_DAEMON bool
+c kconfig_variable 427 CONFIG_DUMPKMAP bool
+c kconfig_variable 428 CONFIG_HUSH_UNSET bool
+c kconfig_variable 429 CONFIG_PRINTF bool
+c kconfig_variable 430 CONFIG_FEATURE_MOUNT_FSTAB bool
+c kconfig_variable 431 CONFIG_LOGNAME bool
+c kconfig_variable 432 CONFIG_FEATURE_LS_RECURSIVE bool
+c kconfig_variable 433 CONFIG_FEATURE_POWERTOP_INTERACTIVE bool
+c kconfig_variable 434 CONFIG_BLKID bool
+c kconfig_variable 435 CONFIG_PGREP bool
+c kconfig_variable 436 CONFIG_LONG_OPTS bool
+c kconfig_variable 437 CONFIG_HUSH_JOB bool
+c kconfig_variable 438 CONFIG_FEATURE_TELNET_WIDTH bool
+c kconfig_variable 439 CONFIG_MAN bool
+c kconfig_variable 440 CONFIG_MKPASSWD bool
+c kconfig_variable 441 CONFIG_SHA512SUM bool
+c kconfig_variable 442 CONFIG_BB_SYSCTL bool
+c kconfig_variable 443 CONFIG_SETFONT bool
+c kconfig_variable 444 CONFIG_PWDX bool
+c kconfig_variable 445 CONFIG_FEATURE_SETFILES_CHECK_OPTION bool
+c kconfig_variable 446 CONFIG_SHRED bool
+c kconfig_variable 447 CONFIG_PASSWD bool
+c kconfig_variable 448 CONFIG_FEATURE_ALLOW_EXEC bool
+c kconfig_variable 449 CONFIG_ED bool
+c kconfig_variable 450 CONFIG_CAL bool
+c kconfig_variable 451 CONFIG_UDHCP_DEBUG int 9
+c kconfig_variable 452 CONFIG_FEATURE_HWIB bool
+c kconfig_variable 453 CONFIG_FEATURE_KILL_DELAY int 0
+c kconfig_variable 454 CONFIG_FEATURE_UDHCPD_WRITE_LEASES_EARLY bool
+c kconfig_variable 455 CONFIG_FEATURE_XARGS_SUPPORT_QUOTES bool
+c kconfig_variable 456 CONFIG_FEATURE_XARGS_SUPPORT_TERMOPT bool
+c kconfig_variable 457 CONFIG_INOTIFYD bool
+c kconfig_variable 458 CONFIG_RESUME bool
+c kconfig_variable 459 CONFIG_FEATURE_SWAPONOFF_LABEL bool
+c kconfig_variable 460 CONFIG_PING6 bool
+c kconfig_variable 461 CONFIG_NC bool
+c kconfig_variable 462 CONFIG_USERS bool
+c kconfig_variable 463 CONFIG_FEATURE_LS_FOLLOWLINKS bool
+c kconfig_variable 464 CONFIG_FEATURE_IP_NEIGH bool
+c kconfig_variable 465 CONFIG_FEATURE_TAR_GNU_EXTENSIONS bool
+c kconfig_variable 466 CONFIG_FAKEIDENTD bool
+c kconfig_variable 467 CONFIG_WATCHDOG bool
+c kconfig_variable 468 CONFIG_UEVENT bool
+c kconfig_variable 469 CONFIG_MKDOSFS bool
+c kconfig_variable 470 CONFIG_FEATURE_IFUPDOWN_IP bool
+c kconfig_variable 471 CONFIG_CRONTAB bool
+c kconfig_variable 472 CONFIG_TASKSET bool
+c kconfig_variable 473 CONFIG_FEATURE_DATE_COMPAT bool
+c kconfig_variable 474 CONFIG_FLASH_LOCK bool
+c kconfig_variable 475 CONFIG_HUSH_TIMES bool
+c kconfig_variable 476 CONFIG_FEATURE_VI_USE_SIGNALS bool
+c kconfig_variable 477 CONFIG_BRCTL bool
+c kconfig_variable 478 CONFIG_LAST bool
+c kconfig_variable 479 CONFIG_FEATURE_HTTPD_GZIP bool
+c kconfig_variable 480 CONFIG_FEATURE_SH_MATH_64 bool
+c kconfig_variable 481 CONFIG_CROSS_COMPILER_PREFIX string ""
+c kconfig_variable 482 CONFIG_WC bool
+c kconfig_variable 483 CONFIG_FEATURE_TOP_SMP_PROCESS bool
+c kconfig_variable 484 CONFIG_FEATURE_TAR_CREATE bool
+c kconfig_variable 485 CONFIG_GETOPT bool
+c kconfig_variable 486 CONFIG_MKE2FS bool
+c kconfig_variable 487 CONFIG_PAM bool
+c kconfig_variable 488 CONFIG_FEATURE_CATN bool
+c kconfig_variable 489 CONFIG_HUSH_MODE_X bool
+c kconfig_variable 490 CONFIG_FEATURE_STAT_FORMAT bool
+c kconfig_variable 491 CONFIG_MKFS_REISER bool
+c kconfig_variable 492 CONFIG_FEATURE_LS_SORTFILES bool
+c kconfig_variable 493 CONFIG_SWAPON bool
+c kconfig_variable 494 CONFIG_FEATURE_HDPARM_GET_IDENTITY bool
+c kconfig_variable 495 CONFIG_CHMOD bool
+c kconfig_variable 496 CONFIG_SV_DEFAULT_SERVICE_DIR string "/var/service"
+c kconfig_variable 497 CONFIG_FEATURE_POPMAILDIR_DELIVERY bool
+c kconfig_variable 498 CONFIG_UNIT_TEST bool
+c kconfig_variable 499 CONFIG_USE_BB_CRYPT bool
+c kconfig_variable 500 CONFIG_FEATURE_MAKEDEVS_LEAF bool
+c kconfig_variable 501 CONFIG_TFTPD bool
+c kconfig_variable 502 CONFIG_REALPATH bool
+c kconfig_variable 503 CONFIG_FEATURE_FIND_LINKS bool
+c kconfig_variable 504 CONFIG_FEATURE_FIND_REGEX bool
+c kconfig_variable 505 CONFIG_FEATURE_WC_LARGE bool
+c kconfig_variable 506 CONFIG_FEATURE_EDITING_HISTORY int 255
+c kconfig_variable 507 CONFIG_UNIQ bool
+c kconfig_variable 508 CONFIG_WHO bool
+c kconfig_variable 509 CONFIG_HUSH_BASH_COMPAT bool
+c kconfig_variable 510 CONFIG_FEATURE_PS_TIME bool
+c kconfig_variable 511 CONFIG_FEATURE_FIND_DELETE bool
+c kconfig_variable 512 CONFIG_HWCLOCK bool
+c kconfig_variable 513 CONFIG_FEATURE_KLOGD_KLOGCTL bool
+c kconfig_variable 514 CONFIG_FEATURE_COMPRESS_BBCONFIG bool
+c kconfig_variable 515 CONFIG_FEATURE_LESS_WINCH bool
+c kconfig_variable 516 CONFIG_DMESG bool
+c kconfig_variable 517 CONFIG_FEATURE_UNZIP_BZIP2 bool
+c kconfig_variable 518 CONFIG_FEATURE_MDEV_EXEC bool
+c kconfig_variable 519 CONFIG_MT bool
+c kconfig_variable 520 CONFIG_MKNOD bool
+c kconfig_variable 521 CONFIG_MOUNTPOINT bool
+c kconfig_variable 522 CONFIG_SETCONSOLE bool
+c kconfig_variable 523 CONFIG_KILLALL bool
+c kconfig_variable 524 CONFIG_FEATURE_LSMOD_PRETTY_2_6_OUTPUT bool
+c kconfig_variable 525 CONFIG_FEATURE_VI_SEARCH bool
+c kconfig_variable 526 CONFIG_FEATURE_TAR_LONG_OPTIONS bool
+c kconfig_variable 527 CONFIG_FEATURE_RUNSVDIR_LOG bool
+c kconfig_variable 528 CONFIG_SLEEP bool
+c kconfig_variable 529 CONFIG_FEATURE_INIT_COREDUMPS bool
+c kconfig_variable 530 CONFIG_WERROR bool
+c kconfig_variable 531 CONFIG_FEATURE_EDITING_SAVE_ON_EXIT bool
+c kconfig_variable 532 CONFIG_FEATURE_IFUPDOWN_EXTERNAL_DHCP bool
+c kconfig_variable 533 CONFIG_UBIDETACH bool
+c kconfig_variable 534 CONFIG_FEATURE_GETOPT_LONG bool
+c kconfig_variable 535 CONFIG_FEATURE_FIND_TYPE bool
+c kconfig_variable 536 CONFIG_FEATURE_START_STOP_DAEMON_LONG_OPTIONS bool
+c kconfig_variable 537 CONFIG_FEATURE_LOADFONT_PSF2 bool
+c kconfig_variable 538 CONFIG_LOADKMAP bool
+c kconfig_variable 539 CONFIG_INSTALL bool
+c kconfig_variable 540 CONFIG_NC_110_COMPAT bool
+c kconfig_variable 541 CONFIG_W bool
+c kconfig_variable 542 CONFIG_FUSER bool
+c kconfig_variable 543 CONFIG_FEATURE_MOUNT_LABEL bool
+c kconfig_variable 544 CONFIG_ASH_ECHO bool
+c kconfig_variable 545 CONFIG_SELINUX bool
+c kconfig_variable 546 CONFIG_FEATURE_INSMOD_LOAD_MAP bool
+c kconfig_variable 547 CONFIG_FEATURE_INSTALLER bool
+c kconfig_variable 548 CONFIG_HUSH_KILL bool
+c kconfig_variable 549 CONFIG_FEATURE_PRESERVE_HARDLINKS bool
+c kconfig_variable 550 CONFIG_BASE64 bool
+c kconfig_variable 551 CONFIG_FEATURE_FBSET_FANCY bool
+c kconfig_variable 552 CONFIG_FEATURE_VOLUMEID_EXFAT bool
+c kconfig_variable 553 CONFIG_FALLOCATE bool
+c kconfig_variable 554 CONFIG_CHPASSWD bool
+c kconfig_variable 555 CONFIG_VLOCK bool
+c kconfig_variable 556 CONFIG_FEATURE_SH_HISTFILESIZE bool
+c kconfig_variable 557 CONFIG_KLOGD bool
+c kconfig_variable 558 CONFIG_HUSH_EXPORT bool
+c kconfig_variable 559 CONFIG_FEATURE_TELNETD_INETD_WAIT bool
+c kconfig_variable 560 CONFIG_HD bool
+c kconfig_variable 561 CONFIG_FEATURE_UNZIP_LZMA bool
+c kconfig_variable 562 CONFIG_FEATURE_TAR_AUTODETECT bool
+c kconfig_variable 563 CONFIG_FEATURE_MOUNT_HELPERS bool
+c kconfig_variable 564 CONFIG_ETHER_WAKE bool
+c kconfig_variable 565 CONFIG_INSMOD bool
+c kconfig_variable 566 CONFIG_FEATURE_WGET_AUTHENTICATION bool
+c kconfig_variable 567 CONFIG_MKSWAP bool
+c kconfig_variable 568 CONFIG_KBD_MODE bool
+c kconfig_variable 569 CONFIG_RENICE bool
+c kconfig_variable 570 CONFIG_CHATTR bool
+c kconfig_variable 571 CONFIG_NETSTAT bool
+c kconfig_variable 572 CONFIG_FEATURE_HTTPD_SET_REMOTE_PORT_TO_ENV bool
+c kconfig_variable 573 CONFIG_OD bool
+c kconfig_variable 574 CONFIG_FEATURE_VI_ASK_TERMINAL bool
+c kconfig_variable 575 CONFIG_FEATURE_CROND_CALL_SENDMAIL bool
+c kconfig_variable 576 CONFIG_FEATURE_VI_8BIT bool
+c kconfig_variable 577 CONFIG_REMOVE_SHELL bool
+c kconfig_variable 578 CONFIG_CONSPY bool
+c kconfig_variable 579 CONFIG_INSTALL_SH_APPLET_HARDLINK bool
+c kconfig_variable 580 CONFIG_FEATURE_USERNAME_COMPLETION bool
+c kconfig_variable 581 CONFIG_FEATURE_UDHCPC_SANITIZEOPT bool
+c kconfig_variable 582 CONFIG_FEATURE_CMDLINE_MODULE_OPTIONS bool
+c kconfig_variable 583 CONFIG_RTCWAKE bool
+c kconfig_variable 584 CONFIG_TTY bool
+c kconfig_variable 585 CONFIG_FEATURE_LS_USERNAME bool
+c kconfig_variable 586 CONFIG_FEATURE_BOOTCHARTD_BLOATED_HEADER bool
+c kconfig_variable 587 CONFIG_DU bool
+c kconfig_variable 588 CONFIG_CROND bool
+c kconfig_variable 589 CONFIG_PWD bool
+c kconfig_variable 590 CONFIG_INCLUDE_SUSv2 bool
+c kconfig_variable 591 CONFIG_FEATURE_DU_DEFAULT_BLOCKSIZE_1K bool
+c kconfig_variable 592 CONFIG_NUKE bool
+c kconfig_variable 593 CONFIG_EGREP bool
+c kconfig_variable 594 CONFIG_DEVMEM bool
+c kconfig_variable 595 CONFIG_BOOTCHARTD bool
+c kconfig_variable 596 CONFIG_COMM bool
+c kconfig_variable 597 CONFIG_HDPARM bool
+c kconfig_variable 598 CONFIG_FEATURE_INETD_RPC bool
+c kconfig_variable 599 CONFIG_NC_SERVER bool
+c kconfig_variable 600 CONFIG_FEATURE_VOLUMEID_BCACHE bool
+c kconfig_variable 601 CONFIG_UNLINK bool
+c kconfig_variable 602 CONFIG_NETCAT bool
+c kconfig_variable 603 CONFIG_FEATURE_HTTPD_ENCODE_URL_STR bool
+c kconfig_variable 604 CONFIG_FEATURE_WGET_OPENSSL bool
+c kconfig_variable 605 CONFIG_ASH_RANDOM_SUPPORT bool
+c kconfig_variable 606 CONFIG_HEXEDIT bool
+c kconfig_variable 607 CONFIG_RPM bool
+c kconfig_variable 608 CONFIG_FEATURE_TOUCH_NODEREF bool
+c kconfig_variable 609 CONFIG_FEATURE_CP_LONG_OPTIONS bool
+c kconfig_variable 610 CONFIG_TUNE2FS bool
+c kconfig_variable 611 CONFIG_FEATURE_IFCONFIG_STATUS bool
+c kconfig_variable 612 CONFIG_FEATURE_SGI_LABEL bool
+c kconfig_variable 613 CONFIG_FEATURE_TEST_64 bool
+c kconfig_variable 614 CONFIG_SHA256SUM bool
+c kconfig_variable 615 CONFIG_CHVT bool
+c kconfig_variable 616 CONFIG_FEATURE_HTTPD_AUTH_MD5 bool
+c kconfig_variable 617 CONFIG_FLOCK bool
+c kconfig_variable 618 CONFIG_FEATURE_MOUNT_CIFS bool
+c kconfig_variable 619 CONFIG_FEATURE_MINIX2 bool
+c kconfig_variable 620 CONFIG_FEATURE_DEVPTS bool
+c kconfig_variable 621 CONFIG_FEATURE_FDISK_ADVANCED bool
+c kconfig_variable 622 CONFIG_XARGS bool
+c kconfig_variable 623 CONFIG_FEATURE_LESS_BRACKETS bool
+c kconfig_variable 624 CONFIG_DELUSER bool
+c kconfig_variable 625 CONFIG_LSMOD bool
+c kconfig_variable 626 CONFIG_FEATURE_EDITING_ASK_TERMINAL bool
+c kconfig_variable 627 CONFIG_DC bool
+c kconfig_variable 628 CONFIG_FBSET bool
+c kconfig_variable 629 CONFIG_FEATURE_INSMOD_LOAD_MAP_FULL bool
+c kconfig_variable 630 CONFIG_SHA3SUM bool
+c kconfig_variable 631 CONFIG_FEATURE_LESS_DASHCMD bool
+c kconfig_variable 632 CONFIG_INIT bool
+c kconfig_variable 633 CONFIG_FSCK_MINIX bool
+c kconfig_variable 634 CONFIG_FEATURE_TOUCH_SUSV3 bool
+c kconfig_variable 635 CONFIG_FEATURE_UDHCP_RFC3397 bool
+c kconfig_variable 636 CONFIG_FEATURE_VOLUMEID_NILFS bool
+c kconfig_variable 637 CONFIG_MKFS_MINIX bool
+c kconfig_variable 638 CONFIG_DEALLOCVT bool
+c kconfig_variable 639 CONFIG_FEATURE_TOP_SMP_CPU bool
+c kconfig_variable 640 CONFIG_FEATURE_HTTPD_SETUID bool
+c kconfig_variable 641 CONFIG_UBIRENAME bool
+c kconfig_variable 642 CONFIG_FEATURE_VOLUMEID_LINUXSWAP bool
+c kconfig_variable 643 CONFIG_FEATURE_DEL_USER_FROM_GROUP bool
+c kconfig_variable 644 CONFIG_FEATURE_UPTIME_UTMP_SUPPORT bool
+c kconfig_variable 645 CONFIG_HUSH bool
+c kconfig_variable 646 CONFIG_BASENAME bool
+c kconfig_variable 647 CONFIG_FEATURE_COMPRESS_USAGE bool
+c kconfig_variable 648 CONFIG_FEATURE_CHECK_NAMES bool
+c kconfig_variable 649 CONFIG_FEATURE_SETPRIV_CAPABILITY_NAMES bool
+c kconfig_variable 650 CONFIG_RM bool
+c kconfig_variable 651 CONFIG_LN bool
+c kconfig_variable 652 CONFIG_FEATURE_DEFAULT_PASSWD_ALGO string "des"
+c kconfig_variable 653 CONFIG_FEATURE_VOLUMEID_NTFS bool
+c kconfig_variable 654 CONFIG_FEATURE_NTPD_SERVER bool
+c kconfig_variable 655 CONFIG_FEATURE_FIND_PAREN bool
+c kconfig_variable 656 CONFIG_FEATURE_LESS_LINENUMS bool
+c kconfig_variable 657 CONFIG_FEATURE_LOADFONT_RAW bool
+c kconfig_variable 658 CONFIG_FEATURE_EDITING_VI bool
+c kconfig_variable 659 CONFIG_SHOWKEY bool
+c kconfig_variable 660 CONFIG_HUSH_SAVEHISTORY bool
+c kconfig_variable 661 CONFIG_HUSH_TEST bool
+c kconfig_variable 662 CONFIG_FEATURE_GPT_LABEL bool
+c kconfig_variable 663 CONFIG_FEATURE_INIT_SCTTY bool
+c kconfig_variable 664 CONFIG_FIND bool
+c kconfig_variable 665 CONFIG_MODPROBE bool
+c kconfig_variable 666 CONFIG_FEATURE_FTPD_WRITE bool
+c kconfig_variable 667 CONFIG_CUT bool
+c kconfig_variable 668 CONFIG_XXD bool
+c kconfig_variable 669 CONFIG_FEATURE_RUN_PARTS_FANCY bool
+c kconfig_variable 670 CONFIG_FEATURE_CHECK_UNICODE_IN_ENV bool
+c kconfig_variable 671 CONFIG_FDISK_SUPPORT_LARGE_DISKS bool
+c kconfig_variable 672 CONFIG_FEATURE_WGET_HTTPS bool
+c kconfig_variable 673 CONFIG_HUSH_SET bool
+c kconfig_variable 674 CONFIG_FEATURE_FIND_EXEC bool
+c kconfig_variable 675 CONFIG_XZCAT bool
+c kconfig_variable 676 CONFIG_SH_IS_ASH bool
+c kconfig_variable 677 CONFIG_MINIPS bool
+c kconfig_variable 678 CONFIG_FEATURE_MOUNT_VERBOSE bool
+c kconfig_variable 679 CONFIG_HUSH_LOOPS bool
+c kconfig_variable 680 CONFIG_LPR bool
+c kconfig_variable 681 CONFIG_SETUIDGID bool
+c kconfig_variable 682 CONFIG_LOGIN_SESSION_AS_CHILD bool
+c kconfig_variable 683 CONFIG_FEATURE_FANCY_HEAD bool
+c kconfig_variable 684 CONFIG_FEATURE_TAR_UNAME_GNAME bool
+c kconfig_variable 685 CONFIG_FEATURE_NETSTAT_WIDE bool
+c kconfig_variable 686 CONFIG_FEATURE_LESS_REGEXP bool
+c kconfig_variable 687 CONFIG_MD5SUM bool
+c kconfig_variable 688 CONFIG_FEATURE_SEAMLESS_LZMA bool
+c kconfig_variable 689 CONFIG_UNAME_OSNAME string "GNU/Linux"
+c kconfig_variable 690 CONFIG_FEATURE_GZIP_LONG_OPTIONS bool
+c kconfig_variable 691 CONFIG_FALSE bool
+c kconfig_variable 692 CONFIG_TAR bool
+c kconfig_variable 693 CONFIG_LOGIN bool
+c kconfig_variable 694 CONFIG_NANDDUMP bool
+c kconfig_variable 695 CONFIG_MESG bool
+c kconfig_variable 696 CONFIG_SCRIPTREPLAY bool
+c kconfig_variable 697 CONFIG_GETSEBOOL bool
+c kconfig_variable 698 CONFIG_NMETER bool
+c kconfig_variable 699 CONFIG_IPLINK bool
+c kconfig_variable 700 CONFIG_SYSROOT string ""
+c kconfig_variable 701 CONFIG_SHOW_USAGE bool
+c kconfig_variable 702 CONFIG_FEATURE_PIDOF_SINGLE bool
+c kconfig_variable 703 CONFIG_FEATURE_IP_ADDRESS bool
+c kconfig_variable 704 CONFIG_MAKEDEVS bool
+c kconfig_variable 705 CONFIG_FEATURE_SHADOWPASSWDS bool
+c kconfig_variable 706 CONFIG_FEATURE_INSMOD_KSYMOOPS_SYMBOLS bool
+c kconfig_variable 707 CONFIG_FEATURE_VOLUMEID_LINUXRAID bool
+c kconfig_variable 708 CONFIG_PRINTENV bool
+c kconfig_variable 709 CONFIG_FEATURE_GZIP_DECOMPRESS bool
+c kconfig_variable 710 CONFIG_SETARCH bool
+c kconfig_variable 711 CONFIG_DELGROUP bool
+c kconfig_variable 712 CONFIG_FEATURE_IFCONFIG_SLIP bool
+c kconfig_variable 713 CONFIG_PING bool
+c kconfig_variable 714 CONFIG_SH_IS_HUSH bool
+c kconfig_variable 715 CONFIG_IOSTAT bool
+c kconfig_variable 716 CONFIG_FEATURE_TOP_CPU_GLOBAL_PERCENTS bool
+c kconfig_variable 717 CONFIG_FEATURE_CHAT_SEND_ESCAPES bool
+c kconfig_variable 718 CONFIG_FEATURE_HWCLOCK_ADJTIME_FHS bool
+c kconfig_variable 719 CONFIG_FEATURE_DD_STATUS bool
+c kconfig_variable 720 CONFIG_FEATURE_CHAT_CLR_ABORT bool
+c kconfig_variable 721 CONFIG_FEATURE_LESS_TRUNCATE bool
+c kconfig_variable 722 CONFIG_FEATURE_NOLOGIN bool
+c kconfig_variable 723 CONFIG_LOGREAD bool
+c kconfig_variable 724 CONFIG_UNICODE_USING_LOCALE bool
+c kconfig_variable 725 CONFIG_FEATURE_SHARED_BUSYBOX bool
+c kconfig_variable 726 CONFIG_FEATURE_LESS_MAXLINES int 9999999
+c kconfig_variable 727 CONFIG_FEATURE_UNZIP_CDF bool
+c kconfig_variable 728 CONFIG_DEVFSD_MODLOAD bool
+c kconfig_variable 729 CONFIG_DEVFSD bool
+c kconfig_variable 730 CONFIG_HUSH_ECHO bool
+c kconfig_variable 731 CONFIG_FEATURE_NTPD_CONF bool
+c kconfig_variable 732 CONFIG_HUSH_HELP bool
+c kconfig_variable 733 CONFIG_INIT_TERMINAL_TYPE string "linux"
+c kconfig_variable 734 CONFIG_SELINUXENABLED bool
+c kconfig_variable 735 CONFIG_SSL_CLIENT bool
+c kconfig_variable 736 CONFIG_FSYNC bool
+c kconfig_variable 737 CONFIG_IOCTL_HEX2STR_ERROR bool
+c kconfig_variable 738 CONFIG_DNSDOMAINNAME bool
+c kconfig_variable 739 CONFIG_FEATURE_RUN_PARTS_LONG_OPTIONS bool
+c kconfig_variable 740 CONFIG_HUSH_UMASK bool
+c kconfig_variable 741 CONFIG_ECHO bool
+c kconfig_variable 742 CONFIG_ZCIP bool
+c kconfig_variable 743 CONFIG_FEATURE_XARGS_SUPPORT_ARGS_FILE bool
+c kconfig_variable 744 CONFIG_TELNETD bool
+c kconfig_variable 745 CONFIG_FLASHCP bool
+c kconfig_variable 746 CONFIG_FEATURE_LESS_MARKS bool
+c kconfig_variable 747 CONFIG_FEATURE_MDEV_CONF bool
+c kconfig_variable 748 CONFIG_TRUE bool
+c kconfig_variable 749 CONFIG_IFUPDOWN_IFSTATE_PATH string "/var/run/ifstate"
+c kconfig_variable 750 CONFIG_RDEV bool
+c kconfig_variable 751 CONFIG_CPIO bool
+c kconfig_variable 752 CONFIG_FSCK bool
+c kconfig_variable 753 CONFIG_FEATURE_ETC_NETWORKS bool
+c kconfig_variable 754 CONFIG_FEATURE_SWAPON_DISCARD bool
+c kconfig_variable 755 CONFIG_DEPMOD bool
+c kconfig_variable 756 CONFIG_CHGRP bool
+c kconfig_variable 757 CONFIG_MDEV bool
+c kconfig_variable 758 CONFIG_USE_BB_PWD_GRP bool
+c kconfig_variable 759 CONFIG_MKFS_VFAT bool
+c kconfig_variable 760 CONFIG_TR bool
+c kconfig_variable 761 CONFIG_FEATURE_2_4_MODULES bool
+c kconfig_variable 762 CONFIG_FEATURE_TAR_SELINUX bool
+c kconfig_variable 763 CONFIG_FEATURE_START_STOP_DAEMON_FANCY bool
+c kconfig_variable 764 CONFIG_FEATURE_UDHCPD_BASE_IP_ON_MAC bool
+c kconfig_variable 765 CONFIG_LAST_ID int 60000
+c kconfig_variable 766 CONFIG_EXPAND bool
+c kconfig_variable 767 CONFIG_UBIRSVOL bool
+c kconfig_variable 768 CONFIG_ENVUIDGID bool
+c kconfig_variable 769 CONFIG_FEATURE_SETPRIV_DUMP bool
+c kconfig_variable 770 CONFIG_CAT bool
+c kconfig_variable 771 CONFIG_FEATURE_DD_IBS_OBS bool
+c kconfig_variable 772 CONFIG_FEATURE_FBSET_READMODE bool
+c kconfig_variable 773 CONFIG_FEATURE_HTTPD_CONFIG_WITH_SCRIPT_INTERPR bool
+c kconfig_variable 774 CONFIG_SWAPOFF bool
+c kconfig_variable 775 CONFIG_FEATURE_SEAMLESS_Z bool
+c kconfig_variable 776 CONFIG_ADDGROUP bool
+c kconfig_variable 777 CONFIG_XZ bool
+c kconfig_variable 778 CONFIG_DD bool
+c kconfig_variable 779 CONFIG_FEATURE_FIND_GROUP bool
+c kconfig_variable 780 CONFIG_RMDIR bool
+c kconfig_variable 781 CONFIG_FATATTR bool
+c kconfig_variable 782 CONFIG_FEATURE_CROND_D bool
+c kconfig_variable 783 CONFIG_LPQ bool
+c kconfig_variable 784 CONFIG_FEATURE_BEEP_LENGTH_MS int 30
+c kconfig_variable 785 CONFIG_MODPROBE_SMALL bool
+c kconfig_variable 786 CONFIG_FEATURE_UDHCPC_ARPING bool
+c kconfig_variable 787 CONFIG_FEATURE_REVERSE_SEARCH bool
+c kconfig_variable 788 CONFIG_FEATURE_INETD_SUPPORT_BUILTIN_DISCARD bool
+c kconfig_variable 789 CONFIG_GREP bool
+c kconfig_variable 790 CONFIG_FEATURE_GUNZIP_LONG_OPTIONS bool
+c kconfig_variable 791 CONFIG_PSCAN bool
+c kconfig_variable 792 CONFIG_INSTALL_APPLET_HARDLINKS bool
+c kconfig_variable 793 CONFIG_I2CDUMP bool
+c kconfig_variable 794 CONFIG_SOFTLIMIT bool
+c kconfig_variable 795 CONFIG_FEATURE_DD_SIGNAL_HANDLING bool
+c kconfig_variable 796 CONFIG_BLOCKDEV bool
+c kconfig_variable 797 CONFIG_FEATURE_UMOUNT_ALL bool
+c kconfig_variable 798 CONFIG_UUENCODE bool
+c kconfig_variable 799 CONFIG_MKFS_EXT2 bool
+c kconfig_variable 800 CONFIG_UNLZOP bool
+c kconfig_variable 801 CONFIG_TUNCTL bool
+c kconfig_variable 802 CONFIG_FEATURE_CPIO_P bool
+c kconfig_variable 803 CONFIG_FEATURE_PIDOF_OMIT bool
+c kconfig_variable 804 CONFIG_FEATURE_OSF_LABEL bool
+c kconfig_variable 805 CONFIG_INSTALL_APPLET_SCRIPT_WRAPPERS bool
+c kconfig_variable 806 CONFIG_LAST_SYSTEM_ID int 999
+c kconfig_variable 807 CONFIG_FEATURE_CHAT_SWALLOW_OPTS bool
+c kconfig_variable 808 CONFIG_FEATURE_VOLUMEID_F2FS bool
+c kconfig_variable 809 CONFIG_FEATURE_FAST_TOP bool
+c kconfig_variable 810 CONFIG_FEATURE_VOLUMEID_FAT bool
+c kconfig_variable 811 CONFIG_NSLOOKUP bool
+c kconfig_variable 812 CONFIG_FEATURE_FTPGETPUT_LONG_OPTIONS bool
+c kconfig_variable 813 CONFIG_FEATURE_INDIVIDUAL bool
+c kconfig_variable 814 CONFIG_FEATURE_XARGS_SUPPORT_PARALLEL bool
+c kconfig_variable 815 CONFIG_FEATURE_PS_ADDITIONAL_COLUMNS bool
+c kconfig_variable 816 CONFIG_PIDOF bool
+c kconfig_variable 817 CONFIG_CHOWN bool
+c kconfig_variable 818 CONFIG_CHROOT bool
+c kconfig_variable 819 CONFIG_FEATURE_CATV bool
+c kconfig_variable 820 CONFIG_CRYPTPW bool
+c kconfig_variable 821 CONFIG_FEATURE_FIND_MMIN bool
+c kconfig_variable 822 CONFIG_FEATURE_SU_BLANK_PW_NEEDS_SECURE_TTY bool
+c kconfig_variable 823 CONFIG_FLASH_ERASEALL bool
+c kconfig_variable 824 CONFIG_ADD_SHELL bool
+c kconfig_variable 825 CONFIG_DPKG_DEB bool
+c kconfig_variable 826 CONFIG_FEATURE_FIND_EXEC_PLUS bool
+c kconfig_variable 827 CONFIG_FEATURE_CROND_SPECIAL_TIMES bool
+c kconfig_variable 828 CONFIG_FEATURE_VI_REGEX_SEARCH bool
+c kconfig_variable 829 CONFIG_FEATURE_GZIP_LEVELS bool
+c kconfig_variable 830 CONFIG_FEATURE_SKIP_ROOTFS bool
+c kconfig_variable 831 CONFIG_FEATURE_SU_CHECKS_SHELLS bool
+c kconfig_variable 832 CONFIG_NL bool
+c kconfig_variable 833 CONFIG_FEATURE_IFCONFIG_BROADCAST_PLUS bool
+c kconfig_variable 834 CONFIG_SETPRIV bool
+c kconfig_variable 835 CONFIG_DPKG bool
+c kconfig_variable 836 CONFIG_FEATURE_HDPARM_HDIO_SCAN_HWIF bool
+c kconfig_variable 837 CONFIG_DEVFSD_VERBOSE bool
+c kconfig_variable 838 CONFIG_PIVOT_ROOT bool
+c kconfig_variable 839 CONFIG_ZCAT bool
+c kconfig_variable 840 CONFIG_FEATURE_IFUPDOWN_IPV6 bool
+c kconfig_variable 841 CONFIG_FEATURE_ADDUSER_TO_GROUP bool
+c kconfig_variable 842 CONFIG_FEATURE_MODUTILS_SYMBOLS bool
+c kconfig_variable 843 CONFIG_FEATURE_LS_COLOR bool
+c kconfig_variable 844 CONFIG_PMAP bool
+c kconfig_variable 845 CONFIG_INSTALL_APPLET_SYMLINKS bool
+c kconfig_variable 846 CONFIG_SU bool
+c kconfig_variable 847 CONFIG_RPM2CPIO bool
+c kconfig_variable 848 CONFIG_FEATURE_HDPARM_HDIO_GETSET_DMA bool
+c kconfig_variable 849 CONFIG_UNICODE_NEUTRAL_TABLE bool
+c kconfig_variable 850 CONFIG_MONOTONIC_SYSCALL bool
+c kconfig_variable 851 CONFIG_FEATURE_MOUNT_OTHERTAB bool
+c kconfig_variable 852 CONFIG_DUMPLEASES bool
+c kconfig_variable 853 CONFIG_FEATURE_TRACEROUTE_VERBOSE bool
+c kconfig_variable 854 CONFIG_FEATURE_FTPD_AUTHENTICATION bool
+c kconfig_variable 855 CONFIG_FEATURE_MESG_ENABLE_ONLY_GROUP bool
+c kconfig_variable 856 CONFIG_RUNSV bool
+c kconfig_variable 857 CONFIG_FEATURE_AIX_LABEL bool
+c kconfig_variable 858 CONFIG_HOSTNAME bool
+c kconfig_variable 859 CONFIG_WHOIS bool
+c kconfig_variable 860 CONFIG_FEATURE_SH_READ_FRAC bool
+c kconfig_variable 861 CONFIG_NPROC bool
+c kconfig_variable 862 CONFIG_ROUTE bool
+c kconfig_variable 863 CONFIG_USE_BB_SHADOW bool
+c kconfig_variable 864 CONFIG_FEATURE_INETD_SUPPORT_BUILTIN_DAYTIME bool
+c kconfig_variable 865 CONFIG_FEATURE_VOLUMEID_UDF bool
+c kconfig_variable 866 CONFIG_FEATURE_INETD_SUPPORT_BUILTIN_ECHO bool
+c kconfig_variable 867 CONFIG_FEATURE_IPC_SYSLOG bool
+c kconfig_variable 868 CONFIG_FEATURE_HDPARM_HDIO_TRISTATE_HWIF bool
+c kconfig_variable 869 CONFIG_FEATURE_TOP_CPU_USAGE_PERCENTAGE bool
+c kconfig_variable 870 CONFIG_LSOF bool
+c kconfig_variable 871 CONFIG_LOSETUP bool
+c kconfig_variable 872 CONFIG_LZOP bool
+c kconfig_variable 873 CONFIG_FEATURE_VI_DOT_CMD bool
+c kconfig_variable 874 CONFIG_FEATURE_VOLUMEID_REISERFS bool
+c kconfig_variable 875 CONFIG_FEATURE_MKSWAP_UUID bool
+c kconfig_variable 876 CONFIG_FEATURE_SH_EXTRA_QUIET bool
+c kconfig_variable 877 CONFIG_FEATURE_BUFFERS_USE_MALLOC bool
+c kconfig_variable 878 CONFIG_MAKEMIME bool
+c kconfig_variable 879 CONFIG_FEATURE_DATE_ISOFMT bool
+c kconfig_variable 880 CONFIG_BASH_IS_NONE bool
+c kconfig_variable 881 CONFIG_REV bool
+c kconfig_variable 882 CONFIG_UDHCPC_SLACK_FOR_BUGGY_SERVERS int 80
+c kconfig_variable 883 CONFIG_FEATURE_CHAT_VAR_ABORT_LEN bool
+c kconfig_variable 884 CONFIG_BB_ARCH bool
+c kconfig_variable 885 CONFIG_HUSH_GETOPTS bool
+c kconfig_variable 886 CONFIG_FEATURE_INIT_SYSLOG bool
+c kconfig_variable 887 CONFIG_IPCRM bool
+c kconfig_variable 888 CONFIG_FEATURE_SUID_CONFIG bool
+c kconfig_variable 889 CONFIG_AWK bool
+c kconfig_variable 890 CONFIG_LINK bool
+c kconfig_variable 891 CONFIG_SETFILES bool
+c kconfig_variable 892 CONFIG_EXPR_MATH_SUPPORT_64 bool
+c kconfig_variable 893 CONFIG_SHA3_SMALL int 1
+c kconfig_variable 894 CONFIG_FEATURE_UNZIP_XZ bool
+c kconfig_variable 895 CONFIG_USE_BB_CRYPT_SHA bool
+c kconfig_variable 896 CONFIG_FEATURE_VI_READONLY bool
+c kconfig_variable 897 CONFIG_FEATURE_VI_UNDO_QUEUE bool
+c kconfig_variable 898 CONFIG_FEATURE_VERBOSE bool
+c kconfig_variable 899 CONFIG_FINDFS bool
+c kconfig_variable 900 CONFIG_FEATURE_DIFF_DIR bool
+c kconfig_variable 901 CONFIG_DATE bool
+c kconfig_variable 902 CONFIG_REFORMIME bool
+c kconfig_variable 903 CONFIG_WHOAMI bool
+c kconfig_variable 904 CONFIG_HUSH_READONLY bool
+c kconfig_variable 905 CONFIG_INETD bool
+c kconfig_variable 906 CONFIG_FEATURE_HEXDUMP_REVERSE bool
+c kconfig_variable 907 CONFIG_FEATURE_IFCONFIG_HW bool
+c kconfig_variable 908 CONFIG_FEATURE_PS_UNUSUAL_SYSTEMS bool
+c kconfig_variable 909 CONFIG_FEATURE_KMSG_SYSLOG bool
+c kconfig_variable 910 CONFIG_EXTRA_LDFLAGS string ""
+c kconfig_variable 911 CONFIG_GETTY bool
+c kconfig_variable 912 CONFIG_FEATURE_DMESG_PRETTY bool
+c kconfig_variable 913 CONFIG_ASH_EXPAND_PRMT bool
+c kconfig_variable 914 CONFIG_LZMA bool
+c kconfig_variable 915 CONFIG_FEATURE_SH_NOFORK bool
+c kconfig_variable 916 CONFIG_FTPPUT bool
+c kconfig_variable 917 CONFIG_HUSH_MEMLEAK bool
+c kconfig_variable 918 CONFIG_SETENFORCE bool
+c kconfig_variable 919 CONFIG_FEATURE_BZIP2_DECOMPRESS bool
+c kconfig_variable 920 CONFIG_FEATURE_FIND_NOT bool
+c kconfig_variable 921 CONFIG_FEATURE_VOLUMEID_ROMFS bool
+c kconfig_variable 922 CONFIG_EXTRA_LDLIBS string ""
+c kconfig_variable 923 CONFIG_SV bool
+c kconfig_variable 924 CONFIG_FEATURE_FIND_INUM bool
+c kconfig_variable 925 CONFIG_FEATURE_BLKID_TYPE bool
+c kconfig_variable 926 CONFIG_ASH_OPTIMIZE_FOR_SIZE bool
+c kconfig_variable 927 CONFIG_POWERTOP bool
+c kconfig_variable 928 CONFIG_IFPLUGD bool
+c kconfig_variable 929 CONFIG_FEATURE_IPCALC_LONG_OPTIONS bool
+c kconfig_variable 930 CONFIG_NTPD bool
+c kconfig_variable 931 CONFIG_DEBUG bool
+c kconfig_variable 932 CONFIG_TOP bool
+c kconfig_variable 933 CONFIG_IFENSLAVE bool
+c kconfig_variable 934 CONFIG_FLASH_UNLOCK bool
+c kconfig_variable 935 CONFIG_ASH_CMDCMD bool
+c kconfig_variable 936 CONFIG_UNEXPAND bool
+c kconfig_variable 937 CONFIG_FEATURE_PS_WIDE bool
+c kconfig_variable 938 CONFIG_EJECT bool
+c kconfig_variable 939 CONFIG_PIE bool
+c kconfig_variable 940 CONFIG_FEATURE_TOP_INTERACTIVE bool
+c kconfig_variable 941 CONFIG_UNLZMA bool
+c kconfig_variable 942 CONFIG_SVLOGD bool
+c kconfig_variable 943 CONFIG_FEATURE_FIND_DEPTH bool
+c kconfig_variable 944 CONFIG_FEATURE_TEE_USE_BLOCK_IO bool
+c kconfig_variable 945 CONFIG_BASH_IS_ASH bool
+c kconfig_variable 946 CONFIG_EXTRA_COMPAT bool
+c kconfig_variable 947 CONFIG_FEATURE_TAR_OLDGNU_COMPATIBILITY bool
+c kconfig_variable 948 CONFIG_ASH_PRINTF bool
+c kconfig_variable 949 CONFIG_CHCON bool
+c kconfig_variable 950 CONFIG_FEATURE_MODPROBE_SMALL_CHECK_ALREADY_LOADED bool
+c kconfig_variable 951 CONFIG_POPMAILDIR bool
+c kconfig_variable 952 CONFIG_SORT bool
+c kconfig_variable 953 CONFIG_IPROUTE bool
+c kconfig_variable 954 CONFIG_LZOPCAT bool
+c kconfig_variable 955 CONFIG_READPROFILE bool
+c kconfig_variable 956 CONFIG_FEATURE_INSMOD_VERSION_CHECKING bool
+c kconfig_variable 957 CONFIG_TCPSVD bool
+c kconfig_variable 958 CONFIG_FEATURE_LS_WIDTH bool
+c kconfig_variable 959 CONFIG_FEATURE_HUMAN_READABLE bool
+c kconfig_variable 960 CONFIG_FEATURE_UDHCPC6_RFC3646 bool
+c kconfig_variable 961 CONFIG_TOUCH bool
+c kconfig_variable 962 CONFIG_REBOOT bool
+c kconfig_variable 963 CONFIG_FEATURE_UDHCPC6_RFC4704 bool
+c kconfig_variable 964 CONFIG_HUSH_TYPE bool
+c kconfig_variable 965 CONFIG_HUSH_IF bool
+c kconfig_variable 966 CONFIG_UDHCPD bool
+c kconfig_variable 967 CONFIG_TIME bool
+c kconfig_variable 968 CONFIG_FEATURE_VOLUMEID_OCFS2 bool
+c kconfig_variable 969 CONFIG_FEATURE_VERBOSE_CP_MESSAGE bool
+c kconfig_variable 970 CONFIG_FEATURE_VOLUMEID_JFS bool
+c kconfig_variable 971 CONFIG_STTY bool
+c kconfig_variable 972 CONFIG_TTYSIZE bool
+c kconfig_variable 973 CONFIG_READAHEAD bool
+c kconfig_variable 974 CONFIG_SYSLOGD bool
+c kconfig_variable 975 CONFIG_FEATURE_CHOWN_LONG_OPTIONS bool
+c kconfig_variable 976 CONFIG_NO_DEBUG_LIB bool
+c kconfig_variable 977 CONFIG_FEATURE_VOLUMEID_CRAMFS bool
+c kconfig_variable 978 CONFIG_UDPSVD bool
+c kconfig_variable 979 CONFIG_SETSERIAL bool
+c kconfig_variable 980 CONFIG_ASH_ALIAS bool
+c kconfig_variable 981 CONFIG_FEATURE_SHOW_THREADS bool
+c kconfig_variable 982 CONFIG_GETENFORCE bool
+c kconfig_variable 983 CONFIG_FEATURE_LIBBUSYBOX_STATIC bool
+c kconfig_variable 984 CONFIG_FREE bool
+c kconfig_variable 985 CONFIG_FEATURE_HDPARM_HDIO_DRIVE_RESET bool
+c kconfig_variable 986 CONFIG_FEATURE_IPCALC_FANCY bool
+c kconfig_variable 987 CONFIG_FEATURE_FLOAT_SLEEP bool
+c kconfig_variable 988 CONFIG_FEATURE_DF_FANCY bool
+c kconfig_variable 989 CONFIG_FEATURE_PREFER_IPV4_ADDRESS bool
+c kconfig_variable 990 CONFIG_LZOP_COMPR_HIGH bool
+c kconfig_variable 991 CONFIG_ARPING bool
+c kconfig_variable 992 CONFIG_FEATURE_CHAT_NOFAIL bool
+c kconfig_variable 993 CONFIG_ACPID bool
+p cnf 993 904
+-945 -86 0
+-945 -880 0
+-86 -945 0
+-86 -880 0
+-880 -945 0
+-880 -86 0
+945 86 880 0
+-676 -714 0
+-676 -5 0
+-714 -676 0
+-714 -5 0
+-5 -676 0
+-5 -714 0
+676 714 5 0
+-500 -47 0
+-47 -500 0
+-704 500 47 0
+-500 704 0
+-47 704 0
+-877 -177 0
+-877 -210 0
+-177 -877 0
+-177 -210 0
+-210 -877 0
+-210 -177 0
+877 177 210 0
+-976 -167 0
+-976 -386 0
+-167 -976 0
+-167 -386 0
+-386 -976 0
+-386 -167 0
+976 167 386 0
+-295 -579 0
+-295 -262 0
+-579 -295 0
+-579 -262 0
+-262 -295 0
+-262 -579 0
+-805 295 579 262 0
+-295 805 0
+-579 805 0
+-262 805 0
+-845 -792 0
+-845 -805 0
+-845 -235 0
+-792 -845 0
+-792 -805 0
+-792 -235 0
+-805 -845 0
+-805 -792 0
+-805 -235 0
+-235 -845 0
+-235 -792 0
+-235 -805 0
+845 792 805 235 0
+-2 515 0
+-3 246 217 0
+-4 11 0
+-11 4 0
+-6 353 0
+-7 931 0
+-8 539 0
+-8 436 0
+-12 420 0
+-13 966 0
+-966 13 0
+-16 622 0
+-17 -169 0
+-17 29 676 945 0
+-18 835 825 0
+-19 645 714 86 0
+-21 368 0
+-22 645 714 86 0
+-23 96 0
+-25 645 714 86 0
+-26 938 0
+-27 29 645 676 945 714 86 0
+-29 -169 0
+-31 53 0
+-32 -169 0
+-37 477 0
+-40 245 0
+-45 897 0
+-897 45 0
+-46 632 51 0
+-48 353 0
+-353 48 0
+-50 461 602 0
+-52 932 0
+-54 328 699 0
+-54 699 0
+-55 974 0
+-56 755 665 0
+-56 -785 0
+-59 269 336 0
+-61 96 0
+-62 416 0
+-64 346 0
+-67 416 0
+-68 96 0
+-68 -724 0
+-69 253 0
+-253 69 0
+-71 314 0
+-71 436 0
+-72 789 593 388 0
+-73 627 0
+-74 760 0
+76 0
+-77 263 501 0
+-78 687 221 614 441 630 0
+-79 96 0
+-80 211 776 0
+-211 80 0
+-776 80 0
+-82 -39 0
+-82 -939 0
+-82 -118 0
+-83 -169 0
+-83 29 676 945 0
+-85 509 0
+-88 974 0
+-90 353 0
+-91 472 0
+-92 265 0
+-93 258 0
+-258 93 0
+-94 245 0
+-97 993 0
+-100 778 0
+-100 795 0
+-101 878 902 58 0
+-878 101 0
+-902 101 0
+-58 101 0
+-102 664 0
+-104 263 501 0
+-105 124 0
+-108 346 0
+-346 108 0
+-109 447 0
+-112 632 51 0
+-114 664 0
+-115 664 0
+-119 346 0
+-120 692 0
+-121 664 0
+-121 545 0
+-122 263 0
+-126 757 0
+-130 96 0
+-96 130 0
+-132 645 714 86 0
+-134 382 0
+-140 424 33 962 0
+-140 -632 0
+-148 545 0
+-149 665 0
+-149 -785 0
+-152 888 0
+-155 622 0
+-156 84 0
+-161 176 0
+-176 161 0
+-163 425 0
+-165 238 250 0
+-238 165 0
+-250 165 0
+-168 545 0
+-171 124 0
+-172 645 714 86 0
+-173 966 253 360 0
+-174 159 0
+-175 360 0
+-176 328 953 0
+-176 953 0
+-179 974 0
+-974 179 0
+-181 545 0
+-182 693 0
+-184 625 761 0
+-184 -785 0
+185 0
+-187 59 0
+-188 124 0
+-190 889 0
+-191 293 0
+-192 478 0
+-193 597 0
+-195 729 0
+-197 314 0
+-201 443 0
+-443 201 0
+-202 107 677 0
+-202 -399 0
+-204 692 835 0
+-209 664 0
+-212 265 0
+-212 92 0
+-216 843 0
+-217 28 0
+-218 974 0
+-219 245 0
+-222 42 0
+-223 128 0
+-224 645 714 86 0
+-226 952 0
+-227 29 645 676 945 714 86 0
+-231 595 0
+-236 328 203 0
+-236 203 0
+-239 -169 0
+-239 29 676 945 0
+-240 801 0
+-242 269 0
+-243 622 0
+-244 755 665 70 0
+-755 244 0
+-665 244 0
+-70 244 0
+-247 291 0
+-254 493 0
+-256 528 0
+257 0
+-259 941 220 914 688 0
+-260 664 0
+-261 346 0
+-264 751 0
+-266 314 0
+-270 205 0
+-271 645 714 86 0
+-275 664 0
+-278 755 665 70 0
+-755 278 0
+-665 278 0
+-70 278 0
+-283 328 417 0
+-283 417 0
+286 0
+-287 238 250 0
+-288 245 0
+-289 741 544 730 0
+-290 159 0
+-291 645 714 86 0
+-292 545 0
+-294 412 0
+-296 744 0
+-297 974 0
+-298 -169 0
+-298 29 676 945 0
+-300 263 501 0
+-301 645 714 86 0
+-304 269 0
+-305 901 0
+-306 664 0
+-307 443 0
+-309 761 0
+-309 565 665 0
+-313 166 0
+-317 328 189 699 953 417 203 30 0
+-318 713 460 0
+434 899 543 459 0
+434 899 543 493 774 0
+434 899 269 459 0
+434 899 269 493 774 0
+319 0
+-323 522 0
+-323 436 0
+-324 269 336 0
+-326 645 714 86 0
+735 672 0
+735 314 0
+-327 869 0
+329 0
+-330 346 0
+-334 545 0
+-338 110 0
+-339 905 0
+-341 269 0
+-341 324 0
+-341 269 336 0
+-342 692 0
+-345 251 0
+-348 664 0
+-349 571 0
+-350 245 0
+-352 902 0
+-354 346 0
+-357 -169 0
+-357 29 676 945 0
+-360 28 0
+-362 116 0
+-116 362 0
+-363 558 0
+-364 96 0
+-96 364 0
+-366 353 0
+-368 632 51 0
+-369 692 0
+-369 526 0
+-373 760 0
+-375 42 0
+-376 723 0
+-377 693 0
+-378 905 0
+-379 -169 0
+-379 29 676 945 0
+-380 588 471 0
+-588 380 0
+-471 380 0
+-382 747 0
+-383 966 253 0
+-385 346 0
+-387 263 501 0
+-389 925 0
+-390 701 0
+-392 565 665 0
+-392 -785 0
+-393 867 0
+-867 393 0
+-394 664 0
+-395 198 0
+-395 436 0
+-403 545 0
+-404 425 0
+-406 889 0
+-407 -169 0
+-407 29 676 945 0
+-408 664 0
+-409 834 0
+-415 477 0
+-415 37 0
+-418 846 0
+-421 140 0
+-140 421 0
+-422 -169 0
+-422 29 676 945 0
+-423 238 250 0
+-428 645 714 86 0
+-430 269 0
+-432 425 0
+-433 927 0
+-436 776 211 150 834 32 0
+-436 776 211 150 834 -169 0
+-437 22 0
+-438 416 0
+-445 545 0
+-445 891 0
+-448 346 889 0
+-451 966 253 360 281 0
+-966 451 0
+-253 451 0
+-360 451 0
+-281 451 0
+-453 21 0
+-21 453 0
+-454 966 0
+-455 622 0
+-456 622 0
+-459 493 774 0
+-460 28 0
+-462 124 0
+-463 425 0
+-464 328 30 0
+-464 30 0
+-465 692 835 0
+-470 238 250 0
+-473 901 0
+-475 645 714 86 0
+-476 346 0
+-478 105 0
+-479 245 0
+-480 29 645 676 945 714 86 0
+-480 227 0
+481 0
+-483 932 0
+-484 692 0
+-488 770 0
+-489 645 714 86 0
+-490 412 0
+-492 425 0
+-494 597 0
+-496 923 0
+-923 496 0
+-497 951 0
+-503 664 0
+-504 664 0
+-505 482 0
+-506 353 0
+-353 506 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 305 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 305 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 901 294 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 32 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 973 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 513 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 510 419 557 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 513 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 107 677 419 557 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 513 974 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 909 0
+545 160 850 901 412 615 638 427 229 568 321 443 538 34 522 95 180 659 138 15 755 565 625 70 665 127 993 279 434 516 938 781 628 397 265 899 358 89 150 225 512 35 81 871 757 486 799 637 491 469 759 269 410 838 583 710 228 384 834 493 774 36 468 336 -169 41 258 578 729 276 146 597 151 365 793 136 131 694 284 14 178 234 315 979 405 533 139 400 767 20 641 467 208 991 477 564 53 933 928 328 189 699 953 417 203 30 251 571 930 713 862 308 246 801 237 742 966 253 984 399 419 557 974 0
+-508 124 0
+-509 645 714 86 0
+-510 107 677 0
+-510 399 0
+-511 664 0
+-511 943 0
+-513 557 0
+-514 303 0
+-515 420 0
+-517 727 0
+-517 399 0
+-518 747 0
+-524 625 0
+-524 -785 0
+-525 346 0
+-526 692 0
+-526 436 0
+-527 186 0
+-529 632 51 0
+-531 90 0
+-532 238 250 0
+-534 485 0
+-534 436 0
+-535 664 0
+-536 426 0
+-536 436 0
+-537 321 443 0
+-540 461 602 0
+-541 124 0
+-543 269 0
+-544 -169 0
+-544 29 676 945 0
+-546 761 0
+-546 565 0
+-547 141 0
+-548 645 714 86 0
+-549 280 153 0
+-551 628 0
+-556 29 645 676 945 714 86 0
+-558 645 714 86 0
+-559 296 0
+-561 727 0
+-561 399 0
+-562 692 0
+-562 775 18 401 688 65 0
+-563 269 0
+-566 314 0
+-572 219 0
+-574 346 0
+-575 588 0
+-576 346 0
+-580 6 0
+-581 253 0
+-582 565 665 0
+-585 425 0
+-586 595 0
+-591 587 0
+-598 905 0
+-599 461 602 0
+-603 245 0
+-604 314 0
+-605 -169 0
+-605 29 676 945 0
+-608 961 0
+-609 280 0
+-609 436 0
+-611 53 0
+-612 265 0
+-612 92 0
+-613 249 310 230 407 661 0
+-616 94 0
+-618 269 0
+-619 633 637 0
+-621 265 0
+-621 92 0
+-623 420 0
+-626 353 0
+-629 546 0
+-631 420 0
+-634 961 0
+-635 966 253 0
+-639 716 0
+-640 245 0
+-643 711 0
+-644 419 0
+-644 124 0
+-647 701 0
+-648 211 776 0
+-649 834 0
+-649 409 0
+-652 447 820 554 0
+-447 652 0
+-820 652 0
+-554 652 0
+-654 930 0
+-655 664 0
+-656 631 0
+-657 321 443 0
+-658 353 0
+-660 22 0
+-660 90 0
+-661 645 714 86 0
+-662 265 0
+-662 92 0
+-663 632 51 0
+-666 84 0
+-669 129 0
+-670 96 0
+-670 -724 0
+-671 265 0
+-671 -178 0
+-672 314 0
+-673 645 714 86 0
+-674 664 0
+-676 -169 0
+-678 269 0
+-679 645 714 86 0
+-682 693 0
+-683 332 0
+-684 692 0
+-685 571 0
+-686 420 0
+-689 144 0
+-144 689 0
+-690 116 0
+-690 436 0
+-697 545 0
+700 0
+-702 816 0
+632 51 911 693 447 846 355 304 588 729 905 466 251 744 742 9 0
+632 51 911 693 447 846 355 269 588 729 905 466 251 744 742 9 0
+-703 328 189 0
+-703 189 0
+-706 761 0
+-706 565 665 0
+-709 116 142 839 0
+-709 142 839 0
+-712 53 0
+-716 869 0
+-717 159 0
+-718 512 0
+-719 778 0
+-720 159 0
+-721 420 0
+-722 693 0
+-724 96 0
+-724 343 0
+-725 82 0
+-726 420 0
+-420 726 0
+-727 199 0
+-728 729 0
+-730 645 714 86 0
+-731 930 0
+-732 645 714 86 0
+-733 632 51 0
+-632 733 0
+-51 733 0
+-734 545 0
+-739 129 0
+-739 436 0
+-740 645 714 86 0
+-743 622 0
+-746 420 0
+-747 757 0
+-749 238 250 0
+-238 749 0
+-250 749 0
+-754 493 0
+-761 565 625 665 127 0
+-761 -785 0
+-762 692 0
+-762 545 0
+-763 426 0
+-764 966 0
+-765 211 776 0
+-211 765 0
+-776 765 0
+-769 834 0
+-771 778 0
+-772 628 0
+-773 219 0
+-779 664 0
+-782 588 0
+-784 258 0
+-258 784 0
+-786 253 0
+-787 353 0
+-788 905 0
+-790 142 839 0
+-790 436 0
+-795 778 0
+-797 336 0
+-802 264 0
+-803 816 0
+-804 265 0
+-804 92 0
+-806 211 776 0
+-211 806 0
+-776 806 0
+-807 159 0
+-812 436 0
+-812 125 916 0
+-813 82 0
+-814 622 0
+-815 107 677 0
+-815 399 0
+-819 770 0
+-821 664 0
+-822 846 0
+-826 674 0
+-827 588 0
+-828 525 0
+-829 116 0
+-831 846 0
+-833 53 0
+-836 597 0
+-837 729 0
+-840 238 250 0
+-840 28 0
+-841 776 0
+-842 755 665 0
+-842 -785 0
+-843 425 0
+-843 436 0
+-848 597 0
+-849 68 0
+-851 430 0
+-853 246 217 0
+-854 84 0
+-855 695 0
+-857 265 0
+-857 92 0
+-860 29 645 676 945 714 86 0
+-863 758 0
+-863 705 0
+-864 905 0
+-866 905 0
+-867 974 0
+-868 597 0
+-869 932 0
+-873 346 0
+-875 567 0
+-876 29 645 676 945 714 86 0
+-879 901 0
+-882 966 253 0
+-966 882 0
+-253 882 0
+-883 159 0
+-885 645 714 86 0
+-886 632 51 0
+-888 164 0
+-891 545 0
+-892 274 0
+893 0
+-894 727 0
+-894 399 0
+-895 499 0
+-896 346 0
+-897 64 0
+-900 198 0
+-904 645 714 86 0
+-906 63 0
+-907 53 0
+-908 510 0
+-909 974 0
+910 0
+-912 516 0
+-913 -169 0
+-913 29 676 945 0
+-915 29 645 676 945 714 86 0
+-917 645 714 86 0
+-918 545 0
+-919 214 268 194 0
+-919 268 194 0
+-920 664 0
+922 0
+-924 664 0
+-925 434 0
+-926 -169 0
+-926 29 676 945 0
+-929 267 0
+-929 436 0
+-935 -169 0
+-935 29 676 945 0
+-937 107 677 0
+-937 -399 0
+-939 -118 0
+-940 932 0
+-943 664 0
+-944 248 0
+-945 -169 0
+-947 692 835 0
+-948 -169 0
+-948 29 676 945 0
+-949 545 0
+-950 785 0
+-950 755 565 665 0
+-956 761 0
+-956 565 665 0
+-958 425 0
+-959 170 587 425 0
+-960 360 0
+-963 360 0
+-964 645 714 86 0
+-965 645 714 86 0
+-973 178 0
+-975 817 0
+-975 436 0
+-980 -169 0
+-980 29 676 945 0
+-981 107 932 213 0
+-982 545 0
+-983 82 0
+-985 597 0
+-986 267 0
+-987 256 0
+-988 170 0
+-989 28 0
+-990 872 800 954 0
+-992 159 0
