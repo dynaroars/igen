@@ -51,7 +51,7 @@ class Dom(CC.Dom):
         self._infs = infs
 
     
-    def gen_configs_cex(self, sel_core, existing_configs, z3db):
+    def gen_configs_cex(self, sel_core, existing_configs, z3db, constrains=True):
         """
         >>> dom = Dom([('a', frozenset(['1', '0'])), \
         ('b', frozenset(['1', '0'])), ('c', frozenset(['1', '0', '2']))])
@@ -130,7 +130,7 @@ class Dom(CC.Dom):
         for changed_core in changes:
             yexpr = changed_core.z3expr(z3db, z3util.myAnd)
             nexpr = z3util.myOr(e_configs)
-            configs_ = self.gen_configs_exprs([yexpr],[nexpr],k=1, config_cls=Config)
+            configs_ = self.gen_configs_exprs([constrains, yexpr],[nexpr],k=1, config_cls=Config)
             if not configs_:
                 continue
             config=configs_[0]

@@ -17,7 +17,7 @@ class IGen(object):
     """
     Main algorithm
     """
-    def __init__(self, dom, get_cov, sids=None):
+    def __init__(self, dom, get_cov, sids=None, constraints_file=None):
         assert isinstance(dom, Dom), dom
         assert callable(get_cov), get_cov
         assert not sids or CC.is_cov(sids), sids
@@ -25,7 +25,13 @@ class IGen(object):
         self.dom = dom
         self.get_cov = get_cov
         self.sids = sids
-        self.z3db = CC.Z3DB(self.dom)        
+        self.z3db = CC.Z3DB(self.dom)
+        self.constraints = True
+        import dimacscnf2z3 as Dimacs
+        if constraints_file: 
+            constraints_file = CM.getpath(constraints_file)
+            self.constraints = Dimacs.convert(Dimacs.read(constraints_file), dom=dom, z3db=self.z3db)
+            logger.debug("kconfig_const:\n{}".format(self.constraints))
         
     def go(self, seed, rand_n=None, econfigs=None, tmpdir=None):
         """
@@ -110,8 +116,7 @@ class IGen(object):
 
             cur_iter += 1
             sel_core, configs = self.gen_configs_iter(
-                set(cores_d.values()), ignore_sel_cores,
-                cur_min_stren, configs_d)
+                set(cores_d.values()), ignore_sel_cores, cur_min_stren, configs_d)
 
             if sel_core is None:
                 cur_iter -= 1
@@ -182,14 +187,14 @@ class IGen(object):
     def gen_configs_init(self, rand_n, seed):
         #return []
         if not rand_n: #None or 0
-            configs = self.dom.gen_configs_tcover1(config_cls=Config)
+            configs = self.dom.gen_configs_tcover1(config_cls=Config, z3db=self.z3db, constraints=self.constraints)
             logger.debug("gen {} configs using tcover 1".format(len(configs)))
         elif rand_n > 0 and rand_n < self.dom.siz:        
             configs = self.dom.gen_configs_rand_smt(
                 rand_n, self.z3db, config_cls=Config)
             logger.debug("gen {} rand configs".format(len(configs)))
         else:
-            configs = self.dom.gen_configs_full(config_cls=Config)
+            configs = self.dom.gen_configs_full(config_cls=Config, z3db=self.z3db, constraints=self.constraints)
             logger.debug("gen all {} configs".format(len(configs)))
 
         configs = list(set(configs))
@@ -210,7 +215,7 @@ class IGen(object):
             if sel_core is None:
                 break
 
-            configs = self.dom.gen_configs_cex(sel_core, configs_d, self.z3db)
+            configs = self.dom.gen_configs_cex(sel_core, configs_d, self.z3db, self.constraints)
             configs = list(set(configs)) 
             if configs:
                 break

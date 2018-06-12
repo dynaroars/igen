@@ -11,6 +11,7 @@ import vu_common as CM
 import z3
 import z3util
 
+logger = CM.VLog('alg_ds')
 logger_level = CM.VLog.DEBUG
 allows_known_errors = False
 show_cov = True
@@ -178,7 +179,7 @@ class Dom(OrderedDict):
         return max(len(vs) for vs in self.itervalues())
     
     #Methods to generate configurations
-    def gen_configs_full(self, config_cls=None):
+    def gen_configs_full(self, config_cls=None, z3db=None, constraints=True):#TODO kconfig_contraint
         if config_cls is None:
             config_cls = Config
         
@@ -186,7 +187,7 @@ class Dom(OrderedDict):
         configs = [config_cls(zip(ns, c)) for c in itertools.product(*vs)]
         return configs
 
-    def gen_configs_tcover1(self, config_cls=None):
+    def gen_configs_tcover1(self, config_cls=None, z3db=None, constraints=True):
         """
         Return a set of tcover array of stren 1
         """
@@ -194,26 +195,32 @@ class Dom(OrderedDict):
             config_cls = Config
             
         dom_used = dict((k, set(self[k])) for k in self)
-
+        
         def mk():
             config = []
             for k in self:
-                if k in dom_used:
-                    v = random.choice(list(dom_used[k]))
-                    dom_used[k].remove(v)
-                    if not dom_used[k]:
-                        dom_used.pop(k)
-                else:
-                    v = random.choice(list(self[k]))
+                while True:
+                    if k in dom_used:
+                        v = random.choice(list(dom_used[k]))
+                        dom_used[k].remove(v)
+                        if not dom_used[k]:
+                            dom_used.pop(k)
+                    else:
+                        v = random.choice(list(self[k]))
 
+                    cc = z3.And(constraints, z3db[k][0] == z3db[k][1][str(int(v))])
+                    if z3util.get_models(cc, 1):
+                        break
+                        
                 config.append((k,v))
+
             return config_cls(config)
 
         configs = []
         while dom_used: configs.append(mk())
         return configs    
 
-    def gen_configs_rand(self, rand_n, config_cls=None):
+    def gen_configs_rand(self, rand_n, config_cls=None, z3db=None, constraints=True):#TODO kconfig_contraint
         assert 0 < rand_n <= self.siz, (rand_n, self.siz)
 
         if config_cls is None:
@@ -266,11 +273,13 @@ class Dom(OrderedDict):
         assert k > 0, k
         assert config_cls, config_cls
 
+        if z3.solve:
+            pass
         yexprs = [e for e in yexprs if e is not None]
         nexprs = [z3.Not(e) for e in nexprs if e is not None]
         exprs = yexprs + nexprs
         assert exprs, 'empty exprs'
-            
+
         expr = exprs[0] if len(exprs)==1 else z3util.myAnd(exprs)
         return self.gen_configs_expr(expr, k, config_cls)
 
@@ -316,7 +325,6 @@ class Dom(OrderedDict):
 class Z3DB(dict):
     def __init__(self, dom):
         assert isinstance(dom, Dom)
-        
         db = {}
         for k, vs in dom.iteritems():
             vs = sorted(list(vs))

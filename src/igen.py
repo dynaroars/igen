@@ -87,7 +87,7 @@ def get_run_default(prog, args, IA, ALG_IGEN):
     sids = get_sids(args.sids)
     dom, default_configs, get_cov_f = get_cov_default(prog, sids, args, IA)
     econfigs = [(c, None) for c in default_configs] if default_configs else []
-    igen = ALG_IGEN.IGen(dom, get_cov_f, sids)
+    igen = ALG_IGEN.IGen(dom, get_cov_f, sids, args.constraints_file)
     
     if sids:
         run_f = lambda seed, tdir: igen.go(
@@ -145,6 +145,7 @@ def get_run_f(prog, args, logger):
         dom, get_cov_f, run_f = get_run_default(prog, args, IA, ALG_IGEN)
         
     logger.debug("dom:\n{}".format(dom))
+
     return run_f, get_cov_f
 
 
@@ -202,6 +203,11 @@ if __name__ == "__main__":
     aparser.add_argument("--run_script", "-run_script",
                          "--rscript", "-rscript",
                          help="script to obtain the program's coverage",
+                         action="store")
+
+    aparser.add_argument("--constraints_file", "-constraints_file",
+                         help="kconfig constraints file",
+                         default=None,
                          action="store")
 
     aparser.add_argument("--do_perl", "-do_perl",
