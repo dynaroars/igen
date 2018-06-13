@@ -35,7 +35,10 @@ class VarContents:
 def getZ3Var(k, g, var_names, dom=None, z3db = None):
     val_ = not k.startswith('-')
     v = k if val_ else k[1:]
-    return z3db[var_names[v]][0] == z3db[var_names[v]][1][str(int(val_))]
+    if var_names[v] in z3db:
+        return z3db[var_names[v]][0] == z3db[var_names[v]][1][str(int(val_))]
+    else:
+        return True
             
 def convert(lines, doReadVarname=False, dom=None, z3db = None):
     pIdx = None
