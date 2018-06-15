@@ -34,9 +34,11 @@ class VarContents:
 
 def getZ3Var(k, g, var_names, dom=None, z3db = None):
     val_ = not k.startswith('-')
+    setting = 'y' if val_ else 'n'
+    #setting = str(int(val_))
     v = k if val_ else k[1:]
     if var_names[v] in z3db:
-        return z3db[var_names[v]][0] == z3db[var_names[v]][1][str(int(val_))]
+        return z3db[var_names[v]][0] == z3db[var_names[v]][1][setting]
     else:
         return True
             

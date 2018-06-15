@@ -6,5 +6,6 @@ c kconfig_variable 4 v bool
 c kconfig_variable 5 x bool
 c kconfig_variable 6 y bool
 c kconfig_variable 7 z int 4
-p cnf 7 1
+p cnf 7 2
 5 0
+-1 2 0
