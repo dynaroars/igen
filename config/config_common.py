@@ -208,7 +208,7 @@ class Dom(OrderedDict):
                     else:
                         v = random.choice(list(self[k]))
 
-                    cc = z3.And(constraints, z3db[k][0] == z3db[k][1][str(int(v))])
+                    cc = z3.And(constraints, z3db[k][0] == z3db[k][1][v])
                     if z3util.get_models(cc, 1):
                         break
                         
@@ -332,6 +332,7 @@ class Z3DB(dict):
             rs = [vv for vv in zip(vs, tvals)]
             rs.append(('typ', ttyp))
             db[k] = (z3.Const(k, ttyp), dict(rs))
+            print k, db[k], db[k][0], db[k][1]
         dict.__init__(self, db)
         
         
