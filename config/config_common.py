@@ -187,7 +187,7 @@ class Dom(OrderedDict):
         configs = [config_cls(zip(ns, c)) for c in itertools.product(*vs)]
         return configs
 
-    def gen_configs_tcover1(self, config_cls=None, z3db=None, constraints=True):
+    def gen_configs_tcover1(self, z3db, constraints, config_cls=None):
         """
         Return a set of tcover array of stren 1
         """
@@ -332,6 +332,7 @@ class Z3DB(dict):
             rs = [vv for vv in zip(vs, tvals)]
             rs.append(('typ', ttyp))
             db[k] = (z3.Const(k, ttyp), dict(rs))
+            print k, db[k][0], db[k][1]
         dict.__init__(self, db)
         
         

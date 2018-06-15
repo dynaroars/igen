@@ -187,7 +187,7 @@ class IGen(object):
     def gen_configs_init(self, rand_n, seed):
         #return []
         if not rand_n: #None or 0
-            configs = self.dom.gen_configs_tcover1(config_cls=Config, z3db=self.z3db, constraints=self.constraints)
+            configs = self.dom.gen_configs_tcover1(self.z3db, self.constraints, config_cls=Config)
             logger.debug("gen {} configs using tcover 1".format(len(configs)))
         elif rand_n > 0 and rand_n < self.dom.siz:        
             configs = self.dom.gen_configs_rand_smt(
