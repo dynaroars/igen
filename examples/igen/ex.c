@@ -1,5 +1,5 @@
 /*
-  Example
+  Default Example
   7 variables: s,t,u,v,x,y,z 
   7 locs: L0,L1,L2,L2a,L3,L4,L5
 
