@@ -25,13 +25,13 @@ class IGen(object):
         self.get_cov = get_cov
         self.sids = sids
         self.z3db = CC.Z3DB(self.dom)
-        self.constraints = True
-        import dimacscnf2z3 as Dimacs
+        #self.constraints = True
+        #import dimacscnf2z3 as Dimacs
 
-        if constraints_file: 
-            constraints_file = CC.getpath(constraints_file)
-            self.constraints = Dimacs.convert(Dimacs.read(constraints_file), dom=dom, z3db=self.z3db)
-            logger.debug("kconfig_const:\n{}".format(self.constraints))
+        # if constraints_file: 
+        #     constraints_file = CC.getpath(constraints_file)
+        #     self.constraints = Dimacs.convert(Dimacs.read(constraints_file), dom=dom, z3db=self.z3db)
+        #     logger.debug("kconfig_const:\n{}".format(self.constraints))
 
         
     def go(self, seed, rand_n=None, econfigs=None, tmpdir=None):
@@ -215,7 +215,7 @@ class IGen(object):
             if sel_core is None:
                 break
 
-            configs = self.dom.gen_configs_cex(sel_core, configs_d, self.z3db, self.constraints)
+            configs = self.dom.gen_configs_cex(sel_core, configs_d, self.z3db)
             configs = list(set(configs)) 
             if configs:
                 break

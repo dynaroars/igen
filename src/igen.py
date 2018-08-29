@@ -265,7 +265,8 @@ if __name__ == "__main__":
     logger.level = CC.logger_level
     
     if __debug__:
-        logger.warn("DEBUG MODE ON. Can be slow !")    
+        logger.warn("DEBUG MODE ON. Can be slow !")
+        
     if args.allows_known_errors: CC.allows_known_errors = True
     if args.noshow_cov: CC.show_cov = False
     if args.analyze_outps: CC.analyze_outps = True
@@ -287,7 +288,9 @@ if __name__ == "__main__":
     if not analysis_f: #run iGen
         prog = args.inp
         run_f, get_cov_f = get_run_f(prog, args, logger)
-        prog_name = prog if prog else 'noname'
+        if not prog:
+            prog_name = 'noname'
+
         prefix = "igen_{}_{}_{}_".format(
             args.benchmark, 'full' if args.do_full else 'normal', prog_name)
         tdir = tempfile.mkdtemp(dir=igen_settings.tmp_dir, prefix=prefix)
@@ -300,7 +303,7 @@ if __name__ == "__main__":
             seed_ = seed + i
             tdir_ = tempfile.mkdtemp(dir=tdir, prefix="run{}_".format(i))
             logger.debug("*run {}/{}".format(i+1, args.benchmark))
-            _ = run_f(seed_, tdir_)
+            _ = run_f(seed_, tdir_)  #start running
             logger.debug("*run {}, seed {}, time {}s, '{}'".format(
                 i + 1, seed_, time() - st_, tdir_))
 

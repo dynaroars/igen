@@ -44,7 +44,7 @@ def run_single(cmd):
                              .format(cmd, rs_err, e))
 
 
-def runscript_get_cov(config,run_script):
+def runscript_get_cov(config, run_script):
     """
     Get cov from config (a dict with {var -> val} mapping)
     """
