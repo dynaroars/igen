@@ -18,45 +18,6 @@ __vdebug__ = True
 
 #Data Structures
 
-@total_ordering
-class HDict(OrderedDict):
-    """
-    Hashable dictionary
-    
-    __eq__ and __lt__ + total_ordering is needed for __cmp__
-    which is needed to compare or sort things
-
-       
-    >>> c = HDict([('f', frozenset(['0'])), ('g', frozenset(['0']))]) 
-    >>> d = HDict([('f', frozenset(['0'])), ('g', frozenset(['1']))])
-    >>> _ = {'c':c,'d':d}
-    >>> _ = set([c,d])
-    >>> sorted([c,d])
-    [HDict([('f', frozenset(['0'])), ('g', frozenset(['0']))]), HDict([('f', frozenset(['0'])), ('g', frozenset(['1']))])]
-
-    """
-    @property
-    def hcontent(self):
-        try:
-            return self._hcontent
-        except AttributeError:
-            self._hcontent = frozenset(self.iteritems())
-            return self._hcontent
-    
-    def __hash__(self):
-        try:
-            return self._hash
-        except AttributeError:
-            self._hash = hash(self.hcontent)
-            return self._hash
-
-    def __eq__(self,other):
-        return (other is self or
-                (isinstance(other,HDict) and
-                 self.hcontent.__eq__(other.hcontent)))
-
-    def __lt__(self,other):
-        return isinstance(other,HDict) and self.hcontent.__lt__(other.hcontent)
 
         
 vmul = lambda l: reduce(operator.mul, l, 1)

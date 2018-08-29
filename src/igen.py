@@ -88,7 +88,6 @@ def get_run_default(prog, args, IA, ALG_IGEN):
     dom, default_configs, get_cov_f = get_cov_default(prog, sids, args, IA)
     econfigs = [(c, None) for c in default_configs] if default_configs else []
     igen = ALG_IGEN.IGen(dom, get_cov_f, sids, args.constraints_file)
-    
     if sids:
         run_f = lambda seed, tdir: igen.go(
             seed=seed, econfigs=econfigs, tmpdir=tdir)
@@ -143,7 +142,6 @@ def get_run_f(prog, args, logger):
         dom, get_cov_f, run_f = get_run_otter(prog, args, IA, ALG_IGEN)
     else:
         dom, get_cov_f, run_f = get_run_default(prog, args, IA, ALG_IGEN)
-        
     logger.debug("dom:\n{}".format(dom))
 
     return run_f, get_cov_f
@@ -289,7 +287,6 @@ if __name__ == "__main__":
     if not analysis_f: #run iGen
         prog = args.inp
         run_f, get_cov_f = get_run_f(prog, args, logger)
-
         prog_name = prog if prog else 'noname'
         prefix = "igen_{}_{}_{}_".format(
             args.benchmark, 'full' if args.do_full else 'normal', prog_name)

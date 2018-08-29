@@ -4,8 +4,8 @@ import random
 import os.path
 import tempfile
 from collections import OrderedDict, MutableMapping
+from functools import total_ordering
 
-from vu_common import HDict
 import vu_common as CM
 
 import z3
@@ -332,7 +332,7 @@ class Z3DB(dict):
             rs = [vv for vv in zip(vs, tvals)]
             rs.append(('typ', ttyp))
             db[k] = (z3.Const(k, ttyp), dict(rs))
-            print k, db[k], db[k][0], db[k][1]
+            #print k, db[k], db[k][0], db[k][1]
         dict.__init__(self, db)
         
         
@@ -399,8 +399,40 @@ class Z3DB(dict):
         return expr is None or z3.is_expr(expr)
     
 
-class Config(HDict):
+# @total_ordering
+# class HDict(OrderedDict):
+#     """
+#     Hashable dictionary
+    
+#     __eq__ and __lt__ + total_ordering is needed for __cmp__
+#     which is needed to compare or sort things
+
+       
+#     >>> c = HDict([('f', frozenset(['0'])), ('g', frozenset(['0']))]) 
+#     >>> d = HDict([('f', frozenset(['0'])), ('g', frozenset(['1']))])
+#     >>> _ = {'c':c,'d':d}
+#     >>> _ = set([c,d])
+#     >>> sorted([c,d])
+#     [HDict([('f', frozenset(['0'])), ('g', frozenset(['0']))]), HDict([('f', frozenset(['0'])), ('g', frozenset(['1']))])]
+
+#     """
+
+#     def __eq__(self,other):
+#         return (other is self or
+#                 (isinstance(other,HDict) and
+#                  self.hcontent.__eq__(other.hcontent)))
+
+#     def __lt__(self,other):
+#         return isinstance(other,HDict) and self.hcontent.__lt__(other.hcontent)
+
+class Config(OrderedDict):
     """
+    Hashable dictionary
+    
+    __eq__ and __lt__ + total_ordering is needed for __cmp__
+    which is needed to compare or sort things
+    
+
     >>> c = Config([('a', '1'), ('b', '0'), ('c', '1')])
     >>> print c
     a=1 b=0 c=1
@@ -411,21 +443,37 @@ class Config(HDict):
     >>> c.z3expr(Z3DB(dom))
     And(a == 1, b == 0, c == 1)
     """
-    def __init__(self,config=HDict()):
-        HDict.__init__(self, config)
+    def __init__(self,config={}):
+        super(Config, self).__init__(config)
         
         assert all(is_setting(s) for s in self.iteritems()), self
+        
+    @property
+    def hcontent(self):
+        try:
+            return self._hcontent
+        except AttributeError:
+            self._hcontent = frozenset(self.iteritems())
+            return self._hcontent
+    
+    def __hash__(self):
+        try:
+            return self._hash
+        except AttributeError:
+            self._hash = hash(self.hcontent)
+            return self._hash
 
+        
     def __str__(self, cov=None):
         assert cov is None or is_cov(cov), cov
 
-        s =  ' '.join(map(str_of_setting,self.iteritems()))
+        s =  ' '.join(map(str_of_setting, self.iteritems()))
         if cov:
-            s = "{}: {}".format(s,str_of_cov(cov))
+            s = "{}: {}".format(s, str_of_cov(cov))
         return s
 
     def z3expr(self, z3db):
-        assert isinstance(z3db, Z3DB)
+        assert isinstance(z3db, Z3DB), z3db
         return z3db.expr_of_dict(self)
 
     @staticmethod

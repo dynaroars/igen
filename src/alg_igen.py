@@ -28,10 +28,12 @@ class IGen(object):
         self.z3db = CC.Z3DB(self.dom)
         self.constraints = True
         import dimacscnf2z3 as Dimacs
+
         if constraints_file: 
             constraints_file = CM.getpath(constraints_file)
             self.constraints = Dimacs.convert(Dimacs.read(constraints_file), dom=dom, z3db=self.z3db)
             logger.debug("kconfig_const:\n{}".format(self.constraints))
+
         
     def go(self, seed, rand_n=None, econfigs=None, tmpdir=None):
         """
