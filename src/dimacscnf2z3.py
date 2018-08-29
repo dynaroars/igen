@@ -1,7 +1,5 @@
 import os.path
 import z3
-import z3util
-import vu_common as CM
 
 def read(filename):
     with open(filename, 'r') as fh:

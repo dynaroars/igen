@@ -5,7 +5,7 @@
 # Author: ThanhVu (Vu) Nguyen
 ############################################
 
-from vu_common import vset
+from config_common import vset
 from z3 import \
     (is_expr, ctypes, 
      Z3_OP_UNINTERPRETED, Z3_OP_AND, Z3_OP_OR,

@@ -4,7 +4,6 @@ import random
 import z3
 import z3util
 
-import vu_common as CM
 import config_common as CC
 from config_common import Configs_d #do not del, needed to read existing results
 

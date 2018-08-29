@@ -2,7 +2,6 @@ from time import time
 import os.path
 import random
 
-import vu_common as CM
 import config_common as CC
 
 from alg import (DTrace, Infer,

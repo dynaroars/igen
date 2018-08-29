@@ -2,7 +2,7 @@ import argparse
 import tempfile
 import os.path
 from time import time
-import vu_common as CM
+
 import config_common as CC
 import igen_settings
 
