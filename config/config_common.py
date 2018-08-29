@@ -67,26 +67,6 @@ def str_of_csetting((k,vs)):
     return '{}={}'.format(k, str_of_valset(vs))
 
 
-class CustDict(MutableMapping):
-    """
-    MuttableMapping ex: https://stackoverflow.com/questions/21361106/how-would-i-implement-a-dict-with-abstract-base-classes-in-python
-    """
-    __metaclass__ = abc.ABCMeta
-    def __init__(self): self.__dict__ = {}
-    def __len__(self): return len(self.__dict__)
-    def __getitem__(self, key): return self.__dict__[key]
-    def __iter__(self): return iter(self.__dict__)    
-    def __setitem__(self, key, val): raise NotImplementedError("setitem")
-    def __delitem__(self, key): raise NotImplementedError("delitem")
-    def add_set(self, key, val):
-        """
-        For mapping from key to set
-        """
-        if key not in self.__dict__:
-            self.__dict__[key] = set()
-        self.__dict__[key].add(val)
-        
-    
 class Dom(OrderedDict):
     """
     >>> dom = Dom([('x',frozenset(['1','2'])),\
@@ -129,19 +109,20 @@ class Dom(OrderedDict):
     >>> configs = dom.gen_configs_rand_smt(5, z3db)
     >>> print "\\n".join(map(str,configs))
     x=2 y=1 z=0 w=a
-    x=1 y=1 z=0 w=b
-    x=2 y=1 z=1 w=a
-    x=2 y=1 z=2 w=a
+    x=1 y=1 z=2 w=b
+    x=2 y=1 z=1 w=c
     x=1 y=1 z=0 w=a
+    x=2 y=1 z=2 w=c
+
 
     >>> random.seed(0)
     >>> configs = dom.gen_configs_rand_smt(5, z3db, configs+configs)
     >>> print "\\n".join(map(str, configs))
-    x=1 y=1 z=0 w=c
-    x=2 y=1 z=0 w=b
-    x=2 y=1 z=0 w=c
-    x=2 y=1 z=2 w=c
     x=2 y=1 z=2 w=b
+    x=1 y=1 z=2 w=c
+    x=2 y=1 z=0 w=c
+    x=1 y=1 z=0 w=c
+    x=1 y=1 z=1 w=c
 
     >>> new_configs = dom.gen_configs_rand_smt(dom.siz, z3db, configs)
     >>> assert len(new_configs) == dom.siz - len(configs), (len(new_configs), dom.siz, len(configs))
@@ -154,7 +135,7 @@ class Dom(OrderedDict):
 
     """
     def __init__(self, dom):
-        OrderedDict.__init__(self, dom)
+        super(Dom, self).__init__(dom)
         
         assert self and all(is_csetting(s) for s in self.iteritems()), self
 
@@ -179,7 +160,7 @@ class Dom(OrderedDict):
         return max(len(vs) for vs in self.itervalues())
     
     #Methods to generate configurations
-    def gen_configs_full(self, config_cls=None, z3db=None, constraints=True):#TODO kconfig_contraint
+    def gen_configs_full(self, config_cls=None):#TODO kconfig_contraint
         if config_cls is None:
             config_cls = Config
         
@@ -187,7 +168,42 @@ class Dom(OrderedDict):
         configs = [config_cls(zip(ns, c)) for c in itertools.product(*vs)]
         return configs
 
-    def gen_configs_tcover1(self, config_cls=None, z3db=None, constraints=True):
+    # def gen_configs_tcover1(self, config_cls=None, z3db=None, constraints=True):
+    #     """
+    #     Return a set of tcover array of stren 1
+    #     """
+    #     if config_cls is None:
+    #         config_cls = Config
+            
+    #     dom_used = dict((k, set(self[k])) for k in self)
+        
+    #     def mk():
+    #         config = []
+    #         for k in self:
+    #             while True:
+    #                 if k in dom_used:
+    #                     v = random.choice(list(dom_used[k]))
+    #                     dom_used[k].remove(v)
+    #                     if not dom_used[k]:
+    #                         dom_used.pop(k)
+    #                 else:
+    #                     v = random.choice(list(self[k]))
+
+    #                 cc = z3.And(constraints, z3db[k][0] == z3db[k][1][v])
+    #                 if z3util.get_models(cc, 1):
+    #                     break
+                        
+    #             config.append((k,v))
+
+    #         return config_cls(config)
+
+    #     configs = []
+    #     while dom_used: configs.append(mk())
+    #     return configs    
+
+
+
+    def gen_configs_tcover1(self, config_cls=None):
         """
         Return a set of tcover array of stren 1
         """
@@ -195,32 +211,27 @@ class Dom(OrderedDict):
             config_cls = Config
             
         dom_used = dict((k, set(self[k])) for k in self)
-        
+            
         def mk():
             config = []
             for k in self:
-                while True:
-                    if k in dom_used:
-                        v = random.choice(list(dom_used[k]))
-                        dom_used[k].remove(v)
-                        if not dom_used[k]:
-                            dom_used.pop(k)
-                    else:
-                        v = random.choice(list(self[k]))
-
-                    cc = z3.And(constraints, z3db[k][0] == z3db[k][1][v])
-                    if z3util.get_models(cc, 1):
-                        break
+                if k in dom_used:
+                    v = random.choice(list(dom_used[k]))
+                    dom_used[k].remove(v)
+                    if not dom_used[k]:
+                        dom_used.pop(k)
+                else:
+                    v = random.choice(list(self[k]))
                         
                 config.append((k,v))
-
             return config_cls(config)
-
+                    
         configs = []
         while dom_used: configs.append(mk())
-        return configs    
-
-    def gen_configs_rand(self, rand_n, config_cls=None, z3db=None, constraints=True):#TODO kconfig_contraint
+        return configs
+            
+            
+    def gen_configs_rand(self, rand_n, config_cls=None):#TODO kconfig_contraint
         assert 0 < rand_n <= self.siz, (rand_n, self.siz)
 
         if config_cls is None:
@@ -428,10 +439,6 @@ class Z3DB(dict):
 class Config(OrderedDict):
     """
     Hashable dictionary
-    
-    __eq__ and __lt__ + total_ordering is needed for __cmp__
-    which is needed to compare or sort things
-    
 
     >>> c = Config([('a', '1'), ('b', '0'), ('c', '1')])
     >>> print c
@@ -501,6 +508,29 @@ class Config(OrderedDict):
         return pop
     
 
+
+class CustDict(MutableMapping):
+    """
+    MuttableMapping ex: https://stackoverflow.com/questions/21361106/how-would-i-implement-a-dict-with-abstract-base-classes-in-python
+    """
+    __metaclass__ = abc.ABCMeta
+    def __init__(self): self.__dict__ = {}
+    def __len__(self): return len(self.__dict__)
+    def __getitem__(self, key): return self.__dict__[key]
+    def __iter__(self): return iter(self.__dict__)    
+    def __setitem__(self, key, val): raise NotImplementedError("setitem")
+    def __delitem__(self, key): raise NotImplementedError("delitem")
+    def add_set(self, key, val):
+        """
+        For mapping from key to set
+        """
+        if key not in self.__dict__:
+            self.__dict__[key] = set()
+        self.__dict__[key].add(val)
+        
+    
+
+        
 class Covs_d(CustDict):
     """
     A mapping from sid -> {configs}
