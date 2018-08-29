@@ -3,7 +3,6 @@ import random
 
 import z3
 import z3util
-from vu_common import HDict
 
 import vu_common as CM
 import config_common as CC
@@ -11,9 +10,9 @@ from config_common import Configs_d #do not del, needed to read existing results
 
 import string
 
-logger = CM.VLog('alg_ds')
+logger = CC.VLog('alg_ds')
 logger.level = CC.logger_level
-CM.VLog.PRINT_TIME = True
+CC.VLog.PRINT_TIME = True
 
 def compat(obj, cls):
     """
@@ -173,7 +172,7 @@ class Dom(CC.Dom):
                 rs_.append((var, vals))
             return rs_, infs
 
-        dom, infs = get_lines(CM.iread_strip(dom_file))
+        dom, infs = get_lines(CC.iread_strip(dom_file))
         dom = cls(dom)
         dom.infs = infs
 
@@ -182,7 +181,7 @@ class Dom(CC.Dom):
         dom_dir = os.path.dirname(dom_file)
         configs = [os.path.join(dom_dir, f) for f in os.listdir(dom_dir)
                    if dom_name in f and '.default' in f]
-        configs = [dict(get_lines(CM.iread_strip(f))[0]) for f in configs
+        configs = [dict(get_lines(CC.iread_strip(f))[0]) for f in configs
                    if os.path.isfile(f)]
         configs = [[(k, list(c[k])[0]) for k in dom] for c in configs]
         return dom, configs
@@ -284,7 +283,7 @@ class Config(CC.Config):
         return results
     
 
-class Core(HDict):
+class Core(CC.HDict):
     """
     >>> print Core()
     true
@@ -310,8 +309,8 @@ class Core(HDict):
     x=1 z=2 w=b,c
 
     """
-    def __init__(self, core=HDict()):
-        HDict.__init__(self, core)
+    def __init__(self, core=CC.HDict()):
+        super(Core, self).__init__(core)
         
         assert all(CC.is_csetting(s) for s in self.iteritems()), self
 
@@ -723,7 +722,7 @@ class Cores_d(CC.CustDict):
     1. L1: pc: a=1; pd: b=0; nc: true; nd: true
     2. L2: pc: b=1; pd: a=0; nc: true; nd: true
 
-    >>> logger.level = CM.VLog.WARN
+    >>> logger.level = CC.VLog.WARN
     >>> print cores_d.merge(dom, z3db)
     1. (2) pc: a=1; pd: b=0; nc: true; nd: true: (2) L1,L2
 
@@ -732,7 +731,7 @@ class Cores_d(CC.CustDict):
     >>> covs_d.add('L1',config)
     >>> covs_d.add('L2',config)
 
-    >>> logger.level = CM.VLog.WARN
+    >>> logger.level = CC.VLog.WARN
     >>> cores_d = cores_d.analyze(dom, z3db, covs_d)
     >>> print cores_d.merge(dom, z3db, show_detail=False)
     1. (2) a=1 & b=1 (conj): (2) L1,L2
@@ -1105,29 +1104,29 @@ class DTrace(object):
 
     @staticmethod
     def save_pre(seed,dom,tmpdir):
-        CM.vsave(os.path.join(tmpdir,'pre'),(seed,dom))
+        CC.vsave(os.path.join(tmpdir,'pre'),(seed,dom))
 
     @staticmethod
     def save_post(pp_cores_d,itime_total,tmpdir):
-        CM.vsave(os.path.join(tmpdir,'post'),(pp_cores_d,itime_total))
+        CC.vsave(os.path.join(tmpdir,'post'),(pp_cores_d,itime_total))
 
     @staticmethod
     def save_iter(cur_iter,dtrace,tmpdir):
-        CM.vsave(os.path.join(tmpdir,'{}.tvn'.format(cur_iter)),dtrace)
+        CC.vsave(os.path.join(tmpdir,'{}.tvn'.format(cur_iter)),dtrace)
 
     @staticmethod
     def load_pre(dir_):
-        seed,dom = CM.vload(os.path.join(dir_,'pre'))
+        seed,dom = CC.vload(os.path.join(dir_,'pre'))
         return seed,dom
 
     @staticmethod
     def load_post(dir_):
-        pp_cores_d,itime_total = CM.vload(os.path.join(dir_,'post'))
+        pp_cores_d,itime_total = CC.vload(os.path.join(dir_,'post'))
         return pp_cores_d,itime_total
 
     @staticmethod
     def load_iter(dir_,f):
-        dtrace = CM.vload(os.path.join(dir_,f))
+        dtrace = CC.vload(os.path.join(dir_,f))
         return dtrace
 
     @staticmethod

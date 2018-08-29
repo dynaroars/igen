@@ -4,14 +4,13 @@ Analyses on the resulting interactions
 import abc
 import itertools
 from time import time
-import vu_common as CM
 import config_common as CC
 import alg as IA
 #import config as IA_OLD  #old data
 
-logger = CM.VLog('analysis_algs')
+logger = CC.VLog('analysis_algs')
 logger.level = CC.logger_level
-CM.VLog.PRINT_TIME = True
+CC.VLog.PRINT_TIME = True
 
 import z3
 import z3util

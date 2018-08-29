@@ -9,9 +9,9 @@ from alg import (DTrace, Infer,
                  Dom, Config, Core, MCore, SCore, PNCore,
                  Cores_d, Mcores_d)
 
-logger = CM.VLog('alg_main')
+logger = CC.VLog('alg_main')
 logger.level = CC.logger_level
-CM.VLog.PRINT_TIME = True
+CC.VLog.PRINT_TIME = True
 
 class IGen(object):
     """
@@ -30,7 +30,7 @@ class IGen(object):
         import dimacscnf2z3 as Dimacs
 
         if constraints_file: 
-            constraints_file = CM.getpath(constraints_file)
+            constraints_file = CC.getpath(constraints_file)
             self.constraints = Dimacs.convert(Dimacs.read(constraints_file), dom=dom, z3db=self.z3db)
             logger.debug("kconfig_const:\n{}".format(self.constraints))
 

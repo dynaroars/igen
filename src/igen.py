@@ -32,7 +32,7 @@ def get_sids(inp):
         sid_file = list(sids)[0]
         if os.path.isfile(sid_file):
             #parse sids from file
-            lines = CM.iread_strip(sid_file)
+            lines = CC.iread_strip(sid_file)
             sids = []
             for l in lines:
                 sids_ = [s.strip() for s in l.split(',')]
@@ -47,12 +47,12 @@ def get_alt_file(orig_file, base_file, ext):
     by appending ext to the filename in base_file
     """
     if orig_file:
-        return CM.getpath(orig_file)
+        return CC.getpath(orig_file)
     else:
         #file1.orig_ext => file1.ext
-        base_file = CM.getpath(base_file)
+        base_file = CC.getpath(base_file)
         dir_ = os.path.dirname(base_file)
-        name_ = CM.file_basename(base_file)
+        name_ = CC.file_basename(base_file)
         return os.path.join(dir_, name_ + ext)
 
 def get_run_otter(prog, args, IA, ALG_IGEN):
@@ -111,7 +111,7 @@ def get_run_default(prog, args, IA, ALG_IGEN):
 def get_cov_default(prog, sids, args, IA):
     if args.dom_file:
         #general way to run prog using dom_file/runscript
-        dom_file = CM.getpath(args.dom_file)
+        dom_file = CC.getpath(args.dom_file)
         dom, default_configs = IA.Dom.get_dom(dom_file)
         run_script = get_alt_file(args.run_script, dom_file, ".run")
 
@@ -149,7 +149,7 @@ def get_run_f(prog, args, logger):
 
 if __name__ == "__main__":
 
-    igen_file = CM.getpath(__file__)
+    igen_file = CC.getpath(__file__)
     igen_name = os.path.basename(igen_file)
     igen_dir = os.path.dirname(igen_file)
         
@@ -261,7 +261,7 @@ if __name__ == "__main__":
     
     args = aparser.parse_args()
     CC.logger_level = args.logger_level
-    logger = CM.VLog(igen_name)
+    logger = CC.VLog(igen_name)
     logger.level = CC.logger_level
     
     if __debug__:

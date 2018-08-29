@@ -6,13 +6,9 @@ import tempfile
 from collections import OrderedDict, MutableMapping
 from functools import total_ordering
 
-import vu_common as CM
-
 import z3
 import z3util
 
-logger = CM.VLog('alg_ds')
-logger_level = CM.VLog.DEBUG
 allows_known_errors = False
 show_cov = True
 analyze_outps = False
@@ -150,7 +146,7 @@ class Dom(OrderedDict):
         return s
 
     @property
-    def siz(self): return CM.vmul(len(vs) for vs in self.itervalues())
+    def siz(self): return vmul(len(vs) for vs in self.itervalues())
 
     @property
     def max_fsiz(self):
@@ -284,8 +280,8 @@ class Dom(OrderedDict):
         assert k > 0, k
         assert config_cls, config_cls
 
-        if z3.solve:
-            pass
+        # if z3.solve:
+        #     pass
         yexprs = [e for e in yexprs if e is not None]
         nexprs = [z3.Not(e) for e in nexprs if e is not None]
         exprs = yexprs + nexprs
@@ -373,7 +369,6 @@ class Z3DB(dict):
         assert all(k in self for k in d), (d, self)
         
         if d in self.cache:
-            #print "hitme2"
             return self.cache[d]
             
         rs = []
@@ -410,51 +405,32 @@ class Z3DB(dict):
         return expr is None or z3.is_expr(expr)
     
 
-# @total_ordering
-# class HDict(OrderedDict):
-#     """
-#     Hashable dictionary
-    
-#     __eq__ and __lt__ + total_ordering is needed for __cmp__
-#     which is needed to compare or sort things
-
-       
-#     >>> c = HDict([('f', frozenset(['0'])), ('g', frozenset(['0']))]) 
-#     >>> d = HDict([('f', frozenset(['0'])), ('g', frozenset(['1']))])
-#     >>> _ = {'c':c,'d':d}
-#     >>> _ = set([c,d])
-#     >>> sorted([c,d])
-#     [HDict([('f', frozenset(['0'])), ('g', frozenset(['0']))]), HDict([('f', frozenset(['0'])), ('g', frozenset(['1']))])]
-
-#     """
-
-#     def __eq__(self,other):
-#         return (other is self or
-#                 (isinstance(other,HDict) and
-#                  self.hcontent.__eq__(other.hcontent)))
-
-#     def __lt__(self,other):
-#         return isinstance(other,HDict) and self.hcontent.__lt__(other.hcontent)
-
-class Config(OrderedDict):
+@total_ordering
+class HDict(OrderedDict):
     """
     Hashable dictionary
+    
+    __eq__ and __lt__ + total_ordering is needed for __cmp__
+    which is needed to compare or sort things
 
-    >>> c = Config([('a', '1'), ('b', '0'), ('c', '1')])
-    >>> print c
-    a=1 b=0 c=1
+       
+    >>> c = HDict([('f', frozenset(['0'])), ('g', frozenset(['0']))]) 
+    >>> d = HDict([('f', frozenset(['0'])), ('g', frozenset(['1']))])
+    >>> _ = {'c':c,'d':d}
+    >>> _ = set([c,d])
+    >>> sorted([c,d])
+    [HDict([('f', frozenset(['0'])), ('g', frozenset(['0']))]), HDict([('f', frozenset(['0'])), ('g', frozenset(['1']))])]
 
-    >>> dom = Dom([('a',frozenset(['1','2'])),\
-    ('b',frozenset(['0','1'])),\
-    ('c',frozenset(['0','1','2']))])
-    >>> c.z3expr(Z3DB(dom))
-    And(a == 1, b == 0, c == 1)
     """
-    def __init__(self,config={}):
-        super(Config, self).__init__(config)
-        
-        assert all(is_setting(s) for s in self.iteritems()), self
-        
+
+    def __eq__(self,other):
+        return (other is self or
+                (isinstance(other,HDict) and
+                 self.hcontent.__eq__(other.hcontent)))
+
+    def __lt__(self,other):
+        return isinstance(other,HDict) and self.hcontent.__lt__(other.hcontent)
+
     @property
     def hcontent(self):
         try:
@@ -470,6 +446,26 @@ class Config(OrderedDict):
             self._hash = hash(self.hcontent)
             return self._hash
 
+    
+class Config(HDict):
+    """
+    Hashable dictionary
+
+    >>> c = Config([('a', '1'), ('b', '0'), ('c', '1')])
+    >>> print c
+    a=1 b=0 c=1
+
+    >>> dom = Dom([('a',frozenset(['1','2'])),\
+    ('b',frozenset(['0','1'])),\
+    ('c',frozenset(['0','1','2']))])
+    >>> c.z3expr(Z3DB(dom))
+    And(a == 1, b == 0, c == 1)
+    """
+    def __init__(self, config=HDict()):
+        super(Config, self).__init__(config)
+        
+        assert all(is_setting(s) for s in self.iteritems()), self
+        
         
     def __str__(self, cov=None):
         assert cov is None or is_cov(cov), cov
@@ -565,6 +561,179 @@ class Configs_d(CustDict):
         ss = (c.__str__(self[c]) for c in self.__dict__)
         return '\n'.join("{}. {}".format(i+1, s) for i, s in enumerate(ss))
 
+
+#common utils (used to be in vu_common.py)
+def pause(s=None):
+    try: #python2
+        raw_input("Press any key to continue ..." if s is None else s)
+    except NameError:
+        input("Press any key to continue ..." if s is None else s)
+import subprocess as sp
+def vcmd(cmd, inp=None, shell=True):
+    proc = sp.Popen(cmd,shell=shell,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE)
+    return proc.communicate(input=inp)
+        
+def vload(filename,mode='rb'):
+    try:
+        import cPickle as pickle
+    except ImportError:  #Python3
+        import pickle
+
+    with open(filename,mode) as fh:
+        pickler = pickle.Unpickler(fh)
+        sobj = pickler.load()
+    return sobj
+
+def vsave(filename,sobj,mode='wb'):
+    try:
+        import cPickle as pickle
+    except ImportError:  #Python3
+        import pickle
+        
+    with open(filename,mode) as fh:
+        pickler = pickle.Pickler(fh,-1)
+        pickler.dump(sobj)
+
+
+def iread(filename):
+    """ return a generator """
+    with open(filename, 'r') as fh:
+        for line in fh:
+            yield line
+
+def strip_contents(lines, strip_c='#'):
+    lines = (l.strip() for l in lines)
+    lines = (l for l in lines if l)
+    if strip_c:
+        lines = (l for l in lines if not l.startswith(strip_c))
+    return lines
+    
+def iread_strip(filename, strip_c='#'):
+    """
+    like iread but also strip out comments and empty line
+    """
+    return strip_contents(iread(filename), strip_c)
+
+import operator
+vmul = lambda l: reduce(operator.mul, l, 1)
+
+getpath = lambda f: os.path.realpath(os.path.expanduser(f))
+file_basename = lambda filename: path.splitext(filename)[0]
+
+iflatten = lambda l: itertools.chain.from_iterable(l) #return a generator
+
+# log utils
+
+def get_logger(logger_name,very_detail=True):
+    assert is_str(logger_name) and logger_name, logger_name
+    assert is_bool(very_detail), very_detail
+
+    import logging
+
+    logger = logging.getLogger(logger_name)
+    ch = logging.StreamHandler()
+    if very_detail:
+        f = "%(asctime)s:%(filename)s:%(funcName)s:%(levelname)s: %(message)s"
+        formatter = logging.Formatter(f,datefmt='%H:%M:%S')
+    else:
+        f = "%(levelname)s: %(message)s"
+        formatter = logging.Formatter(f)
+
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    return logger
+
+
+class VLog(object):
+    """
+    >>> logger = VLog('vu_logger')
+    >>> assert logger.level  == VLog.INFO
+    >>> logger.detail('detail msg')
+    >>> logger.debug('debug msg')
+    >>> logger.info('info msg')
+    vu_logger:Info:info msg
+    >>> logger.warn('warn msg')
+    vu_logger:Warn:warn msg
+    >>> logger.error('error msg')
+    vu_logger:Error:error msg
+
+    >>> logger.set_level(VLog.DETAIL)
+    >>> logger.detail('detail msg')
+    vu_logger:Detail:detail msg
+    >>> f = lambda: 'detail msg'
+    >>> logger.detail(f)
+    vu_logger:Detail:detail msg
+    >>> logger.debug('debug msg')
+    vu_logger:Debug:debug msg
+    >>> logger.info('info msg')
+    vu_logger:Info:info msg
+    >>> logger.warn('warn msg')
+    vu_logger:Warn:warn msg
+    >>> logger.error('error msg')
+    vu_logger:Error:error msg
+    """
+    ERROR = 0
+    WARN = 1
+    INFO = 2
+    DEBUG = 3
+    DETAIL = 4
+    
+    level_d = {ERROR: 'Error',
+               WARN: 'Warn',
+               INFO: 'Info',
+               DEBUG: 'Debug',
+               DETAIL: 'Detail'}
+
+    try:  #python2
+        level_d_rev = dict((v,k) for (k,v) in level_d.iteritems())
+    except AttributeError: #python 3
+        level_d_rev = dict((v,k) for (k,v) in level_d.items())
+
+    def __init__(self, name):
+        self.name = name
+        self.level = VLog.INFO
+        self.printtime = False
+        
+    def get_level(self): 
+        return self._level
+
+    def set_level(self, level):
+        assert level in self.level_d, level
+        self._level = level
+    level = property(get_level,set_level)
+
+
+    def get_printtime(self): 
+        return self._printtime
+
+    def set_printtime(self, printtime):
+        assert isinstance(printtime, bool), printtime
+        self._printtime = printtime
+    printtime = property(get_printtime,set_printtime)
+    
+    def print_s(self, s, level):
+        if self.level < level:
+            return
+        else:
+            if not isinstance(s,str):
+                s = s()
+                
+            level_name =  self.level_d[level]
+            if self.printtime:
+                print("{}:{}:{}:{}"
+                      .format(get_cur_time(),self.name,level_name, s))
+            else:
+                print("{}:{}:{}"
+                      .format(self.name,level_name, s)) 
+
+    def detail(self, s): self.print_s(s, VLog.DETAIL)
+    def debug(self, s): self.print_s(s, VLog.DEBUG)
+    def info(self, s): self.print_s(s, VLog.INFO)
+    def warn(self, s): self.print_s(s, VLog.WARN)
+    def error(self, s): self.print_s(s, VLog.ERROR)
+
+logger = VLog('alg_ds')
+logger_level = VLog.DEBUG
 
 if __name__ == "__main__":
     import doctest
