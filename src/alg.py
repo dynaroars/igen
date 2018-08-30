@@ -4,9 +4,9 @@ import random
 
 import config_common as CC
 
-from alg import (DTrace, Infer,
-                 Dom, Config, Core, MCore, SCore, PNCore,
-                 Cores_d, Mcores_d)
+from ds import (DTrace, Infer,
+                Dom, Config, Core, MCore, SCore, PNCore,
+                Cores_d, Mcores_d)
 
 import settings
 mlog = CC.getLogger(__name__, settings.logger_level)

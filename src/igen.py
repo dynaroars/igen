@@ -55,11 +55,11 @@ def get_alt_file(orig_file, base_file, ext):
         name_ = CC.file_basename(base_file)
         return os.path.join(dir_, name_ + ext)
 
-def get_run_otter(prog, args, IA, ALG_IGEN):
+def get_run_otter(prog, args, DS, ALG):
     sids = get_sids(args.sids)
     import get_cov_otter as Otter
-    dom, get_cov_f, pathconds_d = Otter.prepare(prog, IA.Dom.get_dom)
-    igen = ALG_IGEN.IGen(dom, get_cov_f, sids)
+    dom, get_cov_f, pathconds_d = Otter.prepare(prog, DS.Dom.get_dom)
+    igen = ALG.IGen(dom, get_cov_f, sids)
     econfigs = []
     if sids:
         run_f = lambda seed,tdir: igen.go(seed=seed, tmpdir=tdir)
@@ -83,11 +83,11 @@ def get_run_otter(prog, args, IA, ALG_IGEN):
 
     return dom, get_cov_f, run_f
 
-def get_run_default(prog, args, IA, ALG_IGEN):
+def get_run_default(prog, args, DS, ALG):
     sids = get_sids(args.sids)
-    dom, default_configs, get_cov_f = get_cov_default(prog, sids, args, IA)
+    dom, default_configs, get_cov_f = get_cov_default(prog, sids, args, DS)
     econfigs = [(c, None) for c in default_configs] if default_configs else []
-    igen = ALG_IGEN.IGen(dom, get_cov_f, sids, args.constraints_file)
+    igen = ALG.IGen(dom, get_cov_f, sids, args.constraints_file)
     if sids:
         run_f = lambda seed, tdir: igen.go(
             seed=seed, econfigs=econfigs, tmpdir=tdir)
@@ -108,11 +108,11 @@ def get_run_default(prog, args, IA, ALG_IGEN):
 
     return dom, get_cov_f, run_f
 
-def get_cov_default(prog, sids, args, IA):
+def get_cov_default(prog, sids, args, DS):
     if args.dom_file:
         #general way to run prog using dom_file/runscript
         dom_file = CC.getpath(args.dom_file)
-        dom, default_configs = IA.Dom.get_dom(dom_file)
+        dom, default_configs = DS.Dom.get_dom(dom_file)
         run_script = get_alt_file(args.run_script, dom_file, ".run")
 
         import get_cov
@@ -123,7 +123,7 @@ def get_cov_default(prog, sids, args, IA):
 
         dom, default_configs, get_cov_f = Coreutils.prepare(
             prog,
-            IA.Dom.get_dom,
+            DS.Dom.get_dom,
             settings.coreutils_main_dir,
             settings.coreutils_doms_dir,
             do_perl=args.do_perl)
@@ -135,12 +135,12 @@ def get_run_f(prog, args, mlog):
     Ret f that takes inputs seed, tmpdir 
     and call appropriate iGen function on those inputs
     """
-    import alg as IA
-    import alg_igen as ALG_IGEN
+    import ds as DS
+    import alg as ALG
     if prog in settings.otter_progs:
-        dom, get_cov_f, run_f = get_run_otter(prog, args, IA, ALG_IGEN)
+        dom, get_cov_f, run_f = get_run_otter(prog, args, DS, ALG)
     else:
-        dom, get_cov_f, run_f = get_run_default(prog, args, IA, ALG_IGEN)
+        dom, get_cov_f, run_f = get_run_default(prog, args, DS, ALG)
     mlog.debug("dom:\n{}".format(dom))
 
     return run_f, get_cov_f
