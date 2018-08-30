@@ -4,7 +4,7 @@ import os.path
 from time import time
 
 import config_common as CC
-import igen_settings
+import settings
 
 def check_range(v, min_n=None, max_n=None):
     v = int(v)
@@ -119,30 +119,29 @@ def get_cov_default(prog, sids, args, IA):
         get_cov_f = lambda config: get_cov.runscript_get_cov(
             config, run_script)
     else:
-        import igen_settings
         import get_cov_coreutils as Coreutils
 
         dom, default_configs, get_cov_f = Coreutils.prepare(
             prog,
             IA.Dom.get_dom,
-            igen_settings.coreutils_main_dir,
-            igen_settings.coreutils_doms_dir,
+            settings.coreutils_main_dir,
+            settings.coreutils_doms_dir,
             do_perl=args.do_perl)
 
     return dom, default_configs, get_cov_f
 
-def get_run_f(prog, args, logger):
+def get_run_f(prog, args, mlog):
     """
     Ret f that takes inputs seed, tmpdir 
     and call appropriate iGen function on those inputs
     """
     import alg as IA
     import alg_igen as ALG_IGEN
-    if prog in igen_settings.otter_progs:
+    if prog in settings.otter_progs:
         dom, get_cov_f, run_f = get_run_otter(prog, args, IA, ALG_IGEN)
     else:
         dom, get_cov_f, run_f = get_run_default(prog, args, IA, ALG_IGEN)
-    logger.debug("dom:\n{}".format(dom))
+    mlog.debug("dom:\n{}".format(dom))
 
     return run_f, get_cov_f
 
@@ -260,12 +259,17 @@ if __name__ == "__main__":
                          type=str)
     
     args = aparser.parse_args()
-    CC.logger_level = args.logger_level
-    logger = CC.VLog(igen_name)
-    logger.level = CC.logger_level
+    if args.logger_level != settings.logger_level and 0 <= args.logger_level <= 4:
+        settings.logger_level = args.logger_level
+    settings.logger_level = CC.getLogLevel(settings.logger_level)
+    mlog = CC.getLogger(__name__, settings.logger_level)
+    
+    # CC.logger_level = args.logger_level
+    # logger = CC.VLog(igen_name)
+    # logger.level = CC.logger_level
     
     if __debug__:
-        logger.warn("DEBUG MODE ON. Can be slow !")
+        mlog.warn("DEBUG MODE ON. Can be slow !")
         
     if args.allows_known_errors: CC.allows_known_errors = True
     if args.noshow_cov: CC.show_cov = False
@@ -287,39 +291,39 @@ if __name__ == "__main__":
                 
     if not analysis_f: #run iGen
         prog = args.inp
-        run_f, get_cov_f = get_run_f(prog, args, logger)
+        run_f, get_cov_f = get_run_f(prog, args, mlog)
         if not prog:
             prog_name = 'noname'
 
         prefix = "igen_{}_{}_{}_".format(
             args.benchmark, 'full' if args.do_full else 'normal', prog_name)
-        tdir = tempfile.mkdtemp(dir=igen_settings.tmp_dir, prefix=prefix)
+        tdir = tempfile.mkdtemp(dir=settings.tmp_dir, prefix=prefix)
 
-        logger.debug("* benchmark '{}', {} runs, seed {}, results '{}'"
-                     .format(prog_name, args.benchmark, seed, tdir))
+        mlog.debug("* benchmark '{}', {} runs, seed {}, results '{}'"
+                   .format(prog_name, args.benchmark, seed, tdir))
         st = time()
         for i in range(args.benchmark):        
             st_ = time()
             seed_ = seed + i
             tdir_ = tempfile.mkdtemp(dir=tdir, prefix="run{}_".format(i))
-            logger.debug("*run {}/{}".format(i+1, args.benchmark))
+            mlog.debug("*run {}/{}".format(i+1, args.benchmark))
             _ = run_f(seed_, tdir_)  #start running
-            logger.debug("*run {}, seed {}, time {}s, '{}'".format(
+            mlog.debug("*run {}, seed {}, time {}s, '{}'".format(
                 i + 1, seed_, time() - st_, tdir_))
 
-        logger.info("** done {} runs, seed {}, time {}, results '{}'"
-                    .format(args.benchmark, seed, time() - st, tdir))
+        mlog.info("** done {} runs, seed {}, time {}, results '{}'"
+                  .format(args.benchmark, seed, time() - st, tdir))
                             
     else: #run analysis
         do_minconfigs = args.minconfigs  
         if do_minconfigs and (do_minconfigs != 'use_existing' or args.dom_file):
-            _, get_cov_f = get_run_f(do_minconfigs, args, logger)
+            _, get_cov_f = get_run_f(do_minconfigs, args, mlog)
             do_minconfigs = get_cov_f
 
         cmp_rand = args.cmp_rand
         if cmp_rand:
-            run_f, _ = get_run_f(cmp_rand, args, logger)
-            tdir = tempfile.mkdtemp(dir=igen_settings.tmp_dir,
+            run_f, _ = get_run_f(cmp_rand, args, mlog)
+            tdir = tempfile.mkdtemp(dir=settings.tmp_dir,
                                     prefix=cmp_rand + "igen_cmp_rand")
             cmp_rand = lambda tseed, rand_n: run_f(tseed, tdir, rand_n)
 

@@ -1,6 +1,8 @@
 import os.path
 import config_common as CC
 
+logger_level = 3
+
 me_file = CC.getpath(__file__)
 me_dir = os.path.dirname(me_file)
 

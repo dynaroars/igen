@@ -1,16 +1,17 @@
 import os.path
 import random
-
 import z3
 import z3util
+
 import config_common as CC
 from config_common import Configs_d #do not del, needed to read existing results
 
-import string
+import settings
+mlog = CC.getLogger(__name__, settings.logger_level)
 
-logger = CC.VLog('alg_ds')
-logger.level = CC.logger_level
-CC.VLog.PRINT_TIME = True
+# logger = CC.VLog(__name__)
+# logger.level = CC.logger_level
+# CC.VLog.PRINT_TIME = True
 
 def compat(obj, cls):
     """
@@ -48,7 +49,7 @@ class Dom(CC.Dom):
         self._infs = infs
 
     
-    def gen_configs_cex(self, sel_core, existing_configs, z3db, constrains=True):
+    def gen_configs_cex(self, sel_core, existing_configs, z3db):
         """
         >>> dom = Dom([('a', frozenset(['1', '0'])), \
         ('b', frozenset(['1', '0'])), ('c', frozenset(['1', '0', '2']))])
@@ -126,8 +127,10 @@ class Dom(CC.Dom):
         e_configs = [c.z3expr(z3db) for c in existing_configs]
         for changed_core in changes:
             yexpr = changed_core.z3expr(z3db, z3util.myAnd)
+            #yexpr = z3.simplify(z3.And(yexpr, constrains))
             nexpr = z3util.myOr(e_configs)
-            configs_ = self.gen_configs_exprs([constrains, yexpr],[nexpr],k=1, config_cls=Config)
+            #logger.debug('constraint: {}, changed_core: {}, yexpr: {} '.format(constrains, changed_core, yexpr))
+            configs_ = self.gen_configs_exprs([yexpr],[nexpr],k=1, config_cls=Config)
             if not configs_:
                 continue
             config=configs_[0]
@@ -192,6 +195,7 @@ class Dom(CC.Dom):
             return -1 * cls.mkConcr(cls.GtZero)
 
         elif pred == cls.TStr:
+            import string
             return "'{}'".format(random.choice(string.ascii_letters))
         elif pred == cls.TInt:
             return random.randint(-100,100)
@@ -267,7 +271,7 @@ class Config(CC.Config):
             sids, outps = get_cov_f(c)
             rs = outps if CC.analyze_outps else sids
             if not rs:
-                logger.warn("'{}' produces nothing".format(c))
+                mlog.warn("'{}' produces nothing".format(c))
             return rs
 
         results = []
@@ -397,7 +401,7 @@ class SCore(MCore):
                 if self.keep:
                     s = "(keep)" 
             except AttributeError:
-                logger.warn("Old format, has no 'keep' in SCore")
+                mlog.warn("Old format, has no 'keep' in SCore")
                 pass
 
             ss.append("mc{}: {}".format(s,self.mc))
@@ -507,7 +511,7 @@ class PNCore(MCore):
         if pd:
             pd_n = pd.neg(dom)
             if not all(c.d_implies(pd_n) for c in configs):
-                logger.debug('pd {} invalid'.format(pd))
+                mlog.debug('pd {} invalid'.format(pd))
                 pd = None
 
         #neg traces => nc & neg(nd)
@@ -516,17 +520,17 @@ class PNCore(MCore):
         if nc and not nd:
             nc_n = nc.neg(dom)
             if not all(c.d_implies(nc_n) for c in configs):
-                logger.debug('nc {} invalid'.format(nc))
+                mlog.debug('nc {} invalid'.format(nc))
                 nc = None
         elif not nc and nd:
             if not all(c.c_implies(nd) for c in configs):
-                logger.debug('nd {} invalid'.format(nd))
+                mlog.debug('nd {} invalid'.format(nd))
                 nd = None
         elif nc and nd:
             nc_n = nc.neg(dom)        
             if not all(c.c_implies(nd) or
                        c.d_implies(nc_n) for c in configs):
-                logger.debug('nc {} & nd {} invalid').format(nc,nd)
+                mlog.debug('nc {} & nd {} invalid').format(nc,nd)
                 nc = None
                 nd = None
 
@@ -643,7 +647,7 @@ class PNCore(MCore):
                 expr = nexpr
                 vstr = nvstr
             else:  #could occur when using incomplete traces
-                logger.warn("inconsistent ? {}\npf: {} ?? nf: {}"
+                mlog.warn("inconsistent ? {}\npf: {} ?? nf: {}"
                             .format(PNCore((pc,pd,nc,nd)),pexpr,nexpr))
 
                 expr = z3util.myAnd([pexpr,nexpr])
@@ -718,7 +722,7 @@ class Cores_d(CC.CustDict):
     1. L1: pc: a=1; pd: b=0; nc: true; nd: true
     2. L2: pc: b=1; pd: a=0; nc: true; nd: true
 
-    >>> logger.level = CC.VLog.WARN
+    >>> mlog.level = CC.VLog.WARN
     >>> print cores_d.merge(dom, z3db)
     1. (2) pc: a=1; pd: b=0; nc: true; nd: true: (2) L1,L2
 
@@ -727,7 +731,7 @@ class Cores_d(CC.CustDict):
     >>> covs_d.add('L1',config)
     >>> covs_d.add('L2',config)
 
-    >>> logger.level = CC.VLog.WARN
+    >>> mlog.level = CC.VLog.WARN
     >>> cores_d = cores_d.analyze(dom, z3db, covs_d)
     >>> print cores_d.merge(dom, z3db, show_detail=False)
     1. (2) a=1 & b=1 (conj): (2) L1,L2
@@ -788,13 +792,13 @@ class Cores_d(CC.CustDict):
             
         def show_compare(sid,old_c,new_c):
             if old_c != new_c:
-                logger.debug("sid {}: {} ~~> {}".
+                mlog.debug("sid {}: {} ~~> {}".
                              format(sid,old_c,new_c))
-        logger.debug("analyze results for {} sids".format(len(self)))
+        mlog.debug("analyze results for {} sids".format(len(self)))
         cores_d = Cores_d()
 
         if covs_d:
-            logger.debug("verify ...")
+            mlog.debug("verify ...")
             cache = {}
             for sid,core in self.iteritems():
                 configs = frozenset(covs_d[sid])
@@ -810,7 +814,7 @@ class Cores_d(CC.CustDict):
         else:
             cores_d = self
 
-        logger.debug("simplify ...")
+        mlog.debug("simplify ...")
         cache = {}
         for sid in cores_d:
             core = cores_d[sid]
@@ -851,7 +855,7 @@ class Mcores_d(CC.CustDict):
             for pc in d:
                 expr_ = pc.z3expr(dom, z3db)
                 if ((expr is None and expr_ is None) or 
-                    (expr and expr_ and
+                    (expr is not None and expr_ is not None and
                      z3util.is_tautology(expr == expr_, z3db.solver))):
                     return pc
                     
@@ -869,7 +873,7 @@ class Mcores_d(CC.CustDict):
         if len(uniqs) == len(self):  #no duplicates
             return self
         else:
-            logger.debug('merge {} dups'.format(len(self) - len(uniqs)))
+            mlog.debug('merge {} dups'.format(len(self) - len(uniqs)))
             mc_d = Mcores_d()
             for pc in uniqs:
                 for sid in self[pc]:
@@ -911,8 +915,8 @@ class Mcores_d(CC.CustDict):
     def strens_str(self): return self.str_of_strens(self.strens)
 
     def show_results(self):
-        logger.info("inferred results ({}):\n{}".format(len(self), self))
-        logger.debug("strens (stren, nresults, nsids): {}"
+        mlog.info("inferred results ({}):\n{}".format(len(self), self))
+        mlog.debug("strens (stren, nresults, nsids): {}"
                      .format(self.strens_str))
         
     @classmethod
@@ -1078,7 +1082,7 @@ class DTrace(object):
         assert isinstance(dom, Dom)
         assert isinstance(z3db, CC.Z3DB)
         
-        logger.debug("ITER {}, ".format(self.citer) +
+        mlog.debug("ITER {}, ".format(self.citer) +
                     "{}s, ".format(self.itime) +
                     "{}s eval, ".format(self.xtime) +
                     "total: {} configs, {} covs, {} cores, "
@@ -1089,14 +1093,16 @@ class DTrace(object):
                     "{}".format("** progress **"
                                 if self.new_covs or self.new_cores else ""))
 
-        logger.debug('select core: ({}) {}'.format(self.sel_core.sstren,
+        mlog.debug('select core: ({}) {}'.format(self.sel_core.sstren,
                                                    self.sel_core))
-        logger.debug('create {} configs'.format(len(self.cconfigs_d)))
-        logger.detail("\n"+str(self.cconfigs_d))
+        mlog.debug('create {} configs'.format(len(self.cconfigs_d)))
+        mlog.debug("\n"+str(self.cconfigs_d))
+        
         mcores_d = self.cores_d.merge(dom, z3db)
-        logger.debug("infer {} interactions".format(len(mcores_d)))
-        logger.detail('\n{}'.format(mcores_d))
-        logger.debug("strens: {}".format(mcores_d.strens_str))
+        mlog.debug("infer {} interactions".format(len(mcores_d)))
+        mlog.debug('\n{}'.format(mcores_d))
+        
+        mlog.debug("strens: {}".format(mcores_d.strens_str))
 
     @staticmethod
     def save_pre(seed,dom,tmpdir):
@@ -1143,7 +1149,7 @@ class DTrace(object):
         try:
             pp_cores_d,itime_total = cls.load_post(dir_)
         except IOError:
-            logger.error("post info not avail")
+            mlog.error("post info not avail")
             pp_cores_d, itime_total = None, None
         return seed, dom, dts, pp_cores_d, itime_total
     

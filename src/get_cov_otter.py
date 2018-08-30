@@ -6,10 +6,14 @@ import os.path
 import config_common as CC
 import alg as IA
 
-logger = CC.VLog('otter')
-logger.level = CC.logger_level
+# logger = CC.VLog('otter')
+# logger.level = CC.logger_level
 
-from igen_settings import otter_dir
+import settings
+mlog = CC.getLogger(__name__, settings.logger_level)
+
+
+from settings import otter_dir
 
 def prepare(prog_name, get_dom_f):
     assert isinstance(prog_name,str), prog_name
@@ -24,7 +28,7 @@ def prepare(prog_name, get_dom_f):
     dom,_ = get_dom_f(dom_file)
     st = time()
     pathconds_d = CC.vload(pathconds_d_file)
-    logger.debug("'{}': {} path conds ({}s)"
+    mlog.debug("'{}': {} path conds ({}s)"
                  .format(pathconds_d_file,len(pathconds_d),time() - st))
 
     args={'pathconds_d' : pathconds_d}
@@ -52,11 +56,11 @@ def do_full(dom, pathconds_d, tmpdir, n=None):
     assert isinstance(tmpdir,str) and os.path.isdir(tmpdir), tmpdir
 
     seed=0
-    logger.info("seed: {} default, tmpdir: {}".format(seed,tmpdir))
+    mlog.info("seed: {} default, tmpdir: {}".format(seed,tmpdir))
 
     IA.DTrace.save_pre(seed,dom,tmpdir)
     if n:
-        logger.info('select {} rand'.format(n))
+        mlog.info('select {} rand'.format(n))
         rs = random.sample(pathconds_d.values(),n)
     else:
         rs = pathconds_d.itervalues()
@@ -72,7 +76,7 @@ def do_full(dom, pathconds_d, tmpdir, n=None):
                 for sid in covs:
                     covs_.add(sid)
             
-    logger.info("use {} configs".format(len(cconfigs_d)))
+    mlog.info("use {} configs".format(len(cconfigs_d)))
     st = time()
     cores_d,configs_d,covs_d = IA.Cores_d(),CC.Configs_d(),CC.Covs_d()
     new_covs,new_cores = IA.Infer.infer_covs(
@@ -83,7 +87,7 @@ def do_full(dom, pathconds_d, tmpdir, n=None):
     itime_total = time() - st
     assert len(pp_cores_d) == len(covs_d), (len(pp_cores_d),len(covs_d))
     
-    logger.info(IA.DTrace.str_of_summary(
+    mlog.info(IA.DTrace.str_of_summary(
         0,1,itime_total,0,len(configs_d),len(pp_cores_d),tmpdir))
 
     dtrace = IA.DTrace(1,itime_total,0,

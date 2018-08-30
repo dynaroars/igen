@@ -4,8 +4,11 @@ import os.path
 import config_common as CC
 import get_cov as GC
 
-logger = CC.VLog('coreutils')
-logger.level = CC.logger_level
+import settings
+mlog = CC.getLogger(__name__, settings.logger_level)
+
+# logger = CC.VLog('coreutils')
+# logger.level = CC.logger_level
 
 def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
     if __debug__:

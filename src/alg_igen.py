@@ -8,9 +8,12 @@ from alg import (DTrace, Infer,
                  Dom, Config, Core, MCore, SCore, PNCore,
                  Cores_d, Mcores_d)
 
-logger = CC.VLog('alg_main')
-logger.level = CC.logger_level
-CC.VLog.PRINT_TIME = True
+import settings
+mlog = CC.getLogger(__name__, settings.logger_level)
+
+# logger = CC.VLog('alg_main')
+# logger.level = CC.logger_level
+# CC.VLog.PRINT_TIME = True
 
 class IGen(object):
     """
@@ -25,13 +28,14 @@ class IGen(object):
         self.get_cov = get_cov
         self.sids = sids
         self.z3db = CC.Z3DB(self.dom)
-        #self.constraints = True
         #import dimacscnf2z3 as Dimacs
 
+        self.kconstraints = None
+        
         # if constraints_file: 
         #     constraints_file = CC.getpath(constraints_file)
         #     self.constraints = Dimacs.convert(Dimacs.read(constraints_file), dom=dom, z3db=self.z3db)
-        #     logger.debug("kconfig_const:\n{}".format(self.constraints))
+        #     mlog.debug("kconfig_const:\n{}".format(self.constraints))
 
         
     def go(self, seed, rand_n=None, econfigs=None, tmpdir=None):
@@ -47,7 +51,7 @@ class IGen(object):
         assert isinstance(tmpdir, str) and os.path.isdir(tmpdir), tmpdir
             
         random.seed(seed)
-        logger.debug("seed: {}, tmpdir: {}".format(seed, tmpdir))
+        mlog.debug("seed: {}, tmpdir: {}".format(seed, tmpdir))
 
         DTrace.save_pre(seed, self.dom, tmpdir)
 
@@ -81,7 +85,7 @@ class IGen(object):
                     
         configs = [c for c in configs if c not in cconfigs_d]
 
-        logger.debug("existing configs {} evaled, {} not evaled"
+        mlog.debug("existing configs {} evaled, {} not evaled"
                      .format(len(cconfigs_d), len(configs)))
 
         if not cconfigs_d:
@@ -95,7 +99,7 @@ class IGen(object):
                 assert c not in cconfigs_d
                 cconfigs_d[c]  = cconfigs_d_[c]
                 
-        logger.debug("init configs {}".format(len(cconfigs_d)))
+        mlog.debug("init configs {}".format(len(cconfigs_d)))
         
         new_covs, new_cores = Infer.infer_covs(
             cores_d, cconfigs_d, configs_d, covs_d, self.dom, self.sids)
@@ -121,7 +125,7 @@ class IGen(object):
 
             if sel_core is None:
                 cur_iter -= 1
-                logger.debug('done after iter {}'.format(cur_iter))
+                mlog.debug('done after iter {}'.format(cur_iter))
                 break
 
             assert configs, configs
@@ -139,7 +143,7 @@ class IGen(object):
                 if cur_stuck > max_stuck:
                     cur_stuck = 0
                     cur_min_stren += 1
-                    logger.detail('cur_min_stren is {}'.format(cur_min_stren))
+                    mlog.debug('cur_min_stren is {}'.format(cur_min_stren))
 
         #postprocess
         #only analyze sids
@@ -157,10 +161,10 @@ class IGen(object):
             _ = pp_cores_d.merge(self.dom, self.z3db, show_detail=True)
         
         itime_total = time() - st
-        logger.debug(DTrace.str_of_summary(
+        mlog.debug(DTrace.str_of_summary(
             seed, cur_iter, itime_total, xtime_total,
             len(configs_d), len(covs_d), tmpdir))
-        logger.debug("Done (seed {}, test {})"
+        mlog.debug("Done (seed {}, test {})"
                     .format(seed, random.randrange(100)))
         DTrace.save_post(pp_cores_d, itime_total, tmpdir)
         
@@ -188,14 +192,14 @@ class IGen(object):
     def gen_configs_init(self, rand_n, seed):
         if not rand_n: #None or 0
             configs = self.dom.gen_configs_tcover1(config_cls=Config)
-            logger.debug("gen {} configs using tcover 1".format(len(configs)))
+            mlog.debug("gen {} configs using tcover 1".format(len(configs)))
         elif rand_n > 0 and rand_n < self.dom.siz:        
             configs = self.dom.gen_configs_rand_smt(
                 rand_n, self.z3db, config_cls=Config)
-            logger.debug("gen {} rand configs".format(len(configs)))
+            mlog.debug("gen {} rand configs".format(len(configs)))
         else:
             configs = self.dom.gen_configs_full(config_cls=Config)
-            logger.debug("gen all {} configs".format(len(configs)))
+            mlog.debug("gen all {} configs".format(len(configs)))
 
         configs = list(set(configs))
         assert configs, 'no initial configs created'
@@ -220,8 +224,8 @@ class IGen(object):
             if configs:
                 break
             else:
-                logger.debug("no cex's created for sel_core {}, try new core"
-                             .format(sel_core))
+                mlog.debug("no cex's created for sel_core {}, try new core"
+                           .format(sel_core))
 
         #self_core -> configs
         assert not sel_core or configs, (sel_core,configs)

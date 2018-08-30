@@ -1,17 +1,20 @@
 import os.path
 import config_common as CC
 
-logger = CC.VLog('get_cov')
-logger.level = CC.logger_level
+import settings
+mlog = CC.getLogger(__name__, settings.logger_level)
+
+# logger = CC.VLog('get_cov')
+# logger.level = CC.logger_level
 
 # Real executions
 def run_single(cmd):
-    logger.detail(cmd)
+    mlog.debug(cmd)
     rs_err = "some error occured:"
     try:
         rs_outp, rs_err = CC.vcmd(cmd)
         if rs_outp:
-            logger.detail("outp: {}".format(rs_outp))
+            mlog.debug("outp: {}".format(rs_outp))
         
         #NOTE: comment out the below allows
         #erroneous test runs, which can be helpful
@@ -25,7 +28,7 @@ def run_single(cmd):
 
         known_errors = ["invalid file number in field spec"]
         if rs_err:
-            logger.detail("error: {}".format(rs_err))
+            mlog.debug("error: {}".format(rs_err))
 
             if CC.allows_known_errors:
                 if (not any(kerr in rs_err for kerr in known_errors) and
@@ -67,8 +70,8 @@ def run_runscript(run_script, arg):
     assert len(cov_filename) == 1, (cmd,rs_outp,cov_filename)
     cov_filename = cov_filename[0]
     cov = set(CC.iread_strip(cov_filename))
-    logger.detail("cmd {}, read {} covs from '{}'"
-                  .format(cmd,len(cov),cov_filename))
+    mlog.debug("cmd {}, read {} covs from '{}'"
+               .format(cmd,len(cov),cov_filename))
     return cov
 
 def run(cmds, msg=''):
@@ -78,8 +81,8 @@ def run(cmds, msg=''):
     if not hasattr(cmds, "__iter__"): #iterable
         cmds = [cmds]
         
-    logger.detail('run {} cmds{}'
-                  .format(len(cmds),' ({})'.format(msg) if msg else''))
+    mlog.debug('run {} cmds{}'
+               .format(len(cmds),' ({})'.format(msg) if msg else''))
     outp = tuple(run_single(cmd) for cmd in cmds)
     outp = hash(outp)
     return set([str(outp)])

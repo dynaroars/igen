@@ -5,6 +5,7 @@ import os.path
 import tempfile
 from collections import OrderedDict, MutableMapping
 from functools import total_ordering
+import logging
 
 import z3
 import z3util
@@ -734,6 +735,33 @@ class VLog(object):
 
 logger = VLog('alg_ds')
 logger_level = VLog.DEBUG
+
+
+def getLogger(name, level):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
+    formatter = logging.Formatter("%(name)s:%(levelname)s:%(message)s")
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+    return logger
+
+def getLogLevel(level):
+    assert level in set(range(5))
+    
+    if level == 0:
+        return logging.CRITICAL
+    elif level == 1:
+        return logging.ERROR
+    elif level == 2:
+        return logging.WARNING
+    elif level == 3:
+        return logging.INFO
+    else:
+        return logging.DEBUG
+
+
 
 if __name__ == "__main__":
     import doctest

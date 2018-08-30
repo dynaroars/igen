@@ -7,10 +7,12 @@ from time import time
 import config_common as CC
 import alg as IA
 #import config as IA_OLD  #old data
+import settings
+mlog = CC.getLogger(__name__, settings.logger_level)
 
-logger = CC.VLog('analysis_algs')
-logger.level = CC.logger_level
-CC.VLog.PRINT_TIME = True
+# logger = CC.VLog('analysis_algs')
+# logger.level = CC.logger_level
+# CC.VLog.PRINT_TIME = True
 
 import z3
 import z3util
@@ -103,10 +105,10 @@ class MinConfigs(XAnalysis):
                     elif z3.is_app_of(e,z3.Z3_OP_EQ) and nchildren == 2:
                         return 1
                     else:
-                        logger.warn("cannot compute _len of {}".format(e))
+                        mlog.warn("cannot compute _len of {}".format(e))
                         return nchildren
                 else:
-                    logger.warn("f:{} has 0 children".format(e))
+                    mlog.warn("f:{} has 0 children".format(e))
                     return 1
 
         #sort by most restrict conj, also remove None ("true")
@@ -179,15 +181,15 @@ class MinConfigs(XAnalysis):
         #prune
         d = dict((c, c.z3expr(self.ld.dom, self.ld.z3db)) for c in fs)
         d = self.prune(d)
-        logger.debug("prune: {} remains".format(len(d)))
-        logger.debug("\n{}".format('\n'.join(
+        mlog.debug("prune: {} remains".format(len(d)))
+        mlog.debug("\n{}".format('\n'.join(
             "{}. {}".format(i+1,str(c)) for i,c
             in enumerate(sorted(d)))))
 
         #pack
         d = self.pack(d)
-        logger.debug("pack: {} remains".format(len(d)))
-        logger.debug("\n{}".format('\n'.join(
+        mlog.debug("pack: {} remains".format(len(d)))
+        mlog.debug("\n{}".format('\n'.join(
             "{}. {}".format(i+1, self.str_of_pack(c))
             for i,c in enumerate(d))))
 
@@ -219,7 +221,7 @@ class MinConfigs(XAnalysis):
                 [expr], [nexpr], k=1, config_cls=IA.Config)
                 
             if not configs:
-                logger.warn("Cannot create configs from {}"
+                mlog.warn("Cannot create configs from {}"
                             .format(self.str_of_pack(pack)))
             else:
                 config = configs[0]
@@ -228,10 +230,10 @@ class MinConfigs(XAnalysis):
                 minset_d[config]=covs
 
         minset_ncovs = ncovs-len(remain_covs)
-        logger.info("minset: {} configs cover {}/{} sids (time {}s)"
+        mlog.info("minset: {} configs cover {}/{} sids (time {}s)"
                      .format(len(minset_d),
                              minset_ncovs,ncovs,time()-st))
-        logger.debug('\n{}'.format(minset_d))                
+        mlog.debug('\n{}'.format(minset_d))                
         return minset_d.keys(), minset_ncovs
         
     
@@ -290,7 +292,7 @@ class MinConfigs(XAnalysis):
                 
                 config = _g(pack,remain_configs)
                 if config is None:
-                    logger.warn("no avail configs => {}"
+                    mlog.warn("no avail configs => {}"
                                 .format(self.str_of_pack(pack)))
                     config = _get_min(remain_configs,remain_covs)
             else:
@@ -304,10 +306,10 @@ class MinConfigs(XAnalysis):
                               != len(remain_covs)]
 
         minset_ncovs = ncovs - len(remain_covs)
-        logger.info("minset: {} configs cover {}/{} sids (time {}s)"
+        mlog.info("minset: {} configs cover {}/{} sids (time {}s)"
                     .format(len(minset_d),
                             minset_ncovs, ncovs, time()-st))
-        logger.detail('\n{}'.format(minset_d))
+        mlog.debug('\n{}'.format(minset_d))
 
         return minset_d.keys(), minset_ncovs
 
@@ -445,7 +447,7 @@ class Similarity(XAnalysis):
                     self.fscore_cores_d(pp_cores_d, cd.pp_cores_d),
                     dt.nconfigs)
                    for dt, pp_cores_d in zip(self.ld.dts, pp_cores_ds)]
-        logger.info("fscores (iter, fscore, configs): {}".format(
+        mlog.info("fscores (iter, fscore, configs): {}".format(
             ' -> '.join(map(str, fscores))))
 
         return fscores, cd.pp_cores_d, cd.last_dt.ncovs, cd.last_dt.nconfigs
@@ -499,7 +501,7 @@ class Influence(XAnalysis):
             
         rs.sort(key = lambda (k, v) : (v, k), reverse=True)
         rs = [(k, v, 100. * v / ncovs) for k, v in rs]
-        logger.info("influence (opt, uniq, %) {}"
+        mlog.info("influence (opt, uniq, %) {}"
                     .format(', '.join(map(
                         lambda (k, v, p): "({}, {}, {})"
                         .format(_str(k), v, p), rs))))
@@ -614,10 +616,10 @@ class Precision(XAnalysis):
     def show(self, rs_d, s):
         n = sum(len(v) for v in rs_d.itervalues())
         if n:            
-            logger.info("locs with '{}' results: {}% ({}/{})"
+            mlog.info("locs with '{}' results: {}% ({}/{})"
                         .format(s, 100. * n / len(self.ld.covs),
                                 n, len(self.ld.covs)))
-            logger.detail("'{}' results\n{}".format(s, rs_d))
+            mlog.debug("'{}' results\n{}".format(s, rs_d))
         return n
         
     
