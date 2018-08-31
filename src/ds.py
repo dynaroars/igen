@@ -265,7 +265,7 @@ class Config(CC.Config):
                 all(isinstance(c, (cls, CC.Config)) for c in configs)
                 and configs), configs
         assert callable(get_cov_f), get_cov_f
-        assert isinstance(dom, Dom)
+        assert isinstance(dom, Dom), dom
         
         def eval_f(c):
             sids, outps = get_cov_f(c)
@@ -924,138 +924,6 @@ class Mcores_d(CC.CustDict):
         return ', '.join("({}, {}, {})".format(siz, ncores, ncov)
                          for siz, ncores, ncov in strens)
 
-#Inference algorithm
-class Infer(object):
-    @classmethod
-    def infer(cls, configs, core, dom):
-        """
-        Approximation in *conjunctive* form
-        """
-        assert (all(isinstance(c, Config) for c in configs)
-                and configs), configs
-        assert Core.maybe_core(core), core
-        assert isinstance(dom, Dom), dom
-        
-        if core is None:  #not yet set
-            core = min(configs, key=lambda c: len(c))
-            core = Core((k, frozenset([v])) for k,v in core.iteritems())
-
-        def f(k,s,ldx):
-            s_ = set(s)
-            for config in configs:
-                if k in config:
-                    s_.add(config[k])
-                    if len(s_) == ldx:
-                        return None
-                else:
-                    return None
-            return s_
-
-        vss = [f(k,vs,len(dom[k])) for k,vs in core.iteritems()]
-        core = Core((k,frozenset(vs)) for k,vs in zip(core,vss) if vs)
-        return core  
-
-    @classmethod
-    def infer_cache(cls, core, configs, dom, cache):
-        assert core is None or isinstance(core, Core), core
-        assert (configs and
-                all(isinstance(c,Config) for c in configs)), configs
-        assert isinstance(dom,Dom),dom
-        assert isinstance(cache,dict),cache
-
-        configs = frozenset(configs)
-        key = (core,configs)
-        if key not in cache:
-            cache[key] = cls.infer(configs,core,dom)
-        return cache[key]
-
-    @classmethod
-    def infer_sid(cls,sid,core,cconfigs_d,configs_d,covs_d,dom,cache):
-        assert isinstance(sid,str),sid
-        assert isinstance(core, PNCore),core
-        assert (cconfigs_d and
-                isinstance(cconfigs_d, CC.Configs_d)), cconfigs_d
-        assert isinstance(configs_d, CC.Configs_d), configs_d
-        assert isinstance(covs_d, CC.Covs_d),covs_d
-        assert isinstance(dom,Dom),dom        
-        assert isinstance(cache,dict),cache
-        
-        def _f(configs, cc, cd, _b):
-            new_cc,new_cd = cc,cd
-            if configs:
-                new_cc = cls.infer_cache(cc,configs,dom,cache)
-
-            #TODO: this might be a bug, if new_cc is empty,
-            #then new_cd won't be updated
-            if new_cc:
-                configs_ = [c for c in _b() if c.c_implies(new_cc)]
-                if configs_:
-                    new_cd = cls.infer_cache(cd,configs_,dom,cache)
-                    if new_cd:
-                        new_cd = Core((k,v) for (k,v) in new_cd.iteritems()
-                                      if k not in new_cc)
-
-            return new_cc, new_cd
-
-        pc, pd, nc, nd = core
-        
-        pconfigs = [c for c in cconfigs_d if sid in cconfigs_d[c]]
- 
-        if nc is None:
-            #never done nc, so has to consider all traces
-            nconfigs = [c for c in configs_d if sid not in configs_d[c]]
-        else:
-            #done nc, so can do incremental traces
-            nconfigs = [c for c in cconfigs_d if sid not in cconfigs_d[c]]
-            
-        _b = lambda: [c for c in configs_d if sid not in configs_d[c]]
-        pc_,pd_ = _f(pconfigs, pc, pd, _b)
-        
-        _b = lambda: covs_d[sid]
-        nc_,nd_ = _f(nconfigs, nc, nd, _b)
-        return PNCore((pc_, pd_, nc_, nd_))
-
-    @classmethod
-    def infer_covs(cls, cores_d, cconfigs_d, configs_d, covs_d, dom, sids=None):
-        assert isinstance(cores_d, Cores_d), cores_d
-        assert isinstance(cconfigs_d, CC.Configs_d) and cconfigs_d, cconfigs_d
-        assert isinstance(configs_d, CC.Configs_d), configs_d        
-        assert all(c not in configs_d for c in cconfigs_d), cconfigs_d
-        assert isinstance(covs_d, CC.Covs_d), covs_d
-        assert isinstance(dom, Dom), dom
-        assert not sids or CC.is_cov(sids), sids
-            
-        sids_ = set(cores_d.keys())
-        #update configs_d and covs_d
-        for config in cconfigs_d:
-            for sid in cconfigs_d[config]:
-                sids_.add(sid)
-                covs_d.add(sid, config)
-                
-            assert config not in configs_d, config
-            configs_d[config] = cconfigs_d[config]
-
-        #only consider interested sids
-        if sids:
-            sids_ = [sid for sid in sids_ if sid in sids]
-            
-        cache = {}
-        new_covs, new_cores = set(), set()  #updated stuff
-        for sid in sorted(sids_):
-            if sid in cores_d:
-                core = cores_d[sid]
-            else:
-                core = PNCore.mk_default()
-                new_covs.add(sid) #progress
-
-            core_ = cls.infer_sid(
-                sid, core, cconfigs_d, configs_d, covs_d, dom, cache)
-                
-            if not core_ == core: #progress
-                new_cores.add(sid)
-                cores_d[sid] = core_
-
-        return new_covs, new_cores
 
 class DTrace(object):
     """

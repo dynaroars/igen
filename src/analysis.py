@@ -1,8 +1,8 @@
 import os.path
 import config_common as CC
 import math
-import alg as IA
-import alg_igen
+import ds as DS
+import alg
 
 import settings
 mlog = CC.getLogger(__name__, settings.logger_level)
@@ -62,7 +62,7 @@ class LoadData(object):
     def pp_cores_d(self): return self._pp_cores_d
     @pp_cores_d.setter
     def pp_cores_d(self, d):
-        assert IA.compat(d, IA.Cores_d)
+        assert DS.compat(d, DS.Cores_d)
         self._pp_cores_d = d
     @property
     def itime_total(self): return self._itime_total
@@ -71,7 +71,7 @@ class LoadData(object):
     def mcores_d(self): return self._mcores_d
     @mcores_d.setter
     def mcores_d(self, d):
-        assert IA.compat(d, IA.Mcores_d)
+        assert DS.compat(d, DS.Mcores_d)
         self._mcores_d = d
 
     #data computed on demand 
@@ -142,7 +142,7 @@ class LoadData(object):
         if dir_ in cls.data:
             return cls.data[dir_]
         else:
-            seed, dom, dts, pp_cores_d, itime_total = alg_igen.DTrace.load_dir(dir_)
+            seed, dom, dts, pp_cores_d, itime_total = alg.DTrace.load_dir(dir_)
             ld = LoadData(seed,dom,dts,pp_cores_d,itime_total)
             cls.data[dir_] = ld
             return ld
@@ -240,7 +240,7 @@ class Analysis(object):
         nconfigs = ld.last_dt.nconfigs
         ncovs = ld.last_dt.ncovs
         
-        mlog.info(alg_igen.DTrace.str_of_summary(
+        mlog.info(alg.DTrace.str_of_summary(
             ld.seed,
             len(ld.dts),
             ld.itime_total,

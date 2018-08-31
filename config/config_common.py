@@ -204,27 +204,30 @@ class Dom(OrderedDict):
         """
         Return a set of tcover array of stren 1
         """
+        #assert isinstance(z3db, Z3DB), z3db
+        #assert kconstraint is None or z3.is_expr(kconstraint), kconstraint
+        
         if config_cls is None:
             config_cls = Config
             
-        dom_used = dict((k, set(self[k])) for k in self)
-            
+        unused = dict((k, set(self[k])) for k in self)
+        
         def mk():
             config = []
             for k in self:
-                if k in dom_used:
-                    v = random.choice(list(dom_used[k]))
-                    dom_used[k].remove(v)
-                    if not dom_used[k]:
-                        dom_used.pop(k)
+                if k in unused:
+                    v = random.choice(list(unused[k]))
+                    unused[k].remove(v)
+                    if not unused[k]:
+                        unused.pop(k)
                 else:
                     v = random.choice(list(self[k]))
-                        
+
                 config.append((k,v))
             return config_cls(config)
                     
         configs = []
-        while dom_used: configs.append(mk())
+        while unused: configs.append(mk())
         return configs
             
             
@@ -371,12 +374,8 @@ class Z3DB(dict):
         
         if d in self.cache:
             return self.cache[d]
-            
-        rs = []
-        for k,v in d.iteritems():
-            k_,d_ = self[k] #var and dict 
-            rs.append(k_ == d_[v])
-            
+
+        rs = [self.get_eq_expr(k,v) for k,v in d.iteritems()]
         expr = z3util.myAnd(rs)
         self.add(d, expr)
         return expr
@@ -388,17 +387,24 @@ class Z3DB(dict):
         key = (d, is_and)
         if key in self.cache:
             return self.cache[key]
-        
-        rs = []
-        for k, vs in d.iteritems():
-            k_, vs_ = self[k]
-            rs.append(z3util.myOr([k_ == vs_[v] for v in vs]))
-            
-        myf =  z3util.myAnd if is_and else z3util.myOr
+
+        myf =  z3util.myAnd if is_and else z3util.myOr        
+        rs = [self.get_eq_expr(k, vs) for k, vs in d.iteritems()]
         expr = myf(rs)
         
         self.add(key, expr)
         return expr
+
+    def get_eq_expr(self, k, v):
+        """
+        e.g., x == 0
+        x == 0 or x == 1
+        """
+        s, d = self[k]        
+        if isinstance(v, frozenset):
+            return z3util.myOr([s == d[v_] for v_ in v])
+        else:
+            return s == d[v]
 
     @staticmethod
     def maybe_expr(expr):
