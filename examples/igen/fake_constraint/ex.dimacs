@@ -1,0 +1,9 @@
+c format kmax_kconfig_v2
+c kconfig_variable 1 c1 bool
+c kconfig_variable 2 c2 bool
+c kconfig_variable 3 c3 bool
+c kconfig_variable 4 c4 bool
+c kconfig_variable 5 c5 bool
+p cnf 5 2
+1 0
+3 0

@@ -14,7 +14,7 @@ class IGen(object):
     """
     Main algorithm
     """
-    def __init__(self, dom, get_cov, sids=None, constraints_file=None):
+    def __init__(self, dom, get_cov, sids=None):
         assert isinstance(dom, Dom), dom
         assert callable(get_cov), get_cov
         assert not sids or CC.is_cov(sids), sids
@@ -23,9 +23,12 @@ class IGen(object):
         self.get_cov = get_cov
         self.sids = sids
         self.z3db = CC.Z3DB(self.dom)
-        #import dimacscnf2z3 as Dimacs
 
-        self.kconstraints = None
+        self.kconstraint = dom.get_kconstraint(self.z3db)
+        #test
+        # import z3
+        # self.kconstraint = z3.And(self.z3db.get_eq_expr('c1', '1'),
+        #                           self.z3db.get_eq_expr('c3', '1'))
         
         # if constraints_file: 
         #     constraints_file = CC.getpath(constraints_file)
@@ -179,7 +182,8 @@ class IGen(object):
         assert all(isinstance(c, Config) for c in configs), configs
         
         st = time()
-        results = Config.eval(configs, self.get_cov, self.dom)
+        results = Config.eval(configs, self.get_cov, self.kconstraint,
+                              self.z3db)
         cconfigs_d = CC.Configs_d()
         for c, rs in results:
             cconfigs_d[c] = rs

@@ -41,20 +41,6 @@ def get_sids(inp):
 
     return sids if sids else None
 
-def get_alt_file(orig_file, base_file, ext):
-    """
-    If orig_file is not valid, try to get an alt file 
-    by appending ext to the filename in base_file
-    """
-    if orig_file:
-        return CC.getpath(orig_file)
-    else:
-        #file1.orig_ext => file1.ext
-        base_file = CC.getpath(base_file)
-        dir_ = os.path.dirname(base_file)
-        name_ = CC.file_basename(base_file)
-        return os.path.join(dir_, name_ + ext)
-
 def get_run_otter(prog, args, DS, ALG):
     sids = get_sids(args.sids)
     import get_cov_otter as Otter
@@ -86,8 +72,12 @@ def get_run_otter(prog, args, DS, ALG):
 def get_run_default(prog, args, DS, ALG):
     sids = get_sids(args.sids)
     dom, default_configs, get_cov_f = get_cov_default(prog, sids, args, DS)
+    if args.kconstraint_file:
+        dom.kconstraint_file = args.kconstraint_file
+    
     econfigs = [(c, None) for c in default_configs] if default_configs else []
-    igen = ALG.IGen(dom, get_cov_f, sids, args.constraints_file)
+    igen = ALG.IGen(dom, get_cov_f, sids)
+    
     if sids:
         run_f = lambda seed, tdir: igen.go(
             seed=seed, econfigs=econfigs, tmpdir=tdir)
@@ -113,11 +103,11 @@ def get_cov_default(prog, sids, args, DS):
         #general way to run prog using dom_file/runscript
         dom_file = CC.getpath(args.dom_file)
         dom, default_configs = DS.Dom.get_dom(dom_file)
-        run_script = get_alt_file(args.run_script, dom_file, ".run")
-
+        assert os.path.isfile(dom.run_script), dom.run_script
+        
         import get_cov
         get_cov_f = lambda config: get_cov.runscript_get_cov(
-            config, run_script)
+            config, dom.run_script)
     else:
         import get_cov_coreutils as Coreutils
 
@@ -202,8 +192,9 @@ if __name__ == "__main__":
                          help="script to obtain the program's coverage",
                          action="store")
 
-    aparser.add_argument("--constraints_file", "-constraints_file",
-                         help="kconfig constraints file",
+    aparser.add_argument("--kconstraint_file", "-kconstraint_file",
+                         "--kconstraint", "-kconstraint",
+                         help="kconfig constraint file",
                          default=None,
                          action="store")
 

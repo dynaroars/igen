@@ -29,26 +29,7 @@ class Dom(CC.Dom):
     ])
     >>> assert dom.siz == len(dom.gen_configs_full()) == 18
     """
-    EqZero = "Eq0"
-    LtZero = "Lt0"
-    GtZero = "Gt0"
-    inf_preds = frozenset([EqZero, LtZero, GtZero])
-    
-    TStr = "TStr"
-    TInt = "TInt"
-    TFloat = "TFloat"
-    typ_preds = frozenset([TStr, TInt, TFloat])
 
-    @property
-    def infs(self):
-        return self._infs
-    
-    @infs.setter
-    def infs(self, infs):
-        assert isinstance(infs, set) and all(k in self for k in infs), infs
-        self._infs = infs
-
-    
     def gen_configs_cex(self, sel_core, existing_configs, z3db):
         """
         >>> dom = Dom([('a', frozenset(['1', '0'])), \
@@ -148,61 +129,110 @@ class Dom(CC.Dom):
     def get_dom(cls, dom_file):
         """
         Read domain info from a file. 
-        Also read default configs (.default*) if given
+        Also *extract* default configs (.default*) 
+        And *save*
+        - kconstraint (.dimacs) if given
+        - runscript (.run) if given 
         """
         assert os.path.isfile(dom_file), dom_file
 
         def get_lines(lines):
-            infs = set()
             rs = (line.split() for line in lines)
             rs_ = []
             for parts in rs:
                 var = parts[0]
                 vals = frozenset(parts[1:])
-                if len(vals) == 1:                    
-                    val = list(vals)[0]
-                    if val == "inf":
-                        vals = cls.inf_preds
-                        infs.add(var)
-                    elif val == "type":
-                        vals = cls.typ_preds
-                        infs.add(var)
-                        
                 rs_.append((var, vals))
-            return rs_, infs
+            return rs_
 
-        dom, infs = get_lines(CC.iread_strip(dom_file))
+        #domain file   (*.dom)
+        dom = get_lines(CC.iread_strip(dom_file))
         dom = cls(dom)
-        dom.infs = infs
-
-        #default configs
-        dom_name = os.path.basename(dom_file)
+        
+        #other files 
+        dom_name = CC.file_basename(os.path.basename(dom_file)) #ex
         dom_dir = os.path.dirname(dom_file)
-        configs = [os.path.join(dom_dir, f) for f in os.listdir(dom_dir)
-                   if dom_name in f and '.default' in f]
-        configs = [dict(get_lines(CC.iread_strip(f))[0]) for f in configs
+        fs = [os.path.join(dom_dir, f) for f in os.listdir(dom_dir) if dom_name in f]
+
+        def _f(name, at_most_one):
+            fs_ = [f for f in fs if name in f and os.path.isfile(f)]
+            if not at_most_one:
+                return fs_
+
+            if fs_: 
+                assert len(fs_) == 1, fs_
+                return fs_[0]
+            else:
+                return None
+            
+            
+        #potentially multiple default configs  (*.default*)
+        configs = _f('.default', at_most_one=False)
+        configs = [dict(get_lines(CC.iread_strip(f))) for f in configs
                    if os.path.isfile(f)]
         configs = [[(k, list(c[k])[0]) for k in dom] for c in configs]
-        return dom, configs
 
-    @classmethod
-    def mkConcr(cls, pred):
-        if pred == cls.EqZero:
-            return 0
-        elif pred == cls.GtZero:
-            return random.randint(1,1000)
-        elif pred == cls.LtZero:
-            return -1 * cls.mkConcr(cls.GtZero)
+        #1 constraint file  (*.dimacs*)
+        dom.kconstraint_file = _f('.dimacs', at_most_one=True)
+        if dom.kconstraint_file:
+            mlog.debug("Using contraint from {}".format(dom.kconstraint_file))
 
-        elif pred == cls.TStr:
-            import string
-            return "'{}'".format(random.choice(string.ascii_letters))
-        elif pred == cls.TInt:
-            return random.randint(-100,100)
-        elif pred  == cls.TFloat:
-            return random.random()
-        else:
-            raise AssertionError("{} ??".format(pred))
+        #1 runscript (*.run)
+        dom.run_script = _f('.run', at_most_one=True)
+        if dom.run_script:
+            mlog.debug("Using run_script from {}".format(dom.run_script))
+
+        return dom, configs 
+
+    def get_kconstraint(self, z3db):
+        assert isinstance(z3db, CC.Z3DB), z3db
+        
+        if self.kconstraint_file is None:
+            return None
+
+        lines = [l.strip() for l in CC.iread(self.kconstraint_file)]
+        lines = [l for l in lines]
+        
+        symbols = {}
+        clauses = []
+        for l in lines:
+            if l.startswith('c'):
+                if l.startswith('c kconfig_variable'):
+                    pair = l.split(' ')
+                    sidx, symbol = pair[2], pair[3] #'2', 'y'
+                    assert symbol in z3db, (z3db, symbol)
+                    symbols[sidx] = symbol
+
+            
+            elif l.startswith("p"): #p cnf 3 4
+                _, _, nvars, nclauses = l.split(" ")
+                nsymbols = int(nvars)
+                assert nsymbols == len(symbols)
+                nclauses = int(nclauses)
+                
+            else:  #clause,  -1 2
+                clause = l.split()  #-2 11 0
+                clause = frozenset(clause[:-1])  #remove the last 0
+                clauses.append(clause)
+
+        clauses = frozenset(clauses)                
+        assert len(clauses) == nclauses
+        
+        def _f(sidx):
+            isNot = sidx.startswith('-')
+            return isNot, sidx[1:] if isNot else sidx
+
+        rs = []
+        for clause in clauses:
+            ss = [_f(sidx) for sidx in clause]  #-3
+            ss = [z3db.get_eq_expr(symbols[sidx], '0' if isNot else '1')
+                  for isNot, sidx in ss]
+            rs.append(z3util.Or(ss))
+
+        rs = z3util.And(rs)
+        rs = z3.simplify(rs)
+        return rs
+
 
 class Config(CC.Config):
     """
@@ -227,14 +257,6 @@ class Config(CC.Config):
     And(a == 1, b == 0, c == 1)
     """
 
-    def real(self, dom):
-        assert dom.infs
-        
-        config = [(k, dom.mkConcr(v) if k in dom.infs else v)
-                  for k,v  in self.iteritems()]
-        return self.__class__(config)
-    
-
     def c_implies(self, core):
         """
         self => conj core
@@ -256,7 +278,7 @@ class Config(CC.Config):
                 any(k in self and self[k] in core[k] for k in core))
 
     @classmethod
-    def eval(cls, configs, get_cov_f, dom):
+    def eval(cls, configs, get_cov_f, kconstraint, z3db):
         """
         Eval (e.g., get coverage) configurations using function get_cov_f
         Ret a list of configs and their results
@@ -265,21 +287,28 @@ class Config(CC.Config):
                 all(isinstance(c, (cls, CC.Config)) for c in configs)
                 and configs), configs
         assert callable(get_cov_f), get_cov_f
-        assert isinstance(dom, Dom), dom
-        
-        def eval_f(c):
+        assert kconstraint is None or z3.is_expr(kconstraint), kconstraint
+        assert isinstance(z3db, CC.Z3DB), z3db
+
+        def eval_get_cov(c):
             sids, outps = get_cov_f(c)
             rs = outps if CC.analyze_outps else sids
             if not rs:
                 mlog.warn("'{}' produces nothing".format(c))
             return rs
-
-        results = []
-        configs = set(configs)
-        if dom.infs:
-            results = [(c, eval_f(c.real(dom))) for c in configs]
-        else:
-            results = [(c, eval_f(c)) for c in configs]
+        
+        def eval_f(c):
+            if kconstraint is not None:
+                expr = c.z3expr(z3db)
+                expr = z3.And(kconstraint, expr)
+                if not z3util.is_sat(expr):  #invalid
+                    #print "invalid"
+                    rs = set(["invalid config"])
+                    return rs
+                
+            return eval_get_cov(c)
+                
+        results = [(c, eval_f(c)) for c in set(configs)]
         return results
     
 
