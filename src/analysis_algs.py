@@ -181,15 +181,15 @@ class MinConfigs(XAnalysis):
         #prune
         d = dict((c, c.z3expr(self.ld.dom, self.ld.z3db)) for c in fs)
         d = self.prune(d)
-        mlog.debug("prune: {} remains".format(len(d)))
-        mlog.debug("\n{}".format('\n'.join(
+        mlog.info("prune: {} remains".format(len(d)))
+        mlog.info("\n{}".format('\n'.join(
             "{}. {}".format(i+1,str(c)) for i,c
             in enumerate(sorted(d)))))
 
         #pack
         d = self.pack(d)
-        mlog.debug("pack: {} remains".format(len(d)))
-        mlog.debug("\n{}".format('\n'.join(
+        mlog.info("pack: {} remains".format(len(d)))
+        mlog.info("\n{}".format('\n'.join(
             "{}. {}".format(i+1, self.str_of_pack(c))
             for i,c in enumerate(d))))
 
@@ -230,10 +230,10 @@ class MinConfigs(XAnalysis):
                 minset_d[config]=covs
 
         minset_ncovs = ncovs-len(remain_covs)
-        mlog.info("minset: {} configs cover {}/{} sids (time {}s)"
+        print("minset: {} configs cover {}/{} sids (time {}s)"
                      .format(len(minset_d),
                              minset_ncovs,ncovs,time()-st))
-        mlog.debug('\n{}'.format(minset_d))                
+        mlog.info('\n{}'.format(minset_d))                
         return minset_d.keys(), minset_ncovs
         
     
@@ -306,10 +306,10 @@ class MinConfigs(XAnalysis):
                               != len(remain_covs)]
 
         minset_ncovs = ncovs - len(remain_covs)
-        mlog.info("minset: {} configs cover {}/{} sids (time {}s)"
+        print("minset: {} configs cover {}/{} sids (time {}s)"
                     .format(len(minset_d),
                             minset_ncovs, ncovs, time()-st))
-        mlog.debug('\n{}'.format(minset_d))
+        mlog.info('\n{}'.format(minset_d))
 
         return minset_d.keys(), minset_ncovs
 
@@ -447,7 +447,7 @@ class Similarity(XAnalysis):
                     self.fscore_cores_d(pp_cores_d, cd.pp_cores_d),
                     dt.nconfigs)
                    for dt, pp_cores_d in zip(self.ld.dts, pp_cores_ds)]
-        mlog.info("fscores (iter, fscore, configs): {}".format(
+        print("fscores (iter, fscore, configs): {}".format(
             ' -> '.join(map(str, fscores))))
 
         return fscores, cd.pp_cores_d, cd.last_dt.ncovs, cd.last_dt.nconfigs
@@ -501,7 +501,7 @@ class Influence(XAnalysis):
             
         rs.sort(key = lambda (k, v) : (v, k), reverse=True)
         rs = [(k, v, 100. * v / ncovs) for k, v in rs]
-        mlog.info("influence (opt, uniq, %) {}"
+        print("influence (opt, uniq, %) {}"
                     .format(', '.join(map(
                         lambda (k, v, p): "({}, {}, {})"
                         .format(_str(k), v, p), rs))))
@@ -616,10 +616,10 @@ class Precision(XAnalysis):
     def show(self, rs_d, s):
         n = sum(len(v) for v in rs_d.itervalues())
         if n:            
-            mlog.info("locs with '{}' results: {}% ({}/{})"
+            print("locs with '{}' results: {}% ({}/{})"
                         .format(s, 100. * n / len(self.ld.covs),
                                 n, len(self.ld.covs)))
-            mlog.debug("'{}' results\n{}".format(s, rs_d))
+            mlog.info("'{}' results\n{}".format(s, rs_d))
         return n
         
     

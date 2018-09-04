@@ -28,7 +28,7 @@ def prepare(prog_name, get_dom_f):
     dom,_ = get_dom_f(dom_file)
     st = time()
     pathconds_d = CC.vload(pathconds_d_file)
-    mlog.debug("'{}': {} path conds ({}s)"
+    mlog.info("'{}': {} path conds ({}s)"
                  .format(pathconds_d_file,len(pathconds_d),time() - st))
 
     args={'pathconds_d' : pathconds_d}
@@ -56,11 +56,11 @@ def do_full(dom, pathconds_d, tmpdir, n=None):
     assert isinstance(tmpdir,str) and os.path.isdir(tmpdir), tmpdir
 
     seed=0
-    mlog.info("seed: {} default, tmpdir: {}".format(seed,tmpdir))
+    print("seed: {} default, tmpdir: {}".format(seed,tmpdir))
 
     DS.DTrace.save_pre(seed,dom,tmpdir)
     if n:
-        mlog.info('select {} rand'.format(n))
+        print('select {} rand'.format(n))
         rs = random.sample(pathconds_d.values(),n)
     else:
         rs = pathconds_d.itervalues()
@@ -76,7 +76,7 @@ def do_full(dom, pathconds_d, tmpdir, n=None):
                 for sid in covs:
                     covs_.add(sid)
             
-    mlog.info("use {} configs".format(len(cconfigs_d)))
+    print("use {} configs".format(len(cconfigs_d)))
     st = time()
     cores_d,configs_d,covs_d = DS.Cores_d(),CC.Configs_d(),CC.Covs_d()
 
@@ -89,7 +89,7 @@ def do_full(dom, pathconds_d, tmpdir, n=None):
     itime_total = time() - st
     assert len(pp_cores_d) == len(covs_d), (len(pp_cores_d),len(covs_d))
     
-    mlog.info(DS.DTrace.str_of_summary(
+    print(DS.DTrace.str_of_summary(
         0,1,itime_total,0,len(configs_d),len(pp_cores_d),tmpdir))
 
     dtrace = DS.DTrace(1,itime_total,0,

@@ -131,7 +131,7 @@ def get_run_f(prog, args, mlog):
         dom, get_cov_f, run_f = get_run_otter(prog, args, DS, ALG)
     else:
         dom, get_cov_f, run_f = get_run_default(prog, args, DS, ALG)
-    mlog.debug("dom:\n{}".format(dom))
+    mlog.info("dom:\n{}".format(dom))
 
     return run_f, get_cov_f
 
@@ -255,10 +255,6 @@ if __name__ == "__main__":
     settings.logger_level = CC.getLogLevel(settings.logger_level)
     mlog = CC.getLogger(__name__, settings.logger_level)
     
-    # CC.logger_level = args.logger_level
-    # logger = CC.VLog(igen_name)
-    # logger.level = CC.logger_level
-    
     if __debug__:
         mlog.warn("DEBUG MODE ON. Can be slow !")
         
@@ -284,26 +280,26 @@ if __name__ == "__main__":
         prog = args.inp
         run_f, get_cov_f = get_run_f(prog, args, mlog)
         if not prog:
-            prog_name = 'noname'
+            prog = 'noname'
 
         prefix = "igen_{}_{}_{}_".format(
-            args.benchmark, 'full' if args.do_full else 'normal', prog_name)
+            args.benchmark, 'full' if args.do_full else 'normal', prog)
         tdir = tempfile.mkdtemp(dir=settings.tmp_dir, prefix=prefix)
 
-        mlog.debug("* benchmark '{}', {} runs, seed {}, results '{}'"
-                   .format(prog_name, args.benchmark, seed, tdir))
+        mlog.info("* benchmark '{}', {} runs, seed {}, results '{}'"
+                   .format(prog, args.benchmark, seed, tdir))
         st = time()
         for i in range(args.benchmark):        
             st_ = time()
             seed_ = seed + i
             tdir_ = tempfile.mkdtemp(dir=tdir, prefix="run{}_".format(i))
-            mlog.debug("*run {}/{}".format(i+1, args.benchmark))
+            mlog.info("*run {}/{}".format(i+1, args.benchmark))
             _ = run_f(seed_, tdir_)  #start running
-            mlog.debug("*run {}, seed {}, time {}s, '{}'".format(
+            mlog.info("*run {}, seed {}, time {}s, '{}'".format(
                 i + 1, seed_, time() - st_, tdir_))
 
-        mlog.info("** done {} runs, seed {}, time {}, results '{}'"
-                  .format(args.benchmark, seed, time() - st, tdir))
+        print("** done {} runs, seed {}, time {}, results '{}'"
+              .format(args.benchmark, seed, time() - st, tdir))
                             
     else: #run analysis
         do_minconfigs = args.minconfigs  

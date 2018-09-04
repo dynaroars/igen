@@ -217,11 +217,11 @@ class Analysis(object):
         assert cmp_rand is None or callable(cmp_rand), cmp_rand
 
 
-        mlog.info("replay dir: '{}'".format(dir_))
+        print("replay dir: '{}'".format(dir_))
         ld = LoadData.load_dir(dir_)
         
-        mlog.info('seed: {}'.format(ld.seed))
-        mlog.debug(ld.dom.__str__())
+        print('seed: {}'.format(ld.seed))
+        mlog.info(ld.dom.__str__())
 
         ld.dts.sort(key=lambda dt: dt.citer)        
         if show_iters:
@@ -240,7 +240,7 @@ class Analysis(object):
         nconfigs = ld.last_dt.nconfigs
         ncovs = ld.last_dt.ncovs
         
-        mlog.info(alg.DTrace.str_of_summary(
+        print(alg.DTrace.str_of_summary(
             ld.seed,
             len(ld.dts),
             ld.itime_total,
@@ -257,7 +257,7 @@ class Analysis(object):
             minconfigs = []
             min_ncovs = 0
         else:
-            mlog.info("*Min Configs")
+            print("*Min Configs")
             from analysis_algs import MinConfigs
             mc = MinConfigs(ld)
             if callable(do_minconfigs):
@@ -268,37 +268,37 @@ class Analysis(object):
         ### Influential Options/Settings ###
         influences = None
         if do_influence:
-            mlog.info("*Influence")
+            print("*Influence")
             from analysis_algs import Influence
             influences = Influence(ld).search(ncovs)
 
         ### Precision ###
         equivs, weaks, strongs, nones = None, None, None, None
         if do_precision:
-            mlog.info("*Precision")
+            print("*Precision")
             from analysis_algs import Precision
             ud = Precision(ld)
             equivs, weaks = ud.check_existing()
             if cmp_dir: #compare to ground truths
-                mlog.info("cmp to results in '{}'".format(cmp_dir))
+                print("cmp to results in '{}'".format(cmp_dir))
                 equivs, weaks, strongs, nones = ud.check_gt(cmp_dir)
 
         ### Evolutionar: F-scores ###
         rd_fscore, gt_fscore, gt_pp_cores_d = None, None, None
 
         if do_evolution:
-            mlog.info("* Evolution")
+            print("* Evolution")
             from analysis_algs import Similarity
             sl = Similarity(ld)
 
             #compare to ground truths
             if cmp_dir: 
-                mlog.info("cmp to results in '{}'".format(cmp_dir))
+                print("cmp to results in '{}'".format(cmp_dir))
                 gt_fscores, gt_pp_cores_d, gt_ncovs, gt_nconfigs = sl.get_fscores(cmp_dir)
                 
                 last_elem_f = lambda l: l[-1][1] if l and len(l) > 0 else None
                 gt_fscore = last_elem_f(gt_fscores)
-                mlog.info("configs ({}/{}) cov ({}/{}) fscore {}"
+                print("configs ({}/{}) cov ({}/{}) fscore {}"
                             .format(nconfigs, gt_nconfigs, ncovs, gt_ncovs, gt_fscore))
                 
             #compare to rand search
@@ -307,7 +307,7 @@ class Analysis(object):
                 r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = callf(ld.seed, nconfigs)
                 rd_fscore = sl.fscore_cores_d(r_pp_cores_d, gt_pp_cores_d)
 
-                mlog.info("rand: configs {} cov {} fscore {}"
+                print("rand: configs {} cov {} fscore {}"
                             .format(len(r_configs_d),len(r_covs_d), rd_fscore))
 
         #return analyzed results
@@ -337,7 +337,7 @@ class Analysis(object):
                     cmp_dir):
         
         dir_ = CC.getpath(dir_)
-        mlog.info("replay_dirs '{}'".format(dir_))
+        print("replay_dirs '{}'".format(dir_))
         
         strens_arr = []
         strens_str_arr = []
@@ -382,7 +382,7 @@ class Analysis(object):
 
         nruns = len(strens_arr)
         nruns_f = float(nruns)
-        mlog.info("*** Analysis over {} runs ***".format(nruns))
+        print("*** Analysis over {} runs ***".format(nruns))
 
         rs = [("iter", niters_arr),
               ("ints", ncores_arr),
@@ -392,16 +392,16 @@ class Analysis(object):
               ("covs", ncovs_arr),
               ("nminconfigs", nminconfigs_arr),
               ("nmincovs", min_ncovs_arr)]
-        mlog.info(', '.join(median_siqr(r) for r in rs))
+        print(', '.join(median_siqr(r) for r in rs))
 
         #vtyps_arr= [(c,d,m), ... ]
         conjs, disjs, mixs = zip(*vtyps_arr)
         rs = [("conjs", conjs),("disjs", disjs), ("mixed", mixs) ]
-        mlog.info("Int types: {}".format(', '.join(median_siqr(r) for r in rs)))
+        print("Int types: {}".format(', '.join(median_siqr(r) for r in rs)))
         
         sres = {}
         for i,(strens,strens_str) in enumerate(zip(strens_arr,strens_str_arr)):
-            mlog.debug("run {}: {}".format(i+1,strens_str))
+            mlog.info("run {}: {}".format(i+1,strens_str))
             for strength,ninters,ncov in strens:
                 if strength not in sres:
                     sres[strength] = ([],[])
@@ -425,14 +425,14 @@ class Analysis(object):
                               median(inters), siqr(inters),
                               median(covs), siqr(covs)))
 
-        mlog.info("Int strens: {}".format(', '.join(rs)))
+        print("Int strens: {}".format(', '.join(rs)))
         
 
         #fscores
         fscores = [-1 if s is None else s for s in fscores]
         rfscores = [-1 if s is None else s for s in rfscores]        
         rs = [("gt", fscores), ("rand", rfscores)]
-        mlog.info("fscores: {}".format(', '.join(median_siqr(r) for r in rs)))
+        print("fscores: {}".format(', '.join(median_siqr(r) for r in rs)))
 
         
     @staticmethod
@@ -444,7 +444,7 @@ class Analysis(object):
             cconfigs_d = dict((c,cov) for c,cov in configs_d.iteritems()
                               if sid not in cov)
 
-        mlog.info(cconfigs_d)
+        print(cconfigs_d)
 
 
 if __name__ == "__main__":

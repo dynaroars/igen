@@ -4,9 +4,6 @@ import config_common as CC
 import settings
 mlog = CC.getLogger(__name__, settings.logger_level)
 
-# logger = CC.VLog('get_cov')
-# logger.level = CC.logger_level
-
 # Real executions
 def run_single(cmd):
     mlog.debug(cmd)

@@ -29,11 +29,6 @@ class IGen(object):
         # import z3
         # self.kconstraint = z3.And(self.z3db.get_eq_expr('c1', '1'),
         #                           self.z3db.get_eq_expr('c3', '1'))
-        
-        # if constraints_file: 
-        #     constraints_file = CC.getpath(constraints_file)
-        #     self.constraints = Dimacs.convert(Dimacs.read(constraints_file), dom=dom, z3db=self.z3db)
-        #     mlog.debug("kconfig_const:\n{}".format(self.constraints))
 
         
     def go(self, seed, rand_n=None, econfigs=None, tmpdir=None):
@@ -49,7 +44,7 @@ class IGen(object):
         assert isinstance(tmpdir, str) and os.path.isdir(tmpdir), tmpdir
             
         random.seed(seed)
-        mlog.debug("seed: {}, tmpdir: {}".format(seed, tmpdir))
+        mlog.info("seed: {}, tmpdir: {}".format(seed, tmpdir))
 
         DTrace.save_pre(seed, self.dom, tmpdir)
 
@@ -83,7 +78,7 @@ class IGen(object):
                     
         configs = [c for c in configs if c not in cconfigs_d]
 
-        mlog.debug("existing configs {} evaled, {} not evaled"
+        mlog.info("existing configs {} evaled, {} not evaled"
                      .format(len(cconfigs_d), len(configs)))
 
         if not cconfigs_d:
@@ -97,7 +92,7 @@ class IGen(object):
                 assert c not in cconfigs_d
                 cconfigs_d[c]  = cconfigs_d_[c]
                 
-        mlog.debug("init configs {}".format(len(cconfigs_d)))
+        mlog.info("init configs {}".format(len(cconfigs_d)))
         #CC.pause()
         
         new_covs, new_cores = Infer.infer_covs(
@@ -124,7 +119,7 @@ class IGen(object):
 
             if sel_core is None:
                 cur_iter -= 1
-                mlog.debug('done after iter {}'.format(cur_iter))
+                mlog.info('done after iter {}'.format(cur_iter))
                 break
 
             assert configs, configs
@@ -160,10 +155,10 @@ class IGen(object):
             _ = pp_cores_d.merge(self.dom, self.z3db, show_detail=True)
         
         itime_total = time() - st
-        mlog.debug(DTrace.str_of_summary(
+        mlog.info(DTrace.str_of_summary(
             seed, cur_iter, itime_total, xtime_total,
             len(configs_d), len(covs_d), tmpdir))
-        mlog.debug("Done (seed {}, test {})"
+        mlog.info("Done (seed {}, test {})"
                     .format(seed, random.randrange(100)))
         DTrace.save_post(pp_cores_d, itime_total, tmpdir)
         
@@ -192,14 +187,14 @@ class IGen(object):
     def gen_configs_init(self, rand_n):
         if not rand_n: #None or 0
             configs = self.dom.gen_configs_tcover1(config_cls=Config)
-            mlog.debug("gen {} configs using tcover 1".format(len(configs)))
+            mlog.info("gen {} configs using tcover 1".format(len(configs)))
         elif rand_n > 0 and rand_n < self.dom.siz:        
             configs = self.dom.gen_configs_rand_smt(
                 rand_n, self.z3db, config_cls=Config)
-            mlog.debug("gen {} rand configs".format(len(configs)))
+            mlog.info("gen {} rand configs".format(len(configs)))
         else:
             configs = self.dom.gen_configs_full(config_cls=Config)
-            mlog.debug("gen all {} configs".format(len(configs)))
+            mlog.info("gen all {} configs".format(len(configs)))
 
         configs = list(set(configs))
         assert configs, 'no initial configs created'
@@ -224,8 +219,8 @@ class IGen(object):
             if configs:
                 break
             else:
-                mlog.debug("no cex's created for sel_core {}, try new core"
-                           .format(sel_core))
+                mlog.info("no cex's created for sel_core {}, try new core"
+                          .format(sel_core))
 
         #self_core -> configs
         assert not sel_core or configs, (sel_core,configs)
