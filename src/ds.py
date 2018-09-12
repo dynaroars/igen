@@ -131,7 +131,7 @@ class Dom(CC.Dom):
         Read domain info from a file. 
         Also *extract* default configs (.default*) 
         And *save*
-        - kconstraint (.dimacs) if given
+        - kconstraints (.dimacs) if given
         - runscript (.run) if given 
         """
         assert os.path.isfile(dom_file), dom_file
@@ -173,9 +173,9 @@ class Dom(CC.Dom):
         configs = [[(k, list(c[k])[0]) for k in dom] for c in configs]
 
         #1 constraint file  (*.dimacs*)
-        dom.kconstraint_file = _f('.dimacs', at_most_one=True)
-        if dom.kconstraint_file:
-            mlog.info("Using contraint from {}".format(dom.kconstraint_file))
+        dom.kconstraints_file = _f('.dimacs', at_most_one=True)
+        if dom.kconstraints_file:
+            mlog.info("Using contraint from {}".format(dom.kconstraints_file))
 
         #1 runscript (*.run)
         dom.run_script = _f('.run', at_most_one=True)
@@ -184,13 +184,16 @@ class Dom(CC.Dom):
 
         return dom, configs 
 
-    def get_kconstraint(self, z3db):
+    def get_kconstraints(self, z3db):
+        """
+        parse k-constraint file
+        """
         assert isinstance(z3db, CC.Z3DB), z3db
         
-        if self.kconstraint_file is None:
+        if self.kconstraints_file is None:
             return None
 
-        lines = [l.strip() for l in CC.iread(self.kconstraint_file)]
+        lines = [l.strip() for l in CC.iread(self.kconstraints_file)]
         lines = [l for l in lines]
         
         symbols = {}
@@ -200,37 +203,57 @@ class Dom(CC.Dom):
                 if l.startswith('c kconfig_variable'):
                     pair = l.split(' ')
                     sidx, symbol = pair[2], pair[3] #'2', 'y'
-                    assert symbol in z3db, (z3db, symbol)
                     symbols[sidx] = symbol
 
-            
             elif l.startswith("p"): #p cnf 3 4
                 _, _, nvars, nclauses = l.split(" ")
                 nsymbols = int(nvars)
                 assert nsymbols == len(symbols)
                 nclauses = int(nclauses)
-                
             else:  #clause,  -1 2
                 clause = l.split()  #-2 11 0
                 clause = frozenset(clause[:-1])  #remove the last 0
                 clauses.append(clause)
 
-        clauses = frozenset(clauses)                
-        assert len(clauses) == nclauses
+
+        kconstraint_symbols = set(symbols.values())
+        z3db_symbols = set(z3db.keys())
+
+        clauses = frozenset(clauses)
+        assert len(clauses) <= nclauses
+
         
         def _f(sidx):
             isNot = sidx.startswith('-')
             return isNot, sidx[1:] if isNot else sidx
 
+        my01 = ['0','1']
+        myny = ['n','y']
+        
+        def _g(isNot, sidx):
+            s = symbols[sidx]
+            try:
+                s,d = z3db[s]
+            except KeyError:
+                return None
+
+            if my01[0] in d and my01[1] in d:
+                f,t = my01
+            elif myny[0] in d and myny[1] in d:
+                f,t = myny
+            else:
+                assert False, vs
+
+            rs = s == d[f if isNot else t]
+            return rs
+        
         rs = []
         for clause in clauses:
             ss = [_f(sidx) for sidx in clause]  #-3
-            ss = [z3db.get_eq_expr(symbols[sidx], '0' if isNot else '1')
-                  for isNot, sidx in ss]
-            rs.append(z3util.Or(ss))
+            ss = [_g(isNot, sidx) for isNot, sidx in ss]
+            if all(s is not None for s in ss) and ss:
+                rs.append(z3.simplify(z3util.Or(ss)))
 
-        rs = z3util.And(rs)
-        rs = z3.simplify(rs)
         return rs
 
 
@@ -277,8 +300,10 @@ class Config(CC.Config):
         return (not core or
                 any(k in self and self[k] in core[k] for k in core))
 
+
+
     @classmethod
-    def eval(cls, configs, get_cov_f, kconstraint, z3db):
+    def eval(cls, configs, get_cov_f, kconstraints, z3db):
         """
         Eval (e.g., get coverage) configurations using function get_cov_f
         Ret a list of configs and their results
@@ -287,7 +312,7 @@ class Config(CC.Config):
                 all(isinstance(c, (cls, CC.Config)) for c in configs)
                 and configs), configs
         assert callable(get_cov_f), get_cov_f
-        assert kconstraint is None or z3.is_expr(kconstraint), kconstraint
+        assert all(z3.is_expr(constraint) for constraint in kconstraints), kconstraints
         assert isinstance(z3db, CC.Z3DB), z3db
 
         def eval_get_cov(c):
@@ -298,12 +323,14 @@ class Config(CC.Config):
             return rs
         
         def eval_f(c):
-            if kconstraint is not None:
-                expr = c.z3expr(z3db)
-                expr = z3.And(kconstraint, expr)
-                if not z3util.is_sat(expr):  #invalid
-                    #print "invalid"
-                    rs = set(["invalid config"])
+            if kconstraints:
+                #assert not Z3.is_unsat(kconstraint)
+                exprs = kconstraints + [c.z3expr(z3db)]
+                isunsat = Z3.is_unsat(exprs, print_unsat_core=False)
+                
+                if isunsat:
+                    print 'invalid config'
+                    rs = set()
                     return rs
                 
             return eval_get_cov(c)
@@ -947,7 +974,7 @@ class Mcores_d(CC.CustDict):
         print("inferred results ({}):\n{}".format(len(self), self))
         mlog.info("strens (stren, nresults, nsids): {}"
                      .format(self.strens_str))
-        
+
     @classmethod
     def str_of_strens(cls, strens):
         return ', '.join("({}, {}, {})".format(siz, ncores, ncov)
@@ -1049,6 +1076,35 @@ class DTrace(object):
             mlog.error("post info not avail")
             pp_cores_d, itime_total = None, None
         return seed, dom, dts, pp_cores_d, itime_total
+
+
+
+class Z3(object):
+    @staticmethod 
+    def is_unsat(exprs, print_unsat_core=False):
+        assert all(z3.is_expr(e) for e in exprs), exprs
+
+        s = z3.Solver()
+        expr = z3.And(exprs)
+        s.add(expr)
+        stat = s.check()
+        isunsat = not (stat == z3.sat)
+
+        if stat == z3.unsat and print_unsat_core:
+            ps = [z3.Bool('p{}'.format(i)) for i in range(len(exprs))]
+            exprs = [z3.Implies(p, e) for p,e in zip(ps, exprs)]
+            expr = z3.And(exprs)
+            s.add(expr)
+            stat = s.check(ps)
+            assert stat == z3.unsat
+            unsat_ps =  s.unsat_core()
+            unsat_idxs = [str(p)[1:] for p in unsat_ps]
+            #print unsat_idxs
+            #print [exprs[int(idx)] for idx in unsat_idxs]
+                
+            
+        return isunsat
+
     
 if __name__ == "__main__":
     import doctest

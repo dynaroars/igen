@@ -24,12 +24,7 @@ class IGen(object):
         self.sids = sids
         self.z3db = CC.Z3DB(self.dom)
 
-        self.kconstraint = dom.get_kconstraint(self.z3db)
-        #test
-        # import z3
-        # self.kconstraint = z3.And(self.z3db.get_eq_expr('c1', '1'),
-        #                           self.z3db.get_eq_expr('c3', '1'))
-
+        self.kconstraints = dom.get_kconstraints(self.z3db)
         
     def go(self, seed, rand_n=None, econfigs=None, tmpdir=None):
         """
@@ -80,11 +75,11 @@ class IGen(object):
 
         mlog.info("existing configs {} evaled, {} not evaled"
                      .format(len(cconfigs_d), len(configs)))
-
+        
         if not cconfigs_d:
             configs_ = self.gen_configs_init(rand_n)
             configs.extend(configs_)
-
+            
         if configs:
             cconfigs_d_, xtime = self.eval_configs(configs)
             xtime_total += xtime
@@ -177,7 +172,7 @@ class IGen(object):
         assert all(isinstance(c, Config) for c in configs), configs
         
         st = time()
-        results = Config.eval(configs, self.get_cov, self.kconstraint,
+        results = Config.eval(configs, self.get_cov, self.kconstraints,
                               self.z3db)
         cconfigs_d = CC.Configs_d()
         for c, rs in results:

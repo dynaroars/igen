@@ -767,7 +767,7 @@ def check_sat(a, solver=None):
     
 def is_sat(a, solver=None):
     """ Check if a formula is satisiable """
-    return check_sat(a,solver) == sat
+    return check_sat(a, solver) == sat
 
 def is_tautology(a, solver=None):
     """
