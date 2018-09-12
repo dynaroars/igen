@@ -191,7 +191,7 @@ class Dom(CC.Dom):
         assert isinstance(z3db, CC.Z3DB), z3db
         
         if self.kconstraints_file is None:
-            return None
+            return []
 
         lines = [l.strip() for l in CC.iread(self.kconstraints_file)]
         lines = [l for l in lines]
