@@ -3,7 +3,7 @@ import tempfile
 import os.path
 from time import time
 
-import config_common as CC
+import vcommon as CM
 import settings
 
 def check_range(v, min_n=None, max_n=None):
@@ -32,7 +32,7 @@ def get_sids(inp):
         sid_file = list(sids)[0]
         if os.path.isfile(sid_file):
             #parse sids from file
-            lines = CC.iread_strip(sid_file)
+            lines = CM.iread_strip(sid_file)
             sids = []
             for l in lines:
                 sids_ = [s.strip() for s in l.split(',')]
@@ -101,7 +101,7 @@ def get_run_default(prog, args, DS, ALG):
 def get_cov_default(prog, sids, args, DS):
     if args.dom_file:
         #general way to run prog using dom_file/runscript
-        dom_file = CC.getpath(args.dom_file)
+        dom_file = CM.getpath(args.dom_file)
         dom, default_configs = DS.Dom.get_dom(dom_file)
         assert os.path.isfile(dom.run_script), dom.run_script
         
@@ -138,80 +138,82 @@ def get_run_f(prog, args, mlog):
 
 if __name__ == "__main__":
 
-    igen_file = CC.getpath(__file__)
+    igen_file = CM.getpath(__file__)
     igen_name = os.path.basename(igen_file)
     igen_dir = os.path.dirname(igen_file)
         
     aparser = argparse.ArgumentParser("iGen (dynamic interaction generator)")
-    aparser.add_argument("inp", help="inp", nargs='?') 
+    ag = aparser.add_argument
+    
+    ag("inp", help="inp", nargs='?') 
     
     #0 Error #1 Warn #2 Info #3 Debug #4 Detail
-    aparser.add_argument("--logger_level", "-logger_level",
+    ag("--logger_level", "-logger_level",
                          "-log", "--log",
                          help="set logger info",
                          type=int, 
                          choices=range(5),
                          default = 4)    
 
-    aparser.add_argument("--seed", "-seed",
+    ag("--seed", "-seed",
                          type=float,
                          help="use this seed")
 
-    aparser.add_argument("--rand_n", "-rand_n", 
+    ag("--rand_n", "-rand_n", 
                          type=lambda v:check_range(v, min_n=1),
                          help="rand_n is an integer")
 
-    aparser.add_argument("--do_full", "-do_full",
+    ag("--do_full", "-do_full",
                          help="use all possible configs",
                          action="store_true")
 
-    aparser.add_argument("--noshow_cov", "-noshow_cov",
+    ag("--noshow_cov", "-noshow_cov",
                          help="show coverage info",
                          action="store_true")
 
-    aparser.add_argument("--analyze_outps", "-analyze_outps",
+    ag("--analyze_outps", "-analyze_outps",
                          help="analyze outputs instead of coverage",
                          action="store_true")
 
-    aparser.add_argument("--allows_known_errors", "-allows_known_errors",
-                         help="allows for potentially no coverage exec",
-                         action="store_true")
+    ag("--allow_known_errors", "-allow_known_errors",
+       help="allows for potentially no coverage exec",
+       action="store_true")
     
-    aparser.add_argument("--benchmark", "-benchmark",
+    ag("--benchmark", "-benchmark",
                          type=lambda v: check_range(v, min_n=1),
                          default=1,
                          help="benchmark program n times")
 
-    aparser.add_argument("--dom_file", "-dom_file",
+    ag("--dom_file", "-dom_file",
                          "--domain", "-domain",
                          help="file containing config domains",
                          action="store")
 
-    aparser.add_argument("--run_script", "-run_script",
+    ag("--run_script", "-run_script",
                          "--rscript", "-rscript",
                          help="script to obtain the program's coverage",
                          action="store")
 
-    aparser.add_argument("--kconstraint_file", "-kconstraint_file",
+    ag("--kconstraint_file", "-kconstraint_file",
                          "--kconstraint", "-kconstraint",
                          help="kconfig constraint file",
                          default=None,
                          action="store")
 
-    aparser.add_argument("--do_perl", "-do_perl",
+    ag("--do_perl", "-do_perl",
                          help="do coretutils written in Perl",
                          action="store_true")
 
-    aparser.add_argument("--sids", "-sids",
+    ag("--sids", "-sids",
                          help="find interactions for sids, e.g., -sids \"L1 L2\"",
                          action="store")
     
     #analysis options
-    aparser.add_argument("--show_iters", "-show_iters",
+    ag("--show_iters", "-show_iters",
                          help="for use with analysis, show stats of all iters",
                          action="store_true")
 
-    aparser.add_argument("--minconfigs", "-minconfigs",
+    ag("--minconfigs", "-minconfigs",
                          help=("for use with analysis, "
                                "compute a set of min configs"),
                          action="store",
@@ -220,27 +222,27 @@ if __name__ == "__main__":
                          default=None,
                          type=str)
 
-    aparser.add_argument("--influence", "-influence",
+    ag("--influence", "-influence",
                          help="determine influential options/settings",
                          action="store_true")
 
-    aparser.add_argument("--evolution", "-evolution",
+    ag("--evolution", "-evolution",
                          help=("compute evolution progress using "
                                "v- and f- scores"),
                          action="store_true")
 
-    aparser.add_argument("--precision", "-precision",
+    ag("--precision", "-precision",
                          help="check if interactions are precise",
                          action="store_true")
     
-    aparser.add_argument("--cmp_dir", "-cmp_dir",
+    ag("--cmp_dir", "-cmp_dir",
                          help=("compare (-evolution or -precision) "
                                "to this dir"),
                          action="store",
                          default=None,
                          type=str)
 
-    aparser.add_argument("--cmp_rand", "-cmp_rand",
+    ag("--cmp_rand", "-cmp_rand",
                          help=("cmp results against rand configs "
                                "(req -evolution)"),
                          action="store",
@@ -248,19 +250,26 @@ if __name__ == "__main__":
                          const='use_dom',
                          default=None,
                          type=str)
+
+    ag("--nomp", "-nomp",
+       action="store_true",
+       help="don't use multiprocessing")
     
     args = aparser.parse_args()
+
+    settings.doMP = not args.nomp
+    
     if args.logger_level != settings.logger_level and 0 <= args.logger_level <= 4:
         settings.logger_level = args.logger_level
-    settings.logger_level = CC.getLogLevel(settings.logger_level)
-    mlog = CC.getLogger(__name__, settings.logger_level)
+    settings.logger_level = CM.getLogLevel(settings.logger_level)
+    mlog = CM.getLogger(__name__, settings.logger_level)
     
     if __debug__:
-        mlog.warn("DEBUG MODE ON. Can be slow !")
+        mlog.warn("DEBUG MODE ON. Can be slow! (Use python -O ... for optimization)")
         
-    if args.allows_known_errors: CC.allows_known_errors = True
-    if args.noshow_cov: CC.show_cov = False
-    if args.analyze_outps: CC.analyze_outps = True
+    if args.allow_known_errors: settings.allow_known_errors = True
+    if args.noshow_cov: settings.show_cov = False
+    if args.analyze_outps: settings.analyze_outps = True
         
     seed = round(time(), 2) if args.seed is None else float(args.seed)
     

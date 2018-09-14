@@ -2,13 +2,14 @@ from time import time
 import os.path
 import random
 
+import vcommon as CM
 import config_common as CC
 
 from ds import (DTrace, Dom, Config, Core, MCore, SCore, PNCore,
                 Cores_d, Mcores_d)
 
 import settings
-mlog = CC.getLogger(__name__, settings.logger_level)
+mlog = CM.getLogger(__name__, settings.logger_level)
 
 class IGen(object):
     """

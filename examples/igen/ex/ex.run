@@ -9,6 +9,9 @@ e.g.,
 ./test_script "x 0, y 1, z 0 ..."   #this represent the configuration x = 0 , y = 1 z = 0 ...
 /var/tmp/tvn.out
 
+./test_script "mp dir /path/to/dir cid -123, x 0, y 1, z 0 ..."   #this represent the configuration x = 0 , y = 1 z = 0 ...
+/var/tmp/tvn.out
+
 """
 import argparse
 import os.path
@@ -19,9 +22,10 @@ def vcmd(cmd, inp=None, shell=True):
     return proc.communicate(input=inp)
 
 if __name__ == "__main__":
-    me_file = os.path.realpath(os.path.expanduser(__file__))
+    #note:  use abspath (considers symlinks) instead of realpath (ignore symlinks)
+    me_file = os.path.abspath(os.path.expanduser(__file__))  
     me_dir = os.path.dirname(me_file)
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument("inputs", help="input configurations")
     args = parser.parse_args()
@@ -33,7 +37,11 @@ if __name__ == "__main__":
     import platform
     prog_exe = os.path.join(me_dir, "ex.{}.exe".format(platform.system()))
     prog_inp = ' '.join(varvals) #"0 1 0"
-    prog_out = "/var/tmp/tvn.out"
+    hashv = hash(prog_inp)    
+    prog_out = "/var/tmp/tvn.{}.out".format(hashv)
+    
+    #assert not os.path.isfile(prog_out), "{} exists".format(prog_out)
+    
     cmd = "{} {} > {}".format(prog_exe, prog_inp, prog_out)
     try:
         _,rs_err = vcmd(cmd)

@@ -1,15 +1,16 @@
 import os.path
 import config_common as CC
+import vcommon as CM
 
 import settings
-mlog = CC.getLogger(__name__, settings.logger_level)
+mlog = CM.getLogger(__name__, settings.logger_level)
 
 # Real executions
 def run_single(cmd):
     mlog.debug(cmd)
     rs_err = "some error occured:"
     try:
-        rs_outp, rs_err = CC.vcmd(cmd)
+        rs_outp, rs_err = CM.vcmd(cmd)
         if rs_outp:
             mlog.debug("outp: {}".format(rs_outp))
         
@@ -27,7 +28,7 @@ def run_single(cmd):
         if rs_err:
             mlog.debug("error: {}".format(rs_err))
 
-            if CC.allows_known_errors:
+            if settings.allow_known_errors:
                 if (not any(kerr in rs_err for kerr in known_errors) and
                     any(serr in rs_err for serr in serious_errors)):
                     raise AssertionError("Check this serious error!")
@@ -52,8 +53,9 @@ def runscript_get_cov(config, run_script):
     
     inputs = ' , '.join(['{} {}'.format(vname,vval) for
                          vname,vval in config.iteritems()])
-    cov = run_runscript(run_script,inputs)
-    return cov,[]
+
+    cov = run_runscript(run_script, inputs)
+    return cov, []
     
 def run_runscript(run_script, arg):
     """
@@ -66,7 +68,7 @@ def run_runscript(run_script, arg):
     cov_filename  = [l for l in rs_outp.split('\n') if l]
     assert len(cov_filename) == 1, (cmd,rs_outp,cov_filename)
     cov_filename = cov_filename[0]
-    cov = set(CC.iread_strip(cov_filename))
+    cov = set(CM.iread_strip(cov_filename))
     mlog.debug("cmd {}, read {} covs from '{}'"
                .format(cmd,len(cov),cov_filename))
     return cov
@@ -89,7 +91,7 @@ def parse_gcov(gcov_file):
     if __debug__:
         assert os.path.isfile(gcov_file)
 
-    gcov_obj = gcovparse.gcovparse(CC.vread(gcov_file))
+    gcov_obj = gcovparse.gcovparse(CM.vread(gcov_file))
     assert len(gcov_obj) == 1, gcov_obj
     gcov_obj = gcov_obj[0]
     sids = (d['line'] for d in gcov_obj['lines'] if d['hit'] > 0)

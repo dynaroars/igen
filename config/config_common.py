@@ -1,22 +1,88 @@
 import abc
 import itertools
 import random
-import os.path
-import tempfile
 from collections import OrderedDict, MutableMapping
 from functools import total_ordering
-import logging
+
+import vcommon as CM
 
 import z3
 import z3util
 
-allows_known_errors = False
-show_cov = True
-analyze_outps = False
+import settings
+mlog = CM.getLogger(__name__, settings.logger_level)
+
 
 #Data Structures
 is_cov = lambda cov: (isinstance(cov, (set, frozenset)) and
                       all(isinstance(c, str) for c in cov))
+
+
+def getWorkloads(tasks, maxProcessces, chunksiz):
+    """
+    >>> wls = Miscs.getWorkloads(range(12),7,1); wls
+    [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10, 11]]
+
+
+    >>> wls = Miscs.getWorkloads(range(12),5,2); wls
+    [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9, 10, 11]]
+
+    >>> wls = Miscs.getWorkloads(range(20),7,2); wls
+    [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11], [12, 13, 14], [15, 16, 17], [18, 19]]
+
+
+    >>> wls = Miscs.getWorkloads(range(20),20,2); wls
+    [[0, 1], [2, 3], [4, 5], [6, 7], [8, 9], [10, 11], [12, 13], [14, 15], [16, 17], [18, 19]]
+
+    """
+    assert len(tasks) >= 1, tasks
+    assert maxProcessces >= 1, maxProcessces
+    assert chunksiz >= 1, chunksiz
+
+    #determine # of processes
+    ntasks = len(tasks)
+    nprocesses = int(round(ntasks/float(chunksiz)))
+    if nprocesses > maxProcessces:
+        nprocesses = maxProcessces
+
+    #determine workloads 
+    cs = int(round(ntasks/float(nprocesses)))
+    wloads = []
+    for i in range(nprocesses):
+        s = i*cs
+        e = s+cs if i < nprocesses-1 else ntasks
+        wl = tasks[s:e]
+        if wl:  #could be 0, e.g., getWorkloads(range(12),7,1)
+            wloads.append(wl)
+
+    return wloads        
+
+
+def runMP(taskname, tasks, wprocess, chunksiz, doMP):
+    """
+    Run wprocess on tasks in parallel
+    """
+    if doMP:
+        from multiprocessing import (Process, Queue, cpu_count)
+        Q=Queue()
+        wloads = getWorkloads(
+            tasks, maxProcessces=cpu_count(), chunksiz=chunksiz)
+
+        mlog.debug("workloads '{}' {}: {}"
+                   .format(taskname, len(wloads), map(len,wloads)))
+
+        workers = [Process(target=wprocess, args=(wl,Q)) for wl in wloads]
+                   
+        for w in workers: w.start()
+        wrs = []
+        for _ in workers: wrs.extend(Q.get())
+    else:
+        wrs = wprocess(tasks, Q=None)
+                        
+    return wrs
+    
+
+
 def str_of_cov(cov):
     """
     >>> assert str_of_cov(set("L2 L1 L3".split())) == '(3) L1,L2,L3'
@@ -24,7 +90,7 @@ def str_of_cov(cov):
     assert is_cov(cov),cov
 
     s = "({})".format(len(cov))
-    if show_cov:
+    if settings.show_cov:
         s = "{} {}".format(s, ','.join(sorted(cov)))
     return s
 
@@ -147,7 +213,7 @@ class Dom(OrderedDict):
         return s
 
     @property
-    def siz(self): return vmul(len(vs) for vs in self.itervalues())
+    def siz(self): return CM.vmul(len(vs) for vs in self.itervalues())
 
     @property
     def max_fsiz(self):
@@ -567,93 +633,6 @@ class Configs_d(CustDict):
     def __str__(self):
         ss = (c.__str__(self[c]) for c in self.__dict__)
         return '\n'.join("{}. {}".format(i+1, s) for i, s in enumerate(ss))
-
-
-#common utils (used to be in vu_common.py)
-def pause(s=None):
-    try: #python2
-        raw_input("Press any key to continue ..." if s is None else s)
-    except NameError:
-        input("Press any key to continue ..." if s is None else s)
-import subprocess as sp
-def vcmd(cmd, inp=None, shell=True):
-    proc = sp.Popen(cmd,shell=shell,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE)
-    return proc.communicate(input=inp)
-        
-def vload(filename,mode='rb'):
-    try:
-        import cPickle as pickle
-    except ImportError:  #Python3
-        import pickle
-
-    with open(filename,mode) as fh:
-        pickler = pickle.Unpickler(fh)
-        sobj = pickler.load()
-    return sobj
-
-def vsave(filename,sobj,mode='wb'):
-    try:
-        import cPickle as pickle
-    except ImportError:  #Python3
-        import pickle
-        
-    with open(filename,mode) as fh:
-        pickler = pickle.Pickler(fh,-1)
-        pickler.dump(sobj)
-
-
-def iread(filename):
-    """ return a generator """
-    with open(filename, 'r') as fh:
-        for line in fh:
-            yield line
-
-def strip_contents(lines, strip_c='#'):
-    lines = (l.strip() for l in lines)
-    lines = (l for l in lines if l)
-    if strip_c:
-        lines = (l for l in lines if not l.startswith(strip_c))
-    return lines
-    
-def iread_strip(filename, strip_c='#'):
-    """
-    like iread but also strip out comments and empty line
-    """
-    return strip_contents(iread(filename), strip_c)
-
-import operator
-vmul = lambda l: reduce(operator.mul, l, 1)
-
-getpath = lambda f: os.path.realpath(os.path.expanduser(f))
-file_basename = lambda filename: os.path.splitext(filename)[0]
-
-iflatten = lambda l: itertools.chain.from_iterable(l) #return a generator
-
-# log utils
-def getLogger(name, level):
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
-    ch = logging.StreamHandler()
-    ch.setLevel(level)
-    formatter = logging.Formatter("%(name)s:%(levelname)s:%(message)s")
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    return logger
-
-def getLogLevel(level):
-    assert level in set(range(5))
-    
-    if level == 0:
-        return logging.CRITICAL
-    elif level == 1:
-        return logging.ERROR
-    elif level == 2:
-        return logging.WARNING
-    elif level == 3:
-        return logging.INFO
-    else:
-        return logging.DEBUG
-
 
 
 if __name__ == "__main__":

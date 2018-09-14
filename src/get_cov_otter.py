@@ -2,15 +2,12 @@ from time import time
 import random
 import os.path
 
-
+import vcommon as CM
 import config_common as CC
 import ds as DS
 
-# logger = CC.VLog('otter')
-# logger.level = CC.logger_level
-
 import settings
-mlog = CC.getLogger(__name__, settings.logger_level)
+mlog = CM.getLogger(__name__, settings.logger_level)
 
 
 from settings import otter_dir
@@ -19,7 +16,7 @@ def prepare(prog_name, get_dom_f):
     assert isinstance(prog_name,str), prog_name
     assert callable(get_dom_f), get_dom_f
     
-    dir_ = CC.getpath(os.path.join(otter_dir, prog_name))
+    dir_ = CM.getpath(os.path.join(otter_dir, prog_name))
     dom_file = os.path.join(dir_,'possibleValues.txt')
     pathconds_d_file = os.path.join(dir_,'{}.tvn'.format('pathconds_d'))
     assert os.path.isfile(dom_file), dom_file
@@ -27,7 +24,7 @@ def prepare(prog_name, get_dom_f):
     
     dom,_ = get_dom_f(dom_file)
     st = time()
-    pathconds_d = CC.vload(pathconds_d_file)
+    pathconds_d = CM.vload(pathconds_d_file)
     mlog.info("'{}': {} path conds ({}s)"
                  .format(pathconds_d_file,len(pathconds_d),time() - st))
 

@@ -4,11 +4,14 @@ Analyses on the resulting interactions
 import abc
 import itertools
 from time import time
+
+import vcommon as CM
 import config_common as CC
 import alg as IA
 #import config as IA_OLD  #old data
+
 import settings
-mlog = CC.getLogger(__name__, settings.logger_level)
+mlog = CM.getLogger(__name__, settings.logger_level)
 
 # logger = CC.VLog('analysis_algs')
 # logger.level = CC.logger_level

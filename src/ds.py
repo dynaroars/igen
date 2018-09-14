@@ -3,15 +3,12 @@ import random
 import z3
 import z3util
 
+import vcommon as CM
 import config_common as CC
 from config_common import Configs_d #do not del, needed to read existing results
 
 import settings
-mlog = CC.getLogger(__name__, settings.logger_level)
-
-# logger = CC.VLog(__name__)
-# logger.level = CC.logger_level
-# CC.VLog.PRINT_TIME = True
+mlog = CM.getLogger(__name__, settings.logger_level)
 
 def compat(obj, cls):
     """
@@ -146,11 +143,11 @@ class Dom(CC.Dom):
             return rs_
 
         #domain file   (*.dom)
-        dom = get_lines(CC.iread_strip(dom_file))
+        dom = get_lines(CM.iread_strip(dom_file))
         dom = cls(dom)
         
         #other files 
-        dom_name = CC.file_basename(os.path.basename(dom_file)) #ex
+        dom_name = CM.file_basename(os.path.basename(dom_file)) #ex
         dom_dir = os.path.dirname(dom_file)
         fs = [os.path.join(dom_dir, f) for f in os.listdir(dom_dir) if dom_name in f]
 
@@ -168,7 +165,7 @@ class Dom(CC.Dom):
             
         #potentially multiple default configs  (*.default*)
         configs = _f('.default', at_most_one=False)
-        configs = [dict(get_lines(CC.iread_strip(f))) for f in configs
+        configs = [dict(get_lines(CM.iread_strip(f))) for f in configs
                    if os.path.isfile(f)]
         configs = [[(k, list(c[k])[0]) for k in dom] for c in configs]
 
@@ -193,7 +190,7 @@ class Dom(CC.Dom):
         if self.kconstraints_file is None:
             return []
 
-        lines = [l.strip() for l in CC.iread(self.kconstraints_file)]
+        lines = [l.strip() for l in CM.iread(self.kconstraints_file)]
         lines = [l for l in lines]
         
         symbols = {}
@@ -242,7 +239,7 @@ class Dom(CC.Dom):
             elif myny[0] in d and myny[1] in d:
                 f,t = myny
             else:
-                assert False, vs
+                assert False, d
 
             rs = s == d[f if isNot else t]
             return rs
@@ -301,7 +298,6 @@ class Config(CC.Config):
                 any(k in self and self[k] in core[k] for k in core))
 
 
-
     @classmethod
     def eval(cls, configs, get_cov_f, kconstraints, z3db):
         """
@@ -315,9 +311,10 @@ class Config(CC.Config):
         assert all(z3.is_expr(constraint) for constraint in kconstraints), kconstraints
         assert isinstance(z3db, CC.Z3DB), z3db
 
+
         def eval_get_cov(c):
             sids, outps = get_cov_f(c)
-            rs = outps if CC.analyze_outps else sids
+            rs = outps if settings.analyze_outps else sids
             if not rs:
                 mlog.warn("'{}' produces nothing".format(c))
             return rs
@@ -329,14 +326,23 @@ class Config(CC.Config):
                 isunsat = Z3.is_unsat(exprs, print_unsat_core=False)
                 
                 if isunsat:
-                    print 'invalid config'
-                    rs = set()
-                    return rs
+                    #print 'invalid config'
+                    return set()
                 
             return eval_get_cov(c)
-                
-        results = [(c, eval_f(c)) for c in set(configs)]
-        return results
+
+        def wprocess(tasks, Q):
+            rs = [(c, eval_f(c)) for c in tasks]
+            if Q is None:
+                return rs
+            else:
+                Q.put(rs)
+
+        tasks = list(set(configs))
+        wrs = CC.runMP("eval", tasks, wprocess,
+                       chunksiz=1, doMP=settings.doMP and len(tasks) >= 2)
+        
+        return wrs
     
 
 class Core(CC.HDict):
@@ -1030,29 +1036,29 @@ class DTrace(object):
 
     @staticmethod
     def save_pre(seed,dom,tmpdir):
-        CC.vsave(os.path.join(tmpdir,'pre'),(seed,dom))
+        CM.vsave(os.path.join(tmpdir,'pre'),(seed,dom))
 
     @staticmethod
     def save_post(pp_cores_d,itime_total,tmpdir):
-        CC.vsave(os.path.join(tmpdir,'post'),(pp_cores_d,itime_total))
+        CM.vsave(os.path.join(tmpdir,'post'),(pp_cores_d,itime_total))
 
     @staticmethod
     def save_iter(cur_iter,dtrace,tmpdir):
-        CC.vsave(os.path.join(tmpdir,'{}.tvn'.format(cur_iter)),dtrace)
+        CM.vsave(os.path.join(tmpdir,'{}.tvn'.format(cur_iter)),dtrace)
 
     @staticmethod
     def load_pre(dir_):
-        seed,dom = CC.vload(os.path.join(dir_,'pre'))
+        seed,dom = CM.vload(os.path.join(dir_,'pre'))
         return seed,dom
 
     @staticmethod
     def load_post(dir_):
-        pp_cores_d,itime_total = CC.vload(os.path.join(dir_,'post'))
+        pp_cores_d,itime_total = CM.vload(os.path.join(dir_,'post'))
         return pp_cores_d,itime_total
 
     @staticmethod
     def load_iter(dir_,f):
-        dtrace = CC.vload(os.path.join(dir_,f))
+        dtrace = CM.vload(os.path.join(dir_,f))
         return dtrace
 
     @staticmethod

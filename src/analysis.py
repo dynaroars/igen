@@ -1,15 +1,14 @@
 import os.path
-import config_common as CC
 import math
+
+import vcommon as CM
+import config_common as CC
+
 import ds as DS
 import alg
 
 import settings
-mlog = CC.getLogger(__name__, settings.logger_level)
-
-# logger = CC.VLog('analysis')
-# logger.level = CC.logger_level
-# CC.VLog.PRINT_TIME = True
+mlog = CM.getLogger(__name__, settings.logger_level)
 
 
 #Python implementation of the median and percentile functions
@@ -336,7 +335,7 @@ class Analysis(object):
                     cmp_rand,
                     cmp_dir):
         
-        dir_ = CC.getpath(dir_)
+        dir_ = CM.getpath(dir_)
         print("replay_dirs '{}'".format(dir_))
         
         strens_arr = []

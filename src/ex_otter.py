@@ -1,7 +1,7 @@
 import os.path
 from time import time
 from collections import OrderedDict
-import config_common as CC
+import vcommon as CM
 
 #Utilities to work with Otter's data
 
@@ -95,7 +95,7 @@ def read_exp_dir_pc(exp_dir):
     db = OrderedDict()
     for i,exp_file in enumerate(exp_files):
         print("{}/{}. '{}'".format(i+1,len(exp_files),exp_file))
-        pathconds = read_exp_pc(CC.iread_strip(exp_file))
+        pathconds = read_exp_pc(CM.iread_strip(exp_file))
         db[exp_file] = pathconds
     return db
     

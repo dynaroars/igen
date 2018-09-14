@@ -1,8 +1,8 @@
 #read coverage from files
-import config_common as CC
+import vcommon as CM
 
 def parseFile(filename, covered, uncovered):
-    for i,l in enumerate(CC.iread(filename)):
+    for i,l in enumerate(CM.iread(filename)):
         lid = "{}:{}".format(filename,i)
         if l.startswith(">"):
             covered.add(lid)

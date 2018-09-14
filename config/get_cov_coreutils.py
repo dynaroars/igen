@@ -2,13 +2,12 @@ import abc
 import os.path
 
 import config_common as CC
+import vcommon as CM
+
 import get_cov as GC
 
 import settings
-mlog = CC.getLogger(__name__, settings.logger_level)
-
-# logger = CC.VLog('coreutils')
-# logger.level = CC.logger_level
+mlog = CM.getLogger(__name__, settings.logger_level)
 
 def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
     if __debug__:
@@ -18,9 +17,9 @@ def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
         assert isinstance(doms_dir, str), doms_dir
         assert isinstance(do_perl, bool), do_perl
 
-    main_dir = CC.getpath(main_dir)
-    dom_dir = CC.getpath(doms_dir)    
-    scripts_dir = CC.getpath(os.path.join(dom_dir, '../../scripts'))
+    main_dir = CM.getpath(main_dir)
+    dom_dir = CM.getpath(doms_dir)    
+    scripts_dir = CM.getpath(os.path.join(dom_dir, '../../scripts'))
     
     if do_perl:
         prog_dir = None # os.path.join(main_dir, 'coreutils_perl')
@@ -42,7 +41,7 @@ def prepare(prog_name, get_dom_f, main_dir, doms_dir, do_perl):
         dom_file = os.path.join(
             doms_dir, "doms_gnu_coreutils", "{}.dom".format(prog_name))
             
-    dom_file = CC.getpath(dom_file)
+    dom_file = CM.getpath(dom_file)
     dom, default_configs = get_dom_f(dom_file)
     assert all(len(vs) >= 2 and "off" in vs 
                for vs in dom.itervalues()),"incorrect format"
@@ -99,7 +98,7 @@ def get_cov_perl(config, data):
     ts = db[data['prog_name']](get_ts_data(config, data))
     script_cmd = os.path.join(data['scripts_dir'], 'pptCoverageHelper.pl')
     sids = ts.run_perl(script_cmd)
-    sids = set(CC.iflatten(sids))
+    sids = set(CM.iflatten(sids))
 
     return sids, []
 
@@ -124,7 +123,7 @@ def get_cov_gcov(config, data):
     gcov_dir = os.getcwd()
     sids = (GC.parse_gcov(os.path.join(gcov_dir,f))
             for f in os.listdir(gcov_dir) if f.endswith(".gcov"))
-    sids = set(CC.iflatten(sids))
+    sids = set(CM.iflatten(sids))
     return sids, outps
 
 def check_ts_data(data):
