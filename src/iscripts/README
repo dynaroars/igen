@@ -1,0 +1,5 @@
+This dir contain scripts to get interesting behaviors (e.g., coverage).
+Important: these script should assume they will be run simultenously by
+multiple processes and thus must ensure that there will be no conflicting
+results (e.g., outputing to same file).
+

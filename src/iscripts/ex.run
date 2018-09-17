@@ -1,16 +1,13 @@
 #!/usr/bin/env python2.7
 
 """
-This is a run_script example that run a program call "ex.[Linux|Darwin].exe" , which 
+Simple run_script example that runs a program call "ex.[Linux|Darwin].exe" , which 
 takes as input a list of varname and value and 
 returns to stdout (the terminal screen) the name of the file consisting of covered lines
 
 e.g.,
 ./test_script "x 0, y 1, z 0 ..."   #this represent the configuration x = 0 , y = 1 z = 0 ...
-/var/tmp/tvn.out
-
-./test_script "mp dir /path/to/dir cid -123, x 0, y 1, z 0 ..."   #this represent the configuration x = 0 , y = 1 z = 0 ...
-/var/tmp/tvn.out
+/var/tmp/tvn.hash_of_config_.out
 
 """
 import argparse
