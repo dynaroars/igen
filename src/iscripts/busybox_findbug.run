@@ -6,6 +6,8 @@ import argparse
 import os.path
 import subprocess as sp
 
+CLEANUP = True
+
 def vcmd(cmd, inp=None, shell=True):
     proc = sp.Popen(cmd,shell=shell,stdin=sp.PIPE,stdout=sp.PIPE,stderr=sp.PIPE)
     rs =  proc.communicate(input=inp)
@@ -14,13 +16,13 @@ def vcmd(cmd, inp=None, shell=True):
 
 def runcmd(cmd):
     try:
-        print '$', cmd
+        #print '$', cmd
         (_,rs_err), exit_code = vcmd(cmd)
         #assert not rs_err, rs_err
         #print 'ecode', exit_code
         return exit_code
     except:
-        print("cmd '{}' failed".format(cmd))
+        #print("cmd '{}' failed".format(cmd))
         return -1
 
 def phash(v):
@@ -60,8 +62,8 @@ if __name__ == "__main__":
     defConfigFile="{}/defconfig.tmp".format(BENCH_DIR)    
 
 
-    name="igen_busybox"
-    SRC_DIR = "{}/{}-{}".format(TMP_DIR, name, tid)
+    pname="igen_busybox"
+    SRC_DIR = "{}/{}-{}".format(TMP_DIR, pname, tid)
     configFile="{}/.config".format(SRC_DIR)
     configFileBackup="{}/config.backup".format(SRC_DIR)
 
@@ -94,22 +96,13 @@ if __name__ == "__main__":
         
     assert runcmd("cp {} {}".format(configFile, configFileBackup)) == 0
 
-
     #runtest
     logFile = "{}/build.log".format(SRC_DIR)
-
-
     assert runcmd("echo \"---Configuration:{}, stime+hash:{}\n\" > {} 2>&1".format(
         inp, tid, logFile)) == 0
-
     mkOldConfigCmd = lambda : runcmd("cd {} && make oldconfig >> {} 2>&1".format(
         SRC_DIR, logFile))
-
-    # compareCmd = lambda: runcmd("./compare_configs.sh {} {} >> {} 2>&1".format(
-    #     configFile, configFileBackup, logFile))
-
     mkCmd = lambda : runcmd("cd {} && make >> {} 2>&1".format(SRC_DIR, logFile))
-
     statCmd = lambda : runcmd("{}/busybox stat {} >> {} 2>&1".format(SRC_DIR, defConfigFile, logFile)) 
 
     found = True
@@ -125,11 +118,14 @@ if __name__ == "__main__":
     if found and statCmd() != 139:
         found = False
 
-    resultFile = "{}/{}_{}_interesting.txt".format(TMP_DIR, name, tid)        
+    resultFile = "{}/{}_{}_interesting.txt".format(TMP_DIR, pname, tid)        
     if found:
         runcmd("echo stat.139 >> {}".format(resultFile))
     else:
         runcmd("touch {}".format(resultFile))
+
+    if CLEANUP:
+        assert runcmd("rm -rf {}".format(SRC_DIR)) == 0
 
     print resultFile
     

@@ -74,10 +74,10 @@ class IGen(object):
                     
         configs = [c for c in configs if c not in cconfigs_d]
 
-        mlog.info("existing configs {} evaled, {} not evaled"
-                     .format(len(cconfigs_d), len(configs)))
+        mlog.info("{} existing configs: {} evaled, {} not evaled"
+                     .format(len(econfigs), len(cconfigs_d), len(configs)))
         
-        if not cconfigs_d:
+        if not configs:
             configs_ = self.gen_configs_init(rand_n)
             configs.extend(configs_)
             
