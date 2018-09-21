@@ -102,7 +102,7 @@ if __name__ == "__main__":
         inp, tid, logFile)) == 0
     mkOldConfigCmd = lambda : runcmd("cd {} && make oldconfig >> {} 2>&1".format(
         SRC_DIR, logFile))
-    mkCmd = lambda : runcmd("cd {} && make >> {} 2>&1".format(SRC_DIR, logFile))
+    mkCmd = lambda : runcmd("cd {} && make -j 10 >> {} 2>&1".format(SRC_DIR, logFile))
     statCmd = lambda : runcmd("{}/busybox stat {} >> {} 2>&1".format(SRC_DIR, defConfigFile, logFile)) 
 
     found = True

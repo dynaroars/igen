@@ -145,7 +145,7 @@ class Dom(CC.Dom):
         #domain file   (*.dom)
         dom = get_lines(CM.iread_strip(dom_file))
         dom = cls(dom)
-        
+
         #other files 
         dom_name = CM.file_basename(os.path.basename(dom_file)) #ex
         dom_dir = os.path.dirname(dom_file)

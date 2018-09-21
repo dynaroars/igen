@@ -34,8 +34,7 @@ def percentile(l, percent, key=lambda x:x):
     return d0 + d1
 
 median = lambda l: percentile(l, percent=0.5)
-siqr = lambda l: (percentile(l, 75) - percentile(l, 25)) / 2
-    
+siqr = lambda l: (percentile(l, .75) - percentile(l, .25)) / 2
 
 class LoadData(object):
     data = {}
