@@ -10,7 +10,6 @@ import alg
 import settings
 mlog = CM.getLogger(__name__, settings.logger_level)
 
-
 #Python implementation of the median and percentile functions
 #so that I don't have to use numpy.median in Python 2
 def percentile(l, percent, key=lambda x:x):

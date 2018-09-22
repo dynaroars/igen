@@ -102,7 +102,7 @@ def read_exp_dir_pc(exp_dir):
 
 def combine_pathconds(db):
     pathconds_d = {}
-    for filename,pathconds in db.iteritems():
+    for filename, pathconds in db.iteritems():
         for (pathcond,covs,samples) in pathconds:
             if pathcond in pathconds_d:
                 covs_,samples_ = pathconds_d[pathcond]
