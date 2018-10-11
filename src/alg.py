@@ -5,7 +5,7 @@ import random
 import vcommon as CM
 import config_common as CC
 
-from ds import (DTrace, Dom, Config, Core, MCore, SCore, PNCore,
+from config import (DTrace, Dom, Config, Core, MCore, SCore, PNCore,
                 Cores_d, Mcores_d)
 
 import settings
