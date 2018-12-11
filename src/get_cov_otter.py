@@ -4,7 +4,7 @@ import os.path
 
 import vcommon as CM
 import config_common as CC
-import ds as DS
+import config as DS
 
 import settings
 mlog = CM.getLogger(__name__, settings.logger_level)

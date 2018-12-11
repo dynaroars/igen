@@ -125,7 +125,7 @@ def get_run_f(prog, args, mlog):
     Ret f that takes inputs seed, tmpdir 
     and call appropriate iGen function on those inputs
     """
-    import ds as DS
+    import config as DS
     import alg as ALG
     if prog in settings.otter_progs:
         dom, get_cov_f, run_f = get_run_otter(prog, args, DS, ALG)

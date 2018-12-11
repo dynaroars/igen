@@ -4,7 +4,7 @@ import math
 import vcommon as CM
 import config_common as CC
 
-import ds as DS
+import config as DS
 import alg
 
 import settings
