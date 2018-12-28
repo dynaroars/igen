@@ -46,9 +46,9 @@ def get_run_otter(prog, args, DS, ALG):
     import get_cov_otter as Otter
     dom, get_cov_f, pathconds_d = Otter.prepare(prog, DS.Dom.get_dom)
     igen = ALG.IGen(dom, get_cov_f, sids)
-    econfigs = []
+
     if sids:
-        run_f = lambda seed,tdir: igen.go(seed=seed, tmpdir=tdir)
+        run_f = lambda seed, tdir: igen.go(seed=seed, tmpdir=tdir)
             
     elif args.cmp_rand:
         #TODO: test this 
@@ -134,7 +134,6 @@ def get_run_f(prog, args, mlog):
     mlog.info("dom:\n{}".format(dom))
 
     return run_f, get_cov_f
-
 
 if __name__ == "__main__":
 

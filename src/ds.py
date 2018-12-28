@@ -212,14 +212,11 @@ class Dom(CC.Dom):
                 clause = frozenset(clause[:-1])  #remove the last 0
                 clauses.append(clause)
 
-
-        kconstraint_symbols = set(symbols.values())
-        z3db_symbols = set(z3db.keys())
+        #kconstraint_symbols = set(symbols.values())
+        #z3db_symbols = set(z3db.keys())
 
         clauses = frozenset(clauses)
         assert len(clauses) <= nclauses
-
-        
         def _f(sidx):
             isNot = sidx.startswith('-')
             return isNot, sidx[1:] if isNot else sidx
@@ -885,7 +882,7 @@ class Cores_d(CC.CustDict):
         for sid in cores_d:
             core = cores_d[sid]
             if core not in cache:
-                core_,expr = core.simplify(
+                core_, expr = core.simplify(
                     dom, z3db, do_firsttime=(covs_d is not None))
                 cache[core]=core_
                 show_compare(sid,core,core_)
@@ -1109,8 +1106,8 @@ class Z3(object):
             assert stat == z3.unsat
             unsat_ps =  s.unsat_core()
             unsat_idxs = [str(p)[1:] for p in unsat_ps]
-            #print unsat_idxs
-            #print [exprs[int(idx)] for idx in unsat_idxs]
+            print unsat_idxs
+            print [exprs[int(idx)] for idx in unsat_idxs]
                 
             
         return isunsat

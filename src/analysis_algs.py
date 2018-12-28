@@ -228,7 +228,7 @@ class MinConfigs(XAnalysis):
                             .format(self.str_of_pack(pack)))
             else:
                 config = configs[0]
-                covs,xtime = f(config)
+                covs, xtime = f(config)
                 remain_covs = remain_covs - covs
                 minset_d[config]=covs
 
