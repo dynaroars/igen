@@ -223,6 +223,7 @@ class Dom(CC.Dom):
 
         my01 = ['0','1']
         myny = ['n','y']
+        myStr = ['empty','non_empty']
         
         def _g(isNot, sidx):
             s = symbols[sidx]
@@ -235,6 +236,8 @@ class Dom(CC.Dom):
                 f,t = my01
             elif myny[0] in d and myny[1] in d:
                 f,t = myny
+            elif myStr[0] in d and myStr[1] in d:
+                f,t = myStr
             else:
                 assert False, d
 
