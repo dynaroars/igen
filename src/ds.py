@@ -224,8 +224,9 @@ class Dom(CC.Dom):
             isNot = sidx.startswith('-')
             return isNot, sidx[1:] if isNot else sidx
 
-        my01 = ['0','1']
-        myny = ['n','y']
+        my01  = ['0','1']
+        myny  = ['n','y']
+        myStr = ['\'\'', '\'non_empty\'']
         
         def _g(isNot, sidx):
             s = symbols[sidx]
@@ -234,10 +235,13 @@ class Dom(CC.Dom):
             except KeyError:
                 return None
 
+            f=None
             if my01[0] in d and my01[1] in d:
                 f,t = my01
             elif myny[0] in d and myny[1] in d:
                 f,t = myny
+            elif myStr[0] in d and myStr[1] in d:
+                f,t = myStr
             else:
                 assert False, d
 

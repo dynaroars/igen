@@ -4,6 +4,8 @@ c kconfig_variable 2 c2 bool
 c kconfig_variable 3 c3 bool
 c kconfig_variable 4 c4 bool
 c kconfig_variable 5 c5 bool
-p cnf 5 2
+c kconfig_variable 6 c6 string ''
+p cnf 6 3
 1 0
 3 0
+6 5 0
