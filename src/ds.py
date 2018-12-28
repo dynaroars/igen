@@ -223,7 +223,7 @@ class Dom(CC.Dom):
 
         my01  = ['0','1']
         myny  = ['n','y']
-        myStr = ['\'\'', '\'non_empty\'']
+        myStr = ['empty', 'non_empty']
         
         def _g(isNot, sidx):
             s = symbols[sidx]
