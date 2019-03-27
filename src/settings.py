@@ -12,9 +12,9 @@ examples_dir = CM.getpath(os.path.join(me_dir, "../examples/igen"))
 otter_dir = "~/igen_exps/otter"
 otter_progs = {"vsftpd", "ngircd"}
 
-#Note: whenever changing directory, need to recompile coreutils for gcov to work
-coreutils_main_dir = "~/igen_exps/coreutils"  
-coreutils_doms_dir = CM.getpath(os.path.join(me_dir,"../benchmarks/doms"))
+# Note: whenever changing directory, need to recompile coreutils for gcov to work
+coreutils_main_dir = "~/igen_exps/coreutils"
+coreutils_doms_dir = CM.getpath(os.path.join(me_dir, "../benchmarks/doms"))
 
 allow_known_errors = False
 show_cov = True
