@@ -223,6 +223,7 @@ class Dom(CC.Dom):
 
         my01 = ['0','1']
         myny = ['n','y']
+        myStr = ['\'\'','\'non_empty\'']
         
         def _g(isNot, sidx):
             s = symbols[sidx]
@@ -235,6 +236,8 @@ class Dom(CC.Dom):
                 f,t = my01
             elif myny[0] in d and myny[1] in d:
                 f,t = myny
+            elif myStr[0] in d and myStr[1] in d:
+                f,t = myStr
             else:
                 assert False, d
 
@@ -323,7 +326,7 @@ class Config(CC.Config):
                 isunsat = Z3.is_unsat(exprs, print_unsat_core=False)
                 
                 if isunsat:
-                    #print 'invalid config'
+                    print 'invalid config'
                     return set()
                 
             return eval_get_cov(c)
