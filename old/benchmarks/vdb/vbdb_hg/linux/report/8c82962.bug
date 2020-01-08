@@ -1,0 +1,67 @@
+
+type: BufferOverflow
+
+symptom: KernelPanic
+
+descr:
+
+    Wrong length units lead to buffer overflow and cause kernel panic
+
+    Field `len' units are bytes while field `pos' is an array index; thus,
+    units are bytes/sizeof(pagemap_entry_t). Pagemap walks are using `len' as
+    the upper limit for `pos' to iterate the buffer, but clearly `len' is 
+    larger than the actual buffer length. If a function tries to fill the
+    buffer taking `len' as a boundary, that will cause a buffer overflow.
+    
+    Note that PROC_PAGE_MONITOR enables monitoring of memory utilization via
+    the /proc file system, one of these files is /proc/pid/pagemap.
+
+config: "PROC_PAGE_MONITOR"
+
+C-features:
+
+    ArgByReference,
+    FollowFunctionPointers,
+    PointerArithmetic
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 8c8296223f3abb142be8fc31711b18a704c0e7d8
+
+  source: patterns "CONFIG_.+" "kernel panic" "fix"
+
+  fix-in: code
+
+loc: fs/proc/
+
+trace: !!trace |
+    . call fs/proc/task_mmu.c:1103:pagemap_read()
+    . 1130: pm.len = PM_ENTRY_BYTES * (PAGEMAP_WALK_SIZE >> PAGE_SHIFT);
+    // pm.len is set to the size of pm.buffer in bytes
+    // PM_ENTRY_BYTES = sizeof(pagemap_entry_t)
+    // PAGEMAP_WALK_SIZE = PMD_SIZE
+    // PMD_SIZE is the size of a page table, while 2^PAGE_SHIFT is the size of a page, therefore PMD_SIZE / 2^PAGE_SHIFT is the number of page entries in a page table
+    . 1131: pm.buffer = kmalloc(pm.len, GFP_TEMPORARY);
+    . 1165: while (count && (start_vaddr < end_vaddr)) {
+    . 1175: ret = walk_page_range(start_vaddr, end, &pagemap_walk);
+    .. call mm/pagewalk.c:167:walk_page_range()
+    .. 241: err = walk_pud_range(pgd, addr, next, walk);
+    ... call mm/pagewalk.c:72:walk_pud_range()
+    ... 92: err = walk_pmd_range(pud, addr, next, walk);
+    .... call mm/pagewalk.c:27:walk_pmd_range()
+    .... 50: err = walk->pmd_entry(pmd, addr, next, walk);
+    ..... dyn-call fs/proc/task_mmu.c:986:pagemap_pte_range()
+    ..... 1007: err = add_to_pagemap(addr, &pme, pm);
+    // add_to_pagemap() 905 is the iterator step function for setting entries by walking through the buffer
+    ...... call fs/proc/task_mmu.c:905:add_to_pagemap()
+    ...... 908: pm->buffer[pm->pos++] = *pme;
+    ...... 909: if (pm->pos >= pm->len)
+    // it compares pos and len, but pos is the index in the array while len is the size of the array in bytes
+    ...... ERROR 908: pm->buffer[pm->pos++] = *pme;
+    // eventually we get a buffer overflow, when pos is incremented beyond the array bounds
+
+links: !!md |
+    * [pagemap from the userspace perspective](https://www.kernel.org/doc/Documentation/vm/pagemap.txt)
+

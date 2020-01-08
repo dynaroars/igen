@@ -1,0 +1,25 @@
+
+type: VoidPointerDereference
+
+descr:
+
+    Disabling PCI support implies that a void* pointer will be dereferenced
+
+    When PCI is disabled VORTEX_PCI(vp) will always return NULL, which is of
+    type void*. VORTEX_PCI(vp) is defined by a conditional expression, but 
+    the compiler can infer that the pointer returned is always of this type,
+    and emits a warning because it is being dereferenced later on.
+
+config: "VORTEX && !PCI"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: d530db0db90378b5674cb78d9c0cfcc83f851a5e
+  
+  source: patterns "CONFIG_" "failure" "void *"
+
+  fix-in: code
+
+loc: drivers/net/

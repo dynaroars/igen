@@ -1,0 +1,12 @@
+diff --git a/simple/6651791.c b/simple/6651791.c
+--- a/simple/6651791.c
++++ b/simple/6651791.c
+@@ -1,3 +1,8 @@
++
++#if defined(CONFIG_SND_SOC_SH4_FSI) && defined(CONFIG_I2C)
++#define CONFIG_SND_FSI_AK4642
++#define CONFIG_SND_FSI_DA7210
++#endif
+ 
+ #ifdef CONFIG_SND_FSI_AK4642
+ #define CONFIG_SND_SOC_AK4642

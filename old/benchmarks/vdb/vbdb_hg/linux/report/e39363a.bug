@@ -1,0 +1,26 @@
+
+type: UninitializedVariable
+
+descr:
+
+    netpoll_setup() returns an uninitialized value (error code)
+
+config: "NETPOLL && !IPV6"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: e39363a9def53dd4086be107dc8b3ebca09f045d
+
+  source: patterns "CONFIG_<fid>" "uninitialized" "warning" "#else" "#endif"
+
+  fix-in: code
+
+loc: net/
+
+trace: !!trace |
+    . call net/core/netpoll.c:1045:netpoll_setup()
+    . [!IPV6] 1143: goto put;
+    . ERROR 1162: return err;
+

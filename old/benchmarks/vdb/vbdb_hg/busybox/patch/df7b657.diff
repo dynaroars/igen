@@ -1,0 +1,12 @@
+diff --git a/simple/df7b657.c b/simple/df7b657.c
+--- a/simple/df7b657.c
++++ b/simple/df7b657.c
+@@ -6,7 +6,7 @@
+   int n = -1;
+   
+   if (n < 0) { /* error in get_groups() */
+-#ifndef ENABLE_DESKTOP
++#ifdef ENABLE_DESKTOP
+       printf("can't get groups");
+ #else
+       return EXIT_FAILURE;

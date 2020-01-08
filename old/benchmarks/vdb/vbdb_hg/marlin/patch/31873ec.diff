@@ -1,0 +1,12 @@
+diff --git a/simple/31873ec.c b/simple/31873ec.c
+--- a/simple/31873ec.c
++++ b/simple/31873ec.c
+@@ -4,7 +4,7 @@
+ //  convert float to string with +1234.5 format
+ char *ftostr51(float x)
+ {
+-  int16_t xx=x*10;
++  long xx=x*10;
+   conv[0]=(xx>=0)?'+':'-';
+   xx=abs(xx);
+   conv[1]=(xx/10000)%10+'0';

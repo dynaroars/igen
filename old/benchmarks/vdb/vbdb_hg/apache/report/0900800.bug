@@ -1,0 +1,32 @@
+
+type: UndefinedSymbol
+
+descr:
+
+    Function ap_get_server_module_loglevel is not declared when !HAVE_SYSLOG
+
+    In case feature HAVE_SYSLOG is disabled, the include "http_config.h"
+    does not happen. Because the .h file contains prototypes to functions like
+    ap_get_server_module_loglevel, the compiler raises an undeclared function.
+
+keywords:
+
+config: "!HAVE_SYSLOG"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 0900800fbabf57775433aa577e79806ccd88fda7
+
+  source: patterns "HAVE_.+" "build failure"
+
+  fix-in: code
+
+trace: !!trace |
+    . // if HAVE_SYSLOG is disabled
+    . ERROR include/http_log.h:177:ap_get_server_module_loglevel()
+
+loc: include/
+
+links:

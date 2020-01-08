@@ -1,0 +1,62 @@
+
+type: DoubleOpOnResource
+
+descr:
+
+    Module loading fails due to attempt to double-register compat class
+
+    The first time the extcon-class module is loaded it registers a
+    compatibility class "switch", which creates "/class/switch"
+    in sysfs. When the module is unloaded, however, this class is not
+    deregistered. Therefore, the second attempt to load the module fails as
+    it tries to register an already registered compatibility class.
+
+keywords: android, sysfs, warning
+
+config: "EXTCON && SYSFS && ANDROID"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 0dc77b6dabec8fd298392018cc0de5214af2dc43
+
+  source: patterns "CONFIG_.+" "end trace"
+
+  fix-in: code
+
+trace: !!trace |
+    . call drivers/extcon/extcon-class.c:814:extcon_class_init()
+    . 816: create_extcon_class();
+    .. call drivers/extcon/extcon-class.c:530:create_extcon_class()
+    .. // if ANDROID is enabled
+    .. 539: switch_class = class_compat_register("switch");
+    ... call drivers/base/class.c:519:class_compat_register()
+    ... 526: cls->kobj = kobject_create_and_add(name, &class_kset->kobj);
+    .... call lib/kobject.c:645:kobject_create_and_add()
+    .... 654: retval = kobject_add(kobj, parent, "%s", name);
+    ..... call lib/kobject.c:336:kobject_add()
+    ...... call lib/kobject.c:156:kobject_add_internal()
+    ...... 185: error = create_dir(kobj);
+    ....... call lib/kobject.c:47:create_dir()
+    ....... 50: error = sysfs_create_dir(kobj);
+    ........ call fs/sysfs/dir.c:746:sysfs_create_dir()
+    ........ 767: error = create_dir(kobj, parent_sd, type, ns, kobject_name(kobj), &sd);
+    ......... 679: create_dir()
+    ......... 699: rc = sysfs_add_one(&acxt, sd);
+    .......... call fs/sysfs/dir.c:525:sysfs_add_one()
+    ........... call fs/sysfs/dir.c:456:__sysfs_add_one()
+    ........... 471: ret = sysfs_link_sibling(sd);
+    ........... 473: return ret;
+    ...... 192: if (error == -EEXIST)
+    ...... 204: return error;
+    .... 659: kobj = NULL;
+    .... 661: return kobj;
+    ... 529: return NULL;
+    .. ERROR 541: return -ENOMEM;
+
+loc: drivers/extcon/
+
+links: !!md |
+    * [Linux compatibility class](http://www.linuxjournal.com/article/6872)
+    * [Linux SysFS](https://www.kernel.org/doc/Documentation/filesystems/sysfs.txt)

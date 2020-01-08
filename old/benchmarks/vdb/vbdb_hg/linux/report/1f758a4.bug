@@ -1,0 +1,51 @@
+
+type: BehaviorViolation
+
+descr:
+
+    Network interface will fail to go up when !ZONE_DMA
+
+    If !ZONE_DMA, __alloc_pages_nodemask() will return NULL when asked
+    for DMA memory, resulting in a driver failure.
+
+discussion:
+
+    By the time this patch-fix was submitted the behavior was somehow fixed.
+    The bug appears for the first time in a197b59ae6e8bee56fcef37ea2482dc08414e2ac.
+    When asked for DMA memory (there are devices that cannot derefence high memory
+    due to hardware limitations), if !ZONE_DMA, __alloc_pages_nodemask() will simply
+    return memory from any region, which may cause problems to these devices.
+    However, it turns out that many driver developers were using GFP_DMA by default,
+    so these drivers were broken after this patch and it had to be reverted.
+
+keywords: DMA, malloc, net, ep93xx_eth, driver
+
+config: "EP93XX_ETH && !ZONE_DMA"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 1f758a4341ac83289a549e6ba2d29a08cf639717
+
+  source: patterns "CONFIG_.+" "when.+is disaled" "fix" "WARNING"
+
+  fix-in: code
+
+loc: drivers/net/arm/
+
+trace: !!trace |
+    // ref a197b59ae6e8bee56fcef37ea2482dc08414e2ac
+    . call drivers/net/arm/ep93xx_eth.c:650:ep93xx_open()
+    . 655: if (ep93xx_alloc_buffers(ep))
+    .. call drivers/net/arm/ep93xx_eth.c:492:ep93xx_alloc_buffers()
+    .. 496: ep->descs = dma_alloc_coherent(dev, sizeof(struct ep93xx_descs), &ep->descs_dma_addr, GFP_KERNEL | GFP_DMA);
+    ... call mm/page_alloc.c:2234:__alloc_pages_nodemask()
+    ... [ZONE_DMA] 2251: if (WARN_ON_ONCE(gfp_mask & __GFP_DMA))
+    ... [ZONE_DMA] 2252: return NULL;
+    .. 498: if (ep->descs == NULL)
+    .. 499: return 1;
+    . ERROR 656: return -ENOMEM;
+
+links: !!md |
+    * [ZONE_DMA](http://cateee.net/lkddb/web-lkddb/ZONE_DMA.html)

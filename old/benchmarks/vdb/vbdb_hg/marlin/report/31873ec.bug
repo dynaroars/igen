@@ -1,0 +1,29 @@
+
+type: IntegerOverflow
+
+descr:
+
+    "The LCD can display only around max 320.00 but the users want to see more fine grained steps
+
+    It is an 16 bit integer overflow problem. 
+    
+    Issue 201: https://github.com/MarlinFirmware/Marlin/issues/201"
+
+config: "ULTRA_LCD"
+
+bugfix:
+
+  repo: https://github.com/MarlinFirmware/Marlin.git
+
+  hash: 31873ec707d5ba19de59b046cb1e882b8bd4e1db
+
+  source: patterns "overcome" "overflow" 
+
+  fix-in: code
+
+loc: lcd/
+
+trace: !!trace |
+
+    . call  ultralcd.pde:2667: char *ftostr51(float &x)
+    . ERROR ultralcd.pde:2669  int xx=x*10;

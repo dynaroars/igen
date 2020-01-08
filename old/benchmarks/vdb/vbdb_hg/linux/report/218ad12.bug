@@ -1,0 +1,31 @@
+
+type: MemoryLeak
+
+descr:
+
+  Pointer is set to NULL without freeing previously allocated memory
+
+  When NUMA is enabled and size > PAGE_SIZE, inet_ehash_locks_free()
+  does not free the memory allocated for `x' but just set this pointer
+  to NULL.
+
+config: "NUMA && (SMP || DEBUG_SPINLOCK || DEBUG_LOCK_ALLOC)"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 218ad12f42e0b6207105cde8fd13017d1ed449e4
+
+  source: patterns "CONFIG_.+" "memory leak" "-#else"
+
+  fix-in: code
+
+loc: include/net/
+
+trace: !!trace |
+    . include/net/inet_hashtables.h:147:inet_ehash_locks_alloc()
+    . 169: hashinfo->ehash_locks =	kmalloc(size * sizeof(rwlock_t), GFP_KERNEL);
+    . include/net/inet_hashtables.h:180:inet_ehash_locks_free()
+    . 128: if (hashinfo->ehash_locks)
+    . ERROR 192: hashinfo->ehash_locks = NULL;

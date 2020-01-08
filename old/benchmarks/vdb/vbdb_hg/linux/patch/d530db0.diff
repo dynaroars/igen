@@ -1,0 +1,12 @@
+diff --git a/simple/d530db0.c b/simple/d530db0.c
+--- a/simple/d530db0.c
++++ b/simple/d530db0.c
+@@ -11,7 +11,7 @@
+ #define DEVICE_PCI(dev) NULL
+ #endif
+ 
+-#define VORTEX_PCI(vp) ((vp) ? DEVICE_PCI(vp) : NULL)
++#define VORTEX_PCI(vp) ((int) (vp) ? DEVICE_PCI(vp) : NULL)
+ 
+ void acpi_set_WOL(int vp)
+ {

@@ -1,0 +1,53 @@
+
+type: OutOfBoundsRead
+
+descr:
+
+    Function incorrectly returning (int)255 on failure causes kernel panic
+
+    The value 0xff is used to mark pfnnid_map pages that are not
+    physically available. But, since pfnnid_map is an array of unsigned values,
+    0xff is interpreted as 255 and not as -1. As a result, pfn_to_nid() is
+    returning nid=255 for those pages that are not available in physical
+    memory. This value is being used by pfn_valid() to index the node_data
+    array, thus reading data out of node_data bounds.
+
+config: "PARISC && DISCONTIGMEM && PROC_PAGE_MONITOR"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 91ea8207168793b365322be3c90a4ee9e8b03ed4
+
+  source: patterns "fix" "BUG" "kernel panic" "#ifndef" "#ifdef"
+
+  fix-in: code
+
+loc: arch/parisc/
+
+trace: !!trace |
+    . call arch/parisc/mm/init.c:116:setup_bootmem()
+    . 273: for (i = 0; i < MAX_PHYSMEM_RANGES; i++) {
+    // MAX_PHYSMEM_RANGES is hardcoded to 8
+    . 274: memset(NODE_DATA(i), 0, sizeof(pg_data_t));
+    . [DISCONTIGMEM] 277: memset(pfnnid_map, 0xff, sizeof(pfnnid_map));
+    // since pfnnid_map is unsigned char[], this is (unsigned char)255
+
+    . call fs/proc/page.c:173:kpageflags_read()
+    . 188: if (pfn_valid(pfn))
+    .. call arch/parisc/include/asm/mmzone.h:52:pfn_valid()
+    .. 54: int nid = pfn_to_nid(pfn);
+    ... call arch/parisc/include/asm/mmzone.h:39:pfn_to_nid()
+    ... 49: return (int)pfnnid_map[i];
+    // if a page is not physically available we will get (int)255 instead of (int)-1
+    .. 56: if (nid >= 0)
+    .. 57: return (pfn < node_end_pfn(nid));
+    ... call include/linux/mmzone.h:759:node_end_pfn()
+    .... call arch/parisc/include/asm/mmzone.h:16:NODE_DATA()
+    .... ERROR 16: &node_data[nid].pg_data
+    // node_data[255] may be reading out of bounds
+
+links: !!md |
+  * [DISCONTIGMEM](http://lwn.net/Articles/439472/)
+  * [PA-RISC](http://en.wikipedia.org/wiki/PA-RISC)

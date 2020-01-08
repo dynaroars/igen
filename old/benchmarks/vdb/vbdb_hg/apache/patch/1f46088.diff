@@ -1,0 +1,12 @@
+diff --git a/apache/simple/1f46088.c b/apache/simple/1f46088.c
+--- a/apache/simple/1f46088.c
++++ b/apache/simple/1f46088.c
+@@ -11,6 +11,8 @@ void apr_signal_block(int signal)
+ 
+ int main(void)
+ {
++#ifdef SIGPIPE
+   apr_signal_block(SIGPIPE); // ERROR: SIGPIPE undeclared
++#endif
+   return 0;
+ }

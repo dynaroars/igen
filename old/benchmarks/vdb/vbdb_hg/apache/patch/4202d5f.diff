@@ -1,0 +1,12 @@
+diff --git a/apache/simple/4202d5f.c b/apache/simple/4202d5f.c
+--- a/apache/simple/4202d5f.c
++++ b/apache/simple/4202d5f.c
+@@ -1,7 +1,7 @@
+ #include <stdio.h>
+ 
+ #ifdef APU_HAS_LDAP
+-char certtdb = 'A';
++char certdb = 'A';
+ 
+ void util_ldap_connection_open()
+ {

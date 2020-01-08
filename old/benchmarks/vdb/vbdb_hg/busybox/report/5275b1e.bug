@@ -1,0 +1,30 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+    The integer variable k_crcs is undeclared when BusyBox is 
+    compiled with !FEATURE_INSMOD_VERSION_CHECKING
+
+keywords: compile, error
+
+config: !FEATURE_INSMOD_VERSION_CHECKING
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: 5275b1e49f62c273f5d3ef14f093eb8661f54843
+
+  source: patterns "CONFIG_.+" "uninit"
+
+  fix-in: code
+
+trace: !!trace |
+    . call modutils/insmod.c:3606:insmod_main();
+    . [FEATURE_INSMOD_VERSION_CHECKING] 3622:int k_crcs;
+    . ERROR 3833:k_crcs = new_is_kernel_checksummed();
+
+loc: modutils/
+
+links: 

@@ -1,0 +1,12 @@
+diff --git a/simple/b273d66.c b/simple/b273d66.c
+--- a/simple/b273d66.c
++++ b/simple/b273d66.c
+@@ -4,7 +4,7 @@
+ 
+ void list_single()
+ {
+-#ifdef BB_FEATURE_LS_FILETYPES
++#if defined (BB_FEATURE_LS_FILETYPES) || defined (BB_FEATURE_LS_USERNAME)
+   int info;
+ #endif
+ 

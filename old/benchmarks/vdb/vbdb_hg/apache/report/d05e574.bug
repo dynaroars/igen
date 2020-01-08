@@ -1,0 +1,39 @@
+
+type: NullDereference
+
+descr:
+
+    Segmentation fault when APR_HAS_SHARED_MEMORY.
+
+    developers were passing apr_rmm_calloc() as an argument of the
+    apr_rmm_addr_get function. However, there was no check regarding
+    the apr_rmm_calloc result. This pattern happened three times in
+    the same commit.
+
+keywords:
+
+config: APR_HAS_SHARED_MEMORY
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: d05e574ec26b02d9eb2ec7a37d693f7cb16d10cf
+
+  source: patterns "segfault"
+
+  fix-in: code
+
+trace: !!trace |
+    . call modules/experimental/util_ldap_cache_mgr.c:211:util_ald_create_caches()
+    . 219: util_ald_create_cache()
+    .. call modules/experimental/util_ldap_cache_mgr.c:252:util_ald_create_cache()
+    .. 281: util_ald_alloc()
+    ... call modules/experimental/util_ldap_cache_mgr.c:95:util_ald_alloc()
+    ... // if APR_HAS_SHARED_MEMORY is enabled
+    ... // the result of apr_rmm_calloc will be dereferenced without checking if it is non NULL.
+    ... ERROR 102: return (void *)apr_rmm_addr_get(cache->rmm_addr, apr_rmm_calloc(cache->rmm_addr, size));
+
+loc: modules/experimental/
+
+links:

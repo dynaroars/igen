@@ -1,0 +1,32 @@
+
+type: IntegerOverflow
+
+descr:
+
+    "In the while loop the timer overflows if TEMP_RESIDENCY_TIME is larger than 32 
+    
+    When TEMP_RESIDENCY_TIME is set to be 32 or larger, the timer overflows
+    yielding always false in the comparison in the while condition. 
+    
+    Issue 55: https://github.com/MarlinFirmware/Marlin/issues/55"
+
+config: "TEMP_RESIDENCY_TIME"
+
+bugfix:
+
+  repo: https://github.com/MarlinFirmware/Marlin.git
+
+  hash: f87c80889fe967ea883f96d2eed0f82398d8a3dd
+
+  source: patterns "Fixed" "overflow"
+
+  fix-in: code
+
+loc: main/
+
+trace: !!trace |
+
+    . call  Marlin.pde:521: void process_comands()
+    . 806:  case 109: 
+    . 845:  while((residencyStart == -1) ||
+    . ERORR 846:    (residencyStart > -1 && (millis() - residencyStart) < TEMP_RESIDENCY_TIME*1000) )

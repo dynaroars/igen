@@ -1,0 +1,23 @@
+
+type: UndefinedSymbol
+
+descr:
+
+    Undefined reference to cryptographic function
+    
+    Function test_cipher() depends on crypto_alloc_ablkcipher(),
+    which is only available when CRYPTO_BLKCIPHER is enabled.
+
+config: "CRYPTO_TEST && !CRYPTO_BLKCIPHER"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 242f1a343776a621ad5c3446d6f2718d37863cb5
+
+  source: patterns "CONFIG_.+" "fixes" "Kconfig" "+select"
+
+  fix-in: model
+
+loc: crypto/

@@ -1,0 +1,17 @@
+diff --git a/simple/208d898.c b/simple/208d898.c
+--- a/simple/208d898.c
++++ b/simple/208d898.c
+@@ -55,11 +55,11 @@
+ {
+ 	unsigned int mask = 0;
+ 
+-	spin_lock_irq();
++	spin_lock_bh();
+ 	while (rand() % 2) {
+     udp_checksum_complete();
+ 	}
+-	spin_unlock_irq();
++	spin_unlock_bh();
+ 
+ 	return mask;	
+ }

@@ -1,0 +1,13 @@
+diff --git a/apache/simple/97ecbec.c b/apache/simple/97ecbec.c
+--- a/apache/simple/97ecbec.c
++++ b/apache/simple/97ecbec.c
+@@ -28,6 +28,9 @@ int util_ldap_cache_init()
+ {
+ #if APR_HAS_SHARED_MEMORY
+   int result = apr_shm_create(&util_ldap_shm);
++  if (result == EEXIST) {
++    result = apr_shm_attach(&util_ldap_shm);
++  }
+   if (result != APR_SUCCESS) {
+     return result;
+   }

@@ -1,0 +1,30 @@
+
+type: BufferOverflow
+
+descr:
+
+    Function "ap_get_win32_interpreter" writes one additional byte into a buffer when WIN32.
+
+keywords:
+
+config: "WIN32"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 664e3aac6ddc9935e36e2e1259585b1bb7914f65
+
+  source: patterns "overflow"
+
+  fix-in: code
+
+trace: !!trace |
+    . call main/http_core.c:953:ap_get_win32_interpreter()
+    . 1044: for (i = 2; i < sizeof(buffer); i++)
+    . // after this for loop, i = sizeof(buffer)
+    . ERROR 1050: buffer[i] = '\0';
+
+loc: main/
+
+links:

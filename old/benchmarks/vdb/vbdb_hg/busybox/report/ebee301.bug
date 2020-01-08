@@ -1,0 +1,29 @@
+
+type: UndefinedSymbol
+
+descr:
+
+    The function copySubFile is not defined when !BB_AR.
+    
+keywords:
+
+config: BB_CP_MV && !BB_AR
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: ebee301c8b0bfe62cd2ec47f458b7f8710d8f407
+
+  source: patterns "when.*is enabled" "fix"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . call coreutils/mv.c:76:copyFile()
+    .. [BB_CP_MV] root/utility.c:396:copySubFile(rfd, wfd, srcStatBuf.st_size);
+    ... [BB_AR] call root/utility.c:271:copySubFile()
+
+loc: root/
+
+links: 

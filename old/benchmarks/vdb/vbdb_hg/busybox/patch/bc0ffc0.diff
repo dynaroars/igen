@@ -1,0 +1,17 @@
+diff --git a/simple/bc0ffc0.c b/simple/bc0ffc0.c
+--- a/simple/bc0ffc0.c
++++ b/simple/bc0ffc0.c
+@@ -39,8 +39,11 @@
+   prepend_new_eth_table(&clist, argv[0]);
+   
+ #ifdef ENABLE_FEATURE_CLEAN_UP
+-  for (ch = clist; ch; ch = ch->next) // ERROR
++  ethtable_t *next;
++  for (ch = clist; ch; ch = next) { // ERROR
++    next = ch->next;
+     delete_eth_table(ch);
++  }  
+ #endif
+   return 0;
+ }
+\ No newline at end of file

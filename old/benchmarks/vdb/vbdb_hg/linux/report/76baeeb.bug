@@ -1,0 +1,68 @@
+
+type: NullDereference
+
+descr: 
+
+    NULL pointer deference due to invalid cast in x86 NUMA
+
+    In x86-32bit NUMA, the map from PCI bus number to NUMA node is an
+    unsigned char array. Invalid entries are marked with (unsigned char)-1,
+    which is (unsigned char)255. As a result, invalid entries are interpreted
+    as NUMA node (int)255.
+
+    For instance, local_cpus_show() will use this node number to index the
+    node_to_cpumask_map array, whose entries are initialized for valid nodes
+    and otherwise left to NULL. If we get such an invalud NUMA node 255, and
+    it turns out that 255 >= nr_node_ids, then node_to_cpumask_map[255] will
+    be NULL, and we get a NULL pointer dereference when local_cpus_show() tries
+    to print the CPU mask.
+
+config: "X86_32 && NUMA && PCI"
+
+C-features: FunctionPointers, Structs
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 76baeebf7df493703eeb4428eac015bdb7fabda6
+
+  source: patterns "end trace" "CONFIG_<fid>"
+
+  fix-in: code
+
+loc: arch/x86/pci
+
+trace: !!trace |
+
+    . call arch/x86/pci/common.c:381:__devinit pcibios_scan_root()
+    // called by some pci_*_init() function
+    . 403: sd->node = get_mp_bus_to_node(busnum);
+    .. [NUMA && X86_32] call arch/x86/pci/common.c:659:get_mp_bus_to_node()
+    .. node = mp_bus_to_node[busnum];
+    // `node' has type int but `mp_bus_to_node' is an unsigned char array
+    // the default entry value is (unsigned char)-1, i.e. (unsigned char)255
+    // thus we could get an (int)255 as a node value
+    
+    . call drivers/base/core.c:68:dev_attr_show()
+    . 75: if (dev_attr->show)
+    . 76: ret = dev_attr->show(dev, dev_attr, buf);
+    .. dyn-call drivers/pci/pci-sysfs.c:71:local_cpus_show()
+    .. 77: mask = cpumask_of_pcibus(to_pci_dev(dev)->bus);
+    ... [NUMA] call arch/x86/include/asm/pci.h:144:cpumask_of_pcibus()
+    ... 148: node = __pcibus_to_node(bus);
+    .... [NUMA] call arch/x86/include/asm/pci.h:136:__pcibus_to_node()
+    .... 140: return sd->node;
+    ... 150: cpumask_of_node(node);
+    // we take this branch because node equals to (int)255, not to (int)-1
+    .... [!DEBUG_PER_CPU_MAPS] call arch/x86/include/asm/topology.h:95:cpumask_of_node()
+    .... 97: return node_to_cpumask_map[node];
+    // node_to_cpumask_map is a global array of pointers of MAX_NUMNODES entries.
+    // entries are initialized to NULL according to ANSI C standard
+    // thus if node >= nr_node_ids, mask will be NULL.
+    .. 78: len = cpumask_scnprintf(buf, PAGE_SIZE-2, mask);
+    // back to local_cpus_show() ... mask == NULL !
+    ... call include/linux/cpumask.h:943:cpumask_scnprintf()
+    ... ERROR 946: return bitmap_scnprintf(buf, len, cpumask_bits(srcp), nr_cpumask_bits);
+    // cpumask_bits(srcp) is defined as srcp->bits, and srcp is an alias for mask which is NULL
+

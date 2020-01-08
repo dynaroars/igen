@@ -1,0 +1,24 @@
+
+type: WrongFunArgNum
+
+descr:
+
+    Null stub missing parameter when !TRACING
+
+    The actual implementation takes an int argument but
+    the null stub, for the case when tracing is disabled, does
+    not declare it.
+
+config: "!TRACING"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: e67bc51e574ffe3c4bc1e09cab7658b1e780b4ce
+
+  source: patterns "when.+is not enabled"
+
+  fix-in: code
+
+loc: include/linux/

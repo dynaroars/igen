@@ -1,0 +1,51 @@
+diff --git a/simple/6e2b757.c b/simple/6e2b757.c
+--- a/simple/6e2b757.c
++++ b/simple/6e2b757.c
+@@ -27,15 +27,6 @@
+ 	
+   mod = (void *)hdr; // (3)
+ 
+-#if defined(CONFIG_MODULE_UNLOAD) && defined(CONFIG_SMP) 
+-  refptr(mod) = malloc(32);
+-  if (!refptr(mod))
+-  {
+-    err = -ENOMEM;
+-    goto free_mod;
+-  }
+-#endif
+-
+   ptr = malloc(512); // (4)
+   if (!ptr) {
+     err = -ENOMEM;
+@@ -51,18 +42,28 @@
+       break;
+   }
+ 
++#if defined(CONFIG_MODULE_UNLOAD) && defined(CONFIG_SMP) 
++  refptr(mod) = malloc(32);
++  if (!refptr(mod))
++  {
++    err = -ENOMEM;
++    goto free_init;
++  }
++#endif
++
+   if (nondet())
+     goto free_unload; // (9)
+ 
+   return 0;
+ 
+   free_unload:
++  free_init:
++#if defined(CONFIG_MODULE_UNLOAD) && defined(CONFIG_SMP)
++    free(refptr(mod)); // (11) ERROR: dereferencing already freed `mod'.
++#endif
+   free_core:
+     free(module_core(mod)); // (10) frees `module_core(mod)' and thus `mod' too
+   free_percpu:
+-#if defined(CONFIG_MODULE_UNLOAD) && defined(CONFIG_SMP)
+-    free(refptr(mod)); // (11) ERROR: dereferencing already freed `mod'.
+-#endif
+   free_mod:
+   free_hdr:
+     free(hdr);

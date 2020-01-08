@@ -1,0 +1,18 @@
+diff --git a/simple/bc8cec0.c b/simple/bc8cec0.c
+--- a/simple/bc8cec0.c
++++ b/simple/bc8cec0.c
+@@ -19,6 +19,14 @@
+   if (!wbuf)
+     return -ENOMEM;
+ 
++#ifdef CONFIG_JFFS2_FS_WBUF_VERIFY
++  wbuf_verify = malloc(WBUF_PAGESIZE);
++  if (!wbuf_verify) {
++    free(wbuf);
++    return -ENOMEM;
++  }
++#endif
++  
+   return 0;
+ }
+ 

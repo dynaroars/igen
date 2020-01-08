@@ -1,0 +1,14 @@
+diff --git a/simple/218ad12.c b/simple/218ad12.c
+--- a/simple/218ad12.c
++++ b/simple/218ad12.c
+@@ -30,9 +30,8 @@
+     if (size > PAGE_SIZE)
+       free(x);
+     else
+-#else
+-    free(x);
+ #endif
++      free(x);
+     x = NULL; // (4) ERROR
+   }
+ }

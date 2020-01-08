@@ -1,0 +1,12 @@
+diff --git a/simple/1b487ea.c b/simple/1b487ea.c
+--- a/simple/1b487ea.c
++++ b/simple/1b487ea.c
+@@ -12,7 +12,7 @@
+ 
+ #ifdef ENABLE_SELINUX
+   if(rand() % 2)
+-    printf(" %lc\n", *scontext); // ERROR
++    printf(" %s\n", scontext); // ERROR
+ #endif
+   
+   printf("  File: '%s'\n", filename);

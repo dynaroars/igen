@@ -1,0 +1,32 @@
+
+type: IncompatibleType
+
+descr:
+
+    Due to a wrong format parameter in a printf httpd does not work when
+    compiled for with the feature LFS (large file support) enabled.
+    
+keywords:
+
+config: LFS && (FEATURE_HTTPD_BASIC_AUTH || FEATURE_HTTPD_CGI)
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: 5cd6461b6fb51e8cf297a49074fce825e1960774
+
+  source: patterns "CONFIG_+" "fix"
+
+  fix-in: code, mapping
+
+trace: !!trace |
+    . call networking/httpd.c:1412:handleIncoming()
+    .. [FEATURE_HTTPD_BASIC_AUTH] 1583:sendHeaders(HTTP_UNAUTHORIZED); or
+    .. [FEATURE_HTTPD_CGI] 1611:sendHeaders(HTTP_NOT_IMPLEMENTED);
+    .. call sendHeaders(int responseNum)
+    ... ERROR 942:len += sprintf("%ld\r\n", config->ContentLength);
+
+loc: networking/
+
+links: 

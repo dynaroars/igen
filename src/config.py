@@ -1,22 +1,16 @@
+import os
 import os.path
-import random
 import z3
 import z3util
 
 import vcommon as CM
 import config_common as CC
-from config_common import Configs_d #do not del, needed to read existing results
 
 import settings
 mlog = CM.getLogger(__name__, settings.logger_level)
 
-def compat(obj, cls):
-    """
-    For compatibility with old data
-    """
-    return isinstance(obj, cls) or obj.__class__.__name__ == cls.__name__
 
-#Data Structures
+# Data Structures
 class Dom(CC.Dom):
     """
     >>> dom = Dom([('x',frozenset(['1','2'])),\
@@ -77,27 +71,27 @@ class Dom(CC.Dom):
         but these configs must satisfy s_core
         x=0,y=1  =>  [x=0,y=0,z=rand;x=0,y=2,z=rand;x=1,y=1;z=rand]
         """
-        
+
         assert isinstance(sel_core, SCore), sel_core
         assert isinstance(z3db, CC.Z3DB)
-        
+
         configs = []
         c_core, s_core = sel_core
 
-        #keep
-        changes = []        
+        # keep
+        changes = []
         if sel_core.keep and (len(self) - len(c_core)):
             changes.append(c_core)
 
-        #change
-        _new = lambda: Core((k, c_core[k]) for k in c_core)
+        # change
+        def _new(): return Core((k, c_core[k]) for k in c_core)
         for k in c_core:
             vs = self[k] - c_core[k]
             for v in vs:
                 new_core = _new()
                 new_core[k] = frozenset([v])
                 if s_core:
-                    for sk,sv in s_core.iteritems():
+                    for sk, sv in s_core.items():
                         assert sk not in new_core, sk
                         new_core[sk] = sv
                 changes.append(new_core)
@@ -108,22 +102,23 @@ class Dom(CC.Dom):
             #yexpr = z3.simplify(z3.And(yexpr, constrains))
             nexpr = z3util.myOr(e_configs)
             #logger.debug('constraint: {}, changed_core: {}, yexpr: {} '.format(constrains, changed_core, yexpr))
-            configs_ = self.gen_configs_exprs([yexpr],[nexpr],k=1, config_cls=Config)
+            configs_ = self.gen_configs_exprs(
+                [yexpr], [nexpr], k=1, config_cls=Config)
             if not configs_:
                 continue
-            config=configs_[0]
-            
+            config = configs_[0]
+
             assert config.c_implies(changed_core)
             assert config not in existing_configs, \
                 ("ERR: gen existing config {}".format(config))
-                     
+
             configs.append(config)
             e_configs.append(config.z3expr(z3db))
 
         return configs
 
     @classmethod
-    def get_dom(cls, dom_file):
+    def get_dom(cls, dom_dir: str):
         """
         Read domain info from a file. 
         Also *extract* default configs (.default*) 
@@ -131,7 +126,14 @@ class Dom(CC.Dom):
         - kconstraints (.dimacs) if given
         - runscript (.run) if given 
         """
-        assert os.path.isfile(dom_file), dom_file
+        assert os.path.isdir(dom_dir), dom_dir
+
+        def check(f, must_exist):
+            if os.path.isfile(f):
+                return f
+            else:
+                assert not must_exist, "'{}' does not exist".format(f)
+                return None
 
         def get_lines(lines):
             rs = (line.split() for line in lines)
@@ -142,74 +144,59 @@ class Dom(CC.Dom):
                 rs_.append((var, vals))
             return rs_
 
-        #domain file   (*.dom)
+        # domain file
+        dom_file = check(os.path.join(dom_dir, 'dom'), must_exist=True)
         dom = get_lines(CM.iread_strip(dom_file))
         dom = cls(dom)
+        mlog.info("using domain file from '{}'".format(dom_file))
 
-        #other files 
-        dom_name = CM.file_basename(os.path.basename(dom_file)) #ex
-        dom_dir = os.path.dirname(dom_file)
-        fs = [os.path.join(dom_dir, f) for f in os.listdir(dom_dir) if dom_name in f]
+        dom.run_script = check(
+            os.path.join(dom_dir, 'run'), must_exist=True)
+        mlog.info("using run script from '{}'".format(dom.run_script))
 
-        def _f(name, at_most_one):
-            fs_ = [f for f in fs if name in f and os.path.isfile(f)]
-            if not at_most_one:
-                return fs_
+        dom.kconstraints_file = check(
+            os.path.join(dom_dir, 'dimacs'), must_exist=False)
+        if dom.kconstraints_file:
+            mlog.info("using contraint from {}".format(dom.kconstraints_file))
 
-            if fs_: 
-                assert len(fs_) == 1, (fs_, name)
-                return fs_[0]
-            else:
-                return None
-            
-            
-        #potentially multiple default configs  (*.default*)
-        configs = _f('.default', at_most_one=False)
+        # potentially multiple default configs  (*.default*)
+        configs = [os.path.join(dom_dir, c) for c in os.listdir(dom_dir)
+                   if c.startswith("default")]
         configs = [dict(get_lines(CM.iread_strip(f))) for f in configs
                    if os.path.isfile(f)]
         configs = [[(k, list(c[k])[0]) for k in dom] for c in configs]
 
-        #1 constraint file  (*.dimacs*)
-        dom.kconstraints_file = _f('.dimacs', at_most_one=True)
-        if dom.kconstraints_file:
-            mlog.info("Using contraint from {}".format(dom.kconstraints_file))
-
-        #1 runscript (*.run)
-        dom.run_script = _f('.run', at_most_one=True)
-        if dom.run_script:
-            mlog.info("Using run_script from {}".format(dom.run_script))
-
-        return dom, configs 
+        return dom, configs
 
     def get_kconstraints(self, z3db):
         """
         parse k-constraint file
         """
         assert isinstance(z3db, CC.Z3DB), z3db
-        
+
         if self.kconstraints_file is None:
             return []
 
         lines = [l.strip() for l in CM.iread(self.kconstraints_file)]
         lines = [l for l in lines]
-        
+
         symbols = {}
         clauses = []
         for l in lines:
             if l.startswith('c'):
                 if l.startswith('c kconfig_variable'):
                     pair = l.split(' ')
-                    sidx, symbol = pair[2], pair[3] #'2', 'y'
+                    sidx, symbol = pair[2], pair[3]  # '2', 'y'
                     symbols[sidx] = symbol
 
-            elif l.startswith("p"): #p cnf 3 4
+            elif l.startswith("p"):  # p cnf 3 4
                 _, _, nvars, nclauses = l.split(" ")
                 nsymbols = int(nvars)
                 assert nsymbols == len(symbols)
                 nclauses = int(nclauses)
-            else:  #clause,  -1 2
-                clause = l.split()  #-2 11 0
-                clause = frozenset(clause[:-1])  #remove the last 0
+            else:  # clause,  -1 2
+                clause = l.split()  # -2 11 0
+                clause = frozenset(clause[:-1])  # remove the last 0
                 clauses.append(clause)
 
         #kconstraint_symbols = set(symbols.values())
@@ -217,36 +204,37 @@ class Dom(CC.Dom):
 
         clauses = frozenset(clauses)
         assert len(clauses) <= nclauses
+
         def _f(sidx):
             isNot = sidx.startswith('-')
             return isNot, sidx[1:] if isNot else sidx
 
-        my01 = ['0','1']
-        myny = ['n','y']
-        myStr = ['\'\'','\'non_empty\'']
-        
+        my01 = ['0', '1']
+        myny = ['n', 'y']
+        myStr = ['\'\'', '\'non_empty\'']
+
         def _g(isNot, sidx):
             s = symbols[sidx]
             try:
-                s,d = z3db[s]
+                s, d = z3db[s]
             except KeyError:
                 return None
 
             if my01[0] in d and my01[1] in d:
-                f,t = my01
+                f, t = my01
             elif myny[0] in d and myny[1] in d:
-                f,t = myny
+                f, t = myny
             elif myStr[0] in d and myStr[1] in d:
-                f,t = myStr
+                f, t = myStr
             else:
                 assert False, d
 
             rs = s == d[f if isNot else t]
             return rs
-        
+
         rs = []
         for clause in clauses:
-            ss = [_f(sidx) for sidx in clause]  #-3
+            ss = [_f(sidx) for sidx in clause]  # -3
             ss = [_g(isNot, sidx) for isNot, sidx in ss]
             if all(s is not None for s in ss) and ss:
                 rs.append(z3.simplify(z3util.Or(ss)))
@@ -261,7 +249,7 @@ class Config(CC.Config):
     a=1 b=0 c=1
 
     >>> assert c.c_implies(Core()) and c.d_implies(Core())
-    
+
     >>> core1 = Core([('a', frozenset(['0','1'])), ('b', frozenset(['0','1']))])    
     >>> assert c.c_implies(core1)
     >>> assert c.d_implies(core1)
@@ -292,11 +280,10 @@ class Config(CC.Config):
         """
         self => disj core
         """
-        assert isinstance(core, Core),core
+        assert isinstance(core, Core), core
 
         return (not core or
                 any(k in self and self[k] in core[k] for k in core))
-
 
     @classmethod
     def eval(cls, configs, get_cov_f, kconstraints, z3db):
@@ -308,27 +295,27 @@ class Config(CC.Config):
                 all(isinstance(c, (cls, CC.Config)) for c in configs)
                 and configs), configs
         assert callable(get_cov_f), get_cov_f
-        assert all(z3.is_expr(constraint) for constraint in kconstraints), kconstraints
+        assert all(z3.is_expr(constraint)
+                   for constraint in kconstraints), kconstraints
         assert isinstance(z3db, CC.Z3DB), z3db
-
 
         def eval_get_cov(c):
             sids, outps = get_cov_f(c)
             rs = outps if settings.analyze_outps else sids
             if not rs:
-                mlog.warn("'{}' produces nothing".format(c))
+                mlog.warning("'{}' produces nothing".format(c))
             return rs
-        
+
         def eval_f(c):
             if kconstraints:
                 #assert not Z3.is_unsat(kconstraint)
                 exprs = kconstraints + [c.z3expr(z3db)]
                 isunsat = Z3.is_unsat(exprs, print_unsat_core=False)
-                
+
                 if isunsat:
-                    print 'invalid config'
+                    print('invalid config')
                     return set()
-                
+
             return eval_get_cov(c)
 
         def wprocess(tasks, Q):
@@ -341,9 +328,9 @@ class Config(CC.Config):
         tasks = list(set(configs))
         wrs = CC.runMP("eval", tasks, wprocess,
                        chunksiz=1, doMP=settings.doMP and len(tasks) >= 2)
-        
+
         return wrs
-    
+
 
 class Core(CC.HDict):
     """
@@ -371,75 +358,79 @@ class Core(CC.HDict):
     x=1 z=2 w=b,c
 
     """
+
     def __init__(self, core=CC.HDict()):
         super(Core, self).__init__(core)
-        
-        assert all(CC.is_csetting(s) for s in self.iteritems()), self
+
+        assert all(CC.is_csetting(s) for s in self.items()), self
 
     def __str__(self, delim=' '):
         if self:
-            return delim.join(map(CC.str_of_csetting, self.iteritems()))
+            return delim.join(map(CC.str_of_csetting, self.items()))
         else:
             return 'true'
 
     @property
     def settings(self):
-        return [(k,v) for k,vs in self.iteritems() for v in vs]
-        
+        return [(k, v) for k, vs in self.items() for v in vs]
+
     def neg(self, dom):
         try:
             return self._neg
         except AttributeError:
-            assert compat(dom, Dom), dom
-            ncore = ((k,dom[k] - self[k]) for k in self)
-            self._neg = Core((k,vs) for k,vs in ncore if vs)
+            assert isinstance(dom, Dom), dom
+            ncore = ((k, dom[k] - self[k]) for k in self)
+            self._neg = Core((k, vs) for k, vs in ncore if vs)
             return self._neg
-        
+
     def z3expr(self, z3db, is_and):
         assert isinstance(z3db, CC.Z3DB)
         return z3db.expr_of_dict_dict(self, is_and)
 
     @staticmethod
-    def maybe_core(c): return c is None or isinstance(c,Core)
+    def maybe_core(c): return c is None or isinstance(c, Core)
+
 
 class MCore(tuple):
     """
     Multiple (tuples) cores
     """
-    def __init__(self,cores):
-        tuple.__init__(self,cores)
 
-        assert len(self) == 2 or len(self) == 4, self
-        assert all(Core.maybe_core(c) for c in self), self
+    def __new__(cls, cores):
+        assert len(cores) == 2 or len(cores) == 4, cores
+        assert all(Core.maybe_core(c) for c in cores), cores
+        return super(MCore, cls).__new__(cls, cores)
 
     @property
     def settings(self):
         core = (c for c in self if c)
-        return set(s for c in core for s in c.iteritems())
+        return set(s for c in core for s in c.items())
 
     @property
     def values(self):
         core = (c for c in self if c)
-        return set(s for c in core for s in c.itervalues())
+        return set(s for c in core for s in c.values())
 
     @property
     def sstren(self): return len(self.settings)
-    
+
     @property
     def vstren(self): return sum(map(len, self.values))
 
+
 class SCore(MCore):
-    def __init__(self, (mc,sc)):
+    def __new__(cls, mcsc):
         """
         mc: main core that will generate cex's
         sc (if not None): sat core that is satisfied by all generated cex'
         """
-        super(SCore, self).__init__((mc,sc))
-        #additional assertion
+        mc, sc = mcsc
         assert mc is None or isinstance(mc, Core) and mc, mc
-        #sc is not None => ...
+        # sc is not None => ...
         assert not sc or all(k not in mc for k in sc), sc
-        
+        return super(MCore, cls).__new__(cls, mcsc)
+
+    def __init__(self, mcsc):
         self.keep = False
 
     def set_keep(self):
@@ -448,7 +439,7 @@ class SCore(MCore):
         and also those that have the settings of mc
         """
         self.keep = True
-    
+
     @property
     def mc(self): return self[0]
 
@@ -458,24 +449,18 @@ class SCore(MCore):
     def __str__(self):
         ss = []
         if self.mc:
-            s = ""
-            try:  #to support old format that doesn't have keep
-                if self.keep:
-                    s = "(keep)" 
-            except AttributeError:
-                mlog.warn("Old format, has no 'keep' in SCore")
-                pass
+            ss.append("mc(keep): {}".format(self.mc))
 
-            ss.append("mc{}: {}".format(s,self.mc))
-                                            
-                      
         if self.sc:
             ss.append("sc: {}".format(self.sc))
-        return '; '.join(ss)        
-        
+        return '; '.join(ss)
+
     @classmethod
-    def mk_default(cls): return cls((None, None))
-        
+    def mk_default(cls):
+        c = cls((None, None))
+        return c
+
+
 class PNCore(MCore):
     """
     >>> pc = Core([('x',frozenset(['0','1'])),('y',frozenset(['1']))])
@@ -519,55 +504,63 @@ class PNCore(MCore):
 
     """
 
-    def __init__(self,(pc,pd,nc,nd)):
-        super(PNCore, self).__init__((pc,pd,nc,nd))
+    def __new__(cls, pcpdncnd):
+        return super(PNCore, cls).__new__(cls, pcpdncnd)
 
     @property
     def pc(self): return self[0]
+
     @property
     def pd(self): return self[1]
+
     @property
     def nc(self): return self[2]
+
     @property
     def nd(self): return self[3]
 
     @property
     def vtyp(self): return self._vtyp
+
     @vtyp.setter
     def vtyp(self, vt):
         assert isinstance(vt, str) and vt in 'conj disj mix'.split(), vt
-            
+
         self._vtyp = vt
-    
+
     @property
     def vstr(self): return self._vstr
+
     @vstr.setter
-    def vstr(self,vs):
+    def vstr(self, vs):
         assert isinstance(vs, str) and vs, vs
-        
+
         self._vstr = vs
 
     @classmethod
-    def mk_default(cls): return cls((None, None, None, None))
+    def mk_default(cls):
+        c = cls((None, None, None, None))
+        return c
 
     def __str__(self):
         try:
             return "{} ({})".format(self.vstr, self.vtyp)
         except AttributeError:
-            ss = ("{}: {}".format(s,c) for s,c in
-                  zip('pc pd nc nd'.split(),self) if c is not None)
+            ss = ("{}: {}".format(s, c) for s, c in
+                  zip('pc pd nc nd'.split(), self) if c is not None)
             return '; '.join(ss)
 
     def verify(self, configs, dom):
-        assert self.pc is not None, self.pc #this never happens
-        #nc is None => pd is None
+        assert self.pc is not None, self.pc  # this never happens
+        # nc is None => pd is None
         assert self.nc is not None or self.pd is None, (self.nc, self.nd)
-        assert (all(isinstance(c, Config) for c in configs) and configs), configs
+        assert (all(isinstance(c, Config)
+                    for c in configs) and configs), configs
         assert isinstance(dom, Dom), dom
 
         pc, pd, nc, nd = self
 
-        #traces => pc & neg(pd)
+        # traces => pc & neg(pd)
         assert not pc or all(c.c_implies(pc) for c in configs), pc
 
         if pd:
@@ -576,9 +569,9 @@ class PNCore(MCore):
                 mlog.info('pd {} invalid'.format(pd))
                 pd = None
 
-        #neg traces => nc & neg(nd)
-        #pos traces => neg(nc & neg(nd))
-        #pos traces => nd | neg(nc) 
+        # neg traces => nc & neg(nd)
+        # pos traces => neg(nc & neg(nd))
+        # pos traces => nd | neg(nc)
         if nc and not nd:
             nc_n = nc.neg(dom)
             if not all(c.d_implies(nc_n) for c in configs):
@@ -589,24 +582,25 @@ class PNCore(MCore):
                 mlog.info('nd {} invalid'.format(nd))
                 nd = None
         elif nc and nd:
-            nc_n = nc.neg(dom)        
+            nc_n = nc.neg(dom)
             if not all(c.c_implies(nd) or
                        c.d_implies(nc_n) for c in configs):
-                mlog.info('nc {} & nd {} invalid').format(nc,nd)
+                mlog.info('nc {} & nd {} invalid').format(nc, nd)
                 nc = None
                 nd = None
 
         return PNCore((pc, pd, nc, nd))
-    
+
     @staticmethod
     def _get_expr(cc, cd, dom, z3db, is_and):
         assert Core.maybe_core(cc)
         assert Core.maybe_core(cd)
         assert isinstance(dom, Dom)
         assert isinstance(z3db, CC.Z3DB)
-        
+
         k = (cc, cd, is_and)
-        if k in z3db.cache: return z3db.cache[k]
+        if k in z3db.cache:
+            return z3db.cache[k]
 
         fs = []
         if cc:
@@ -619,7 +613,7 @@ class PNCore(MCore):
 
         myf = z3util.myAnd if is_and else z3util.myOr
         expr = myf(fs)
-        
+
         z3db.add(k, expr)
         return expr
 
@@ -628,19 +622,19 @@ class PNCore(MCore):
         and_delim = ' & '
         or_delim = ' | '
 
-        def _str(core,delim):
+        def _str(core, delim):
             s = core.__str__(delim)
             if len(core) > 1:
                 s = '({})'.format(s)
             return s
-        
+
         ss = []
         if cc:
-            s = _str(cc,and_delim)
+            s = _str(cc, and_delim)
             ss.append(s)
         if cd:
             cd_n = cd.neg(dom)
-            s = _str(cd_n,or_delim)
+            s = _str(cd_n, or_delim)
             ss.append(s)
 
         if ss:
@@ -650,12 +644,11 @@ class PNCore(MCore):
             return 'true'
 
     @staticmethod
-    def _get_expr_str(cc,cd,dom,z3db,is_and):
+    def _get_expr_str(cc, cd, dom, z3db, is_and):
         expr = PNCore._get_expr(cc, cd, dom, z3db, is_and)
         vstr = PNCore._get_str(cc, cd, dom, is_and)
-        return expr,vstr
+        return expr, vstr
 
-    
     def simplify(self, dom, z3db, do_firsttime=True):
         """
         Compare between (pc,pd) and (nc,nd) and return the stronger one.
@@ -673,31 +666,37 @@ class PNCore(MCore):
         assert isinstance(z3db, CC.Z3DB), z3db
         if __debug__:
             if do_firsttime:
-                assert self.pc is not None, self.pc #this never could happen
-                #nc is None => pd is None
-                assert self.nc is not None or self.pd is None, (self.nc, self.nd)
+                assert self.pc is not None, self.pc  # this never could happen
+                # nc is None => pd is None
+                assert self.nc is not None or self.pd is None, (
+                    self.nc, self.nd)
 
         #pf = pc & neg(pd)
-        #nf = neg(nc & neg(nd)) = nd | neg(nc)
-        pc,pd,nc,nd = self
+        # nf = neg(nc & neg(nd)) = nd | neg(nc)
+        pc, pd, nc, nd = self
 
-        #remove empty ones
-        if not pc: pc = None
-        if not pd: pd = None
-        if not nc: nc = None
-        if not nd: nd = None
+        # remove empty ones
+        if not pc:
+            pc = None
+        if not pd:
+            pd = None
+        if not nc:
+            nc = None
+        if not nd:
+            nd = None
 
         if pc is None and pd is None:
-            expr,vstr = PNCore._get_expr_str(nd,nc,dom,z3db,is_and=False)
+            expr, vstr = PNCore._get_expr_str(nd, nc, dom, z3db, is_and=False)
         elif nc is None and nd is None:
-            expr,vstr = PNCore._get_expr_str(pc,pd,dom,z3db,is_and=True)
+            expr, vstr = PNCore._get_expr_str(pc, pd, dom, z3db, is_and=True)
         else:
-            pexpr,pvstr = PNCore._get_expr_str(pc,pd,dom,z3db,is_and=True)
-            nexpr,nvstr = PNCore._get_expr_str(nd,nc,dom,z3db,is_and=False)
-            
+            pexpr, pvstr = PNCore._get_expr_str(pc, pd, dom, z3db, is_and=True)
+            nexpr, nvstr = PNCore._get_expr_str(
+                nd, nc, dom, z3db, is_and=False)
+
             assert pexpr is not None
             assert nexpr is not None
-            
+
             if z3util.is_tautology(z3.Implies(pexpr, nexpr), z3db.solver):
                 nc = None
                 nd = None
@@ -708,27 +707,27 @@ class PNCore(MCore):
                 pd = None
                 expr = nexpr
                 vstr = nvstr
-            else:  #could occur when using incomplete traces
+            else:  # could occur when using incomplete traces
                 mlog.warn("inconsistent ? {}\npf: {} ?? nf: {}"
-                            .format(PNCore((pc,pd,nc,nd)),pexpr,nexpr))
+                          .format(PNCore((pc, pd, nc, nd)), pexpr, nexpr))
 
-                expr = z3util.myAnd([pexpr,nexpr])
-                vstr = ','.join([pvstr,nvstr]) + '***'
+                expr = z3util.myAnd([pexpr, nexpr])
+                vstr = ','.join([pvstr, nvstr]) + '***'
 
         def _typ(s):
-            #hackish way to get type
+            # hackish way to get type
             if ' & ' in s and ' | ' in s:
                 return 'mix'
             elif ' | ' in s:
                 return 'disj'
             else:
-                return 'conj'         
-        
-        core = PNCore((pc,pd,nc,nd))
+                return 'conj'
+
+        core = PNCore((pc, pd, nc, nd))
         core.vstr = vstr
         core.vtyp = _typ(vstr)
-        
-        return core,expr
+
+        return core, expr
 
     def is_simplified(self):
         return ((self.pc is None and self.pd is None) or
@@ -739,12 +738,12 @@ class PNCore(MCore):
         Note: z3 expr "true" is represented (and returned) as None
         """
         assert isinstance(dom, Dom)
-        assert isinstance(z3db, CC.Z3DB)        
+        assert isinstance(z3db, CC.Z3DB)
 
         if self in z3db.cache:
             return z3db.cache[self]
-        
-        pc,pd,nc,nd = self
+
+        pc, pd, nc, nd = self
         if pc is None and pd is None:
             expr = PNCore._get_expr(nd, nc, dom, z3db, is_and=False)
         elif nc is None and nd is None:
@@ -752,12 +751,13 @@ class PNCore(MCore):
         else:
             pexpr = PNCore._get_expr(pc, pd, dom, z3db, is_and=True)
             nexpr = PNCore._get_expr(nd, nc, dom, z3db, is_and=False)
-            expr = z3util.myAnd([pexpr,nexpr])
+            expr = z3util.myAnd([pexpr, nexpr])
 
         z3db.add(self, expr)
         return expr
 
-class Cores_d(CC.CustDict):
+
+class Cores_d(dict):
     """
     rare case when diff c1 and c2 became equiv after simplification
     >>> dom = Dom([('a',frozenset(['0','1'])),('b',frozenset(['0','1']))])
@@ -803,16 +803,17 @@ class Cores_d(CC.CustDict):
     1. (2) a=1 & b=1 (conj): (2) L1,L2
 
     """
-    def __setitem__(self,sid,pncore):
+
+    def __setitem__(self, sid, pncore):
         assert isinstance(sid, str), sid
         assert isinstance(pncore, PNCore), pncore
-        
-        self.__dict__[sid]=pncore
+
+        dict.__setitem__(self, sid, pncore)
 
     def __str__(self):
         return '\n'.join("{}. {}: {}"
-                         .format(i+1,sid,self[sid])
-                         for i,sid in enumerate(sorted(self)))
+                         .format(i+1, sid, self[sid])
+                         for i, sid in enumerate(sorted(self)))
 
     def merge(self, dom, z3db, show_detail=False):
         assert isinstance(dom, Dom)
@@ -820,22 +821,22 @@ class Cores_d(CC.CustDict):
 
         mcores_d = Mcores_d()
         cache = {}
-        for sid, core in self.iteritems():
+        for sid, core in self.items():
             try:
-                key = core.vstr 
+                key = core.vstr
             except AttributeError:
                 key = core
-                
+
             if key not in cache:
                 cache[key] = core
 
             mcores_d.add(cache[key], sid)
 
         mcores_d = mcores_d.fix_duplicates(dom, z3db)
-        
+
         if show_detail:
             mcores_d.show_results()
-            
+
         return mcores_d
 
     def analyze(self, dom, z3db, covs_d):
@@ -851,28 +852,28 @@ class Cores_d(CC.CustDict):
 
         if not self:
             return self
-            
-        def show_compare(sid,old_c,new_c):
+
+        def show_compare(sid, old_c, new_c):
             if old_c != new_c:
                 mlog.info("sid {}: {} ~~> {}".
-                             format(sid,old_c,new_c))
+                          format(sid, old_c, new_c))
         mlog.info("analyze results for {} sids".format(len(self)))
         cores_d = Cores_d()
 
         if covs_d:
             mlog.info("verify ...")
             cache = {}
-            for sid,core in self.iteritems():
+            for sid, core in self.items():
                 configs = frozenset(covs_d[sid])
                 key = (core, configs)
                 if key not in cache:
                     core_ = core.verify(configs, dom)
-                    cache[key]=core_
-                    show_compare(sid,core,core_)
+                    cache[key] = core_
+                    show_compare(sid, core, core_)
                 else:
                     core_ = cache[key]
 
-                cores_d[sid]=core
+                cores_d[sid] = core
         else:
             cores_d = self
 
@@ -883,45 +884,53 @@ class Cores_d(CC.CustDict):
             if core not in cache:
                 core_, expr = core.simplify(
                     dom, z3db, do_firsttime=(covs_d is not None))
-                cache[core]=core_
-                show_compare(sid,core,core_)
+                cache[core] = core_
+                show_compare(sid, core, core_)
             else:
                 core_ = cache[core]
-            cores_d[sid]=core_
+            cores_d[sid] = core_
 
         return cores_d
-    
-class Mcores_d(CC.CustDict):
+
+
+class Mcores_d(dict):
     """
     A mapping from core -> {sids}
     """
-    def add(self,core, sid):
-        assert compat(core, PNCore),core
-        assert isinstance(sid, str),str
-        
-        super(Mcores_d, self).add_set(core, sid)
+
+    def add(self, core, sid):
+        assert isinstance(core, PNCore), core
+        assert isinstance(sid, str), str
+
+        # super(Mcores_d, self).add_set(core, sid)
+        if core not in self:
+            self[core] = set()
+        self[core].add(sid)
 
     def __str__(self):
-        mc = sorted(self.iteritems(),
-                    key=lambda (core,cov): (core.sstren,core.vstren,len(cov)))
+        def _f(corecov):
+            core, cov = corecov
+            return (core.sstren, core.vstren, len(cov))
+
+        mc = sorted(self.items(), key=_f)
         ss = ("{}. ({}) {}: {}"
-              .format(i+1,core.sstren,core,CC.str_of_cov(cov))
-              for i,(core,cov) in enumerate(mc))
+              .format(i+1, core.sstren, core, CC.str_of_cov(cov))
+              for i, (core, cov) in enumerate(mc))
         return '\n'.join(ss)
 
     def fix_duplicates(self, dom, z3db):
         assert isinstance(dom, Dom)
         assert not isinstance(z3db, Dom)
-        
+
         def find_dup(expr, d):
             for pc in d:
                 expr_ = pc.z3expr(dom, z3db)
-                if ((expr is None and expr_ is None) or 
+                if ((expr is None and expr_ is None) or
                     (expr is not None and expr_ is not None and
                      z3util.is_tautology(expr == expr_, z3db.solver))):
                     return pc
-                    
-            return None #no dup
+
+            return None  # no dup
 
         uniqs = {}
         for pc in self:
@@ -932,7 +941,7 @@ class Mcores_d(CC.CustDict):
             else:
                 uniqs[pc] = set()
 
-        if len(uniqs) == len(self):  #no duplicates
+        if len(uniqs) == len(self):  # no duplicates
             return self
         else:
             mlog.info('merge {} dups'.format(len(self) - len(uniqs)))
@@ -945,20 +954,20 @@ class Mcores_d(CC.CustDict):
                     for sid in self[dup]:
                         mc_d.add(pc, sid)
             return mc_d
-                    
+
     @property
     def vtyps(self):
         try:
             return self._vtyps
         except AttributeError:
-            d = {'conj' : 0, 'disj' : 0, 'mix' : 0}
+            d = {'conj': 0, 'disj': 0, 'mix': 0}
             for core in self:
                 vtyp = core.vtyp
                 d[vtyp] += 1
 
             self._vtyps = (d['conj'], d['disj'], d['mix'])
             return self._vtyps
-    
+
     @property
     def strens(self):
         """
@@ -970,7 +979,7 @@ class Mcores_d(CC.CustDict):
         for stren in sorted(strens):
             cores = [c for c in self if c.sstren == stren]
             cov = set(sid for core in cores for sid in self[core])
-            rs.append((stren,len(cores),len(cov)))
+            rs.append((stren, len(cores), len(cov)))
         return rs
 
     @property
@@ -979,7 +988,7 @@ class Mcores_d(CC.CustDict):
     def show_results(self):
         print("inferred results ({}):\n{}".format(len(self), self))
         mlog.info("strens (stren, nresults, nsids): {}"
-                     .format(self.strens_str))
+                  .format(self.strens_str))
 
     @classmethod
     def str_of_strens(cls, strens):
@@ -991,10 +1000,11 @@ class DTrace(object):
     """
     Object for saving information (for later analysis)
     """
-    def __init__(self,citer,itime,xtime,
-                 nconfigs,ncovs,ncores,
-                 cconfigs_d,new_covs,new_cores,
-                 sel_core,cores_d):
+
+    def __init__(self, citer, itime, xtime,
+                 nconfigs, ncovs, ncores,
+                 cconfigs_d, new_covs, new_cores,
+                 sel_core, cores_d):
 
         self.citer = citer
         self.itime = itime
@@ -1007,86 +1017,85 @@ class DTrace(object):
         self.new_cores = new_cores
         self.sel_core = sel_core
         self.cores_d = cores_d
-        
+
     def show(self, dom, z3db):
-        assert isinstance(dom, Dom)
+        assert isinstance(dom, Dom), type(dom)
         assert isinstance(z3db, CC.Z3DB)
-        
+
         mlog.info("ITER {}, ".format(self.citer) +
-                    "{}s, ".format(self.itime) +
-                    "{}s eval, ".format(self.xtime) +
-                    "total: {} configs, {} covs, {} cores, "
-                    .format(self.nconfigs,self.ncovs,self.ncores) +
-                    "new: {} configs, {} covs, {} updated cores, "
-                    .format(len(self.cconfigs_d),
-                            len(self.new_covs),len(self.new_cores)) +
-                    "{}".format("** progress **"
-                                if self.new_covs or self.new_cores else ""))
+                  "{}s, ".format(self.itime) +
+                  "{}s eval, ".format(self.xtime) +
+                  "total: {} configs, {} covs, {} cores, "
+                  .format(self.nconfigs, self.ncovs, self.ncores) +
+                  "new: {} configs, {} covs, {} updated cores, "
+                  .format(len(self.cconfigs_d),
+                          len(self.new_covs), len(self.new_cores)) +
+                  "{}".format("** progress **"
+                              if self.new_covs or self.new_cores else ""))
 
         mlog.info('select core: ({}) {}'.format(self.sel_core.sstren,
-                                                   self.sel_core))
+                                                self.sel_core))
         mlog.info('create {} configs'.format(len(self.cconfigs_d)))
         mlog.debug("\n"+str(self.cconfigs_d))
-        
+
         mcores_d = self.cores_d.merge(dom, z3db)
         mlog.info("infer {} interactions".format(len(mcores_d)))
         mlog.debug('\n{}'.format(mcores_d))
-        
+
         mlog.info("strens: {}".format(mcores_d.strens_str))
 
     @staticmethod
-    def save_pre(seed,dom,tmpdir):
-        CM.vsave(os.path.join(tmpdir,'pre'),(seed,dom))
+    def save_pre(seed, dom, tmpdir):
+        CM.vsave(os.path.join(tmpdir, 'pre'), (seed, dom))
 
     @staticmethod
-    def save_post(pp_cores_d,itime_total,tmpdir):
-        CM.vsave(os.path.join(tmpdir,'post'),(pp_cores_d,itime_total))
+    def save_post(pp_cores_d, itime_total, tmpdir):
+        CM.vsave(os.path.join(tmpdir, 'post'), (pp_cores_d, itime_total))
 
     @staticmethod
-    def save_iter(cur_iter,dtrace,tmpdir):
-        CM.vsave(os.path.join(tmpdir,'{}.tvn'.format(cur_iter)),dtrace)
+    def save_iter(cur_iter, dtrace, tmpdir):
+        CM.vsave(os.path.join(tmpdir, '{}.tvn'.format(cur_iter)), dtrace)
 
     @staticmethod
     def load_pre(dir_):
-        seed,dom = CM.vload(os.path.join(dir_,'pre'))
-        return seed,dom
+        seed, dom = CM.vload(os.path.join(dir_, 'pre'))
+        return seed, dom
 
     @staticmethod
     def load_post(dir_):
-        pp_cores_d,itime_total = CM.vload(os.path.join(dir_,'post'))
-        return pp_cores_d,itime_total
+        pp_cores_d, itime_total = CM.vload(os.path.join(dir_, 'post'))
+        return pp_cores_d, itime_total
 
     @staticmethod
-    def load_iter(dir_,f):
-        dtrace = CM.vload(os.path.join(dir_,f))
+    def load_iter(dir_, f):
+        dtrace = CM.vload(os.path.join(dir_, f))
         return dtrace
 
     @staticmethod
-    def str_of_summary(seed,iters,itime,xtime,nconfigs,ncovs,tmpdir):
+    def str_of_summary(seed, iters, itime, xtime, nconfigs, ncovs, tmpdir):
         ss = ["Seed {}".format(seed),
               "Iters {}".format(iters),
-              "Time ({}s, {}s)".format(itime,xtime),
+              "Time ({}s, {}s)".format(itime, xtime),
               "Configs {}".format(nconfigs),
               "Covs {}".format(ncovs),
               "Tmpdir {}".format(tmpdir)]
-        return "Summary: " + ', '.join(ss)    
+        return "Summary: " + ', '.join(ss)
 
     @classmethod
-    def load_dir(cls, dir_):        
-        seed,dom = cls.load_pre(dir_)
-        dts = [cls.load_iter(dir_,f)
+    def load_dir(cls, dir_):
+        seed, dom = cls.load_pre(dir_)
+        dts = [cls.load_iter(dir_, f)
                for f in os.listdir(dir_) if f.endswith('.tvn')]
         try:
-            pp_cores_d,itime_total = cls.load_post(dir_)
+            pp_cores_d, itime_total = cls.load_post(dir_)
         except IOError:
             mlog.error("post info not avail")
             pp_cores_d, itime_total = None, None
         return seed, dom, dts, pp_cores_d, itime_total
 
 
-
 class Z3(object):
-    @staticmethod 
+    @staticmethod
     def is_unsat(exprs, print_unsat_core=False):
         assert all(z3.is_expr(e) for e in exprs), exprs
 
@@ -1098,20 +1107,19 @@ class Z3(object):
 
         if stat == z3.unsat and print_unsat_core:
             ps = [z3.Bool('p{}'.format(i)) for i in range(len(exprs))]
-            exprs = [z3.Implies(p, e) for p,e in zip(ps, exprs)]
+            exprs = [z3.Implies(p, e) for p, e in zip(ps, exprs)]
             expr = z3.And(exprs)
             s.add(expr)
             stat = s.check(ps)
             assert stat == z3.unsat
-            unsat_ps =  s.unsat_core()
+            unsat_ps = s.unsat_core()
             unsat_idxs = [str(p)[1:] for p in unsat_ps]
-            print unsat_idxs
-            print [exprs[int(idx)] for idx in unsat_idxs]
-                
-            
+            # print unsat_idxs
+            # print [exprs[int(idx)] for idx in unsat_idxs]
+
         return isunsat
 
-    
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

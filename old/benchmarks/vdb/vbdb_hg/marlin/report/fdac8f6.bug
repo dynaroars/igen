@@ -1,0 +1,28 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+    "Macro is not defined when feature is not enabled.
+
+     Macro's value is assigned to a variable, but the macro is only defined when ENABLE_AUTO_BED_LEVELING is enabled, which is not by default.
+     The variable should only be used when ENABLE_AUTO_BED_LEVELING is enabled."
+
+config: "!ENABLE_AUTO_BED_LEVELING"
+
+bugfix:
+
+  repo: https://github.com/MarlinFirmware/Marlin.git
+
+  hash: fdac8f6cece835664bb97ff2f53d8fba74e37fc7
+
+  source: patterns "compile"
+
+  fix-in: mapping
+
+loc: configuration/
+
+trace: !!trace |
+
+    . call  configuration_store.cpp:242: void manage_heater()
+    . ERROR 277:  zprobe_zoffset = -Z_PROBE_OFFSET_FROM_EXTRUDER;

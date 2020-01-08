@@ -1,0 +1,35 @@
+
+type: BehaviorViolation
+
+descr:
+
+    "Not enough delay for BABYSTEPPING if specific DRV8825 stepper driver is used
+
+    There are several stepper drivers that can be used, each having some
+    minimum step pulse duration requirements (e.g. for A4988 is 1uS, for DRV8825 is 1.9uS). 
+    Changing the delay to take a larger value, e.g. 2uS has no effect on the steppers
+    that require a minimum that is less than the set value. 
+    
+    Issue 1900: https://github.com/MarlinFirmware/Marlin/issues/1900 "
+
+config: "BABYSTEPPING && DELTA"
+
+bugfix:
+
+  repo: https://github.com/MarlinFirmware/Marlin.git
+
+  hash: 53be0f3399e9d11c91ec35628f6a736b172dfb1c
+
+  source: patterns "not work"
+
+  fix-in: code
+
+loc: movement/
+
+trace: !!trace |
+    . call stepper.cpp:1136:void babystep()
+    . 1138: #define BABYSTEP_AXIS(axis, AXIS, INVERT) { \
+    . ERROR 1143:  _delayUs(1U); 
+    . 1148: switch(axis) {
+    .. 1158: case Z_AXIS: {
+    .. ERROR 1182: _delayUs(1U);

@@ -1,0 +1,16 @@
+diff --git a/simple/809e660.c b/simple/809e660.c
+--- a/simple/809e660.c
++++ b/simple/809e660.c
+@@ -4,10 +4,12 @@
+   return 0;
+ }
+ 
++#ifndef CONFIG_ARM_LPAE
+ static int do_sect_fault() // ERROR: dead code
+ {
+   return 0;
+ }
++#endif
+ 
+ int main()
+ {

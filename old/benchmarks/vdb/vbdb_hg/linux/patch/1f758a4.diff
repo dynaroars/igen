@@ -1,0 +1,12 @@
+diff --git a/simple/1f758a4.c b/simple/1f758a4.c
+--- a/simple/1f758a4.c
++++ b/simple/1f758a4.c
+@@ -29,7 +29,7 @@
+ #ifdef CONFIG_EP93XX_ETH
+ int ep93xx_alloc_buffers()
+ {
+-  int *descs = __alloc_pages_nodemask(GFP_KERNEL | GFP_DMA); // (3)
++  int *descs = __alloc_pages_nodemask(GFP_KERNEL); // (3)
+   if (descs == NULL)
+     return 1; // (5)
+ }

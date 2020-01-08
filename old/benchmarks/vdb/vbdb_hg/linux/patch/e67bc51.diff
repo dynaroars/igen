@@ -1,0 +1,12 @@
+diff --git a/simple/e67bc51.c b/simple/e67bc51.c
+--- a/simple/e67bc51.c
++++ b/simple/e67bc51.c
+@@ -5,7 +5,7 @@
+   return;
+ }
+ #else
+-static inline void trace_dump_stack(void) { }
++static inline void trace_dump_stack(int skip) { }
+ #endif
+ 
+ int main(int argc, char** argv) {

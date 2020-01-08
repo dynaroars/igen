@@ -1,0 +1,13 @@
+diff --git a/simple/0dc77b6.c b/simple/0dc77b6.c
+--- a/simple/0dc77b6.c
++++ b/simple/0dc77b6.c
+@@ -98,6 +98,9 @@
+ 
+ void extcon_class_exit(void)
+ {
++#if defined(CONFIG_ANDROID)
++    class_compat_unregister("switch");
++#endif
+   return;
+ }
+ #endif

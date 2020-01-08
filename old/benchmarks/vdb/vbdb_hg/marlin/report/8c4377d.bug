@@ -1,0 +1,36 @@
+
+type: WrongFunArgNum
+
+descr:
+
+    "Macro expansion fails when PID_DEBUG enabled
+
+    SERIAL_ECHO_START macro is defined by default in Marlin.h and it takes no arguments.
+	#define SERIAL_ECHO_START (serialprintPGM(echomagic)); where echomagic is a predefined string,
+	and serialprintPGM is a function that writes to the serial port from program memory.
+	The macro is invoked giving it parameters, therefore it fails to be expanded.
+
+	Issue 812: https://github.com/MarlinFirmware/Marlin/issues/812 "
+
+config: "PIDTEMP && PID_DEBUG"
+
+bugfix:
+
+  repo: https://github.com/MarlinFirmware/Marlin.git
+
+  hash: 8c4377dd63568291fdb62b7b2aeecb14a5982467
+
+  source: patterns "PID_DEBUG" "fix" "compile" "error"
+
+  fix-in: code
+
+loc: temperature/
+
+trace: !!trace |
+
+    . call  Marlin/temperature.cpp:406: void manage_heater()
+    . 452:  #define SERIAL_ECHO_START(" PIDDEBUG ")
+    // SERIAL_ECHO_START does not take any parameters
+    . ERROR Marlin.h:77: error: void value not ignored as it ought to be
+            // #define SERIAL_ECHO_START (serialprintPGM(echomagic))
+            // temperature.cpp:452:5: note: in expansion of macro      'SERIAL_ECHO_START'

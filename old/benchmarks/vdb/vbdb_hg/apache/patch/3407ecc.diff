@@ -1,0 +1,12 @@
+diff --git a/apache/simple/3407ecc.c b/apache/simple/3407ecc.c
+--- a/apache/simple/3407ecc.c
++++ b/apache/simple/3407ecc.c
+@@ -8,7 +8,7 @@ void ap_log_perror_(int level)
+ 
+ #if __STDC_VERSION__ >= 199901L && defined(APLOG_MAX_LOGLEVEL)
+ #define ap_log_perror__(level)    \
+-  if (rand() % 2) { ap_do_log_perror_(level); } // ERROR: ap_do_log_perror_ undeclared
++  if (rand() % 2) { ap_log_perror_(level); } // ERROR: ap_do_log_perror_ undeclared
+ #endif
+ 
+ int main(void)

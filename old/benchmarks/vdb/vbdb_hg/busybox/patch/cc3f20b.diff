@@ -1,0 +1,17 @@
+diff --git a/simple/cc3f20b.txt b/simple/cc3f20b.txt
+--- a/simple/cc3f20b.txt
++++ b/simple/cc3f20b.txt
+@@ -24,10 +24,12 @@
+ 	default n
+ 	depends on !STATIC
+ 
++# PIE can be made to work with BUILD_LIBBUSYBOX, but currently
++# build system does not support that
+ config BUILD_LIBBUSYBOX
+ 	bool "Build shared libbusybox"
+ 	default n
+-	depends on !FEATURE_PREFER_APPLETS
++	depends on !FEATURE_PREFER_APPLETS && !PIE
+ 	help
+ 	  Build a shared library libbusybox.so.N.N.N which contains all
+ 	  busybox code.

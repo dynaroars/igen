@@ -1,0 +1,27 @@
+diff --git a/simple/7acf6cd.c b/simple/7acf6cd.c
+--- a/simple/7acf6cd.c
++++ b/simple/7acf6cd.c
+@@ -18,7 +18,8 @@
+ void pty_close(int *driver_data)
+ {
+ #ifdef CONFIG_UNIX98_PTYS
+-  devpts_pty_kill(driver_data); // (5)
++  if(driver_data)
++    devpts_pty_kill(driver_data); // (5)
+ #endif
+ }
+
+@@ -32,12 +33,12 @@
+ int ptmx_open()
+ {
+   int *driver_data;
++
++  driver_data = &some_int;
+
+   if (nondet()) {
+     goto err_release; // (2)
+   }
+-
+-  driver_data = &some_int;
+
+   return 0;

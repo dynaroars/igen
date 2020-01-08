@@ -1,0 +1,28 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+    Macro used as an actual parameter leads to compile error if the macro is not defined
+
+    Function apr_signal_block takes an int as a parameter. If SIGPIPE is not defined,
+    then the compilation breaks as SIGPIPE is not defined as a macro anywhere in the code. 
+
+config: "!SIGPIPE"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 1f46088b38d4f001054af9b8c9ea77fe140604d3
+
+  source: patterns "fix" "compile break" "defined" 
+
+  fix-in: mapping
+
+trace: !!trace |
+    . ERROR firehose.c:681:apr_signal_block(SIGPIPE);
+
+loc: support/
+
+links:

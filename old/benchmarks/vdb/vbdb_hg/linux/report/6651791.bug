@@ -1,0 +1,33 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+    Undefined reference due to missing dependency on I2C
+
+    SND_FSI_AK4642 enables the compilation of ak4642.c, which depends on
+    code enabled by I2C. Thus, if I2C is disabled we get a build error.
+    The same applies for SND_FSI_DA7210.
+
+config: "(SND_FSI_AK4642 || SND_FSI_DA7210) && !I2C"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 66517915e0954ee027b889f452511945f7a9f3ec
+
+  source: patterns "config option" "when <fid> is not set" "fix" "depends on <fid>"
+
+  fix-in: model
+
+loc: sound/
+
+trace: !!trace |
+
+    . sound/soc/codecs/da7210.c:462: codec->hw_write		= (hw_write_t)i2c_master_send;
+
+links: !!md |
+
+    * [Reported build result](http://kisskb.ellerman.id.au/kisskb/buildresult/2709408/)
+

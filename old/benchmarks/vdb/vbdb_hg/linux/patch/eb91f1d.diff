@@ -1,0 +1,12 @@
+diff --git a/simple/eb91f1d.c b/simple/eb91f1d.c
+--- a/simple/eb91f1d.c
++++ b/simple/eb91f1d.c
+@@ -90,7 +90,7 @@
+ 
+ static int setup_cpu_cache()
+ {
+-  kmalloc_node(GFP_KERNEL);
++  kmalloc_node(GFP_NOWAIT);
+ }
+ 
+ void kmem_cache_create()

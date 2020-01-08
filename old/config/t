@@ -1,0 +1,26 @@
+
+
+1. (2) (c1=1 & c3=1) (conj): (1) L3
+2. (4) (x=1 & y=1 & c1=1 & c3=1) (conj): (1) L0
+3. (4) (c1=1 & c3=1) & (x=0 | y=0) (mix): (2) L2,L2a
+4. (4) (u=1 & v=1 & c1=1 & c3=1) (conj): (2) L4,L5
+5. (5) (x=1 & y=1 & z=0,3,4 & c1=1 & c3=1) (conj): (1) L1
+6. (11) (s=1 & t=1 & u=1 & v=1 & x=1 & y=1 & c1=1 & c2=0 & c3=1 & c4=0 & c5=0) (conj): (1) Lhard
+ds:INFO:strens (stren, nresults, nsids): (2, 1, 1), (4, 3, 5), (5, 1, 1), (11, 1, 1)
+alg:INFO:Summary: Seed 0.0, Iters 10, Time (7.55641317368s, 4.64678382874s), Configs 76, Covs 8, Tmpdir /var/tmp/igen_1_normal_noname_9tBw1i/run0_L2LdFP
+alg:INFO:Done (seed 0.0, test 81)
+__main__:INFO:*run 1, seed 0.0, time 7.55725693703s, '/var/tmp/igen_1_normal_noname_9tBw1i/run0_L2LdFP'
+** done 1 runs, seed 0.0, time 7.55731201172, results '/var/tmp/igen_1_normal_noname_9tBw1i'
+
+
+1. (2) (c1=1 & c3=1) (conj): (1) L3
+2. (4) (x=1 & y=1 & c1=1 & c3=1) (conj): (1) L0
+3. (4) (c1=1 & c3=1) & (x=0 | y=0) (mix): (2) L2,L2a
+4. (4) (u=1 & v=1 & c1=1 & c3=1) (conj): (2) L4,L5
+5. (5) (x=1 & y=1 & z=0,3,4 & c1=1 & c3=1) (conj): (1) L1
+6. (11) (s=1 & t=1 & u=1 & v=1 & x=1 & y=1 & c1=1 & c2=0 & c3=1 & c4=0 & c5=0) (conj): (1) Lhard
+ds:INFO:strens (stren, nresults, nsids): (2, 1, 1), (4, 3, 5), (5, 1, 1), (11, 1, 1)
+alg:INFO:Summary: Seed 0.0, Iters 10, Time (3.46388983727s, 0.946118593216s), Configs 76, Covs 8, Tmpdir /var/tmp/igen_1_normal_noname_APJVX9/run0_Y5Tnnd
+alg:INFO:Done (seed 0.0, test 81)
+__main__:INFO:*run 1, seed 0.0, time 3.46475720406s, '/var/tmp/igen_1_normal_noname_APJVX9/run0_Y5Tnnd'
+** done 1 runs, seed 0.0, time 3.464812994, results '/var/tmp/igen_1_normal_noname_APJVX9'

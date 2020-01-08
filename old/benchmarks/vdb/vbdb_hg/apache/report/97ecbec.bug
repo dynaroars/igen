@@ -1,0 +1,37 @@
+
+type: BehaviorViolation
+
+descr:
+
+    "Fail to reuse existing cache
+
+    If the shared memory feature is enabled, it can reuse an existing
+    shared memory file segment if it was already created, possibly by
+    another process. The apr_shm_create command returns a code that
+    can be used to verify if an existing sm file segment already exists
+    or not."
+
+keywords: 
+
+config: "APU_HAS_LDAP && APR_HAS_SHARED_MEMORY"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 97ecbec1237410f1f0ac8e659d62610669692c62
+
+  source: patterns "fix"
+
+  fix-in: code
+
+trace: !!trace |
+    . call modules/experimental/util_ldap_cache.c:293:  apr_status_t util_ldap_cache_init()
+    . modules/experimental/util_ldap_cache.c:298: result = apr_shm_create(&util_ldap_shm, reqsize, "/tmp/ldap_cache", pool);
+    . modules/experimental/util_ldap_cache.c:299: if (result != APR_SUCCESS) {
+    . // if a cache has been created already (result == EEXIST) it will not be used
+    . ERROR modules/experimental/util_ldap_cache.c:300: return result;
+
+loc:  modules/experimental/
+
+links:

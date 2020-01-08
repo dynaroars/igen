@@ -1,0 +1,25 @@
+
+type: UnusedVariable
+
+descr:
+
+    Unused variable when BF60x is enabled
+
+config: "PM && BF60x"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 36855dcfc980f247909b8f63776664c6ccb6f183
+
+  source: patterns "fix" "unused variable" "+#ifndef"
+
+  fix-in: mapping
+
+loc: arch/blackfin/
+
+trace: !!trace |
+
+    . arch/blackfin/mach-common/pm.c:144:	int wakeup, ret;
+

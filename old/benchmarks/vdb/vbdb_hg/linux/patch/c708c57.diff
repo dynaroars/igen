@@ -1,0 +1,12 @@
+diff --git a/simple/c708c57.c b/simple/c708c57.c
+--- a/simple/c708c57.c
++++ b/simple/c708c57.c
+@@ -16,7 +16,7 @@
+     return;
+ 
+   while (nbytes >= 8) {
+-    *((__u64 *)parm_block) ^= *((__u64 *)buf+i*8); // ERROR
++    *((__u64 *)parm_block) ^= *((__u64 *)buf+i); // ERROR
+     i += 8;
+     nbytes -= 8;
+   }

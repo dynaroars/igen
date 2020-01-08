@@ -1,0 +1,47 @@
+
+type: NullDereference
+
+descr:
+    NULL pointer on !OF_IRQ gets dereferenced if IRQ_DOMAIN
+
+    In TWL4030 driver, attempt to register an IRQ domain
+    with a NULL ops structure; ops is de-referenced when
+    registering an IRQ domain, but this field is only set
+    when OF_IRQ.
+
+config: "TWL4030_CORE && !OF_IRQ"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 6252547b8a7acced581b649af4ebf6d65f63a34b
+
+  source: patterns "CONFIG_.+" "end trace"
+
+  fix-in: model, mapping
+
+C-features: FunctionPointers
+
+loc: include/linux/
+
+trace: !!trace |
+    . call drivers/base/dd.c:203:driver_probe_device()
+    . 215: ret = really_probe(dev, drv);
+    .. 108:really_probe()
+    .. 124: if (dev->bus->probe)
+    ... dyn-call drivers/i2c/i2c-core.c:106:i2c_device_probe()
+    ... 124: status = driver->probe(client, i2c_match_id(driver->id_table, client));
+    .... dyn-call drivers/mfd/twl-core.c:1190:twl_probe()
+    .... [OF_IRQ] 1233: domain.ops = &irq_domain_simple_ops;
+    .... 1235: irq_domain_add(&domain);
+    ..... call kernel/irq/irqdomain.c:20:irq_domain_add()
+    ..... 30: irq_domain_for_each_irq(domain, hwirq, irq)
+    ...... call include/linux/irqdomain.h:74:irq_domain_to_irq()
+    ...... ERROR 77: if (d->ops->to_irq)
+
+links: !!md |
+    * [I2C](http://cateee.net/lkddb/web-lkddb/I2C.html)
+    * [TWL4030](http://www.ti.com/general/docs/marketurl.tsp?name=twl4030)
+    * [IRQ domain](http://lxr.gwbnsh.net.cn/linux/Documentation/IRQ-domain.txt)
+

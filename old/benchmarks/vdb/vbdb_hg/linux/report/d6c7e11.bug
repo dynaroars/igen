@@ -1,0 +1,24 @@
+type: IncompatibleType
+
+descr:
+
+    Mockup implementation expects incompatible pointer type
+    
+    The actual implementation of `max8660_pdata_from_dt' expects an argument
+    `pdata' of type `struct max8660_platform_data *' while the mockup
+    implementation for OF disabled expects a 2-degree pointer.
+
+config: "REGULATOR_MAX8660 && !OF"
+
+bugfix:
+
+    repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+    
+    hash: d6c7e1139591b9ba7c4ad9c5eec748f0a68ad212
+    
+    fix-in: code
+
+loc: drivers/
+
+trace: !!trace |
+    . drivers/regulator/max8660.c:393: ret = max8660_pdata_from_dt(dev, of_node, &pdata_of);

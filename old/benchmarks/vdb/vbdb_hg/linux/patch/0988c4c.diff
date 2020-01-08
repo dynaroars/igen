@@ -1,0 +1,11 @@
+diff --git a/simple/0988c4c.c b/simple/0988c4c.c
+--- a/simple/0988c4c.c
++++ b/simple/0988c4c.c
+@@ -13,7 +13,6 @@
+ #else
+ _Bool vlan_hwaccel_do_receive()
+ {
+-  assert(0); // (4) ERROR
+   return 0;
+ }
+ #endif

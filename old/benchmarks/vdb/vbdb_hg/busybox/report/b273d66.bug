@@ -1,0 +1,35 @@
+
+type: UninitializedVariable
+
+descr:
+
+    Variable 'info' is uninitialized when BusyBox is compiled with 
+    BB_FEATURE_LS_FILETYPES && !BB_FEATURE_LS_USERNAME.
+
+keywords:
+
+config: BB_FEATURE_LS_FILETYPES && !BB_FEATURE_LS_USERNAME
+
+C-features: Structs
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: b273d6651813363d95fd08686d380db8eacf87c1
+
+  source: patterns "FEATURE_.+" "uninit"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . call coreutils/ls.c:823:showfiles()
+    .. 424:list_single(dn[i]);
+    .. call coreutils/ls.c:524:list_single()
+    ... [BB_FEATURE_LS_FILETYPES] 533:struct stat info;
+    ... [BB_FEATURE_LS_USERNAME] 574:memset(&info, 0, sizeof(struct stat));
+    ... ERROR [BB_FEATURE_LS_FILETYPES] 645:append = append_char(info.st_mode);
+
+loc: coreutils/
+
+links: 

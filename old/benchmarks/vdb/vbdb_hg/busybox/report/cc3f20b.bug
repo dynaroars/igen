@@ -1,0 +1,29 @@
+
+type: BehaviorViolation
+
+descr:
+
+    Build system does not support BUILD_LIBBUSYBOX and PIE together
+
+    Essencially, PIE can be made to work with BUILD_LIBBUSYBOX, but 
+    currently BusyBox build system does not support that.
+    
+keywords:
+
+config: BUILD_LIBBUSYBOX && PIE
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: cc3f20b9bdf9a46c41877dab4900eb2997b72019
+
+  source: patterns "fix" "break"
+
+  fix-in: model
+
+trace: !!trace |
+
+loc: root/
+
+links: http://git.busybox.net/busybox/plain/Config.in

@@ -1,0 +1,50 @@
+
+type: FatalAssertionViolation 
+
+descr:
+
+    Assertion violation when walking through system memory
+
+    kpageflags_read() walks through system memory, reading pages flags
+    and writing them to an output buffer. For each pfn it calls
+    pfn_valid(), which in parisc architectures with DISCONTIGMEM,
+    relies on pfn_to_nid(). The pfn_to_nid() function incorrectly bugs
+    on pages that are not physically available.
+
+config: "PARISC && DISCONTIGMEM && PROC_PAGE_MONITOR"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: ae249b5fa27f9fba25aa59664d4338efc2dd2394
+
+  source: patterns "CONFIG_<fid>" "fix" "BUG" "kernel panic"
+
+  fix-in: code
+
+loc: arch/parisc/
+
+trace: !!trace |
+    // setup
+    . call arch/parisc/mm/init.c:116:setup_bootmem()
+    . 273: for (i = 0; i < MAX_PHYSMEM_RANGES; i++) {
+    // MAX_PHYSMEM_RANGES is hardcoded to 8
+    . 274: memset(NODE_DATA(i), 0, sizeof(pg_data_t));
+    . [DISCONTIGMEM] 277: memset(pfnnid_map, 0xff, sizeof(pfnnid_map));
+    // since pfnnid_map is unsigned char[], this is (unsigned char)255
+
+    // /proc/kpageflags
+    . call fs/proc/page.c:173:kpageflags_read()
+    . 188: if (pfn_valid(pfn))
+    .. [DISCONTIGMEM] call arch/parisc/include/asm/mmzone.h:55:pfn_valid()
+    .. 57: int nid = pfn_to_nid(pfn);
+    ... [DISCONTIGMEM] call arch/parisc/include/asm/mmzone.h:39:pfn_to_nid()
+    ... 49: r = pfnnid_map[i];
+    // 0xff is the mark for non-physically available pages
+    ... ERROR 50: BUG_ON(r == 0xff);
+
+links: !!links |
+    * [DISCONTIGMEM](http://lwn.net/Articles/439472/)
+    * [PA-RISC](http://en.wikipedia.org/wiki/PA-RISC)
+

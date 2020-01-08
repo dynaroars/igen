@@ -1,0 +1,19 @@
+diff --git a/simple/91ea820.c b/simple/91ea820.c
+--- a/simple/91ea820.c
++++ b/simple/91ea820.c
+@@ -22,13 +22,13 @@
+ #define NODE_DATA(nid)          (node_data[nid])
+ 
+ #define PFNNID_MAP_MAX  512     /* support 512GB */
+-unsigned char pfnnid_map[PFNNID_MAP_MAX];
++signed char pfnnid_map[PFNNID_MAP_MAX];
+ unsigned long max_pfn = PFNNID_MAP_MAX;
+ 
+ int pfn_to_nid(unsigned int pfn)
+ {
+ 	assert(pfn < PFNNID_MAP_MAX);
+-	return (int)pfnnid_map[pfn];
++	return pfnnid_map[pfn];
+ }
+ 
+ int pfn_valid(unsigned int pfn)

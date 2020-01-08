@@ -1,0 +1,11 @@
+diff --git a/simple/e39363a.c b/simple/e39363a.c
+--- a/simple/e39363a.c
++++ b/simple/e39363a.c
+@@ -11,6 +11,7 @@
+   if (nondet())
+     goto put;
+ #else
++  err = -2;
+   goto put; // (2)
+ #endif
+ 

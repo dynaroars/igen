@@ -1,0 +1,34 @@
+
+type: IncompatibleType
+
+descr:
+
+    Argument type incompatible with `printk' format string
+    
+    AMIGA's ramdisk support contains a type error (reported as a warning by gcc)
+    when LBDAF is enabled. The result of `blk_rq_pos(req)' has type `sector_t'
+    and is printed as an unsigned long value. Yet, when LBDAF is enabled, type
+    `sector_t' is defined as unsigned long long. There is no safe cast from
+    unsigned long long to unsigned long.
+    
+    The fix consists in printing the value as unsigned long long instead,
+    without losing precision when LBDAF is enabled.
+
+config: "AMIGA_Z2RAM && LBDAF"
+
+bugfix:
+
+    repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+    
+    hash: e1fbd9210d5d172f951b1d21eb58383919c4d10d
+    
+    fix-in: code
+
+loc: drivers/
+
+trace: !!trace |
+    . drivers/block/z2ram.c:80: printk( KERN_ERR DEVICE_NAME ": bad access: block=%lu, count=%u\n",
+
+links: !!md |
+    * [Amiga Zorro II ramdisk support](http://cateee.net/lkddb/web-lkddb/AMIGA_Z2RAM.html)
+    * [Support for large (2TB+) block devices and files](http://cateee.net/lkddb/web-lkddb/LBDAF.html)

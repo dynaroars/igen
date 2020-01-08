@@ -1,0 +1,16 @@
+diff --git a/apache/simple/c76df14.c b/apache/simple/c76df14.c
+--- a/apache/simple/c76df14.c
++++ b/apache/simple/c76df14.c
+@@ -7,10 +7,11 @@
+ #define APR_HAVE_STDIO_H 1
+ #else
+ #include <stdlib.h> //apr-related headers
++#endif
++
+ #if defined(WIN32) || defined(OS2)
+ #define NEED_ENHANCED_ESCAPES
+ #endif
+-#endif
+ 
+ int main(void)
+ {

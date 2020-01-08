@@ -1,0 +1,13 @@
+diff --git a/simple/51fd36f.c b/simple/51fd36f.c
+--- a/simple/51fd36f.c
++++ b/simple/51fd36f.c
+@@ -40,6 +40,9 @@
+     tmp = nsec;
+   } else {
+     unsigned long sec = nsec / NSEC_PER_SEC;
++    /* Make sure nsec fits into long */
++    if (nsec > KTIME_SEC_MAX)
++        return KTIME_MAX;
+     tmp = ktime_set((s32)sec); // ERROR
+   }
+ 

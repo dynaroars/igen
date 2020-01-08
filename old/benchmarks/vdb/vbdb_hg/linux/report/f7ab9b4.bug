@@ -1,0 +1,78 @@
+
+type: NullDereference
+
+descr: 
+
+    NULL function pointer dereferenced if SHMEM is enabled but not TMPFS
+
+    The `readpage' field of `shmem_aops' only points to a concrete function
+    when TMPFS is enabled, otherwise it points to NULL. GPU driver for
+    Intel i915 depends on SHMEM but not on TMPFS, and makes it possible for
+    a NULL readpage() to be dereferenced by read_cache_page().
+  
+    Related to commit ca9ab10033d190c1ede85fdf456307bdfdabf079
+
+config: "DRM_I915 && SHMEM && !TMPFS"
+
+C-features: FunctionPointers, PointerAliasing, Structs
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: f7ab9b407b3bc83161c2aa74c992ba4782e87c9c
+
+  source: patterns "CONFIG_<fid>" "select <fid>" "oops" "kernel panic"
+
+  fix-in: model
+
+loc: drivers/gpu/drm/
+
+trace: !!trace |
+
+    // shmem_aops only has a function assigned to the readpage field
+    // if TMPFS is enabled, otherwise it is NULL
+    // see mm/shmem.c:2454
+    . call drivers/gpu/drm/i915/i915_dma.c:1862:i915_driver_load()
+    . 2011: ret = i915_load_modeset_init(dev);
+    .. call drivers/gpu/drm/i915/i915_dma.c:1167:i915_load_modeset_init()
+    .. 1192: ret = i915_gem_init_ringbuffer(dev);
+    ... call drivers/gpu/drm/i915/i915_gem.c:3649:i915_gem_init_ringbuffer()
+    ... 3654: ret = intel_init_render_ring_buffer(dev);
+    .... call drivers/gpu/drm/i915/intel_ringbuffer.c:1271:intel_init_render_ring_buffer()
+    .... 1291: return intel_init_ring_buffer(dev, ring);
+    ..... call drivers/gpu/drm/i915/intel_ringbuffer.c:807:intel_init_ring_buffer()
+
+    // setup: function pointer `readpage' set to NULL
+    ..... 827: obj = i915_gem_alloc_object(dev, ring->size);
+    ...... call drivers/gpu/drm/i915/i915_gem.c:3518:i915_gem_alloc_object()
+    ...... 3528: if (drm_gem_object_init(dev, &obj->base, size) != 0)
+    ....... call drivers/gpu/drm/drm_gem.c:134:drm_gem_object_init()
+    ....... 140: obj->filp = shmem_file_setup("drm mm object", size, VM_NORESERVE);
+    ........ call mm/shmem.c:2719:shmem_file_setup()
+    ........ 2748: inode = shmem_get_inode(root->d_sb, NULL, S_IFREG | S_IRWXUGO, 0, flags);
+    ......... [SHMEM] call mm/shmem.c:1577:shmem_get_inode()
+    ......... 1608: inode->i_mapping->a_ops = &shmem_aops;    
+
+    ..... 836: ret = i915_gem_object_pin(obj, PAGE_SIZE, true);
+    ...... call drivers/gpu/drm/i915/i915_gem.c:3246:i915_gem_object_pin()
+    ...... 3274: ret = i915_gem_object_bind_to_gtt(obj, alignment,
+    ....... call drivers/gpu/drm/i915/i915_gem.c:2705:i915_gem_object_bind_to_gtt()
+    ....... 2779: ret = i915_gem_object_get_pages_gtt(obj, gfpmask);
+    ........ call drivers/gpu/drm/i915/i915_gem.c:1488:i915_gem_object_get_pages_gtt()
+    ........ 1508: page = read_cache_page_gfp(mapping, i,
+    ......... call mm/filemap.c:1815:read_cache_page_gfp()
+    ......... 1819: filler_t *filler = (filler_t *)mapping->a_ops->readpage;
+    // so filler is an alias for readpage, which is NULL
+    ......... 1821: return wait_on_page_read(do_read_cache_page(mapping, index, filler, NULL, gfp));
+    .......... call  mm/filemap.c:1728:do_read_cache_page()
+    .......... ERROR 1755: err = filler(data, page)
+    // filler is pointing to NULL !
+
+links: !!md |
+    * [DRM_I915: Intel 8xx/9xx/G3x/G4x/HD Graphics](http://cateee.net/lkddb/web-lkddb/DRM_I915.html)
+    * [SHMEM](http://cateee.net/lkddb/web-lkddb/SHMEM.html)
+    * [TMPFS](http://cateee.net/lkddb/web-lkddb/TMPFS.html)
+    * [GEM](http://en.wikipedia.org/wiki/Graphics_Execution_Manager)
+    * [DRM](http://en.wikipedia.org/wiki/Direct_Rendering_Manager)
+

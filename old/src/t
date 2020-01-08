@@ -1,0 +1,7 @@
+inferred results (1):
+1. (11) (CONFIG_HAVE_DOT_CONFIG=y & CONFIG_DESKTOP=y & CONFIG_FEATURE_HTTPD_BASIC_AUTH=y & CONFIG_FEATURE_HTTPD_CGI=y & CONFIG_FEATURE_INSMOD_VERSION_CHECKING=n & CONFIG_FEATURE_MDEV_CONF=y & CONFIG_FEATURE_MDEV_RENAME=y & CONFIG_STAT=y & CONFIG_FEATURE_STAT_FORMAT=n & CONFIG_LFS=y & CONFIG_SELINUX=y) (conj): (1) stat.139
+ds:INFO:strens (stren, nresults, nsids): (11, 1, 1)
+alg:INFO:Summary: Seed 0.0, Iters 8, Time (2558.43339801s, 2557.24554825s), Configs 65, Covs 1, Tmpdir /var/tmp/igen_1_normal_noname_bgGq4A/run0_0TXoxf
+alg:INFO:Done (seed 0.0, test 25)
+__main__:INFO:*run 1, seed 0.0, time 2558.43428206s, '/var/tmp/igen_1_normal_noname_bgGq4A/run0_0TXoxf'
+** done 1 runs, seed 0.0, time 2558.43437815, results '/var/tmp/igen_1_normal_noname_bgGq4A'

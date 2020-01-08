@@ -1,0 +1,51 @@
+
+type: BufferOverflow
+
+descr:
+
+    Insufficient buffer length leads to buffer overflow
+
+    The char[4] `method' variable does not have enough space for the 2 extra 
+    chars required by strncat(method, ..., 2), since there must also be room 
+    for the final '\0'. The rule is that strncat(dest, src, n) requires
+    sizeof(dest) >= strlen(dest) + n + 1; and in this case 4 >= 2 + 2 + 1
+    does not hold.
+
+    Note that this bug is *not* revealed by just enabling STACKPROTECTOR,
+    as it is stated in the commit message.
+
+config: "X86 && ACPI_WMI"
+
+C-features:
+
+    FollowFunctionPointers,
+    FunctionPointerTables,
+    PointerArithmetic,
+    ArgByReference
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: f3d83e2415445e5b157bef404d38674e9e8de169
+
+  source: patterns "fix" "kernel panic" "CONFIG_<fid>"
+
+  fix-in: code
+
+loc: drivers/platform/x86/
+
+trace: !!trace |
+    . call init/main.c:740:do_one_initcall()
+    . 753: ret.result = fn();
+    .. dyn-call drivers/platform/x86/acer-wmi.c:1266:acer_wmi_init()
+    ... call drivers/platform/x86/acer-wmi.c:1090:get_wmid_devices()
+    .... call drivers/platform/x86/wmi.c:322:wmi_query_block()
+    .... 331: char method[4];
+    .... 378: strcpy(method, "WQ");
+    .... ERROR 379: strncat(method, block->object_id, 2);
+
+links: !!md |
+  * [strncat manpage](http://linux.die.net/man/3/strncat)
+  * [WMI](https://wiki.ubuntu.com/Kernel/Reference/WMI)
+  * [How the Linux Kernel initcall Mechanism Works](http://www.compsoc.man.ac.uk/~moz/kernelnewbies/documents/initcall/kernel.html)

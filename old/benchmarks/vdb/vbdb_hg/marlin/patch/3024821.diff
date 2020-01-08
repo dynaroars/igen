@@ -1,0 +1,12 @@
+diff --git a/simple/3024821.c b/simple/3024821.c
+--- a/simple/3024821.c
++++ b/simple/3024821.c
+@@ -8,7 +8,7 @@ if (temperature >= (target_temperature - hysteresis_degc))
+       {
+         *timer = 123456782l;
+       } 
+-      else if ( (millis - *timer) > (period_seconds) * 1000)
++      else if ( (millis - *timer) > (unsigned long)(period_seconds) * 1000)
+       {
+         printf("%s","Thermal Runaway, system stopped! Heater_ID: ");
+         printf("%d",(int)heater_id);

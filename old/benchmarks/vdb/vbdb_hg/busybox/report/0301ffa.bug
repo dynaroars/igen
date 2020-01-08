@@ -1,0 +1,32 @@
+
+type: UnusedVariable
+
+descr:
+
+    Variable *gdp is only used if EXT2FS_ENABLE_SWAPFS is enabled.
+
+keywords: 
+
+config: !EXT2FS_ENABLE_SWAPFS
+
+C-features: Structs
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: 0301ffab3d9e6e43bdc3dc29cff4eb36097967c9
+
+  source: patterns "ENABLE_.+" "unused"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . call /ext2fs/openfs.c:62:ext2fs_open()
+    .. call /ext2fs/openfs.c:81:ext2fs_open2()
+    ... 92: struct ext2_group_desc *gdp;
+    ... [EXT2FS_ENABLE_SWAPFS] 279: gdp = dest;
+
+loc: e2fsprogs/
+
+links: 

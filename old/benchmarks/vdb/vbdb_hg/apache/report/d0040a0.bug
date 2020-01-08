@@ -1,0 +1,36 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+    "Misspelling of feature name induces undeclared struct field
+
+    Even if RLIMIT_NPROC is enabled the field limits of cgid_req_t will
+    not be declared, since it is guarded by RLMIT_NPROC (missing an I).
+    But this field is used by the send_req function if RLIMIT_NPROC is
+    enabled."
+
+keywords: 
+
+config: "RLIMIT_NPROC && !RLIMIT_CPU && !RLIMIT_DATA && !RLIMIT_VMEM && !RLIMIT_AS"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: d0040a07aecfbb8029044397b14f19a0796cee0c
+
+  source: patterns "Fix"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . modules/generators/mod_cgid.c:206: #if defined (RLIMIT_CPU) || defined (RLMIT_NPROC) || defined (RLIMIT_DATA) || defined(RLIMIT_VMEM) || defined(RLIMIT_AS)
+    . modules/generators/mod_cgid.c:207: cgid_rlimit_t limits;
+    . call modules/generators/mod_cgid.c :470:send_req()
+    . modules/generators/mod_cgid.c:550: #ifdef RLIMIT_NPROC
+    . ERROR modules/generators/mod_cgid.c:552: req.limits.limit_nproc = *(core_conf->limit_nproc);
+
+loc:  server/
+
+links:

@@ -1,0 +1,12 @@
+diff --git a/apache/simple/d0040a0.c b/apache/simple/d0040a0.c
+--- a/apache/simple/d0040a0.c
++++ b/apache/simple/d0040a0.c
+@@ -1,7 +1,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ 
+-#if defined (RLIMIT_CPU) || defined (RLMIT_NPROC) || defined (RLIMIT_DATA) || defined(RLIMIT_VMEM) || defined(RLIMIT_AS)
++#if defined (RLIMIT_CPU) || defined (RLIMIT_NPROC) || defined (RLIMIT_DATA) || defined(RLIMIT_VMEM) || defined(RLIMIT_AS)
+ int limits;
+ #endif
+ 

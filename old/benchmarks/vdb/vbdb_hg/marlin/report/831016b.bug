@@ -1,0 +1,30 @@
+
+type: WrongFunArgNum
+
+descr:
+
+    "The function is declared with only one parameter, but in a specific configuration it is called using multiple parameters. 
+    
+    The function is called with more arguments than the function's declaration. This happens
+    only if a feature is disabled and another one enabled. 
+
+    Issue 1770: https://github.com/MarlinFirmware/Marlin/issues/1770 "
+
+config: "!ULTRA_LCD && SDSUPPORT"
+
+bugfix:
+
+  repo: https://github.com/MarlinFirmware/Marlin.git
+
+  hash: 831016b09f753000edb69473cd013e1a79b2fdd1
+
+  source: patterns "compile" "error" "linux" 
+
+  fix-in: code
+
+loc: lcd/
+
+trace: !!trace |
+
+    . call  Marlin_main.cpp:698: void get_command()
+    . ERROR: Marlin_main.cpp:849:  lcd_setstatus(time, true);

@@ -1,0 +1,12 @@
+diff --git a/simple/ebee301.c b/simple/ebee301.c
+--- a/simple/ebee301.c
++++ b/simple/ebee301.c
+@@ -2,7 +2,7 @@
+ #include<stdio.h>
+ #include<stdlib.h>
+ 
+-#if defined (BB_AR)
++#if defined (BB_AR) || defined (BB_CP_MV)
+ void copySubFile(int src, int dst)
+ {
+   printf("Copy readSize bytes between two file descriptors");

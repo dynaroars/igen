@@ -1,0 +1,30 @@
+
+type: UndefinedSymbol
+
+descr:
+
+    Conditional definition of ap_log_perror contains typo that prevents compilation
+
+    In function macro ap_do_log_perror__ there is a call to function ap_do_log_perror. However, there is no 
+    function with that name, the function's correct name being ap_log_perror_ .
+
+    The condition __STDC_VERSION__ >= 199901L holds if the compiler accepts C99.
+
+config: "__STDC_VERSION__ >= 199901L && APLOG_MAX_LOGLEVEL"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 3407eccc3219acfc9b3fc2735acd8412d6cc26da
+
+  source: patterns "fix" "defined" 
+
+  fix-in: code
+
+trace: !!trace |
+    . ERROR http_log.h.c:318:ap_do_log_perror(...);
+
+loc: include/
+
+links:

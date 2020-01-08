@@ -1,0 +1,28 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+    Macro SSL_PROTOCOL_TLSV1_1 is not declared when !HAVE_TLSV1_X.
+
+keywords:
+
+config: "!HAVE_TLSV1_X"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 1a3c8e3d8404039f8b4ae75f0d17263da2b958fe
+
+  source: patterns "missing #ifdef"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . // if HAVE_TLSV1_X is disabled
+    . ERROR modules/ssl/ssl_engine_config.c:1288:thisopt = SSL_PROTOCOL_TLSV1_1;
+
+loc: modules/ssl/
+
+links:

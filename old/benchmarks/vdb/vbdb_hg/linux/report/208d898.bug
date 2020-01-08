@@ -1,0 +1,48 @@
+
+type: WeakAssertionViolation
+
+descr: 
+
+    local_bh_enable() is called with interrupts disabled when HIGHMEM
+
+    Function udp_poll() acquires a spin lock via spin_lock_irq() before
+    operating on the socket buffer. When a datagram is received, the 
+    checksum computation will call local_bh_enable() if HIGHMEM is 
+    enabled. But local_bh_enable() should be called with IRQs enabled,
+    and thus the WARN().
+
+    Note that spin_lock_irq() takes a lock and disables interrupts.
+
+config: "HIGHMEM"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 208d89843b7b03978d8e748b8b991c1be81c4f43
+
+  source: patterns "CONFIG_.+" "BUG"
+
+  fix-in: code
+
+loc: kernel/
+
+trace: !!trace |
+    . call net/ipv4/udp.c:1325: udp_poll()
+    . 1337: spin_lock_irq(&rcvq->lock);
+    // spin_lock_irq implies local_irq_disable()
+    . 1339: if (udp_checksum_complete(skb)) {
+    .. 766: udp_checksum_complete()
+    .. 769: __udp_checksum_complete(skb);
+    ... call net/ipv4/udp.c:761:__udp_checksum_complete();
+    ... 763: return (unsigned short)csum_fold(skb_checksum(skb, 0, skb->len, skb->csum));
+    .... call net/core/skbuff.c:1076: skb_checksum()
+    .... 1110: kunmap_skb_frag(vaddr); 
+    ..... call include/linux/skbuff.h:1155:kunmap_skb_frag()
+    ..... [HIGHMEM] 138: local_bh_enable();
+    ...... call kernel/softirq.c:138:local_bh_enable()
+    ...... ERROR 140: WARN_ON(irqs_disabled())
+
+links: !!md |
+    * [Kernel locking](http://www.linuxjournal.com/article/5833)
+    * [Bottom Half Handling](http://www.tldp.org/LDP/tlk/kernel/kernel.html)

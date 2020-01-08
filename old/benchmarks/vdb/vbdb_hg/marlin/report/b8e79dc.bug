@@ -1,0 +1,28 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+   "Macro function is undefined if !ENCODER_RATE_MULTIPLIER
+
+    Macro function MENU_MULTIPLIER_ITEM_EDIT is called in 
+    lcd_tune_menu() function, but it is undefined if !ENCODER_RATE_MULTIPLIER
+    TEMP_SENSOR_0 is always defined in Marlin (at least in the example configurations)"
+
+config: "ULTRA_LCD && !ENCODER_RATE_MULTIPLIER && TEMP_SENSOR_0 != 0"
+
+bugfix:
+
+  repo: https://github.com/MarlinFirmware/Marlin.git
+
+  hash: b8e79dce897c970afb9c7721f93943046b1410b9
+
+  source: patterns "fix" "error" "compilation"
+
+  fix-in: code
+
+loc: lcd/
+
+trace: !!trace |
+    . call Marlin/ultra_lcd.cpp:460: MENU_MULTIPLIER_ITEM_EDIT(int3, MSG_NOZZLE " 2", &target_temperature[1], 0, HEATER_1_MAXTEMP - 15);
+    . ERROR ultra_lcd.cpp:179: #define MENU_MULTIPLIER_ITEM_EDIT(type, label, args...) MENU_ITEM(setting_edit_ ## type, label, PSTR(label) , ## args ) 

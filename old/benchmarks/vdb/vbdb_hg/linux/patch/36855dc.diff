@@ -1,0 +1,12 @@
+diff --git a/simple/36855dc.c b/simple/36855dc.c
+--- a/simple/36855dc.c
++++ b/simple/36855dc.c
+@@ -1,6 +1,8 @@
+ int bfin_pm_suspend_mem_enter(void)
+ {
++#ifndef CONFIG_BF60x
+   int wakeup; // ERROR
++#endif
+ 
+ #ifndef CONFIG_BF60x
+   wakeup = 0;

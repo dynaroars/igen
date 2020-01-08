@@ -1,0 +1,12 @@
+diff --git a/simple/a7fc1f8.c b/simple/a7fc1f8.c
+--- a/simple/a7fc1f8.c
++++ b/simple/a7fc1f8.c
+@@ -7,7 +7,7 @@
+ 
+ 	void cardreader(char *prepend)
+ 	{
+-		int len = strlen(prepend) + FILENAME_LENGTH + 1; // Error - not enough space allocated if prepend is empty 
++		int len = strlen(prepend) + FILENAME_LENGTH + 1 + 1;
+ 		char path[len];
+ 		// Get the short name for the item, which we know is a folder
+ 		//char lfilename[FILENAME_LENGTH];

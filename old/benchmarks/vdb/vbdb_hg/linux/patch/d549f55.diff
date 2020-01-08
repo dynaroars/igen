@@ -1,0 +1,42 @@
+diff --git a/simple/d549f55.c b/simple/d549f55.c
+--- a/simple/d549f55.c
++++ b/simple/d549f55.c
+@@ -4,6 +4,12 @@
+ #include <stdlib.h>
+ 
+ #ifdef CONFIG_VLAN_8021Q
++#define IFF_802_1Q_VLAN         true
++#else
++#define IFF_802_1Q_VLAN         false
++#endif
++
++#ifdef CONFIG_VLAN_8021Q
+ void* vlan_dev_real_dev()
+ {
+   return NULL;
+@@ -16,10 +22,14 @@
+ }
+ #endif
+ 
+-#if defined(CONFIG_IPV6) || defined(CONFIG_VLAN_8021Q)
++#if defined(CONFIG_IPV6)
+ static int ocrdma_inet6addr_event()
+ {
+-	vlan_dev_real_dev(); // (2)
++        bool is_vlan = IFF_802_1Q_VLAN;
++        
++        if (is_vlan) {
++            vlan_dev_real_dev();
++        }
+ 	
+ 	return 0;
+ }
+@@ -27,7 +37,7 @@
+ 
+ int main(int argc, char** argv)
+ {
+-#if defined(CONFIG_IPV6) || defined(CONFIG_VLAN_8021Q)
++#if defined(CONFIG_IPV6)
+   ocrdma_inet6addr_event(); // (1)
+ #endif
+   return 0;

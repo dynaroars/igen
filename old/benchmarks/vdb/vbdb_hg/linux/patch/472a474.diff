@@ -1,0 +1,13 @@
+diff --git a/simple/472a474.c b/simple/472a474.c
+--- a/simple/472a474.c
++++ b/simple/472a474.c
+@@ -19,7 +19,9 @@
+ 
+ int APIC_init_uniprocessor(void)
+ {
++#ifndef CONFIG_SMP
+   enable_IR_x2apic(); // (6) ERROR: enable_IR_x2apic() is not idempotent
++#endif
+ }
+ 
+ #ifdef CONFIG_SMP

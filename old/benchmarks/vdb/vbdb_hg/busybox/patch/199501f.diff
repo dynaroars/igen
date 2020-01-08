@@ -1,0 +1,22 @@
+diff --git a/simple/199501f.c b/simple/199501f.c
+--- a/simple/199501f.c
++++ b/simple/199501f.c
+@@ -11,16 +11,16 @@
+     dt = "-i";
+   }
+     
++  if(dt) {
+ #ifdef ENABLE_FEATURE_MODPROBE_MULTIPLE_OPTIONS
+-  if(dt) {
+     // Do something
+-  }
+ #else
+   char buf[50];
+   strcpy(buf, "module option(s): ");
+   
+   strcat(buf, dt); // ERROR
+ #endif
++  }
+ }
+ 
+ int main(int argc, char **argv)

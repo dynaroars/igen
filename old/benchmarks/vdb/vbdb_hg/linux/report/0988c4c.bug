@@ -1,0 +1,41 @@
+
+type: FatalAssertionViolation 
+
+descr:
+
+    Fail to process a VLAN packet without VLAN support
+
+    When the kernel is not configured to support VLANs and we receive
+    a tagged VLAN packet through a network interface, eventually
+    vlan_hwaccel_do_receive() is called even if VLAN support is
+    disabled---and thus we reach a BUG().
+
+config: "!VLAN_8021Q"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 0988c4c7fb5881377ec20a6452f739a722e97c6b
+
+  source: patterns "if CONFIG_.+ is not set" "BUG"
+
+  fix-in: code
+
+loc: include/linux/
+
+trace: !!trace |
+    . call net/core/dev.c:2602:netif_rx()
+    // reads a packet from a device driver and queues it to be processed by upper layers
+    // at some point netif_receive_skb() will be invoked ...
+    . call net/core/dev.c:3039:netif_receive_skb()
+    . 3067: return __netif_receive_skb(skb);
+    .. call net/core/dev.c:2887:__netif_receive_skb()
+    .. 2972: if (vlan_tx_tag_present(skb)) {
+    .. 2977: if (vlan_hwaccel_do_receive(&skb)) {
+    ... [!VLAN_8021Q] call include/linux/if_vlan.h:169:vlan_hwaccel_do_receive()
+    ... ERROR [!VLAN_8021Q] BUG();
+
+links: !!links |
+  * [IEEE 802.1Q](http://en.wikipedia.org/wiki/IEEE_802.1Q)
+  * [Linux Network Stack Walkthrough (2.4.20)](http://edge.cs.drexel.edu/GICL/people/sevy/network/Linux_network_stack_walkthrough.html)

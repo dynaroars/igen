@@ -1,0 +1,18 @@
+diff --git a/simple/d7e9711.c b/simple/d7e9711.c
+--- a/simple/d7e9711.c
++++ b/simple/d7e9711.c
+@@ -26,12 +26,12 @@
+       continue;
+     }
+ 
++    pthread_mutex_unlock(&i_lock);
++
+ #ifdef CONFIG_QUOTA_DEBUG
+     if (inode_get_rsv_space() > 0) // (3)
+       reserved = 1;
+ #endif
+-
+-    pthread_mutex_unlock(&i_lock);
+   }
+ }
+ 

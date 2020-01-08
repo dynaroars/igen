@@ -1,0 +1,33 @@
+
+type: WriteOnReadOnly
+
+descr:
+
+    Attempt to set a breakpoint resulted in kernel panic
+
+    Kprobes allows you to break into any kernel routine by modifying the 
+    OPCODE of an instruction (Kernel's text pages). In PPC32, kernel text
+    pages are write-protected even if KPROBES is enabled. Thus, when
+    arch_arm_kprobes() attempts to set a breakpoint, i.e. to write a
+    kernel text address, this causes a segmentation fault.
+
+config: "!PPC64 && KPROBES && !KGDB && !XMON && !BDI_SWITCH"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 221ac329e93fe2a676346af2e98e311251648f69
+
+  source: patterns "CONFIG_.+" "kernel panic" "\+#if"
+
+  fix-in: mapping
+
+loc: arch/powerpc/kernel/
+
+trace: !!trace |
+    . arch/powerpc/kernel/kprobes.c:75:arch_arm_kprobe()
+    . 77: *p->addr = BREAKPOINT_INSTRUCTION;
+
+links: !!md |
+    * [Kernel Probes (Kprobes)](https://www.kernel.org/doc/Documentation/kprobes.txt)

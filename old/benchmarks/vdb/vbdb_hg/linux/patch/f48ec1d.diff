@@ -1,0 +1,11 @@
+diff --git a/simple/f48ec1d.c b/simple/f48ec1d.c
+--- a/simple/f48ec1d.c
++++ b/simple/f48ec1d.c
+@@ -1,7 +1,5 @@
+ 
+-#ifdef CONFIG_BLK_CGROUP
+ #define CFQ_WEIGHT_DEFAULT	500
+-#endif
+ 
+ #ifdef CONFIG_IOSCHED_CFQ
+ static long cfq_scale_slice()

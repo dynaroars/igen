@@ -1,0 +1,31 @@
+
+type: BehaviorViolation
+
+descr:
+
+    Inverted if usage in ENABLE_DESKTOP
+    
+    If ENABLE_DESKTOP is not set, BusyBox displays a message. But, note that this
+    functionality is inverted. Actually, BusyBox needs to print any message only
+    when ENABLE_DESKTOP is enabled.
+    
+keywords:
+
+config: !DESKTOP
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: df7b6577c6abaff551b15ccc80917553afde33fb
+
+  source: patterns "ENABLE_+" "fix"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . [!ENABLE_DESKTOP] coreutils/id.c:180:bb_error_msg_and_die()
+
+loc: coreutils/
+
+links: 

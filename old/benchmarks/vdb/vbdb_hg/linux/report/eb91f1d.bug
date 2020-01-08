@@ -1,0 +1,66 @@
+
+type: WeakAssertionViolation
+
+descr:
+
+    "Warning due to a call to kmalloc() with flags __GFP_WAIT and interrupts enabled
+
+    The SLAB allocator is initialized by start_kernel() with interrupts disabled.
+    Later in this process, setup_cpu_cache() performs the per-CPU kmalloc cache
+    initialization, and will try to allocate memory for these caches passing the
+    GFP_KERNEL flags. These flags include __GFP_WAIT, which allows the process to
+    sleep while waiting for memory to be available. Since, interrupts are disabled
+    during SLAB initialization, this may lead to a deadlock. Enabling LOCKDEP and
+    other debugging options will detect and report this situation."
+
+keywords: GFP_WAIT; irqs disabled
+
+config: "SLAB && LOCKDEP && TRACE_IRQFLAGS && PROVE_LOCKING && NUMA"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: eb91f1d0a531289e18f5587dc197d12a251c66a3
+
+  source: patterns "CONFIG_<fid>" "fix" "end trace"
+
+  fix-in: code
+
+loc: kernel/
+
+trace: !!trace |
+
+    // for !KMEMTRACE
+
+    . call init/main.c:552:start_kernel()
+    . 573: local_irq_disable();
+    . 609: mm_init();
+    .. call init/main.c:540:mm_init()
+    .. 548: kmem_cache_init();
+    ... call mm/slab.c:1444:kmem_cache_init()
+    .... call mm/slab.c:2154:kmem_cache_create()
+    .... 2287: if (slab_is_available())
+    .... 2288: gfp = GFP_KERNEL;
+    // the bug occurs because GFP_KERNEL implies __GFP_WAIT
+    // no problem if gfp = GFP_NOWAIT
+    .... 2396: if (setup_cpu_cache(cachep, gfp))
+    ..... call mm/slab.c:2070:setup_cpu_cache()
+    ..... 2104: kmalloc_node(sizeof(struct kmem_list3),
+    ..... 2105:              GFP_KERNEL, node);
+    ...... [NUMA] call include/linux/slab_def.h:102:kmalloc_node()
+    ...... 129: ret = kmem_cache_alloc_node_notrace(cachep, flags, node);
+    ....... [!KMEMTRACE] call include/linux/slab_def.h:93:kmem_cache_alloc_node_notrace()
+    ........ [NUMA] call mm/slab.c:3657:kmem_cache_alloc_node()
+    ........ 3659: void *ret = __cache_alloc_node(cachep, flags, nodeid, ...)
+    ......... call mm/slab.c:3351:__cache_alloc_node()
+    ......... 3357: lockdep_trace_alloc(flags);
+    .......... [TRACE_IRQFLAGS,PROVE_LOCKING] call kernel/lockdep.c:2290:lockdep_trace_alloc()
+    .......... 2300: __lockdep_trace_alloc()
+    ........... call kernel/lockdep.c:2263:__lockdep_trace_alloc()
+    ........... ERROR 2282: if (DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags)))
+    // gfp == GFP_WAIT is required to reach this WARN_ON
+
+links: !!md |
+  * [Slab allocation](http://en.wikipedia.org/wiki/Slab_allocation)
+  * [The kernel lock validator](http://lwn.net/Articles/185666/)

@@ -1,0 +1,34 @@
+diff --git a/simple/2631486.c b/simple/2631486.c
+--- a/simple/2631486.c
++++ b/simple/2631486.c
+@@ -8,18 +8,15 @@
+ };
+ 
+ #ifdef CONFIG_FEATURE_LS_RECURSIVE
+-void dfree(struct dnode **arr)
++void dfree(struct dnode **arr, int nfiles)
+ {
+-  struct dnode *cur, *next;
+ 
+   if (arr == NULL)
+     return;
+ 
+-  cur = arr[0]; // is no longer the head
+-  while (cur != NULL) {
+-    next = cur->next;
++  for (i = 0; i < nfiles; i++) {
++    struct dnode *cur = arr[i];
+     free(cur);
+-    cur = next;
+   }
+ }
+ #endif
+@@ -31,7 +28,7 @@
+   }
+   
+ #ifdef CONFIG_FEATURE_LS_RECURSIVE
+-  dfree(arr); //ERROR
++  dfree(arr, 5); //ERROR
+ #endif
+ }
+ 

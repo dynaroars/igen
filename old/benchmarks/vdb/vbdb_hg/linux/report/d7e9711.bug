@@ -1,0 +1,39 @@
+
+type: DoubleLock
+
+descr:
+  
+    "Double lock when debugging diskquota
+
+    In between a spin_lock and spin_unlock pair, there is a conditional
+    call to inode_get_rsv_space when QUOTA_DEBUG is enabled, this
+    function acquires the very same lock, thus introducing a double lock.
+    Note that spin locks are not reentrant."
+
+config: "QUOTA_DEBUG"
+
+C-features:
+
+    ArgByReference,
+    Structs
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: d7e9711760a17aef3a94fc6dff4759fa5961de25
+
+  source: patterns "CONFIG_.+" "double lock"
+
+  fix-in: code
+
+loc: fs/quota/
+
+trace: !!trace |
+    . call fs/quota/dquot.c:894:add_dquot_ref()
+    . 903: spin_lock(&inode->i_lock);
+    . 911: if (unlikely(inode_get_rsv_space(inode) > 0))
+    .. call fs/quota/dquot.c:1517: inode_get_rsv_space()
+    .. ERROR 1523: spin_lock(&inode->i_lock);
+
+credits: Iago Abal <mail@iagoabal.eu>

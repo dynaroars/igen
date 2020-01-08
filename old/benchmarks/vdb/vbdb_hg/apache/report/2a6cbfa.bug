@@ -1,0 +1,31 @@
+
+type: MemoryLeak
+
+descr:
+
+    No call to the free function when !SHARED_MODULE.
+
+    Apache has some functions responsible to clean things up. Some of these functions were called within feature SHARED_MODULE. SHARED_MODULE is no longer defined, so they were leaking.
+
+keywords:
+
+config: "!SHARED_MODULE"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 2a6cbfa00e05d83629919024cd3eb9887f2bf413
+
+  source: patterns "leak"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . call modules/ssl/ssl_engine_init.c:965:ssl_init_ModuleKill()
+    . // if SHARED_MODULE is disabled
+    . ERROR 1021: return APR_SUCCESS;
+
+loc: modules/ssl/
+
+links:

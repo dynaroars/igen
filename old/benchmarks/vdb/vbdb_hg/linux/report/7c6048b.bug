@@ -1,0 +1,24 @@
+
+type: UndefinedSymbol
+
+descr:
+
+    Selecting ACPI_VIDEO but not its dependencies causes a build error
+
+    Config option STUB_POULSBO will select ACPI_VIDEO if ACPI is enabled,
+    but it does not make sure that ACPI_VIDEO dependencies are met as well.
+    Note that Kconfig will not select dependencies automatically.
+
+config: "STUB_POULSBO && ACPI_VIDEO && !BACKLIGHT_CLASS_DEVICE"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 7c6048b7c83690ce59e65922fb2875479a22300e
+
+  source: patterns "when <fid> is enabled" "Kconfig" "fix" "select <fid>"
+
+  fix-in: model
+
+loc: drivers/gpu/

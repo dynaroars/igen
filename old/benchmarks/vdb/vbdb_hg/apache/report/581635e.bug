@@ -1,0 +1,32 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+    Macro APR_INET6 is not declared when !APR_HAVE_IPV6.
+
+    The file apr_network_io.h defines a MACRO named APR_INET6 in case
+    feature APR_HAVE_IPV6 is enabled. This MACRO is used in file ab.c,
+    but there is no #ifdef APR_HAVE_IPV6 encompassing such a use.
+
+keywords:
+
+config: "!APR_HAVE_IPV6"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 581635e28f1f71623878ab3852b68cd49fc7cdb1
+
+  source: patterns ".*_HAVE_.+" "if .* is defined"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . // if APR_HAVE_IPV6 is disabled
+    . ERROR support/ab.c:972:if (family == APR_INET6)
+
+loc: support/
+
+links:

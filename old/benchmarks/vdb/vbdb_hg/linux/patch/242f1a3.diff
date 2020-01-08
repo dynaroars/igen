@@ -1,0 +1,10 @@
+diff --git a/simple/242f1a3.c b/simple/242f1a3.c
+--- a/simple/242f1a3.c
++++ b/simple/242f1a3.c
+@@ -1,3 +1,6 @@
++#ifdef CONFIG_CRYPTO_TEST
++#define CONFIG_CRYPTO_BLKCIPHER
++#endif
+ 
+ #ifdef CONFIG_CRYPTO_BLKCIPHER
+ void *crypto_alloc_ablkcipher()

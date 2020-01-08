@@ -1,0 +1,820 @@
+RefactoringTool: Skipping optional fixer: buffer
+RefactoringTool: Skipping optional fixer: idioms
+RefactoringTool: Skipping optional fixer: set_literal
+RefactoringTool: Skipping optional fixer: ws_comma
+RefactoringTool: Refactored alg.py
+RefactoringTool: Refactored analysis_algs.py
+--- alg.py	(original)
++++ alg.py	(refactored)
+@@ -287,7 +287,7 @@
+ 
+         if core is None:  # not yet set
+             core = min(configs, key=lambda c: len(c))
+-            core = Core((k, frozenset([v])) for k, v in core.iteritems())
++            core = Core((k, frozenset([v])) for k, v in core.items())
+ 
+         def f(k, s, ldx):
+             s_ = set(s)
+@@ -300,7 +300,7 @@
+                     return None
+             return s_
+ 
+-        vss = [f(k, vs, len(dom[k])) for k, vs in core.iteritems()]
++        vss = [f(k, vs, len(dom[k])) for k, vs in core.items()]
+         core = Core((k, frozenset(vs)) for k, vs in zip(core, vss) if vs)
+         return core
+ 
+@@ -341,7 +341,7 @@
+                 if configs_:
+                     new_cd = cls.infer_cache(cd, configs_, dom, cache)
+                     if new_cd:
+-                        new_cd = Core((k, v) for (k, v) in new_cd.iteritems()
++                        new_cd = Core((k, v) for (k, v) in new_cd.items()
+                                       if k not in new_cc)
+ 
+             return new_cc, new_cd
+--- analysis_algs.py	(original)
++++ analysis_algs.py	(refactored)
+@@ -20,8 +20,7 @@
+ import z3
+ import z3util
+ 
+-class XAnalysis(object):
+-    __metaclass__ = abc.ABCMeta
++class XAnalysis(object, metaclass=abc.ABCMeta):
+     def __init__(self, ld):
+         self.ld = ld
+ 
+@@ -92,7 +91,7 @@
+         Ret the strongest elements by removing those implied by others
+         """
+         assert d and isinstance(d, dict)
+-        assert all(CC.Z3DB.maybe_expr(v) for v in d.itervalues()), d
++        assert all(CC.Z3DB.maybe_expr(v) for v in d.values()), d
+         
+         def _len(e):
+             #simply heuristic to try most restrict conjs first
+@@ -164,11 +163,11 @@
+         The results are {tuple -> z3expr}
+         It's good to first prune them (call prune()).
+         """
+-        assert all(z3.is_expr(v) for v in d.itervalues()), d
++        assert all(z3.is_expr(v) for v in d.values()), d
+                        
+         #change format, results are tuple(elems)
+         d = dict((tuple([f]),d[f]) for f in d)
+-        fs = d.keys()
++        fs = list(d.keys())
+         fs_ = cls.pack2(fs,d)        
+         while len(fs_) < len(fs):
+             fs = fs_
+@@ -196,7 +195,7 @@
+             "{}. {}".format(i+1, self.str_of_pack(c))
+             for i,c in enumerate(d))))
+ 
+-        assert all(v for v in d.itervalues())
++        assert all(v for v in d.values())
+         return d
+     
+     @classmethod
+@@ -211,13 +210,13 @@
+         return '({})'.format('; '.join(map(f,pack)))
+ 
+     def get_minset_f(self, remain_covs, f):
+-        d = self.indep(self.ld.mcores_d.keys())
++        d = self.indep(list(self.ld.mcores_d.keys()))
+ 
+         st = time()
+         ncovs = len(remain_covs)  #orig covs
+         minset_d = CC.Configs_d()  #results
+         
+-        for pack,expr in d.iteritems():
++        for pack,expr in d.items():
+             #Todo: and not one of the existing ones
+             nexpr = z3util.myOr(minset_d)            
+             configs = self.ld.dom.gen_configs_exprs(
+@@ -233,11 +232,11 @@
+                 minset_d[config]=covs
+ 
+         minset_ncovs = ncovs-len(remain_covs)
+-        print("minset: {} configs cover {}/{} sids (time {}s)"
++        print(("minset: {} configs cover {}/{} sids (time {}s)"
+                      .format(len(minset_d),
+-                             minset_ncovs,ncovs,time()-st))
++                             minset_ncovs,ncovs,time()-st)))
+         mlog.info('\n{}'.format(minset_d))                
+-        return minset_d.keys(), minset_ncovs
++        return list(minset_d.keys()), minset_ncovs
+         
+     
+     def get_minset_configs_d(self, remain_covs):
+@@ -249,7 +248,7 @@
+         If use packed elems then could be slow because
+         have to check that all generated configs satisfy packed elem
+         """
+-        d = self.indep(self.ld.mcores_d.keys())
++        d = self.indep(list(self.ld.mcores_d.keys()))
+         packs = set(d)  #{(pack,expr)}
+         ncovs = len(remain_covs)  #orig covs
+         remain_configs RefactoringTool: Refactored analysis.py
+= set(self.ld.configs_d)
+@@ -257,7 +256,7 @@
+         
+         #some init setup
+         exprs_d = [(c, c.z3expr(self.ld.z3db)) for c in self.ld.configs_d] #slow
+-        exprs_d = exprs_d + d.items()
++        exprs_d = exprs_d + list(d.items())
+         exprs_d = dict(exprs_d)
+ 
+         def _f(pack,covs):
+@@ -309,12 +308,12 @@
+                               != len(remain_covs)]
+ 
+         minset_ncovs = ncovs - len(remain_covs)
+-        print("minset: {} configs cover {}/{} sids (time {}s)"
++        print(("minset: {} configs cover {}/{} sids (time {}s)"
+                     .format(len(minset_d),
+-                            minset_ncovs, ncovs, time()-st))
++                            minset_ncovs, ncovs, time()-st)))
+         mlog.info('\n{}'.format(minset_d))
+ 
+-        return minset_d.keys(), minset_ncovs
++        return list(minset_d.keys()), minset_ncovs
+ 
+ class Similarity(XAnalysis):
+     #f-score    
+@@ -438,7 +437,7 @@
+                           if dt_.citer <= dt.citer]
+             covs_d = CC.Covs_d()
+             for configs_d in configs_ds:
+-                for config,cov in configs_d.iteritems():
++                for config,cov in configs_d.items():
+                     for sid in cov:
+                         covs_d.add(sid,config)
+ 
+@@ -450,8 +449,8 @@
+                     self.fscore_cores_d(pp_cores_d, cd.pp_cores_d),
+                     dt.nconfigs)
+                    for dt, pp_cores_d in zip(self.ld.dts, pp_cores_ds)]
+-        print("fscores (iter, fscore, configs): {}".format(
+-            ' -> '.join(map(str, fscores))))
++        print(("fscores (iter, fscore, configs): {}".format(
++            ' -> '.join(map(str, fscores)))))
+ 
+         return fscores, cd.pp_cores_d, cd.last_dt.ncovs, cd.last_dt.nconfigs
+ 
+@@ -469,7 +468,7 @@
+         assert isinstance(do_settings, bool), do_settings
+         
+         if do_settings:
+-            ks = set((k,v) for k,vs in self.ld.dom.iteritems() for v in vs)
++            ks = set((k,v) for k,vs in self.ld.dom.items() for v in vs)
+             def g(core):
+                 pc,pd,nc,nd = core
+                 settings = []
+@@ -488,7 +487,7 @@
+             _str = CC.str_of_setting
+ 
+         else:
+-            ks = self.ld.dom.keys()
++            ks = list(self.ld.dom.keys())
+             def g(core):
+                 core = (c for c in core if c)
+                 return set(s for c in core for s in c)
+@@ -502,12 +501,11 @@
+                     for pncore in g_d if k in g_d[pncore])
+             rs.append((k,v))
+             
+-        rs.sort(key = lambda (k, v) : (v, k), reverse=True)
++        rs.sort(key = lambda k_v : (k_v[1], k_v[0]), reverse=True)
+         rs = [(k, v, 100. * v / ncovs) for k, v in rs]
+-        print("influence (opt, uniq, %) {}"
+-                    .format(', '.join(map(
+-                        lambda (k, v, p): "({}, {}, {})"
+-                        .format(_str(k), v, p), rs))))
++        print(("influence (opt, uniq, %) {}"
++                    .format(', '.join(["({}, {}, {})"
++                        .format(_str(k_v_p[0]), k_v_p[1], k_v_p[2]) for k_v_p in rs]))))
+         return rs
+ 
+     
+@@ -617,11 +615,11 @@
+ 
+ 
+     def show(self, rs_d, s):
+-        n = sum(len(v) for v in rs_d.itervalues())
++        n = sum(len(v) for v in rs_d.values())
+         if n:            
+-            print("locs with '{}' results: {}% ({}/{})"
++            print(("locs with '{}' results: {}% ({}/{})"
+                         .format(s, 100. * n / len(self.ld.covs),
+-                                n, len(self.ld.covs)))
++                                n, len(self.ld.covs))))
+             mlog.info("'{}' results\n{}".format(s, rs_d))
+         return n
+         
+--- analysis.py	(original)
++++ analysis.py	(refactored)
+@@ -214,10 +214,10 @@
+         assert cmp_rand is None or callable(cmp_rand), cmp_rand
+ 
+ 
+-        print("replay dir: '{}'".format(dir_))
++        print(("replay dir: '{}'".format(dir_)))
+         ld = LoadData.load_dir(dir_)
+         
+-        print('seed: {}'.format(ld.seed))
++        print(('seed: {}'.format(ld.seed)))
+         mlog.info(ld.dom.__str__())
+ 
+         ld.dts.sort(key=lambda dt: dt.citer)        
+@@ -225,7 +225,7 @@
+             for dt in ld.dts:
+                 dt.show(ld.z3db, ld.dom)
+ 
+-        if not hasattr(ld.pp_cores_d.values()[0], 'vstr'):
++        if not hasattr(list(ld.pp_cores_d.values())[0], 'vstr'):
+             mlog.warn("Old format, has no vstr .. re-analyze")
+             ld.pp_cores_d = ld.pp_cores_d.analyze(ld.dom, ld.z3db, covs_d=None)
+ 
+@@ -237,14 +237,14 @@
+         nconfigs = ld.last_dt.nconfigs
+         ncovs = ld.last_dt.ncovs
+         
+-        print(alg.DTrace.str_of_summary(
++        print((alg.DTrace.str_of_summary(
+             ld.seed,
+             len(ld.dts),
+             ld.itime_total,
+             xtime_total,
+             nconfigs,
+             ncovs,
+-            dir_))
++            dir_)))
+ 
+         # do_minconfigs has 3 possible values
+         # 1. None: don't find min configs
+@@ -277,7 +277,7 @@
+             ud = Precision(ld)
+             equivs, weaks = ud.check_existing()
+             if cmp_dir: #compare to ground truths
+-                print("cmp to results in '{}'".format(cmp_dir))
++                print(("cmp to results in '{}'".format(cmp_dir)))
+                 equivs, weaks, strongs, nones = ud.check_gt(cmp_dir)
+ 
+         ### Evolutionar: F-scores ###
+@@ -290,13 +290,13 @@
+ 
+             #compare to ground truths
+             if cmp_dir: 
+-                print("cmp to results in '{}'".format(cmp_dir))
++                print(("cmp to results in '{}'".format(cmp_dir)))
+                 gt_fscores, gt_pp_cores_d, gt_ncovs, gt_nconfigs = sl.get_fscores(cmp_dir)
+                 
+                 last_elem_f = lambda l: l[-1][1] if l and len(l) > 0 else None
+                 gt_fscore = last_elem_f(gt_fscores)
+-                print("configs ({}/{}) cov ({}/{}) fscore {}"
+-                            .format(nconfigs, gt_nconfigs, ncovs, gt_ncovs, gt_fscore))
++                print(("configs ({}/{}) cov ({}/{}) fscore {}"
++                            .format(nconfigs, gt_nconfigs, ncovs, gt_ncovs, gt_fscore)))
+                 
+             #compare to rand search
+             callf = cmp_rand
+@@ -304,8 +304,8 @@
+                 r_pp_cores_d,r_cores_d,r_configs_d,r_covs_d,_ = callf(ld.seed, nconfigs)
+                 rd_fscore = sl.fscore_cores_d(r_pp_cores_d, gt_pp_cores_d)
+ 
+-                print("rand: configs {} cov {} fscore {}"
+-                            .format(len(r_configs_d),len(r_covs_d), rd_fscore))
++                print(("rand: configs {} cov {} fscore {}"
++                            .format(len(r_configs_d),len(r_covs_d), rd_fscore)))
+ 
+         #return analyzed results
+         rs = AnalysisResults(niters=len(ld.dts),
+@@ -334,7 +334,7 @@
+                     cmp_dir):
+         
+         dir_ = CM.getpath(dir_)
+-        print("replay_dirs '{}'".format(dir_))
++        print(("replay_dirs '{}'".format(dir_)))
+         
+         strens_arr = []
+         strens_str_arr = []
+@@ -373,13 +373,14 @@
+             nminconfigs_arr.append(o.n_minconfigs)
+             min_ncovs_arr.append(o.min_ncovs)            
+ 
+-        def median_siqr((s, arr)):
++        def median_siqr(xxx_todo_changeme):
++            (s, arr) = xxx_todo_changeme
+             return "{} {} ({})".format(s, median(arr), siqr(arr))
+ 
+ 
+         nruns = len(strens_arr)
+         nruns_f = float(nruns)
+-        print("*** Analysis over {} runs ***".format(nruns))
++        print(("*** Analysis over {} runs ***".format(nruns)))
+ 
+         rs = [("iter", niters_arr),
+               ("ints", ncores_arr),
+@@ -389,12 +390,12 @@
+               ("covs", ncovs_arr),
+               ("nminconfigs", nminconfigs_arr),
+               ("nmincovs", min_ncovs_arr)]
+-        print(', '.join(median_siqr(r) for r in rs))
++        print((', '.join(median_siqr(r) for r in rs)))
+ 
+         #vtyps_arr= [(c,d,m), ... ]
+-        conjs, disjs, mixs = zip(*vtyps_arr)
++        conjs, disjs, mixs = list(zip(*vtyps_arr))
+         rs = [("conjs", conjs),("disjs", disjs), ("mixed", mixs) ]
+-        print("Int types: {}".format(', '.join(meRefactoringTool: Refactored config_common.py
+dian_siqr(r) for r in rs)))
++        print(("Int types: {}".format(', '.join(median_siqr(r) for r in rs))))
+         
+         sres = {}
+         for i,(strens,strens_str) in enumerate(zip(strens_arr,strens_str_arr)):
+@@ -422,23 +423,23 @@
+                               median(inters), siqr(inters),
+                               median(covs), siqr(covs)))
+ 
+-        print("Int strens: {}".format(', '.join(rs)))
++        print(("Int strens: {}".format(', '.join(rs))))
+         
+ 
+         #fscores
+         fscores = [-1 if s is None else s for s in fscores]
+         rfscores = [-1 if s is None else s for s in rfscores]        
+         rs = [("gt", fscores), ("rand", rfscores)]
+-        print("fscores: {}".format(', '.join(median_siqr(r) for r in rs)))
++        print(("fscores: {}".format(', '.join(median_siqr(r) for r in rs))))
+ 
+         
+     @staticmethod
+     def debug_find_configs(sid, configs_d, find_in):
+         if find_in:
+-            cconfigs_d = dict((c,cov) for c,cov in configs_d.iteritems()
++            cconfigs_d = dict((c,cov) for c,cov in configs_d.items()
+                               if sid in cov)
+         else:
+-            cconfigs_d = dict((c,cov) for c,cov in configs_d.iteritems()
++            cconfigs_d = dict((c,cov) for c,cov in configs_d.items()
+                               if sid not in cov)
+ 
+         print(cconfigs_d)
+--- config_common.py	(original)
++++ config_common.py	(refactored)
+@@ -69,7 +69,7 @@
+             tasks, maxProcessces=cpu_count(), chunksiz=chunksiz)
+ 
+         mlog.debug("workloads '{}' {}: {}"
+-                   .format(taskname, len(wloads), map(len,wloads)))
++                   .format(taskname, len(wloads), list(map(len,wloads))))
+ 
+         workers = [Process(target=wprocess, args=(wl,Q)) for wl in wloads]
+                    
+@@ -95,12 +95,13 @@
+     return s
+ 
+ 
+-is_setting = lambda (k, v): isinstance(k, str) and isinstance(v, str)
+-def str_of_setting((k, v)):
++is_setting = lambda k_v: isinstance(k_v[0], str) and isinstance(k_v[1], str)
++def str_of_setting(xxx_todo_changeme):
+     """
+     >>> print str_of_setting(('x','1'))
+     x=1
+     """
++    (k, v) = xxx_todo_changeme
+     assert is_setting((k, v)), (k, v)
+         
+     return '{}={}'.format(k, v)
+@@ -116,15 +117,16 @@
+     """
+     return ','.join(sorted(s))
+ 
+-is_csetting = lambda (k,vs): isinstance(k, str) and is_valset(vs)
+-
+-def str_of_csetting((k,vs)):
++is_csetting = lambda k_vs: isinstance(k_vs[0], str) and is_valset(k_vs[1])
++
++def str_of_csetting(xxx_todo_changeme1):
+     """
+     >>> print str_of_csetting(('x', frozenset(['1'])))
+     x=1
+     >>> print str_of_csetting(('x', frozenset(['3','1'])))
+     x=1,3
+     """
++    (k,vs) = xxx_todo_changeme1
+     assert is_csetting((k, vs)), (k, vs)
+     
+     return '{}={}'.format(k, str_of_valset(vs))
+@@ -200,7 +202,7 @@
+     def __init__(self, dom):
+         super(Dom, self).__init__(dom)
+         
+-        assert self and all(is_csetting(s) for s in self.iteritems()), self
++        assert self and all(is_csetting(s) for s in self.items()), self
+ 
+     def __str__(self):
+         """
+@@ -208,27 +210,27 @@
+         s = "{} vars and {} pos configs".format(len(self),self.siz)
+         s_detail = '\n'.join("{}. {}: ({}) {}"
+                              .format(i+1, k, len(vs), str_of_valset(vs))
+-                             for i, (k, vs) in enumerate(self.iteritems()))
++                             for i, (k, vs) in enumerate(self.items()))
+         s = "{}\n{}".format(s, s_detail)
+         return s
+ 
+     @property
+-    def siz(self): return CM.vmul(len(vs) for vs in self.itervalues())
++    def siz(self): return CM.vmul(len(vs) for vs in self.values())
+ 
+     @property
+     def max_fsiz(self):
+         """
+         Size of the largest finite domain
+         """
+-        return max(len(vs) for vs in self.itervalues())
++        return max(len(vs) for vs in self.values())
+     
+     #Methods to generate configurations
+     def gen_configs_full(self, config_cls=None):#TODO kconfig_contraint
+         if config_cls is None:
+             config_cls = Config
+ RefactoringTool: Refactored config.py
+        
+-        ns,vs = itertools.izip(*self.iteritems())
+-        configs = [config_cls(zip(ns, c)) for c in itertools.product(*vs)]
++        ns,vs = zip(*iter(self.items()))
++        configs = [config_cls(list(zip(ns, c))) for c in itertools.product(*vs)]
+         return configs
+ 
+     # def gen_configs_tcover1(self, config_cls=None, z3db=None, constraints=True):
+@@ -403,7 +405,7 @@
+     def __init__(self, dom):
+         assert isinstance(dom, Dom)
+         db = {}
+-        for k, vs in dom.iteritems():
++        for k, vs in dom.items():
+             vs = sorted(list(vs))
+             ttyp, tvals=z3.EnumSort(k,vs)
+             rs = [vv for vv in zip(vs, tvals)]
+@@ -441,7 +443,7 @@
+         if d in self.cache:
+             return self.cache[d]
+ 
+-        rs = [self.get_eq_expr(k,v) for k,v in d.iteritems()]
++        rs = [self.get_eq_expr(k,v) for k,v in d.items()]
+         expr = z3util.myAnd(rs)
+         self.add(d, expr)
+         return expr
+@@ -455,7 +457,7 @@
+             return self.cache[key]
+ 
+         myf =  z3util.myAnd if is_and else z3util.myOr        
+-        rs = [self.get_eq_expr(k, vs) for k, vs in d.iteritems()]
++        rs = [self.get_eq_expr(k, vs) for k, vs in d.items()]
+         expr = myf(rs)
+         
+         self.add(key, expr)
+@@ -509,7 +511,7 @@
+         try:
+             return self._hcontent
+         except AttributeError:
+-            self._hcontent = frozenset(self.iteritems())
++            self._hcontent = frozenset(iter(self.items()))
+             return self._hcontent
+     
+     def __hash__(self):
+@@ -537,13 +539,13 @@
+     def __init__(self, config=HDict()):
+         super(Config, self).__init__(config)
+         
+-        assert all(is_setting(s) for s in self.iteritems()), self
++        assert all(is_setting(s) for s in self.items()), self
+         
+         
+     def __str__(self, cov=None):
+         assert cov is None or is_cov(cov), cov
+ 
+-        s =  ' '.join(map(str_of_setting, self.iteritems()))
++        s =  ' '.join(map(str_of_setting, iter(self.items())))
+         if cov:
+             s = "{}: {}".format(s, str_of_cov(cov))
+         return s
+@@ -573,16 +575,15 @@
+                 
+ 
+         assert len(pop) <= n, (len(pop), n)
+-        pop = pop.keys()
++        pop = list(pop.keys())
+         return pop
+     
+ 
+ 
+-class CustDict(MutableMapping):
++class CustDict(MutableMapping, metaclass=abc.ABCMeta):
+     """
+     MuttableMapping ex: https://stackoverflow.com/questions/21361106/how-would-i-implement-a-dict-with-abstract-base-classes-in-python
+     """
+-    __metaclass__ = abc.ABCMeta
+     def __init__(self): self.__dict__ = {}
+     def __len__(self): return len(self.__dict__)
+     def __getitem__(self, key): return self.__dict__[key]
+--- config.py	(original)
++++ config.py	(refactored)
+@@ -91,7 +91,7 @@
+                 new_core = _new()
+                 new_core[k] = frozenset([v])
+                 if s_core:
+-                    for sk, sv in s_core.iteritems():
++                    for sk, sv in s_core.items():
+                         assert sk not in new_core, sk
+                         new_core[sk] = sv
+                 changes.append(new_core)
+@@ -313,7 +313,7 @@
+                 isunsat = Z3.is_unsat(exprs, print_unsat_core=False)
+ 
+                 if isunsat:
+-                    print 'invalid config'
++                    print('invalid config')
+                     return set()
+ 
+             return eval_get_cov(c)
+@@ -362,17 +362,17 @@
+     def __init__(self, core=CC.HDict()):
+         super(Core, self).__init__(core)
+ 
+-        assert all(CC.is_csetting(s) for s in self.iteritems()), self
++        assert all(CC.is_csetting(s) for s in self.items()), self
+ 
+     def __str__(self, delim=' '):
+         if self:
+-            return delim.join(map(CC.str_of_csetting, self.iteritems()))
++            return delim.join(map(CC.str_of_csetting, iter(self.items())))
+         else:
+             return 'true'
+ 
+     @property
+     def settings(self):
+-        return [(k, v) for k, vs in self.iteritems() for v in vs]
++        return [(k, v) for k, vs in self.items() for RefactoringTool: Refactored ex_otter.py
+v in vs]
+ 
+     def neg(self, dom):
+         try:
+@@ -405,12 +405,12 @@
+     @property
+     def settings(self):
+         core = (c for c in self if c)
+-        return set(s for c in core for s in c.iteritems())
++        return set(s for c in core for s in c.items())
+ 
+     @property
+     def values(self):
+         core = (c for c in self if c)
+-        return set(s for c in core for s in c.itervalues())
++        return set(s for c in core for s in c.values())
+ 
+     @property
+     def sstren(self): return len(self.settings)
+@@ -420,11 +420,12 @@
+ 
+ 
+ class SCore(MCore):
+-    def __init__(self, (mc, sc)):
++    def __init__(self, xxx_todo_changeme):
+         """
+         mc: main core that will generate cex's
+         sc (if not None): sat core that is satisfied by all generated cex'
+         """
++        (mc, sc) = xxx_todo_changeme
+         super(SCore, self).__init__((mc, sc))
+         # additional assertion
+         assert mc is None or isinstance(mc, Core) and mc, mc
+@@ -510,7 +511,8 @@
+ 
+     """
+ 
+-    def __init__(self, (pc, pd, nc, nd)):
++    def __init__(self, xxx_todo_changeme1):
++        (pc, pd, nc, nd) = xxx_todo_changeme1
+         super(PNCore, self).__init__((pc, pd, nc, nd))
+ 
+     @property
+@@ -825,7 +827,7 @@
+ 
+         mcores_d = Mcores_d()
+         cache = {}
+-        for sid, core in self.iteritems():
++        for sid, core in self.items():
+             try:
+                 key = core.vstr
+             except AttributeError:
+@@ -867,7 +869,7 @@
+         if covs_d:
+             mlog.info("verify ...")
+             cache = {}
+-            for sid, core in self.iteritems():
++            for sid, core in self.items():
+                 configs = frozenset(covs_d[sid])
+                 key = (core, configs)
+                 if key not in cache:
+@@ -909,8 +911,8 @@
+         super(Mcores_d, self).add_set(core, sid)
+ 
+     def __str__(self):
+-        mc = sorted(self.iteritems(),
+-                    key=lambda (core, cov): (core.sstren, core.vstren, len(cov)))
++        mc = sorted(iter(self.items()),
++                    key=lambda core_cov: (core_cov[0].sstren, core_cov[0].vstren, len(core_cov[1])))
+         ss = ("{}. ({}) {}: {}"
+               .format(i+1, core.sstren, core, CC.str_of_cov(cov))
+               for i, (core, cov) in enumerate(mc))
+@@ -984,7 +986,7 @@
+     def strens_str(self): return self.str_of_strens(self.strens)
+ 
+     def show_results(self):
+-        print("inferred results ({}):\n{}".format(len(self), self))
++        print(("inferred results ({}):\n{}".format(len(self), self)))
+         mlog.info("strens (stren, nresults, nsids): {}"
+                   .format(self.strens_str))
+ 
+@@ -1112,8 +1114,8 @@
+             assert stat == z3.unsat
+             unsat_ps = s.unsat_core()
+             unsat_idxs = [str(p)[1:] for p in unsat_ps]
+-            print unsat_idxs
+-            print [exprs[int(idx)] for idx in unsat_idxs]
++            print(unsat_idxs)
++            print([exprs[int(idx)] for idx in unsat_idxs])
+ 
+         return isunsat
+ 
+--- ex_otter.py	(original)
++++ ex_otter.py	(refactored)
+@@ -91,10 +91,10 @@
+     exp_files = sorted(exp_files)
+     exp_files = [os.path.join(exp_dir,f) for f in exp_files]
+ 
+-    print("parse {} exp files from '{}'".format(len(exp_files),exp_dir))
++    print(("parse {} exp files from '{}'".format(len(exp_files),exp_dir)))
+     db = OrderedDict()
+     for i,exp_file in enumerate(exp_files):
+-        print("{}/{}. '{}'".format(i+1,len(exp_files),exp_file))
++        print(("{}/{}. '{}'".format(i+1,len(exp_files),exp_file)))
+         pathconds = read_exp_pc(CM.iread_strip(exp_file))
+         db[exp_file] = pathconds
+     return db
+@@ -102,7 +102,7 @@
+ 
+ def combine_pathconds(db):
+     pathconds_d = {}
+-    for filename, pathconds in db.iteritems():
++    for filename, pathconds in db.items():
+         for (pathcond,covs,samples) in pathconds:
+             if pathcond in pathconds_d:
+                 covs_,samples_ = pathconds_d[pathcond]
+@@ -132,7 +132,7 @@
+     
+     st = time()
+     db = read_exp_dir_pc(exp_dir)
+-    print("read {} exp files ({}s)".formatRefactoringTool: Refactored gcovparse.py
+RefactoringTool: Refactored get_cov.py
+RefactoringTool: Refactored mbuild.py
+RefactoringTool: No changes to settings.py
+RefactoringTool: No changes to vcommon.py
+RefactoringTool: Refactored z3util.py
+RefactoringTool: Files that need to be modified:
+RefactoringTool: alg.py
+RefactoringTool: analysis_algs.py
+RefactoringTool: analysis.py
+RefactoringTool: config_common.py
+RefactoringTool: config.py
+RefactoringTool: ex_otter.py
+RefactoringTool: gcovparse.py
+RefactoringTool: get_cov.py
+RefactoringTool: mbuild.py
+RefactoringTool: settings.py
+RefactoringTool: vcommon.py
+RefactoringTool: z3util.py
+RefactoringTool: Warnings/messages while refactoring:
+RefactoringTool: ### In file gcovparse.py ###
+RefactoringTool: Line 17: You should use a for loop here
+(len(db),time()-st))
++    print(("read {} exp files ({}s)".format(len(db),time()-st)))
+ 
+     st = time()
+     pathconds_d = combine_pathconds(db)
+@@ -140,7 +140,7 @@
+     ncovs,nsamples = 0,0
+ 
+ 
+-    for covs,samples in pathconds_d.itervalues():
++    for covs,samples in pathconds_d.values():
+         for sid in covs:
+             allcovs.add(sid)
+         ncovs += len(covs)
+@@ -149,11 +149,11 @@
+             allsamples.add(sample)
+         nsamples += len(samples)        
+     
+-    print("pathconds: {}, covs {} (real {}), samples {} (real {}) ({}s)"
++    print(("pathconds: {}, covs {} (real {}), samples {} (real {}) ({}s)"
+           .format(len(pathconds_d),
+                   ncovs,len(allcovs),
+                   nsamples,len(allsamples),
+-                  time() - st))
++                  time() - st)))
+     
+     return pathconds_d
+ 
+--- gcovparse.py	(original)
++++ gcovparse.py	(refactored)
+@@ -4,8 +4,8 @@
+ def gcovparse(combined):
+     # clean and strip lines
+     assert ':Source:' in combined, 'gcov file is missing ":Source:" line(s)'
+-    files = filter(lambda f: f != '', combined.strip().split("0:Source:"))
+-    reports = map(_part, files[1:])
++    files = [f for f in combined.strip().split("0:Source:") if f != '']
++    reports = list(map(_part, files[1:]))
+     return reports
+ 
+ 
+@@ -14,7 +14,7 @@
+         "file": chunk.split('\n', 1)[0],
+         "lines": []
+     }
+-    map(lambda l: _line(l, report), chunk.strip().split('\n')[1:])
++    list(map(lambda l: _line(l, report), chunk.strip().split('\n')[1:]))
+ 
+     return report
+ 
+--- get_cov.py	(original)
++++ get_cov.py	(refactored)
+@@ -52,7 +52,7 @@
+     assert os.path.isfile(run_script), run_script
+     
+     inputs = ' , '.join(['{} {}'.format(vname,vval) for
+-                         vname,vval in config.iteritems()])
++                         vname,vval in config.items()])
+ 
+     cov = run_runscript(run_script, inputs)
+     return cov, []
+--- mbuild.py	(original)
++++ mbuild.py	(refactored)
+@@ -101,7 +101,7 @@
+ 
+     # 0 Error #1 Warn #2 Info #3 Debug #4 Detail
+     ag("--logger_level", "-logger_level", "-log", "--log",
+-       help="set logger info", type=int, choices=range(5), default=4)
++       help="set logger info", type=int, choices=list(range(5)), default=4)
+ 
+     ag("--seed", "-seed",
+        type=float,
+@@ -252,8 +252,8 @@
+             mlog.info("*run {}, seed {}, time {}s, '{}'".format(
+                 i + 1, seed_, time() - st_, tdir_))
+ 
+-        print("** done {} runs, seed {}, time {}, results '{}'"
+-              .format(args.benchmark, seed, time() - st, tdir))
++        print(("** done {} runs, seed {}, time {}, results '{}'"
++              .format(args.benchmark, seed, time() - st, tdir)))
+ 
+     else:  # run analysis
+         do_minconfigs = args.minconfigs
+--- z3util.py	(original)
++++ z3util.py	(refactored)
+@@ -370,9 +370,8 @@
+         v = Const(name,vsort)
+ 
+     else:
+-        raise AssertionError,\
+-            'Cannot handle this sort (s: {}, {})'\
+-            .format(vsort, vsort.kind())
++        raise AssertionError('Cannot handle this sort (s: {}, {})'\
++            .format(vsort, vsort.kind()))
+ 
+     return v
+ 
+@@ -719,7 +718,7 @@
+ 
+     if m :
+         vs = [(v,m[v]) for v in m]
+-        vs = sorted(vs,key=lambda (a,_): str(a))
++        vs = sorted(vs,key=lambda a__: str(a__[0]))
+         if as_str:
+             return '\n'.join(['{} = {}'.format(k,v) for (k,v) in vs])
+         else:
+@@ -823,7 +822,7 @@
+     >>> assert is_equiv(Int('x'),Int('x'),Solver())
+     >>> assert is_equiv(And(Bool('x'),Not(Bool('x'))), Or(FALSE,FALSE))
+     """
+-    print "VERY SLOW, just do is_tautology(f == g) instead"
++    print("VERY SLOW, just do is_tautology(f == g) instead")
+     if fhash(f) == fhash(g):
+         return True
+     else:

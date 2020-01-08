@@ -1,0 +1,13 @@
+diff --git a/simple/192c35f.c b/simple/192c35f.c
+--- a/simple/192c35f.c
++++ b/simple/192c35f.c
+@@ -4,7 +4,9 @@
+ 
+ void logMessage(char *msg)
+ {
++#ifdef CONFIG_FEATURE_REMOTE_LOG
+   static char line[512];
++#endif
+   
+ #ifdef CONFIG_FEATURE_REMOTE_LOG
+   int remotefd = 1;

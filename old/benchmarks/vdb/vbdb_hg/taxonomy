@@ -1,0 +1,152 @@
+BehaviorViolation:
+
+    text: "expected behavior violation"
+    cwe: 440
+
+BufferOverflow:
+
+    text: "buffer overflow"
+    class: MemoryError
+    cwe: 120
+
+Crash:
+
+    text: "software crash (fatal error)"
+
+DeadCode:
+
+    text: "dead code"
+    class: CompilerWarning
+    cwe: 561
+
+DoubleLock:
+
+    text: "double acquiring lock"
+    class: ApiViolation
+    cwe: 764
+
+DoubleOpOnResource:
+
+    text: "double operation on resource"
+    class: ApiViolation
+    cwe: 675
+
+FatalAssertionViolation:
+
+    text: "assertion violation"
+    class: AssertionViolation
+    cwe: 617
+
+IncompatibleType:
+
+    text: "incompatible types"
+    class: CompilerWarning
+    cwe: 843
+
+IntegerOverflow:
+    text: "integer overflow"
+    class: UndefinedBehaviour
+    cwe: 190
+
+OutOfBoundsRead:
+
+    text: "read out of the intended bounds"
+    class: MemoryError
+    cwe: 125
+
+FileDescriptorLeak:
+
+    text: Exposure of File Descriptor to Unintended Control Sphere
+    class: MemoryError
+    cwe: 403
+
+MemoryLeak:
+
+    text: "fail to release memory before removing last reference to it"
+    class: MemoryError
+    cwe: 401
+
+MultipleDefinitions:
+
+    text: "function is defined multiple times"
+    class: BuildError
+
+NumericTruncation:
+
+    text: "numeric truncation"
+    class: NumericError
+    cwe: 197
+
+NullDereference:
+
+    text: "null pointer dereference"
+    class: MemoryError
+    cwe: 476
+
+OSCommandInjection:
+
+    text: "OS command injection"
+    class: InputValidation
+    cwe: 78
+
+StackBasedBufferOverflow:
+
+    text: "Stack based buffer overflow"
+    class: MemoryError
+    cwe: 121
+
+UndeclaredIdentifier:
+
+   text: "undeclared identifier/macro/variable"
+   class: TypeError
+
+UndefinedSymbol:
+
+    text: "undefined symbol/function reference"
+    class: BuildError
+
+UninitializedVariable:
+
+    text: "use of variable before initialization"
+    class: CompilerWarning
+    cwe: 457
+
+UnsafeCast:
+
+    text: "unsafe cast"
+    class: CompilerWarning
+    cwe: 704
+
+UnusedVariable:
+
+    text: "unused variable"
+    class: CompilerWarning
+    cwe: 563
+
+UseAfterFree:
+
+    text: "attempt to use a resource after having freed it"
+    class: MemoryError
+    cwe: 416
+
+VoidPointerDereference:
+
+    text: "warning: dereferencing `void *' pointer"
+    class: CompilerWarning
+
+WeakAssertionViolation:
+
+    text: "assertion violation"
+    class: AssertionViolation
+    cwe: 617
+
+WriteOnReadOnly:
+
+    text: "attempt to write on read-only resource"
+    class: MemoryError
+
+WrongFunArgNum:
+
+    text: "wrong number of arguments in function application"
+    class: TypeError
+    cwe: 685

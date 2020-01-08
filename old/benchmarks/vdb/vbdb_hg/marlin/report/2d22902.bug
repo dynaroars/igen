@@ -1,0 +1,36 @@
+
+type: BehaviorViolation
+
+descr:
+
+    "String is truncated when SDSUPPORT is enabled 
+
+    Positioning of string terminator to truncate checksum from the commands
+    is off by one, causing the last letter of the actual command to be truncated
+    instead of just the checksum.
+
+    This caused checksummed commands targeting existing files to fail since 
+    the last letter of the filename was truncated.
+
+    Issue 520 on Octoprint though it is a Marlin bug: https://github.com/foosel/OctoPrint/issues/520
+    Discussion thread: https://groups.google.com/forum/#!topic/octoprint/C7e_HRaflUM"
+
+config: "SDSUPPORT"
+
+bugfix:
+
+  repo: https://github.com/MarlinFirmware/Marlin.git
+
+  hash: 2d22902d080b08c65ebdf5f8b3f03529ccd58144
+
+  source: patterns "fix" "checksum" "truncation" 
+
+  fix-in: code
+
+loc: main
+
+trace: !!trace |
+
+    . call  Marlin_main.cpp:1155: void process_commands()
+    . 1635: else if(code_seen('M'))
+    . ERROR 1696: *(starpos-1)='\0';

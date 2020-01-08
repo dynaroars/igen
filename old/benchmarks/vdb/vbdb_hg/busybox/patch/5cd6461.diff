@@ -1,0 +1,24 @@
+diff --git a/simple/5cd6461.c b/simple/5cd6461.c
+--- a/simple/5cd6461.c
++++ b/simple/5cd6461.c
+@@ -6,6 +6,11 @@
+ #define HTTP_NOT_IMPLEMENTED   501 /* used for unrecognized requests */
+ #define HTTP_FORBIDDEN         403
+ 
++#ifdef CONFIG_LFS
++#define cont_l_fmt "%lld"
++#else
++#define cont_l_fmt "%ld"
++#endif
+ 
+ #ifdef CONFIG_FEATURE_HTTPD_CGI
+ static const char request_GET[] = "GET";
+@@ -19,7 +24,7 @@
+   long total = 10L;
+   #endif 
+   
+-  printf("%ld\r\n", total); //ERROR
++  printf(cont_l_fmt "\r\n", total); //ERROR
+ }
+ 
+ void handleIncoming(const char *request)

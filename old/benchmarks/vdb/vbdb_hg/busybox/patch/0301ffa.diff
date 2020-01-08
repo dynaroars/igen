@@ -1,0 +1,13 @@
+diff --git a/simple/0301ffa.c b/simple/0301ffa.c
+--- a/simple/0301ffa.c
++++ b/simple/0301ffa.c
+@@ -3,7 +3,9 @@
+ 
+ void ext2fs_open2(void)
+ {
++#ifdef EXT2FS_ENABLE_SWAPFS
+   char *gdp;
++#endif
+     
+ #ifdef EXT2FS_ENABLE_SWAPFS
+   gdp = "group_desc";

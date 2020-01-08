@@ -1,0 +1,45 @@
+
+type: NumericTruncation
+
+descr:
+
+    Truncation error when converting unsigned long long to long
+
+    Essentially, the problem is that we try to convert a 64-bit integer
+    to a 32-bit one. Variable `time_delta' has type u64 which is always
+    64-bit wide. It holds a value in nanoseconds that is converted to
+    seconds and stored in a variable of type long. In architectures
+    where long is 32-bit wide, time_delta/NSEC_PER_SEC may not fit if
+    time_delta is large enough, and we end up storing a negative number
+    of seconds.
+
+    As a consequence, if the computed expiration time is negative,
+    this causes an infinite loop.
+
+config: "!64BIT && !KTIME_SCALAR"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 51fd36f3fad8447c487137ae26b9d0b3ce77bb25
+
+  source: patterns "CONFIG_.+" "overflow"
+
+  fix-in: code
+
+loc: kernel/
+
+trace: !!trace |
+      . call kernel/time/tick-sched.c:318:tick_nohz_stop_sched_tick()
+      . 325: u64 time_delta;
+      . 332: time_delta = timekeeping_max_deferment();
+      . 400: if (time_delta < KTIME_MAX)
+      . 401: expires = ktime_add_ns(last_update, time_delta);
+      .. call kernel/hrtimer.c:280:ktime_add_ns()
+      .. 286: else
+      .. 287: unsigned long rem = do_div(nsec, NSEC_PER_SEC);
+      // sets nsec to nsec/NSEC_PER_SEC
+      .. ERROR 289: tmp = ktime_set((long)nsec, rem);
+      // (long)nsec overflows
+

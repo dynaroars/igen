@@ -1,0 +1,39 @@
+
+type: NullDereference
+
+descr:
+
+    Debugging code may derefence a NULL pointer
+
+    Pointer `dst' may be NULL and, if SCTP_DEBUG_PRINTK is enabled,
+    is dereferenced by a call to printk.
+
+config: "IP_SCTP && IPV6 && SCTP_DBG_MSG"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: ee3f34e857238a4552c68d860348893d7728bcab
+
+  source: patterns "CONFIG_" "fix" "null pointer dereference" "when CONFIG_<fid> is not set" "end trace"
+
+  fix-in: code
+
+C-features: PointerAliasing
+
+loc: net/sctp/
+
+trace: !!trace |
+    . call net/sctp/ipv6.c:257:sctp_v6_get_dst()
+    . 265: union sctp_addr *baddr = NULL;
+    . 290: dst = ip6_dst_lookup_flow(sk, fl6, NULL, false);
+    . 299: if (!IS_ERR(dst))
+    . 321:     dst = NULL;
+    // somehow `baddr' is still pointing to NULL
+    // or maybe `dst' becomes NULL at 344
+    . 348: if (!IS_ERR(dst))
+    . 350: rt = (struct rt6_info *)dst;
+    // `rt' is an alias for `dst'
+    . [SCTP_DBG_MSG] 352: SCTP_DEBUG_PRINTK("rt6_dst:%pI6 rt6_src:%pI6\n",
+    . ERROR 353:                   &rt->rt6i_dst.addr, &fl6->saddr);

@@ -1,0 +1,14 @@
+diff --git a/simple/e30bfed.c b/simple/e30bfed.c
+--- a/simple/e30bfed.c
++++ b/simple/e30bfed.c
+@@ -18,9 +18,9 @@
+ void process_commands(){
+ 	
+ 	#ifdef ENABLE_AUTO_BED_LEVELING
+-		int left_probe_bed_position=LEFT_PROBE_BED_POSITION; // ERROR
+ 		
+ 		#ifdef AUTO_BED_LEVELING_GRID
++			int left_probe_bed_position=LEFT_PROBE_BED_POSITION;
+ 			int xGridSpacing = left_probe_bed_position;
+ 		#else
+ 			float z_at_pt_1, z_at_pt_2, z_at_pt_3;

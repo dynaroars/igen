@@ -1,0 +1,17 @@
+diff --git a/simple/7336e6d.c b/simple/7336e6d.c
+--- a/simple/7336e6d.c
++++ b/simple/7336e6d.c
+@@ -24,13 +24,8 @@
+   locked_z2_motor = false;
+ #endif
+ 
+-#if HAS_Z_MIN
+   static bool old_z_min_endstop = false;
+-#endif
+-
+-#if HAS_Z_MAX
+   static bool old_z_max_endstop = false;
+-#endif
+ 
+ #ifdef Z_DUAL_ENDSTOPS
+   static bool old_z2_min_endstop = false;

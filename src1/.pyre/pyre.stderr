@@ -1,0 +1,1016 @@
+2019-03-29 14:56:49,618 INFO Binary found at `/home/tnguyen/.local/bin/pyre.bin`
+2019-03-29 14:56:49,618 DEBUG Trying with: `/home/tnguyen/.local/lib/python3.7/site-packages/pyre_check/pyre_check/typeshed/`
+2019-03-29 14:56:49,618 DEBUG Trying with: `/home/tnguyen/.local/lib/python3.7/site-packages/pyre_check/typeshed/`
+2019-03-29 14:56:49,618 DEBUG Trying with: `/home/tnguyen/.local/lib/python3.7/pyre_check/typeshed/`
+2019-03-29 14:56:49,619 DEBUG Trying with: `/home/tnguyen/.local/lib/pyre_check/typeshed/`
+2019-03-29 14:56:49,619 PROMPT Which directory should pyre be initialized in? (Default: `.`): 
+2019-03-29 14:56:51,399 INFO Successfully initialized pyre! You can view the configuration at `/home/tnguyen/Dropbox/github/multibuild/src/.pyre_configuration`.
+2019-03-29 14:56:56,993 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-29 14:56:56,993 DEBUG Found source_directories: `.`
+2019-03-29 14:56:56,993 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ .`
+2019-03-29 14:56:57,021 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-29 14:56:57,028 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-29 14:56:57,039 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-29 14:56:57,139 INFO Parsing 792 stubs and external sources...
+2019-03-29 14:56:57,310 PERFORMANCE Stubs parsed: 0.262478s
+2019-03-29 14:56:57,347 INFO Parsing 12 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-29 14:56:57,348 WARNING Could not parse 5 files due to syntax errors! Run `pyre --show-parse-errors check` for more details.
+
+2019-03-29 14:56:57,372 PERFORMANCE Sources parsed: 0.037700s
+2019-03-29 14:56:57,373 PERFORMANCE Registered ignores: 0.024951s
+2019-03-29 14:56:57,473 INFO Building type environment...
+2019-03-29 14:56:58,088 PERFORMANCE Full environment built: 0.715416s
+2019-03-29 14:56:58,188 INFO Inferring protocol implementations...
+2019-03-29 14:56:58,257 PERFORMANCE Inferred protocol implementations: 0.169353s
+2019-03-29 14:56:58,358 INFO Adding environment information to shared memory...
+2019-03-29 14:56:58,436 PERFORMANCE Added environment to shared memory: 0.178327s
+2019-03-29 14:56:58,461 MEMORY Shared memory size (size: 13)
+2019-03-29 14:56:58,462 PERFORMANCE Filtered directories: 0.025765s
+2019-03-29 14:56:58,462 INFO Checking 7 sources...
+2019-03-29 14:56:58,487 INFO Running check `TypeCheck`...
+2019-03-29 14:56:58,507 INFO Processed 1 of 7 sources
+2019-03-29 14:56:58,527 INFO Processed 2 of 7 sources
+2019-03-29 14:56:58,550 INFO Processed 3 of 7 sources
+2019-03-29 14:56:58,625 INFO Processed 4 of 7 sources
+2019-03-29 14:56:58,650 INFO Processed 5 of 7 sources
+2019-03-29 14:56:58,654 INFO Processed 6 of 7 sources
+2019-03-29 14:56:58,654 INFO Processed 7 of 7 sources
+2019-03-29 14:56:58,655 PERFORMANCE Check_TypeCheck: 0.192289s
+2019-03-29 14:56:58,683 PERFORMANCE Analyzed sources: 0.192324s
+2019-03-29 14:56:58,700 PERFORMANCE Postprocessed: 0.029173s
+2019-03-29 14:56:58,711 PERFORMANCE Check: 1.698378s
+2019-03-29 14:56:58,712 ERROR Found 9 type errors!
+
+2019-03-29 14:58:52,240 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-29 14:58:52,240 DEBUG Found source_directories: `.`
+2019-03-29 14:58:52,240 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ .`
+2019-03-29 14:58:52,274 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-29 14:58:52,278 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-29 14:58:52,286 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-29 14:58:52,386 INFO Parsing 792 stubs and external sources...
+2019-03-29 14:58:52,554 PERFORMANCE Stubs parsed: 0.257305s
+2019-03-29 14:58:52,592 INFO Parsing 12 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-29 14:58:52,592 WARNING Could not parse 5 files due to syntax errors! Run `pyre --show-parse-errors check` for more details.
+
+2019-03-29 14:58:52,618 PERFORMANCE Sources parsed: 0.037680s
+2019-03-29 14:58:52,619 PERFORMANCE Registered ignores: 0.026727s
+2019-03-29 14:58:52,719 INFO Building type environment...
+2019-03-29 14:58:53,334 PERFORMANCE Full environment built: 0.715300s
+2019-03-29 14:58:53,435 INFO Inferring protocol implementations...
+2019-03-29 14:58:53,506 PERFORMANCE Inferred protocol implementations: 0.171826s
+2019-03-29 14:58:53,607 INFO Adding environment information to shared memory...
+2019-03-29 14:58:53,686 PERFORMANCE Added environment to shared memory: 0.180406s
+2019-03-29 14:58:53,713 MEMORY Shared memory size (size: 13)
+2019-03-29 14:58:53,713 PERFORMANCE Filtered directories: 0.026468s
+2019-03-29 14:58:53,713 INFO Checking 7 sources...
+2019-03-29 14:58:53,739 INFO Running check `TypeCheck`...
+2019-03-29 14:58:53,754 INFO Processed 1 of 7 sources
+2019-03-29 14:58:53,773 INFO Processed 2 of 7 sources
+2019-03-29 14:58:53,810 INFO Processed 3 of 7 sources
+2019-03-29 14:58:53,867 INFO Processed 4 of 7 sources
+2019-03-29 14:58:53,895 INFO Processed 5 of 7 sources
+2019-03-29 14:58:53,913 INFO Processed 6 of 7 sources
+2019-03-29 14:58:53,914 INFO Processed 7 of 7 sources
+2019-03-29 14:58:53,914 PERFORMANCE Check_TypeCheck: 0.200114s
+2019-03-29 14:58:53,938 PERFORMANCE Analyzed sources: 0.200150s
+2019-03-29 14:58:53,956 PERFORMANCE Postprocessed: 0.025468s
+2019-03-29 14:58:53,965 PERFORMANCE Check: 1.704029s
+2019-03-29 14:58:53,966 ERROR Found 10 type errors!
+
+2019-03-30 00:03:51,903 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 00:03:51,903 DEBUG Found source_directories: `.`
+2019-03-30 00:03:51,903 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 00:03:51,903 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 00:03:51,946 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:03:51,951 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 00:03:51,958 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 00:03:52,058 INFO Parsing 792 stubs and external sources...
+2019-03-30 00:03:52,197 PERFORMANCE Stubs parsed: 0.221078s
+2019-03-30 00:03:52,240 INFO Parsing 12 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:03:52,241 WARNING Could not parse 2 files due to syntax errors! Run `pyre --show-parse-errors check` for more details.
+
+2019-03-30 00:03:52,267 PERFORMANCE Sources parsed: 0.043921s
+2019-03-30 00:03:52,267 PERFORMANCE Registered ignores: 0.026731s
+2019-03-30 00:03:52,368 INFO Building type environment...
+2019-03-30 00:03:52,987 PERFORMANCE Full environment built: 0.719436s
+2019-03-30 00:03:53,088 INFO Inferring protocol implementations...
+2019-03-30 00:03:53,170 PERFORMANCE Inferred protocol implementations: 0.183502s
+2019-03-30 00:03:53,271 INFO Adding environment information to shared memory...
+2019-03-30 00:03:53,352 PERFORMANCE Added environment to shared memory: 0.181322s
+2019-03-30 00:03:53,378 MEMORY Shared memory size (size: 13)
+2019-03-30 00:03:53,379 PERFORMANCE Filtered directories: 0.026397s
+2019-03-30 00:03:53,379 INFO Checking 10 sources...
+2019-03-30 00:03:53,405 INFO Running check `TypeCheck`...
+2019-03-30 00:03:53,415 INFO Processed 1 of 10 sources
+2019-03-30 00:03:53,420 INFO Processed 2 of 10 sources
+2019-03-30 00:03:53,448 INFO Processed 3 of 10 sources
+2019-03-30 00:03:53,478 INFO Processed 4 of 10 sources
+2019-03-30 00:03:53,512 INFO Processed 5 of 10 sources
+2019-03-30 00:03:53,585 INFO Processed 6 of 10 sources
+2019-03-30 00:03:53,630 INFO Processed 7 of 10 sources
+2019-03-30 00:03:53,653 INFO Processed 8 of 10 sources
+2019-03-30 00:03:53,754 INFO Processed 9 of 10 sources
+2019-03-30 00:03:53,880 INFO Processed 10 of 10 sources
+2019-03-30 00:03:53,880 PERFORMANCE Check_TypeCheck: 0.501242s
+2019-03-30 00:03:53,906 PERFORMANCE Analyzed sources: 0.501276s
+2019-03-30 00:03:53,924 PERFORMANCE Postprocessed: 0.026645s
+2019-03-30 00:03:53,933 PERFORMANCE Check: 2.008595s
+2019-03-30 00:03:53,934 ERROR Found 10 type errors!
+
+2019-03-30 00:04:23,332 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 00:04:23,332 DEBUG Found source_directories: `.`
+2019-03-30 00:04:23,332 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 00:04:23,333 ERROR `/home/tnguyen/Dropbox/github/multibuild/src/alg.py` is not a link tree.
+
+2019-03-30 00:04:42,868 ERROR A pyre configuration already exists at `/home/tnguyen/Dropbox/github/multibuild/src/.pyre_configuration`.
+
+2019-03-30 00:05:09,196 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 00:05:09,196 DEBUG Found source_directories: `.`
+2019-03-30 00:05:09,196 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 00:05:09,196 ERROR `/home/tnguyen/Dropbox/github/multibuild/src/alg.py` is not a link tree.
+
+2019-03-30 00:05:15,576 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 00:05:15,576 DEBUG Found source_directories: `.`
+2019-03-30 00:05:15,576 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 00:05:15,577 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 00:05:15,606 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:05:15,614 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 00:05:15,622 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 00:05:15,722 INFO Parsing 792 stubs and external sources...
+2019-03-30 00:05:15,874 PERFORMANCE Stubs parsed: 0.242369s
+2019-03-30 00:05:15,917 INFO Parsing 12 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:05:15,917 WARNING Could not parse 2 files due to syntax errors! Run `pyre --show-parse-errors check` for more details.
+
+2019-03-30 00:05:15,943 PERFORMANCE Sources parsed: 0.042337s
+2019-03-30 00:05:15,944 PERFORMANCE Registered ignores: 0.026639s
+2019-03-30 00:05:16,044 INFO Building type environment...
+2019-03-30 00:05:16,675 PERFORMANCE Full environment built: 0.731084s
+2019-03-30 00:05:16,775 INFO Inferring protocol implementations...
+2019-03-30 00:05:16,854 PERFORMANCE Inferred protocol implementations: 0.179675s
+2019-03-30 00:05:16,955 INFO Adding environment information to shared memory...
+2019-03-30 00:05:17,037 PERFORMANCE Added environment to shared memory: 0.182334s
+2019-03-30 00:05:17,063 MEMORY Shared memory size (size: 13)
+2019-03-30 00:05:17,063 PERFORMANCE Filtered directories: 0.025896s
+2019-03-30 00:05:17,063 INFO Checking 10 sources...
+2019-03-30 00:05:17,090 INFO Running check `TypeCheck`...
+2019-03-30 00:05:17,100 INFO Processed 1 of 10 sources
+2019-03-30 00:05:17,112 INFO Processed 2 of 10 sources
+2019-03-30 00:05:17,130 INFO Processed 3 of 10 sources
+2019-03-30 00:05:17,159 INFO Processed 4 of 10 sources
+2019-03-30 00:05:17,200 INFO Processed 5 of 10 sources
+2019-03-30 00:05:17,248 INFO Processed 6 of 10 sources
+2019-03-30 00:05:17,300 INFO Processed 7 of 10 sources
+2019-03-30 00:05:17,341 INFO Processed 8 of 10 sources
+2019-03-30 00:05:17,442 INFO Processed 9 of 10 sources
+2019-03-30 00:05:17,560 INFO Processed 10 of 10 sources
+2019-03-30 00:05:17,561 PERFORMANCE Check_TypeCheck: 0.497087s
+2019-03-30 00:05:17,586 PERFORMANCE Analyzed sources: 0.497125s
+2019-03-30 00:05:17,605 PERFORMANCE Postprocessed: 0.026383s
+2019-03-30 00:05:17,614 PERFORMANCE Check: 2.017310s
+2019-03-30 00:05:17,616 ERROR Found 10 type errors!
+
+2019-03-30 00:06:17,221 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 00:06:17,221 DEBUG Found source_directories: `.`
+2019-03-30 00:06:17,222 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 00:06:17,222 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 00:06:17,265 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:06:17,268 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 00:06:17,274 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 00:06:17,374 INFO Parsing 792 stubs and external sources...
+2019-03-30 00:06:17,524 PERFORMANCE Stubs parsed: 0.232238s
+2019-03-30 00:06:17,567 INFO Parsing 12 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:06:17,568 WARNING Could not parse 2 files due to syntax errors! Run `pyre --show-parse-errors check` for more details.
+
+2019-03-30 00:06:17,593 PERFORMANCE Sources parsed: 0.042526s
+2019-03-30 00:06:17,594 PERFORMANCE Registered ignores: 0.026381s
+2019-03-30 00:06:17,694 INFO Building type environment...
+2019-03-30 00:06:18,313 PERFORMANCE Full environment built: 0.719060s
+2019-03-30 00:06:18,413 INFO Inferring protocol implementations...
+2019-03-30 00:06:18,495 PERFORMANCE Inferred protocol implementations: 0.181830s
+2019-03-30 00:06:18,595 INFO Adding environment information to shared memory...
+2019-03-30 00:06:18,681 PERFORMANCE Added environment to shared memory: 0.185820s
+2019-03-30 00:06:18,708 MEMORY Shared memory size (size: 13)
+2019-03-30 00:06:18,708 PERFORMANCE Filtered directories: 0.027180s
+2019-03-30 00:06:18,709 INFO Checking 10 sources...
+2019-03-30 00:06:18,736 INFO Running check `TypeCheck`...
+2019-03-30 00:06:18,750 INFO Processed 1 of 10 sources
+2019-03-30 00:06:18,753 INFO Processed 2 of 10 sources
+2019-03-30 00:06:18,781 INFO Processed 3 of 10 sources
+2019-03-30 00:06:18,803 INFO Processed 4 of 10 sources
+2019-03-30 00:06:18,861 INFO Processed 5 of 10 sources
+2019-03-30 00:06:18,891 INFO Processed 6 of 10 sources
+2019-03-30 00:06:18,945 INFO Processed 7 of 10 sources
+2019-03-30 00:06:18,981 INFO Processed 8 of 10 sources
+2019-03-30 00:06:19,082 INFO Processed 9 of 10 sources
+2019-03-30 00:06:19,189 INFO Processed 10 of 10 sources
+2019-03-30 00:06:19,190 PERFORMANCE Check_TypeCheck: 0.481287s
+2019-03-30 00:06:19,217 PERFORMANCE Analyzed sources: 0.481320s
+2019-03-30 00:06:19,228 PERFORMANCE Postprocessed: 0.028009s
+2019-03-30 00:06:19,238 PERFORMANCE Check: 1.995391s
+2019-03-30 00:06:19,239 ERROR Found 8 type errors!
+
+2019-03-30 00:06:51,496 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 00:06:51,496 DEBUG Found source_directories: `.`
+2019-03-30 00:06:51,496 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 00:06:51,496 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 00:06:51,538 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:06:51,541 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 00:06:51,547 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 00:06:51,648 INFO Parsing 792 stubs and external sources...
+2019-03-30 00:06:51,791 PERFORMANCE Stubs parsed: 0.225285s
+2019-03-30 00:06:51,823 INFO Parsing 12 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:06:51,826 ERROR Could not parse file at analysis.py:376:33-376:33
+          def median_siqr((s, arr)):
+                                  ^
+
+2019-03-30 00:06:51,834 ERROR Could not parse file at analysis_algs.py:505:37-505:37
+          rs.sort(key = lambda (k, v) : (v, k), reverse=True)
+                                      ^
+
+2019-03-30 00:06:51,835 WARNING Could not parse 2 files due to syntax errors!
+
+2019-03-30 00:06:51,863 PERFORMANCE Sources parsed: 0.042991s
+2019-03-30 00:06:51,864 PERFORMANCE Registered ignores: 0.028974s
+2019-03-30 00:06:51,964 INFO Building type environment...
+2019-03-30 00:06:52,580 PERFORMANCE Full environment built: 0.716235s
+2019-03-30 00:06:52,680 INFO Inferring protocol implementations...
+2019-03-30 00:06:52,758 PERFORMANCE Inferred protocol implementations: 0.177998s
+2019-03-30 00:06:52,858 INFO Adding environment information to shared memory...
+2019-03-30 00:06:52,938 PERFORMANCE Added environment to shared memory: 0.179816s
+2019-03-30 00:06:52,965 MEMORY Shared memory size (size: 13)
+2019-03-30 00:06:52,965 PERFORMANCE Filtered directories: 0.027229s
+2019-03-30 00:06:52,966 INFO Checking 10 sources...
+2019-03-30 00:06:52,992 INFO Running check `TypeCheck`...
+2019-03-30 00:06:53,004 INFO Processed 1 of 10 sources
+2019-03-30 00:06:53,007 INFO Processed 2 of 10 sources
+2019-03-30 00:06:53,034 INFO Processed 3 of 10 sources
+2019-03-30 00:06:53,057 INFO Processed 4 of 10 sources
+2019-03-30 00:06:53,102 INFO Processed 5 of 10 sources
+2019-03-30 00:06:53,150 INFO Processed 6 of 10 sources
+2019-03-30 00:06:53,205 INFO Processed 7 of 10 sources
+2019-03-30 00:06:53,235 INFO Processed 8 of 10 sources
+2019-03-30 00:06:53,336 INFO Processed 9 of 10 sources
+2019-03-30 00:06:53,453 INFO Processed 10 of 10 sources
+2019-03-30 00:06:53,453 PERFORMANCE Check_TypeCheck: 0.487164s
+2019-03-30 00:06:53,481 PERFORMANCE Analyzed sources: 0.487199s
+2019-03-30 00:06:53,501 PERFORMANCE Postprocessed: 0.028375s
+2019-03-30 00:06:53,510 PERFORMANCE Check: 1.993387s
+2019-03-30 00:06:53,511 ERROR Found 8 type errors!
+
+2019-03-30 00:17:23,792 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 00:17:23,793 DEBUG Found source_directories: `.`
+2019-03-30 00:17:23,793 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 00:17:23,793 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 00:17:23,837 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:17:23,840 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 00:17:23,846 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 00:17:23,946 INFO Parsing 792 stubs and external sources...
+2019-03-30 00:17:24,097 PERFORMANCE Stubs parsed: 0.233335s
+2019-03-30 00:17:24,132 INFO Parsing 12 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:17:24,137 ERROR Could not parse file at analysis_algs.py:505:37-505:37
+          rs.sort(key = lambda (k, v) : (v, k), reverse=True)
+                                      ^
+
+2019-03-30 00:17:24,137 WARNING Could not parse 1 file due to syntax errors!
+
+2019-03-30 00:17:24,163 PERFORMANCE Sources parsed: 0.039875s
+2019-03-30 00:17:24,164 PERFORMANCE Registered ignores: 0.026633s
+2019-03-30 00:17:24,264 INFO Building type environment...
+2019-03-30 00:17:24,879 PERFORMANCE Full environment built: 0.715374s
+2019-03-30 00:17:24,980 INFO Inferring protocol implementations...
+2019-03-30 00:17:25,061 PERFORMANCE Inferred protocol implementations: 0.182254s
+2019-03-30 00:17:25,162 INFO Adding environment information to shared memory...
+2019-03-30 00:17:25,242 PERFORMANCE Added environment to shared memory: 0.181051s
+2019-03-30 00:17:25,268 MEMORY Shared memory size (size: 13)
+2019-03-30 00:17:25,270 PERFORMANCE Filtered directories: 0.026377s
+2019-03-30 00:17:25,271 INFO Checking 11 sources...
+2019-03-30 00:17:25,304 INFO Running check `TypeCheck`...
+2019-03-30 00:17:25,306 INFO Processed 1 of 11 sources
+2019-03-30 00:17:25,310 INFO Processed 2 of 11 sources
+2019-03-30 00:17:25,335 INFO Processed 3 of 11 sources
+2019-03-30 00:17:25,361 INFO Processed 4 of 11 sources
+2019-03-30 00:17:25,412 INFO Processed 5 of 11 sources
+2019-03-30 00:17:25,452 INFO Processed 6 of 11 sources
+2019-03-30 00:17:25,525 INFO Processed 7 of 11 sources
+2019-03-30 00:17:25,544 INFO Processed 8 of 11 sources
+2019-03-30 00:17:25,575 INFO Processed 9 of 11 sources
+2019-03-30 00:17:25,676 INFO Processed 10 of 11 sources
+2019-03-30 00:17:25,750 INFO Processed 11 of 11 sources
+2019-03-30 00:17:25,751 PERFORMANCE Check_TypeCheck: 0.480963s
+2019-03-30 00:17:25,777 PERFORMANCE Analyzed sources: 0.480996s
+2019-03-30 00:17:25,796 PERFORMANCE Postprocessed: 0.027752s
+2019-03-30 00:17:25,806 PERFORMANCE Check: 1.992097s
+2019-03-30 00:17:25,808 ERROR Found 8 type errors!
+
+2019-03-30 00:19:54,662 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 00:19:54,662 DEBUG Found source_directories: `.`
+2019-03-30 00:19:54,662 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 00:19:54,662 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 00:19:54,705 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:19:54,711 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 00:19:54,717 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 00:19:54,818 INFO Parsing 792 stubs and external sources...
+2019-03-30 00:19:55,000 PERFORMANCE Stubs parsed: 0.267750s
+2019-03-30 00:19:55,031 INFO Parsing 12 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:19:55,041 ERROR Could not parse file at analysis_algs.py:510:41-510:41
+                          lambda (k, v, p): "({}, {}, {})"
+                                          ^
+
+2019-03-30 00:19:55,042 WARNING Could not parse 1 file due to syntax errors!
+
+2019-03-30 00:19:55,067 PERFORMANCE Sources parsed: 0.040841s
+2019-03-30 00:19:55,067 PERFORMANCE Registered ignores: 0.026231s
+2019-03-30 00:19:55,168 INFO Building type environment...
+2019-03-30 00:19:55,782 PERFORMANCE Full environment built: 0.714433s
+2019-03-30 00:19:55,882 INFO Inferring protocol implementations...
+2019-03-30 00:19:55,964 PERFORMANCE Inferred protocol implementations: 0.182108s
+2019-03-30 00:19:56,065 INFO Adding environment information to shared memory...
+2019-03-30 00:19:56,147 PERFORMANCE Added environment to shared memory: 0.182892s
+2019-03-30 00:19:56,182 MEMORY Shared memory size (size: 13)
+2019-03-30 00:19:56,182 PERFORMANCE Filtered directories: 0.035048s
+2019-03-30 00:19:56,182 INFO Checking 11 sources...
+2019-03-30 00:19:56,214 INFO Running check `TypeCheck`...
+2019-03-30 00:19:56,224 INFO Processed 1 of 11 sources
+2019-03-30 00:19:56,230 INFO Processed 2 of 11 sources
+2019-03-30 00:19:56,257 INFO Processed 3 of 11 sources
+2019-03-30 00:19:56,272 INFO Processed 4 of 11 sources
+2019-03-30 00:19:56,327 INFO Processed 5 of 11 sources
+2019-03-30 00:19:56,366 INFO Processed 6 of 11 sources
+2019-03-30 00:19:56,433 INFO Processed 7 of 11 sources
+2019-03-30 00:19:56,459 INFO Processed 8 of 11 sources
+2019-03-30 00:19:56,470 INFO Processed 9 of 11 sources
+2019-03-30 00:19:56,571 INFO Processed 10 of 11 sources
+2019-03-30 00:19:56,668 INFO Processed 11 of 11 sources
+2019-03-30 00:19:56,669 PERFORMANCE Check_TypeCheck: 0.485956s
+2019-03-30 00:19:56,694 PERFORMANCE Analyzed sources: 0.485997s
+2019-03-30 00:19:56,707 PERFORMANCE Postprocessed: 0.026350s
+2019-03-30 00:19:56,720 PERFORMANCE Check: 2.032756s
+2019-03-30 00:19:56,721 ERROR Found 8 type errors!
+
+2019-03-30 00:21:31,373 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 00:21:31,373 DEBUG Found source_directories: `.`
+2019-03-30 00:21:31,374 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 00:21:31,374 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 00:21:31,417 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:21:31,420 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 00:21:31,426 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 00:21:31,527 INFO Parsing 792 stubs and external sources...
+2019-03-30 00:21:31,694 PERFORMANCE Stubs parsed: 0.248594s
+2019-03-30 00:21:31,727 INFO Parsing 12 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:21:31,737 ERROR Could not parse file at analysis_algs.py:513:41-513:41
+                          lambda (k, v, p): "({}, {}, {})"
+                                          ^
+
+2019-03-30 00:21:31,738 WARNING Could not parse 1 file due to syntax errors!
+
+2019-03-30 00:21:31,765 PERFORMANCE Sources parsed: 0.043762s
+2019-03-30 00:21:31,765 PERFORMANCE Registered ignores: 0.027553s
+2019-03-30 00:21:31,866 INFO Building type environment...
+2019-03-30 00:21:32,506 PERFORMANCE Full environment built: 0.740499s
+2019-03-30 00:21:32,606 INFO Inferring protocol implementations...
+2019-03-30 00:21:32,685 PERFORMANCE Inferred protocol implementations: 0.179085s
+2019-03-30 00:21:32,785 INFO Adding environment information to shared memory...
+2019-03-30 00:21:32,867 PERFORMANCE Added environment to shared memory: 0.181942s
+2019-03-30 00:21:32,899 MEMORY Shared memory size (size: 13)
+2019-03-30 00:21:32,900 PERFORMANCE Filtered directories: 0.032901s
+2019-03-30 00:21:32,900 INFO Checking 11 sources...
+2019-03-30 00:21:32,932 INFO Running check `TypeCheck`...
+2019-03-30 00:21:32,947 INFO Processed 1 of 11 sources
+2019-03-30 00:21:32,953 INFO Processed 2 of 11 sources
+2019-03-30 00:21:32,967 INFO Processed 3 of 11 sources
+2019-03-30 00:21:33,000 INFO Processed 4 of 11 sources
+2019-03-30 00:21:33,041 INFO Processed 5 of 11 sources
+2019-03-30 00:21:33,089 INFO Processed 6 of 11 sources
+2019-03-30 00:21:33,152 INFO Processed 7 of 11 sources
+2019-03-30 00:21:33,183 INFO Processed 8 of 11 sources
+2019-03-30 00:21:33,205 INFO Processed 9 of 11 sources
+2019-03-30 00:21:33,305 INFO Processed 10 of 11 sources
+2019-03-30 00:21:33,387 INFO Processed 11 of 11 sources
+2019-03-30 00:21:33,388 PERFORMANCE Check_TypeCheck: 0.487283s
+2019-03-30 00:21:33,415 PERFORMANCE Analyzed sources: 0.487317s
+2019-03-30 00:21:33,427 PERFORMANCE Postprocessed: 0.028413s
+2019-03-30 00:21:33,439 PERFORMANCE Check: 2.042647s
+2019-03-30 00:21:33,439 ERROR Found 8 type errors!
+
+2019-03-30 00:22:15,248 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 00:22:15,248 DEBUG Found source_directories: `.`
+2019-03-30 00:22:15,248 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 00:22:15,249 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 00:22:15,290 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:22:15,293 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 00:22:15,299 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 00:22:15,400 INFO Parsing 792 stubs and external sources...
+2019-03-30 00:22:15,550 PERFORMANCE Stubs parsed: 0.229058s
+2019-03-30 00:22:15,594 INFO Parsing 12 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:22:15,623 PERFORMANCE Sources parsed: 0.044319s
+2019-03-30 00:22:15,623 PERFORMANCE Registered ignores: 0.028847s
+2019-03-30 00:22:15,723 INFO Building type environment...
+2019-03-30 00:22:16,344 PERFORMANCE Full environment built: 0.720929s
+2019-03-30 00:22:16,445 INFO Inferring protocol implementations...
+2019-03-30 00:22:16,524 PERFORMANCE Inferred protocol implementations: 0.179924s
+2019-03-30 00:22:16,625 INFO Adding environment information to shared memory...
+2019-03-30 00:22:16,705 PERFORMANCE Added environment to shared memory: 0.181261s
+2019-03-30 00:22:16,733 MEMORY Shared memory size (size: 13)
+2019-03-30 00:22:16,733 PERFORMANCE Filtered directories: 0.027577s
+2019-03-30 00:22:16,733 INFO Checking 12 sources...
+2019-03-30 00:22:16,761 INFO Running check `TypeCheck`...
+2019-03-30 00:22:16,773 INFO Processed 1 of 12 sources
+2019-03-30 00:22:16,782 INFO Processed 2 of 12 sources
+2019-03-30 00:22:16,807 INFO Processed 3 of 12 sources
+2019-03-30 00:22:16,825 INFO Processed 4 of 12 sources
+2019-03-30 00:22:16,888 INFO Processed 5 of 12 sources
+2019-03-30 00:22:16,927 INFO Processed 6 of 12 sources
+2019-03-30 00:22:16,982 INFO Processed 7 of 12 sources
+2019-03-30 00:22:17,012 INFO Processed 8 of 12 sources
+2019-03-30 00:22:17,017 INFO Processed 9 of 12 sources
+2019-03-30 00:22:17,054 INFO Processed 10 of 12 sources
+2019-03-30 00:22:17,155 INFO Processed 11 of 12 sources
+2019-03-30 00:22:17,246 INFO Processed 12 of 12 sources
+2019-03-30 00:22:17,246 PERFORMANCE Check_TypeCheck: 0.511799s
+2019-03-30 00:22:17,273 PERFORMANCE Analyzed sources: 0.511833s
+2019-03-30 00:22:17,291 PERFORMANCE Postprocessed: 0.028525s
+2019-03-30 00:22:17,301 PERFORMANCE Check: 2.031926s
+2019-03-30 00:22:17,302 ERROR Found 8 type errors!
+
+2019-03-30 00:27:11,489 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 00:27:11,489 DEBUG Found source_directories: `.`
+2019-03-30 00:27:11,489 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 00:27:11,489 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 00:27:11,533 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:27:11,536 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 00:27:11,542 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 00:27:11,643 INFO Parsing 792 stubs and external sources...
+2019-03-30 00:27:11,806 PERFORMANCE Stubs parsed: 0.245348s
+2019-03-30 00:27:11,847 INFO Parsing 12 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 00:27:11,873 PERFORMANCE Sources parsed: 0.041448s
+2019-03-30 00:27:11,874 PERFORMANCE Registered ignores: 0.026413s
+2019-03-30 00:27:11,974 INFO Building type environment...
+2019-03-30 00:27:12,590 PERFORMANCE Full environment built: 0.715639s
+2019-03-30 00:27:12,690 INFO Inferring protocol implementations...
+2019-03-30 00:27:12,772 PERFORMANCE Inferred protocol implementations: 0.182046s
+2019-03-30 00:27:12,872 INFO Adding environment information to shared memory...
+2019-03-30 00:27:12,957 PERFORMANCE Added environment to shared memory: 0.184512s
+2019-03-30 00:27:12,992 MEMORY Shared memory size (size: 13)
+2019-03-30 00:27:12,994 PERFORMANCE Filtered directories: 0.035902s
+2019-03-30 00:27:12,995 INFO Checking 12 sources...
+2019-03-30 00:27:13,025 INFO Running check `TypeCheck`...
+2019-03-30 00:27:13,037 INFO Processed 1 of 12 sources
+2019-03-30 00:27:13,043 INFO Processed 2 of 12 sources
+2019-03-30 00:27:13,062 INFO Processed 3 of 12 sources
+2019-03-30 00:27:13,096 INFO Processed 4 of 12 sources
+2019-03-30 00:27:13,138 INFO Processed 5 of 12 sources
+2019-03-30 00:27:13,182 INFO Processed 6 of 12 sources
+2019-03-30 00:27:13,230 INFO Processed 7 of 12 sources
+2019-03-30 00:27:13,291 INFO Processed 8 of 12 sources
+2019-03-30 00:27:13,293 INFO Processed 9 of 12 sources
+2019-03-30 00:27:13,335 INFO Processed 10 of 12 sources
+2019-03-30 00:27:13,436 INFO Processed 11 of 12 sources
+2019-03-30 00:27:13,492 INFO Processed 12 of 12 sources
+2019-03-30 00:27:13,493 PERFORMANCE Check_TypeCheck: 0.500154s
+2019-03-30 00:27:13,520 PERFORMANCE Analyzed sources: 0.500194s
+2019-03-30 00:27:13,537 PERFORMANCE Postprocessed: 0.027357s
+2019-03-30 00:27:13,547 PERFORMANCE Check: 2.035849s
+2019-03-30 00:27:13,548 ERROR Found 8 type errors!
+
+2019-03-30 09:09:23,098 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 09:09:23,098 DEBUG Found source_directories: `.`
+2019-03-30 09:09:23,099 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 09:09:23,099 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 09:09:23,142 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 09:09:23,145 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 09:09:23,151 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 09:09:23,252 INFO Parsing 792 stubs and external sources...
+2019-03-30 09:09:23,396 PERFORMANCE Stubs parsed: 0.226812s
+2019-03-30 09:09:23,439 INFO Parsing 12 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 09:09:23,470 PERFORMANCE Sources parsed: 0.043453s
+2019-03-30 09:09:23,470 PERFORMANCE Registered ignores: 0.031608s
+2019-03-30 09:09:23,571 INFO Building type environment...
+2019-03-30 09:09:24,196 PERFORMANCE Full environment built: 0.725240s
+2019-03-30 09:09:24,296 INFO Inferring protocol implementations...
+2019-03-30 09:09:24,380 PERFORMANCE Inferred protocol implementations: 0.184492s
+2019-03-30 09:09:24,481 INFO Adding environment information to shared memory...
+2019-03-30 09:09:24,564 PERFORMANCE Added environment to shared memory: 0.183431s
+2019-03-30 09:09:24,593 MEMORY Shared memory size (size: 13)
+2019-03-30 09:09:24,594 PERFORMANCE Filtered directories: 0.029218s
+2019-03-30 09:09:24,594 INFO Checking 12 sources...
+2019-03-30 09:09:24,620 INFO Running check `TypeCheck`...
+2019-03-30 09:09:24,634 INFO Processed 1 of 12 sources
+2019-03-30 09:09:24,636 INFO Processed 2 of 12 sources
+2019-03-30 09:09:24,660 INFO Processed 3 of 12 sources
+2019-03-30 09:09:24,687 INFO Processed 4 of 12 sources
+2019-03-30 09:09:24,743 INFO Processed 5 of 12 sources
+2019-03-30 09:09:24,791 INFO Processed 6 of 12 sources
+2019-03-30 09:09:24,846 INFO Processed 7 of 12 sources
+2019-03-30 09:09:24,868 INFO Processed 8 of 12 sources
+2019-03-30 09:09:24,890 INFO Processed 9 of 12 sources
+2019-03-30 09:09:24,919 INFO Processed 10 of 12 sources
+2019-03-30 09:09:25,020 INFO Processed 11 of 12 sources
+2019-03-30 09:09:25,087 INFO Processed 12 of 12 sources
+2019-03-30 09:09:25,087 PERFORMANCE Check_TypeCheck: 0.493377s
+2019-03-30 09:09:25,113 PERFORMANCE Analyzed sources: 0.493414s
+2019-03-30 09:09:25,129 PERFORMANCE Postprocessed: 0.026741s
+2019-03-30 09:09:25,139 PERFORMANCE Check: 2.019379s
+2019-03-30 09:09:25,140 ERROR Found 8 type errors!
+
+2019-03-30 09:57:05,052 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 09:57:05,052 DEBUG Found source_directories: `.`
+2019-03-30 09:57:05,052 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 09:57:05,052 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 09:57:05,083 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 09:57:05,090 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 09:57:05,097 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 09:57:05,198 INFO Parsing 792 stubs and external sources...
+2019-03-30 09:57:05,340 PERFORMANCE Stubs parsed: 0.230470s
+2019-03-30 09:57:05,380 INFO Parsing 12 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 09:57:05,408 PERFORMANCE Sources parsed: 0.039885s
+2019-03-30 09:57:05,408 PERFORMANCE Registered ignores: 0.027636s
+2019-03-30 09:57:05,509 INFO Building type environment...
+2019-03-30 09:57:06,128 PERFORMANCE Full environment built: 0.719321s
+2019-03-30 09:57:06,228 INFO Inferring protocol implementations...
+2019-03-30 09:57:06,311 PERFORMANCE Inferred protocol implementations: 0.183620s
+2019-03-30 09:57:06,412 INFO Adding environment information to shared memory...
+2019-03-30 09:57:06,495 PERFORMANCE Added environment to shared memory: 0.183863s
+2019-03-30 09:57:06,527 MEMORY Shared memory size (size: 13)
+2019-03-30 09:57:06,527 PERFORMANCE Filtered directories: 0.031605s
+2019-03-30 09:57:06,528 INFO Checking 12 sources...
+2019-03-30 09:57:06,554 INFO Running check `TypeCheck`...
+2019-03-30 09:57:06,566 INFO Processed 1 of 12 sources
+2019-03-30 09:57:06,569 INFO Processed 2 of 12 sources
+2019-03-30 09:57:06,597 INFO Processed 3 of 12 sources
+2019-03-30 09:57:06,625 INFO Processed 4 of 12 sources
+2019-03-30 09:57:06,670 INFO Processed 5 of 12 sources
+2019-03-30 09:57:06,725 INFO Processed 6 of 12 sources
+2019-03-30 09:57:06,770 INFO Processed 7 of 12 sources
+2019-03-30 09:57:06,806 INFO Processed 8 of 12 sources
+2019-03-30 09:57:06,819 INFO Processed 9 of 12 sources
+2019-03-30 09:57:06,865 INFO Processed 10 of 12 sources
+2019-03-30 09:57:06,966 INFO Processed 11 of 12 sources
+2019-03-30 09:57:07,020 INFO Processed 12 of 12 sources
+2019-03-30 09:57:07,020 PERFORMANCE Check_TypeCheck: 0.492818s
+2019-03-30 09:57:07,048 PERFORMANCE Analyzed sources: 0.492848s
+2019-03-30 09:57:07,064 PERFORMANCE Postprocessed: 0.028381s
+2019-03-30 09:57:07,074 PERFORMANCE Check: 2.000660s
+2019-03-30 09:57:07,075 ERROR Found 8 type errors!
+
+2019-03-30 10:06:35,191 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 10:06:35,192 DEBUG Found source_directories: `.`
+2019-03-30 10:06:35,192 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 10:06:35,192 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 10:06:35,224 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 10:06:35,230 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 10:06:35,237 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 10:06:35,338 INFO Parsing 792 stubs and external sources...
+2019-03-30 10:06:35,480 PERFORMANCE Stubs parsed: 0.229818s
+2019-03-30 10:06:35,523 INFO Parsing 11 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 10:06:35,550 PERFORMANCE Sources parsed: 0.042682s
+2019-03-30 10:06:35,551 PERFORMANCE Registered ignores: 0.027439s
+2019-03-30 10:06:35,651 INFO Building type environment...
+2019-03-30 10:06:36,272 PERFORMANCE Full environment built: 0.720755s
+2019-03-30 10:06:36,372 INFO Inferring protocol implementations...
+2019-03-30 10:06:36,453 PERFORMANCE Inferred protocol implementations: 0.181347s
+2019-03-30 10:06:36,553 INFO Adding environment information to shared memory...
+2019-03-30 10:06:36,636 PERFORMANCE Added environment to shared memory: 0.182646s
+2019-03-30 10:06:36,661 MEMORY Shared memory size (size: 13)
+2019-03-30 10:06:36,661 PERFORMANCE Filtered directories: 0.025561s
+2019-03-30 10:06:36,662 INFO Checking 11 sources...
+2019-03-30 10:06:36,688 INFO Running check `TypeCheck`...
+2019-03-30 10:06:36,703 INFO Processed 1 of 11 sources
+2019-03-30 10:06:36,738 INFO Processed 2 of 11 sources
+2019-03-30 10:06:36,756 INFO Processed 3 of 11 sources
+2019-03-30 10:06:36,811 INFO Processed 4 of 11 sources
+2019-03-30 10:06:36,856 INFO Processed 5 of 11 sources
+2019-03-30 10:06:36,905 INFO Processed 6 of 11 sources
+2019-03-30 10:06:36,938 INFO Processed 7 of 11 sources
+2019-03-30 10:06:36,967 INFO Processed 8 of 11 sources
+2019-03-30 10:06:36,993 INFO Processed 9 of 11 sources
+2019-03-30 10:06:37,094 INFO Processed 10 of 11 sources
+2019-03-30 10:06:37,158 INFO Processed 11 of 11 sources
+2019-03-30 10:06:37,158 PERFORMANCE Check_TypeCheck: 0.496688s
+2019-03-30 10:06:37,185 PERFORMANCE Analyzed sources: 0.496727s
+2019-03-30 10:06:37,196 PERFORMANCE Postprocessed: 0.027115s
+2019-03-30 10:06:37,207 PERFORMANCE Check: 1.993240s
+2019-03-30 10:06:37,208 ERROR Found 7 type errors!
+
+2019-03-30 10:06:52,700 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 10:06:52,701 DEBUG Found source_directories: `.`
+2019-03-30 10:06:52,701 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 10:06:52,701 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 10:06:52,740 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 10:06:52,745 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 10:06:52,750 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 10:06:52,851 INFO Parsing 792 stubs and external sources...
+2019-03-30 10:06:52,992 PERFORMANCE Stubs parsed: 0.225735s
+2019-03-30 10:06:53,037 INFO Parsing 11 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 10:06:53,067 PERFORMANCE Sources parsed: 0.045388s
+2019-03-30 10:06:53,067 PERFORMANCE Registered ignores: 0.029237s
+2019-03-30 10:06:53,167 INFO Building type environment...
+2019-03-30 10:06:53,781 PERFORMANCE Full environment built: 0.713716s
+2019-03-30 10:06:53,881 INFO Inferring protocol implementations...
+2019-03-30 10:06:53,960 PERFORMANCE Inferred protocol implementations: 0.178796s
+2019-03-30 10:06:54,060 INFO Adding environment information to shared memory...
+2019-03-30 10:06:54,142 PERFORMANCE Added environment to shared memory: 0.182043s
+2019-03-30 10:06:54,170 MEMORY Shared memory size (size: 13)
+2019-03-30 10:06:54,171 PERFORMANCE Filtered directories: 0.028733s
+2019-03-30 10:06:54,171 INFO Checking 11 sources...
+2019-03-30 10:06:54,198 INFO Running check `TypeCheck`...
+2019-03-30 10:06:54,211 INFO Processed 1 of 11 sources
+2019-03-30 10:06:54,247 INFO Processed 2 of 11 sources
+2019-03-30 10:06:54,264 INFO Processed 3 of 11 sources
+2019-03-30 10:06:54,319 INFO Processed 4 of 11 sources
+2019-03-30 10:06:54,369 INFO Processed 5 of 11 sources
+2019-03-30 10:06:54,423 INFO Processed 6 of 11 sources
+2019-03-30 10:06:54,452 INFO Processed 7 of 11 sources
+2019-03-30 10:06:54,473 INFO Processed 8 of 11 sources
+2019-03-30 10:06:54,497 INFO Processed 9 of 11 sources
+2019-03-30 10:06:54,598 INFO Processed 10 of 11 sources
+2019-03-30 10:06:54,681 INFO Processed 11 of 11 sources
+2019-03-30 10:06:54,682 PERFORMANCE Check_TypeCheck: 0.510319s
+2019-03-30 10:06:54,709 PERFORMANCE Analyzed sources: 0.510354s
+2019-03-30 10:06:54,726 PERFORMANCE Postprocessed: 0.028143s
+2019-03-30 10:06:54,735 PERFORMANCE Check: 2.013567s
+2019-03-30 10:06:54,737 ERROR Found 10 type errors!
+
+2019-03-30 10:07:22,331 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 10:07:22,331 DEBUG Found source_directories: `.`
+2019-03-30 10:07:22,332 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 10:07:22,332 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 10:07:22,374 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 10:07:22,378 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 10:07:22,385 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 10:07:22,486 INFO Parsing 792 stubs and external sources...
+2019-03-30 10:07:22,672 PERFORMANCE Stubs parsed: 0.271086s
+2019-03-30 10:07:22,715 INFO Parsing 11 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 10:07:22,743 PERFORMANCE Sources parsed: 0.042601s
+2019-03-30 10:07:22,743 PERFORMANCE Registered ignores: 0.027870s
+2019-03-30 10:07:22,843 INFO Building type environment...
+2019-03-30 10:07:23,468 PERFORMANCE Full environment built: 0.724510s
+2019-03-30 10:07:23,568 INFO Inferring protocol implementations...
+2019-03-30 10:07:23,650 PERFORMANCE Inferred protocol implementations: 0.181769s
+2019-03-30 10:07:23,750 INFO Adding environment information to shared memory...
+2019-03-30 10:07:23,833 PERFORMANCE Added environment to shared memory: 0.183329s
+2019-03-30 10:07:23,867 MEMORY Shared memory size (size: 13)
+2019-03-30 10:07:23,867 PERFORMANCE Filtered directories: 0.034108s
+2019-03-30 10:07:23,867 INFO Checking 11 sources...
+2019-03-30 10:07:23,904 INFO Running check `TypeCheck`...
+2019-03-30 10:07:23,915 INFO Processed 1 of 11 sources
+2019-03-30 10:07:23,948 INFO Processed 2 of 11 sources
+2019-03-30 10:07:23,962 INFO Processed 3 of 11 sources
+2019-03-30 10:07:24,016 INFO Processed 4 of 11 sources
+2019-03-30 10:07:24,075 INFO Processed 5 of 11 sources
+2019-03-30 10:07:24,135 INFO Processed 6 of 11 sources
+2019-03-30 10:07:24,151 INFO Processed 7 of 11 sources
+2019-03-30 10:07:24,167 INFO Processed 8 of 11 sources
+2019-03-30 10:07:24,203 INFO Processed 9 of 11 sources
+2019-03-30 10:07:24,303 INFO Processed 10 of 11 sources
+2019-03-30 10:07:24,366 INFO Processed 11 of 11 sources
+2019-03-30 10:07:24,367 PERFORMANCE Check_TypeCheck: 0.498955s
+2019-03-30 10:07:24,393 PERFORMANCE Analyzed sources: 0.498996s
+2019-03-30 10:07:24,407 PERFORMANCE Postprocessed: 0.026944s
+2019-03-30 10:07:24,417 PERFORMANCE Check: 2.063696s
+2019-03-30 10:07:24,418 ERROR Found 7 type errors!
+
+2019-03-30 10:07:34,324 ERROR A pyre configuration already exists at `/home/tnguyen/Dropbox/github/multibuild/src/.pyre_configuration`.
+
+2019-03-30 10:12:12,943 ERROR A pyre configuration already exists at `/home/tnguyen/Dropbox/github/multibuild/src/.pyre_configuration`.
+
+2019-03-30 10:12:15,156 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 10:12:15,156 DEBUG Found source_directories: `.`
+2019-03-30 10:12:15,156 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 10:12:15,157 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 10:12:15,199 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 10:12:15,202 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 10:12:15,208 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 10:12:15,308 INFO Parsing 792 stubs and external sources...
+2019-03-30 10:12:15,452 PERFORMANCE Stubs parsed: 0.224501s
+2019-03-30 10:12:15,493 INFO Parsing 11 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 10:12:15,521 PERFORMANCE Sources parsed: 0.040790s
+2019-03-30 10:12:15,521 PERFORMANCE Registered ignores: 0.027987s
+2019-03-30 10:12:15,622 INFO Building type environment...
+2019-03-30 10:12:16,245 PERFORMANCE Full environment built: 0.723588s
+2019-03-30 10:12:16,345 INFO Inferring protocol implementations...
+2019-03-30 10:12:16,430 PERFORMANCE Inferred protocol implementations: 0.185494s
+2019-03-30 10:12:16,531 INFO Adding environment information to shared memory...
+2019-03-30 10:12:16,623 PERFORMANCE Added environment to shared memory: 0.192536s
+2019-03-30 10:12:16,658 MEMORY Shared memory size (size: 13)
+2019-03-30 10:12:16,659 PERFORMANCE Filtered directories: 0.035903s
+2019-03-30 10:12:16,660 INFO Checking 11 sources...
+2019-03-30 10:12:16,694 INFO Running check `TypeCheck`...
+2019-03-30 10:12:16,706 INFO Processed 1 of 11 sources
+2019-03-30 10:12:16,740 INFO Processed 2 of 11 sources
+2019-03-30 10:12:16,753 INFO Processed 3 of 11 sources
+2019-03-30 10:12:16,805 INFO Processed 4 of 11 sources
+2019-03-30 10:12:16,857 INFO Processed 5 of 11 sources
+2019-03-30 10:12:16,910 INFO Processed 6 of 11 sources
+2019-03-30 10:12:16,941 INFO Processed 7 of 11 sources
+2019-03-30 10:12:16,942 INFO Processed 8 of 11 sources
+2019-03-30 10:12:16,994 INFO Processed 9 of 11 sources
+2019-03-30 10:12:17,095 INFO Processed 10 of 11 sources
+2019-03-30 10:12:17,166 INFO Processed 11 of 11 sources
+2019-03-30 10:12:17,167 PERFORMANCE Check_TypeCheck: 0.506912s
+2019-03-30 10:12:17,193 PERFORMANCE Analyzed sources: 0.506945s
+2019-03-30 10:12:17,205 PERFORMANCE Postprocessed: 0.027940s
+2019-03-30 10:12:17,214 PERFORMANCE Check: 2.037319s
+2019-03-30 10:12:17,215 ERROR Found 5 type errors!
+
+2019-03-30 13:11:29,411 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 13:11:29,411 DEBUG Found source_directories: `.`
+2019-03-30 13:11:29,412 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 13:11:29,412 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 13:11:29,455 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 13:11:29,458 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 13:11:29,464 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 13:11:29,565 INFO Parsing 792 stubs and external sources...
+2019-03-30 13:11:29,751 PERFORMANCE Stubs parsed: 0.268040s
+2019-03-30 13:11:29,793 INFO Parsing 11 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 13:11:29,822 PERFORMANCE Sources parsed: 0.042694s
+2019-03-30 13:11:29,823 PERFORMANCE Registered ignores: 0.028732s
+2019-03-30 13:11:29,923 INFO Building type environment...
+2019-03-30 13:11:30,547 PERFORMANCE Full environment built: 0.724969s
+2019-03-30 13:11:30,648 INFO Inferring protocol implementations...
+2019-03-30 13:11:30,730 PERFORMANCE Inferred protocol implementations: 0.182501s
+2019-03-30 13:11:30,830 INFO Adding environment information to shared memory...
+2019-03-30 13:11:30,915 PERFORMANCE Added environment to shared memory: 0.185370s
+2019-03-30 13:11:30,942 MEMORY Shared memory size (size: 13)
+2019-03-30 13:11:30,942 PERFORMANCE Filtered directories: 0.026706s
+2019-03-30 13:11:30,943 INFO Checking 11 sources...
+2019-03-30 13:11:30,976 INFO Running check `TypeCheck`...
+2019-03-30 13:11:30,984 INFO Processed 1 of 11 sources
+2019-03-30 13:11:31,005 INFO Processed 2 of 11 sources
+2019-03-30 13:11:31,040 INFO Processed 3 of 11 sources
+2019-03-30 13:11:31,084 INFO Processed 4 of 11 sources
+2019-03-30 13:11:31,127 INFO Processed 5 of 11 sources
+2019-03-30 13:11:31,195 INFO Processed 6 of 11 sources
+2019-03-30 13:11:31,213 INFO Processed 7 of 11 sources
+2019-03-30 13:11:31,234 INFO Processed 8 of 11 sources
+2019-03-30 13:11:31,275 INFO Processed 9 of 11 sources
+2019-03-30 13:11:31,376 INFO Processed 10 of 11 sources
+2019-03-30 13:11:31,441 INFO Processed 11 of 11 sources
+2019-03-30 13:11:31,441 PERFORMANCE Check_TypeCheck: 0.497938s
+2019-03-30 13:11:31,467 PERFORMANCE Analyzed sources: 0.497971s
+2019-03-30 13:11:31,484 PERFORMANCE Postprocessed: 0.026699s
+2019-03-30 13:11:31,496 PERFORMANCE Check: 2.061725s
+2019-03-30 13:11:31,497 ERROR Found 5 type errors!
+
+2019-03-30 14:22:25,920 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 14:22:25,920 DEBUG Found source_directories: `.`
+2019-03-30 14:22:25,921 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 14:22:25,921 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 14:22:25,964 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 14:22:25,967 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 14:22:25,972 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 14:22:26,073 INFO Parsing 792 stubs and external sources...
+2019-03-30 14:22:26,216 PERFORMANCE Stubs parsed: 0.225129s
+2019-03-30 14:22:26,258 INFO Parsing 11 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 14:22:26,290 PERFORMANCE Sources parsed: 0.041981s
+2019-03-30 14:22:26,290 PERFORMANCE Registered ignores: 0.032026s
+2019-03-30 14:22:26,391 INFO Building type environment...
+2019-03-30 14:22:27,018 PERFORMANCE Full environment built: 0.727686s
+2019-03-30 14:22:27,118 INFO Inferring protocol implementations...
+2019-03-30 14:22:27,200 PERFORMANCE Inferred protocol implementations: 0.182048s
+2019-03-30 14:22:27,301 INFO Adding environment information to shared memory...
+2019-03-30 14:22:27,385 PERFORMANCE Added environment to shared memory: 0.184829s
+2019-03-30 14:22:27,410 MEMORY Shared memory size (size: 13)
+2019-03-30 14:22:27,410 PERFORMANCE Filtered directories: 0.025342s
+2019-03-30 14:22:27,411 INFO Checking 11 sources...
+2019-03-30 14:22:27,443 INFO Running check `TypeCheck`...
+2019-03-30 14:22:27,452 INFO Processed 1 of 11 sources
+2019-03-30 14:22:27,470 INFO Processed 2 of 11 sources
+2019-03-30 14:22:27,505 INFO Processed 3 of 11 sources
+2019-03-30 14:22:27,549 INFO Processed 4 of 11 sources
+2019-03-30 14:22:27,606 INFO Processed 5 of 11 sources
+2019-03-30 14:22:27,661 INFO Processed 6 of 11 sources
+2019-03-30 14:22:27,676 INFO Processed 7 of 11 sources
+2019-03-30 14:22:27,699 INFO Processed 8 of 11 sources
+2019-03-30 14:22:27,739 INFO Processed 9 of 11 sources
+2019-03-30 14:22:27,840 INFO Processed 10 of 11 sources
+2019-03-30 14:22:27,906 INFO Processed 11 of 11 sources
+2019-03-30 14:22:27,906 PERFORMANCE Check_TypeCheck: 0.495254s
+2019-03-30 14:22:27,934 PERFORMANCE Analyzed sources: 0.495294s
+2019-03-30 14:22:27,953 PERFORMANCE Postprocessed: 0.028264s
+2019-03-30 14:22:27,962 PERFORMANCE Check: 2.021050s
+2019-03-30 14:22:27,963 ERROR Found 6 type errors!
+
+2019-03-30 14:22:44,145 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 14:22:44,145 DEBUG Found source_directories: `.`
+2019-03-30 14:22:44,145 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 14:22:44,146 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 14:22:44,187 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 14:22:44,190 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 14:22:44,197 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 14:22:44,298 INFO Parsing 792 stubs and external sources...
+2019-03-30 14:22:44,436 PERFORMANCE Stubs parsed: 0.221110s
+2019-03-30 14:22:44,476 INFO Parsing 11 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 14:22:44,503 PERFORMANCE Sources parsed: 0.040904s
+2019-03-30 14:22:44,504 PERFORMANCE Registered ignores: 0.026957s
+2019-03-30 14:22:44,604 INFO Building type environment...
+2019-03-30 14:22:45,229 PERFORMANCE Full environment built: 0.725427s
+2019-03-30 14:22:45,330 INFO Inferring protocol implementations...
+2019-03-30 14:22:45,411 PERFORMANCE Inferred protocol implementations: 0.182086s
+2019-03-30 14:22:45,512 INFO Adding environment information to shared memory...
+2019-03-30 14:22:45,598 PERFORMANCE Added environment to shared memory: 0.186260s
+2019-03-30 14:22:45,625 MEMORY Shared memory size (size: 13)
+2019-03-30 14:22:45,630 PERFORMANCE Filtered directories: 0.027614s
+2019-03-30 14:22:45,631 INFO Checking 11 sources...
+2019-03-30 14:22:45,653 INFO Running check `TypeCheck`...
+2019-03-30 14:22:45,672 INFO Processed 1 of 11 sources
+2019-03-30 14:22:45,683 INFO Processed 2 of 11 sources
+2019-03-30 14:22:45,724 INFO Processed 3 of 11 sources
+2019-03-30 14:22:45,769 INFO Processed 4 of 11 sources
+2019-03-30 14:22:45,822 INFO Processed 5 of 11 sources
+2019-03-30 14:22:45,872 INFO Processed 6 of 11 sources
+2019-03-30 14:22:45,890 INFO Processed 7 of 11 sources
+2019-03-30 14:22:45,915 INFO Processed 8 of 11 sources
+2019-03-30 14:22:45,955 INFO Processed 9 of 11 sources
+2019-03-30 14:22:46,055 INFO Processed 10 of 11 sources
+2019-03-30 14:22:46,114 INFO Processed 11 of 11 sources
+2019-03-30 14:22:46,115 PERFORMANCE Check_TypeCheck: 0.488628s
+2019-03-30 14:22:46,142 PERFORMANCE Analyzed sources: 0.488661s
+2019-03-30 14:22:46,159 PERFORMANCE Postprocessed: 0.027715s
+2019-03-30 14:22:46,168 PERFORMANCE Check: 2.002591s
+2019-03-30 14:22:46,169 ERROR Found 5 type errors!
+
+2019-03-30 14:23:57,561 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 14:23:57,561 DEBUG Found source_directories: `.`
+2019-03-30 14:23:57,561 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 14:23:57,561 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 14:23:57,592 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 14:23:57,599 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 14:23:57,606 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 14:23:57,707 INFO Parsing 792 stubs and external sources...
+2019-03-30 14:23:57,849 PERFORMANCE Stubs parsed: 0.229191s
+2019-03-30 14:23:57,889 INFO Parsing 11 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 14:23:57,916 PERFORMANCE Sources parsed: 0.040556s
+2019-03-30 14:23:57,916 PERFORMANCE Registered ignores: 0.026668s
+2019-03-30 14:23:58,017 INFO Building type environment...
+2019-03-30 14:23:58,642 PERFORMANCE Full environment built: 0.725396s
+2019-03-30 14:23:58,742 INFO Inferring protocol implementations...
+2019-03-30 14:23:58,823 PERFORMANCE Inferred protocol implementations: 0.180956s
+2019-03-30 14:23:58,923 INFO Adding environment information to shared memory...
+2019-03-30 14:23:59,008 PERFORMANCE Added environment to shared memory: 0.184887s
+2019-03-30 14:23:59,038 MEMORY Shared memory size (size: 13)
+2019-03-30 14:23:59,039 PERFORMANCE Filtered directories: 0.030348s
+2019-03-30 14:23:59,039 INFO Checking 11 sources...
+2019-03-30 14:23:59,065 INFO Running check `TypeCheck`...
+2019-03-30 14:23:59,085 INFO Processed 1 of 11 sources
+2019-03-30 14:23:59,098 INFO Processed 2 of 11 sources
+2019-03-30 14:23:59,126 INFO Processed 3 of 11 sources
+2019-03-30 14:23:59,188 INFO Processed 4 of 11 sources
+2019-03-30 14:23:59,225 INFO Processed 5 of 11 sources
+2019-03-30 14:23:59,292 INFO Processed 6 of 11 sources
+2019-03-30 14:23:59,328 INFO Processed 7 of 11 sources
+2019-03-30 14:23:59,328 INFO Processed 8 of 11 sources
+2019-03-30 14:23:59,387 INFO Processed 9 of 11 sources
+2019-03-30 14:23:59,488 INFO Processed 10 of 11 sources
+2019-03-30 14:23:59,538 INFO Processed 11 of 11 sources
+2019-03-30 14:23:59,539 PERFORMANCE Check_TypeCheck: 0.499835s
+2019-03-30 14:23:59,565 PERFORMANCE Analyzed sources: 0.499869s
+2019-03-30 14:23:59,577 PERFORMANCE Postprocessed: 0.027546s
+2019-03-30 14:23:59,588 PERFORMANCE Check: 2.005240s
+2019-03-30 14:23:59,589 ERROR Found 5 type errors!
+
+2019-03-30 14:24:32,217 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 14:24:32,217 DEBUG Found source_directories: `.`
+2019-03-30 14:24:32,217 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 14:24:32,217 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 14:24:32,260 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 14:24:32,264 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 14:24:32,270 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 14:24:32,371 INFO Parsing 792 stubs and external sources...
+2019-03-30 14:24:32,543 PERFORMANCE Stubs parsed: 0.254805s
+2019-03-30 14:24:32,586 INFO Parsing 11 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 14:24:32,618 PERFORMANCE Sources parsed: 0.042630s
+2019-03-30 14:24:32,619 PERFORMANCE Registered ignores: 0.032387s
+2019-03-30 14:24:32,719 INFO Building type environment...
+2019-03-30 14:24:33,349 PERFORMANCE Full environment built: 0.730178s
+2019-03-30 14:24:33,449 INFO Inferring protocol implementations...
+2019-03-30 14:24:33,530 PERFORMANCE Inferred protocol implementations: 0.181574s
+2019-03-30 14:24:33,631 INFO Adding environment information to shared memory...
+2019-03-30 14:24:33,714 PERFORMANCE Added environment to shared memory: 0.183645s
+2019-03-30 14:24:33,742 MEMORY Shared memory size (size: 13)
+2019-03-30 14:24:33,743 PERFORMANCE Filtered directories: 0.028353s
+2019-03-30 14:24:33,743 INFO Checking 11 sources...
+2019-03-30 14:24:33,770 INFO Running check `TypeCheck`...
+2019-03-30 14:24:33,789 INFO Processed 1 of 11 sources
+2019-03-30 14:24:33,808 INFO Processed 2 of 11 sources
+2019-03-30 14:24:33,836 INFO Processed 3 of 11 sources
+2019-03-30 14:24:33,885 INFO Processed 4 of 11 sources
+2019-03-30 14:24:33,926 INFO Processed 5 of 11 sources
+2019-03-30 14:24:33,992 INFO Processed 6 of 11 sources
+2019-03-30 14:24:34,029 INFO Processed 7 of 11 sources
+2019-03-30 14:24:34,030 INFO Processed 8 of 11 sources
+2019-03-30 14:24:34,069 INFO Processed 9 of 11 sources
+2019-03-30 14:24:34,170 INFO Processed 10 of 11 sources
+2019-03-30 14:24:34,237 INFO Processed 11 of 11 sources
+2019-03-30 14:24:34,238 PERFORMANCE Check_TypeCheck: 0.494625s
+2019-03-30 14:24:34,264 PERFORMANCE Analyzed sources: 0.494664s
+2019-03-30 14:24:34,279 PERFORMANCE Postprocessed: 0.026976s
+2019-03-30 14:24:34,288 PERFORMANCE Check: 2.050521s
+2019-03-30 14:24:34,289 ERROR Found 5 type errors!
+
+2019-03-30 14:26:36,800 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 14:26:36,801 DEBUG Found source_directories: `.`
+2019-03-30 14:26:36,801 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 14:26:36,801 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 14:26:36,843 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 14:26:36,846 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 14:26:36,852 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 14:26:36,953 INFO Parsing 792 stubs and external sources...
+2019-03-30 14:26:37,129 PERFORMANCE Stubs parsed: 0.258188s
+2019-03-30 14:26:37,177 INFO Parsing 11 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 14:26:37,205 PERFORMANCE Sources parsed: 0.048292s
+2019-03-30 14:26:37,206 PERFORMANCE Registered ignores: 0.028162s
+2019-03-30 14:26:37,306 INFO Building type environment...
+2019-03-30 14:26:37,930 PERFORMANCE Full environment built: 0.724054s
+2019-03-30 14:26:38,030 INFO Inferring protocol implementations...
+2019-03-30 14:26:38,111 PERFORMANCE Inferred protocol implementations: 0.180933s
+2019-03-30 14:26:38,211 INFO Adding environment information to shared memory...
+2019-03-30 14:26:38,294 PERFORMANCE Added environment to shared memory: 0.183259s
+2019-03-30 14:26:38,324 MEMORY Shared memory size (size: 13)
+2019-03-30 14:26:38,325 PERFORMANCE Filtered directories: 0.030276s
+2019-03-30 14:26:38,325 INFO Checking 11 sources...
+2019-03-30 14:26:38,358 INFO Running check `TypeCheck`...
+2019-03-30 14:26:38,367 INFO Processed 1 of 11 sources
+2019-03-30 14:26:38,405 INFO Processed 2 of 11 sources
+2019-03-30 14:26:38,424 INFO Processed 3 of 11 sources
+2019-03-30 14:26:38,463 INFO Processed 4 of 11 sources
+2019-03-30 14:26:38,530 INFO Processed 5 of 11 sources
+2019-03-30 14:26:38,589 INFO Processed 6 of 11 sources
+2019-03-30 14:26:38,590 INFO Processed 7 of 11 sources
+2019-03-30 14:26:38,638 INFO Processed 8 of 11 sources
+2019-03-30 14:26:38,684 INFO Processed 9 of 11 sources
+2019-03-30 14:26:38,785 INFO Processed 10 of 11 sources
+2019-03-30 14:26:38,825 INFO Processed 11 of 11 sources
+2019-03-30 14:26:38,826 PERFORMANCE Check_TypeCheck: 0.500643s
+2019-03-30 14:26:38,853 PERFORMANCE Analyzed sources: 0.500685s
+2019-03-30 14:26:38,871 PERFORMANCE Postprocessed: 0.027785s
+2019-03-30 14:26:38,880 PERFORMANCE Check: 2.059009s
+2019-03-30 14:26:38,881 ERROR Found 6 type errors!
+
+2019-03-30 14:27:51,615 DEBUG Reading configuration `.pyre_configuration`...
+2019-03-30 14:27:51,616 DEBUG Found source_directories: `.`
+2019-03-30 14:27:51,616 WARNING Setting up a `.pyre_configuration` with `pyre init` may reduce overhead.
+
+2019-03-30 14:27:51,616 DEBUG Running `/home/tnguyen/.local/bin/pyre.bin check -logging-sections parser -project-root /home/tnguyen/Dropbox/github/multibuild/src -filter-directories . -workers 28 -typeshed /home/tnguyen/.local/lib/pyre_check/typeshed/ /home/tnguyen/Dropbox/github/multibuild/src`
+2019-03-30 14:27:51,659 INFO Finding type stubs in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 14:27:51,662 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/third_party`...
+2019-03-30 14:27:51,668 INFO Finding type stubs in `/home/tnguyen/.local/lib/pyre_check/typeshed/stdlib`...
+2019-03-30 14:27:51,769 INFO Parsing 792 stubs and external sources...
+2019-03-30 14:27:51,941 PERFORMANCE Stubs parsed: 0.254644s
+2019-03-30 14:27:51,971 INFO Parsing 11 sources in `/home/tnguyen/Dropbox/github/multibuild/src`...
+2019-03-30 14:27:51,983 ERROR Could not parse file at alg.py:368:4-368:4
+      -> typing.Tuple[typing.Set[], typing.Set[]]:
+     ^
+
+2019-03-30 14:27:51,983 WARNING Could not parse 1 file due to syntax errors!
+
+2019-03-30 14:27:52,010 PERFORMANCE Sources parsed: 0.041675s
+2019-03-30 14:27:52,011 PERFORMANCE Registered ignores: 0.027679s
+2019-03-30 14:27:52,111 INFO Building type environment...
+2019-03-30 14:27:52,737 PERFORMANCE Full environment built: 0.726704s
+2019-03-30 14:27:52,838 INFO Inferring protocol implementations...
+2019-03-30 14:27:52,922 PERFORMANCE Inferred protocol implementations: 0.184940s
+2019-03-30 14:27:53,023 INFO Adding environment information to shared memory...
+2019-03-30 14:27:53,105 PERFORMANCE Added environment to shared memory: 0.182785s
+2019-03-30 14:27:53,133 MEMORY Shared memory size (size: 13)
+2019-03-30 14:27:53,133 PERFORMANCE Filtered directories: 0.027568s
+2019-03-30 14:27:53,133 INFO Checking 10 sources...
+2019-03-30 14:27:53,168 INFO Running check `TypeCheck`...
+2019-03-30 14:27:53,183 INFO Processed 1 of 10 sources
+2019-03-30 14:27:53,199 INFO Processed 2 of 10 sources
+2019-03-30 14:27:53,224 INFO Processed 3 of 10 sources
+2019-03-30 14:27:53,286 INFO Processed 4 of 10 sources
+2019-03-30 14:27:53,319 INFO Processed 5 of 10 sources
+2019-03-30 14:27:53,386 INFO Processed 6 of 10 sources
+2019-03-30 14:27:53,415 INFO Processed 7 of 10 sources
+2019-03-30 14:27:53,466 INFO Processed 8 of 10 sources
+2019-03-30 14:27:53,567 INFO Processed 9 of 10 sources
+2019-03-30 14:27:53,647 INFO Processed 10 of 10 sources
+2019-03-30 14:27:53,647 PERFORMANCE Check_TypeCheck: 0.513833s
+2019-03-30 14:27:53,674 PERFORMANCE Analyzed sources: 0.513868s
+2019-03-30 14:27:53,693 PERFORMANCE Postprocessed: 0.027316s
+2019-03-30 14:27:53,703 PERFORMANCE Check: 2.065879s
+2019-03-30 14:27:53,704 ERROR Found 8 type errors!
+

@@ -1,0 +1,15 @@
+diff --git a/simple/b62bd7b.c b/simple/b62bd7b.c
+--- a/simple/b62bd7b.c
++++ b/simple/b62bd7b.c
+@@ -9,7 +9,10 @@
+ 
+ #ifdef ENABLE_FEATURE_MDEV_RENAME
+   char *val;
+-  char *s, *p;
++  char *s; 
++#ifdef ENABLE_FEATURE_MDEV_RENAME_REGEXP  
++  char *p;
++#endif  
+   val = "mode - device permissions";
+   
+   char *a = val;

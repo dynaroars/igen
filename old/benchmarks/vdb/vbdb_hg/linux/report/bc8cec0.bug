@@ -1,0 +1,51 @@
+
+type: UninitializedVariable
+
+descr:
+   
+   Non-initialized buffer causes kernel panic in JFFS2
+
+   NOR flash setup function leaves struct field `wbuf_verify' uninitialized,
+   but this buffer is used when JFFS2_FS_WBUF_VERIFY is enabled.
+
+config: "JFFS2_FS_WBUF_VERIFY"
+
+C-features: FunctionPointers, Structs
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: bc8cec0dff072f1a45ce7f6b2c5234bb3411ac51
+
+  source: patterns "CONFIG_<fid>" "if <fid> is enabled" "kernel panic" "+#ifdef" "+#endif"
+
+  fix-in: code
+
+loc: fs/jffs2/
+
+trace: !!trace |
+    . // SETUP
+    . // at fs/jffs2/super.c:234 jffs2_get_sb() is set as a method to read a super-block
+    . call fs/jffs2/super.c:183:jffs2_get_sb()
+    .. call drivers/mtd/mtdsuper.c:125:get_sb_mtd()
+    ... call drivers/mtd/mtdsuper.c:53:get_sb_mtd_aux()
+    ... 75: ret = fill_super(sb, data, flags & MS_SILENT ? 1 : 0);
+    .... dyn-call fs/jffs2/super.c:148:jffs2_fill_super()
+    ..... call fs/jffs2/fs.c:474:jffs2_do_fill_super()
+    ..... 515: ret = jffs2_flash_setup(c);
+    ...... call fs/jffs2/fs.c:668:jffs2_flash_setup()
+    ...... 687: ret = jffs2_nor_wbuf_flash_setup(c);
+    ....... call fs/jffs2/wbuf.c:1257:jffs2_nor_wbuf_flash_setup()
+    ....... // c->wbuf_verify is left uninitialized for NOR flash
+
+    . // later...
+    . call fs/jffs2/wbuf.c:930:jffs2_flash_write()
+    .. call fs/jffs2/wbuf.c:782:jffs2_flash_writev()
+    ... call fs/jffs2/wbuf.c:570:__jffs2_flush_wbuf()
+    .... call fs/jffs2/wbuf.c:224:jffs2_verify_write()
+    .... // this call only happens when JFFS2_FS_WBUF_VERIFY is enabled
+    .... ERROR 231: ret = c->mtd->read(c->mtd, ofs, c->wbuf_pagesize, &retlen, c->wbuf_verify);
+
+links: !!md |
+    * [JFFS2](http://en.wikipedia.org/wiki/JFFS2)

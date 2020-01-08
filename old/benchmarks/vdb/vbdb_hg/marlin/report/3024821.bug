@@ -1,0 +1,32 @@
+
+type: IntegerOverflow
+
+descr:
+
+    "Multiplication of an int with 1000 may overflow in 16-bit architectures
+
+    Period_seconds * 1000 may overflow in 16-bit architectures, 
+    resulting in a wraparound, thus a negative result. This negative integer, 
+    when interpreted as an unsigned long, it's a very large number.
+    Thus the comparison may always yield false.
+
+    Issue 1309: https://github.com/MarlinFirmware/Marlin/pull/1309"
+
+config: "THERMAL_RUNAWAY_PROTECTION_PERIOD && THERMAL_RUNAWAY_PROTECTION_PERIOD > 0"
+
+bugfix:
+
+  repo: https://github.com/MarlinFirmware/Marlin.git
+
+  hash: 30248214c7fd52333d1c71bebe5ede40dbd76011
+
+  source: patterns "overflow"
+
+  fix-in: code
+
+loc: temperature/
+
+trace: !!trace |
+
+    . call  Marlin/temperature.cpp:1017: void thermal_runaway_protection(...)
+    . ERROR temperature.cpp:1052:  else if ( (millis() - *timer) > (period_seconds) * 1000) // Comparing an unsigned long with an integer...

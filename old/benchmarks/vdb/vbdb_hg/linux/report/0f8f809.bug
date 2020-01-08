@@ -1,0 +1,44 @@
+
+type: OutOfBoundsRead
+
+descr:
+
+    Array is accessed out of its bounds in some configurations
+
+    The length of `kmem_caches' is KMALLOC_SHIFT_HIGH + 1, while
+    init_node_lock_keys() iterates on this array using the value
+    PAGE_SHIFT + MAX_ORDER as upper-bound. Actually,
+    KMALLOC_SHIFT_HIGH is a configuration-dependent value defined
+    as min((MAX_ORDER + PAGE_SHIFT - 1),25). For configurations
+    where MAX_ORDER + PAGE_SHIFT - 1 > 25, the length of `kmem_caches'
+    is cut to 26, and init_node_lock_keys() will access this
+    array out of its bounds.
+    
+    The bug shows up for LOCKDEP && SLAB, if some additional
+    configuration like PPC_256K_PAGES && FORCE_MAX_ZONEORDER=11
+    makes MAX_ORDER + PAGE_SHIFT - 1 > 25.
+
+config: "LOCKDEP && SLAB && !SLOB && PPC_256K_PAGES && FORCE_MAX_ZONEORDER=11"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 0f8f8094d28eb53368ac09186ea6b3a324cc7d44
+
+  source: patterns "CONFIG_.+" "kernel panic" "fix"
+
+  fix-in: code
+
+loc: mm/
+
+trace: !!trace |
+    . call mm/slab.c:1631:kmem_cache_init_late()
+    . 1645: init_lock_keys();
+    .. [LOCKDEP] call mm/slab.c:602:init_lock_keys()
+    .. 607: init_node_lock_keys(node);
+    ... [LOCKDEP] call mm/slab.c:561:init_node_lock_keys()
+    ... 568: for (i = 1; i < PAGE_SHIFT + MAX_ORDER; i++) {
+    // length(kmalloc_caches) == KMALLOC_SHIFT_HIGH+1
+    ... 570: struct kmem_cache *cache = kmalloc_caches[i];
+    ... ERROR 575: n = cache->node[q];

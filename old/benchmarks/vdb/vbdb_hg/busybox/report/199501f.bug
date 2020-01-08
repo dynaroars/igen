@@ -1,0 +1,32 @@
+
+type: NullDereference
+
+descr:
+    NULL pointer gets dereferenced if !FEATURE_MODPROBE_MULTIPLE_OPTIONS
+
+    If the pointer dt is null when !FEATURE_MODPROBE_MULTIPLE_OPTIONS is 
+    not set, it would dereference the null.
+
+config: !FEATURE_MODPROBE_MULTIPLE_OPTIONS
+
+C-features: Structs
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: 199501f2a00956265a5dba74ea01badab6c331ac
+
+  source: patterns "ENABLE_.+" "Oops" 
+
+  fix-in: code
+
+trace: !!trace |
+    . call /modutils/modprobe.c:852:depend = build_dep();
+    .. 493:struct dep_t *dt;
+    .. ERROR [!MULTIPLE_OPTIONS] 506:append_option(dt->m_options,opt);
+
+loc: modutils/
+
+links:
+

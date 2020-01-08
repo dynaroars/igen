@@ -1,0 +1,35 @@
+
+type: IncompatibleType
+
+descr:
+
+    Missing to convert floating point to long integer
+
+    mod_status does not work when !HAVE_TIMES because a wrong
+    format parameter in a printf.
+
+keywords: format, warning
+
+config: "!HAVE_TIMES"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: b833f064550179e1c3af829798f76c62c3341210
+
+  source: patterns "HAVE_.+" "format"
+
+  fix-in: code
+
+trace: !!trace |
+    . call modules/generators/mod_status.c:824:register_hooks()
+    . 826: status_handler()
+    .. call modules/generators/mod_status.c:237:status_handler()
+    .. // if HAVE_TIMES is disabled
+    .. ERROR 638: ap_rprintf(r, "]\n %.0f %ld (",
+
+loc: modules/generators/
+
+links: !!md |
+    * [Discussion on Location of ap_hook_handler](http://apache-http-server.18135.x6.nabble.com/Location-of-ap-hook-handler-and-function-sufix-prefix-td4827574.html)

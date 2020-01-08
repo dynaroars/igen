@@ -1,0 +1,37 @@
+
+type: UseAfterFree
+
+descr:
+    
+    The pointer 'ch' is referenced after being freed if FEATURE_CLEAN_UP is enabled.
+    
+    If FEATURE_CLEAN_UP is defined, then delete_eth_table() frees the previously 
+    allocated memory for the pointer 'ch'. However, after that (in a for loop), 
+    a statement 'ch->next' dereferences already freed memory.
+    
+keywords:
+
+config: FEATURE_CLEAN_UP
+
+C-features: Structs
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: bc0ffc0e971c61dc7f09aab2a35966f99cc606ba
+
+  source: patterns "ENABLE_+" "fix"
+
+  fix-in: code
+
+trace: !!trace |
+    . call networking/nameif.c:240:prepend_new_eth_table()
+    .. 194:ch = xzalloc(sizeof(*ch));
+    . [FEATURE_CLEAN_UP] call networking/nameif.c:319:delete_eth_table()
+    .. [FEATURE_CLEAN_UP] 212:free(ch);
+    . ERROR [FEATURE_CLEAN_UP] 318:ch = ch->next;
+
+loc: networking/
+
+links: 

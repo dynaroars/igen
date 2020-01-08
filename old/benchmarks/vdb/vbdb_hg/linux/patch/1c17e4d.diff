@@ -1,0 +1,11 @@
+diff --git a/simple/1c17e4d.c b/simple/1c17e4d.c
+--- a/simple/1c17e4d.c
++++ b/simple/1c17e4d.c
+@@ -14,6 +14,7 @@
+ #else /* #ifdef CONFIG_RCU_FAST_NO_HZ */
+ void print_cpu_stall_fast_no_hz(char *cp, int cpu)
+ { // (3)
++  *cp = '\0';
+ }
+ #endif /* #else #ifdef CONFIG_RCU_FAST_NO_HZ */
+ 

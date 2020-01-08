@@ -1,0 +1,38 @@
+
+type: FatalAssertionViolation
+
+descr: 
+
+    Attempt to call a VLAN-related function with VLAN support disabled
+
+    Network driver ocrdma calls vlan_dev_real_dev() unconditionally. But,
+    when !VLAN_8021Q, VLAN functions just go BUG().
+    
+    The bugfix relies on testing `priv_flags' field for determining if it
+    is a VLAN device. This flag is only set by vlan_setup(), which is not
+    called from anywhere unless VLAN_8021Q is set.
+
+config: "IPV6 && !VLAN_8021Q"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: d549f55f2e132e3d1f1288ce4231f45f12988bbf
+
+  source: patterns "If CONFIG_.+ is not set" "BUG"
+
+  fix-in: mapping, code
+
+loc: include/linux/
+
+trace: !!trace |
+    . [IPV6 || VLAN_8021Q] drivers/infiniband/hw/ocrdma/ocrdma_main.c:207:ocrdma_inet6addr_event()
+    . 220: netdev = vlan_dev_real_dev(event_netdev);
+    .. [!VLAN_8021Q] include/linux/if_vlan.h:111:vlan_dev_real_dev()
+    .. ERROR [!VLAN_8021Q] 113: BUG()
+
+links: !!md |
+    * [RoCE](http://en.wikipedia.org/wiki/RDMA_over_Converged_Ethernet)
+    * [RDMA](http://en.wikipedia.org/wiki/Remote_direct_memory_access)
+    * [IEEE 802.1Q](http://en.wikipedia.org/wiki/IEEE_802.1Q)

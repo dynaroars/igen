@@ -1,0 +1,12 @@
+diff --git a/simple/60e233a.c b/simple/60e233a.c
+--- a/simple/60e233a.c
++++ b/simple/60e233a.c
+@@ -16,7 +16,7 @@
+ }
+ #else
+ int add_uevent_var()
+-{ return 0; }
++{ return -ENOMEM; }
+ #endif
+ 
+ int input_add_uevent_modalias_var()

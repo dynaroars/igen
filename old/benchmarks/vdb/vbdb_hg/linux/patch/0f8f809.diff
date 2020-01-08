@@ -1,0 +1,12 @@
+diff --git a/simple/0f8f809.c b/simple/0f8f809.c
+--- a/simple/0f8f809.c
++++ b/simple/0f8f809.c
+@@ -32,7 +32,7 @@
+ {
+   int i;
+ 
+-  for (i = 1; i < PAGE_SHIFT + MAX_ORDER; i++)
++  for (i = 1; i < KMALLOC_SHIFT_HIGH; i++)
+ 	{
+ 	  int* cache = &kmalloc_caches[i]; // (4) ERROR
+ 

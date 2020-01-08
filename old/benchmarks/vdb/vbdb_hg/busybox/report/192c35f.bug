@@ -1,0 +1,31 @@
+
+type: UnusedVariable
+
+descr:
+
+    Copiler warning about an unused variable if !FEATURE_REMOTE_LOG.
+
+keywords: 
+
+config: !FEATURE_REMOTE_LOG
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: 192c35f6eb2bb85e28c697a45c7d80a43ec6e743
+
+  source: patterns "CONFIG_.+" "unused"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . call sysklogd/syslogd.c:696:doSyslogd()
+    .. 528:doSyslogd();
+    .. call sysklogd/syslogd.c:384:logMessage(int pri, char *msg)
+    .. 581:logMessage(LOG_SYSLOG | LOG_INFO, "syslogd started: " BB_BANNER);
+    ... [FEATURE_REMOTE_LOG] 421:memset(&line, 0, sizeof(line));
+
+loc: sysklogd/
+
+links: 

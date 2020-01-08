@@ -1,0 +1,32 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+    Field fips is not declared when !HAVE_FIPS.
+
+    The file ssl_private.h defines a struct named SSLSrvConfigRec.
+    Some elements of this struct are optional, including fips.
+    The definition and use are in different files. fips is not declared when !HAVE_FIPS.
+
+keywords:
+
+config: "!HAVE_FIPS"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 6338509eb37212bc727b7cab3e339cac1acbd2fe
+
+  source: patterns "HAVE_.+" "only defined"
+
+  fix-in: code
+
+trace: !!trace |
+    . // if HAVE_FIPS is disabled
+    . ERROR modules/ssl/ssl_engine_init.c:237:if(sc->fips == UNSET)
+
+loc: modules/ssl/
+
+links:

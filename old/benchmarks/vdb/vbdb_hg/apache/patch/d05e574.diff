@@ -1,0 +1,13 @@
+diff --git a/apache/simple/d05e574.c b/apache/simple/d05e574.c
+--- a/apache/simple/d05e574.c
++++ b/apache/simple/d05e574.c
+@@ -13,7 +13,8 @@ void util_ald_alloc()
+ {
+ #if APR_HAS_SHARED_MEMORY
+   /* allocate from shared memory */
+-  char* buf = apr_rmm_addr_get((char*)calloc(rmm_addr, sizeof(char)));
++  char* block = (char*)calloc(rmm_addr, sizeof(char));
++  char* buf = block ? apr_rmm_addr_get(block) : NULL;
+   printf("%s\n", buf);
+ #else
+   // do something

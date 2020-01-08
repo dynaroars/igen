@@ -1,0 +1,14 @@
+diff --git a/simple/8c82962.c b/simple/8c82962.c
+--- a/simple/8c82962.c
++++ b/simple/8c82962.c
+@@ -38,8 +42,8 @@
+ }
+ 
+ static int pagemap_read() {
+-  pm_len = PM_ENTRY_BYTES * NUM_ENTRIES;
+-  pm_buffer = malloc(pm_len);
++  pm_len = NUM_ENTRIES;
++  pm_buffer = malloc(pm_len * PM_ENTRY_BYTES);
+ 
+   if (!pm_buffer)
+     return -ENOMEM;

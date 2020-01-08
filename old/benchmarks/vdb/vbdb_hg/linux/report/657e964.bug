@@ -1,0 +1,63 @@
+
+type: FatalAssertionViolation
+
+descr:
+
+    Unexpected decrement of the preemption counter
+
+    __run_timers() executes a task and expects that the preemption count
+    before the execution equals the preemption count after the execution.
+    When this task is inet_twdr_hangman() the condition is violated; if
+    TCP_MD5SIG is enabled we call tcp_put_md5sig_pool(), which entails a 
+    put_cpu().
+
+config: "TCP_MD5SIG && PREEMPT"
+
+C-features:
+
+    FollowFunctionPointers,
+    ExplicitAliasing,
+    IntToStructPtrCast,
+    StructToStructCast
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 657e9649e745b06675aa5063c84430986cdc3afa
+
+  source: patterns "CONFIG_.+" "BUG"
+
+  fix-in: code
+
+loc: net/ipv4
+
+trace: !!trace |
+    . // net/ipv4/tcp_minisocks.c:45: sets a tw_timer to inet_twdr_hangman
+    . call kernel/timer.c:929:__run_timers()
+    . // eventually the timer is executed
+    . 964: int preempt_count = preempt_count();
+    . 987: fn(data);
+
+    .. dyn-call net/ipv4/inet_timewait_sock.c:201:inet_twdr_hangman()
+    .. 213: if (inet_twdr_do_twkill_work(twdr, twdr->slot)) {
+    ... call net/ipv4/inet_timewait_sock.c:153:inet_twdr_do_twkill_work()
+    ... 177: inet_twsk_put(tw);
+    .... call net/ipv4/inet_timewait_sock.c:65:inet_twsk_put()
+    .... 68: inet_twsk_free(tw);
+    ..... call net/ipv4/inet_timewait_sock.c:53:inet_twsk_free()
+    ..... 56: twsk_destructor((struct sock *)tw);
+    ...... call include/net/timewait_sock.h:33:twsk_destructor()
+    ...... 39: sk->sk_prot->twsk_prot->twsk_destructor(sk);
+    ....... dyn-call net/ipv4/tcp_minisocks.c:361:tcp_twsk_destructor()
+    ....... [TCP_MD5SIG] 366: tcp_put_md5sig_pool();
+    ........ call include/net/tcp.h:1217:tcp_put_md5sig_pool()
+    ........ 1220: put_cpu();
+    // if CONFIG_PREEMPT put_cpu() decrements preempt_counter
+
+    . 991: if (preempt_count != preempt_count()) {
+    // thus this test succeeds
+    . ERROR 997: BUG();
+
+links: !!md |
+    * [Preempt locking](http://lxr.free-electrons.com/source/Documentation/preempt-locking.txt)

@@ -1,7 +1,6 @@
-import abc
 import itertools
 import random
-from collections import OrderedDict, MutableMapping
+from collections import OrderedDict
 from functools import total_ordering
 
 import vcommon as CM
@@ -11,11 +10,6 @@ import z3util
 
 import settings
 mlog = CM.getLogger(__name__, settings.logger_level)
-
-
-#Data Structures
-is_cov = lambda cov: (isinstance(cov, (set, frozenset)) and
-                      all(isinstance(c, str) for c in cov))
 
 
 def getWorkloads(tasks, maxProcessces, chunksiz):
@@ -39,23 +33,23 @@ def getWorkloads(tasks, maxProcessces, chunksiz):
     assert maxProcessces >= 1, maxProcessces
     assert chunksiz >= 1, chunksiz
 
-    #determine # of processes
+    # determine # of processes
     ntasks = len(tasks)
     nprocesses = int(round(ntasks/float(chunksiz)))
     if nprocesses > maxProcessces:
         nprocesses = maxProcessces
 
-    #determine workloads 
+    # determine workloads
     cs = int(round(ntasks/float(nprocesses)))
     wloads = []
     for i in range(nprocesses):
         s = i*cs
         e = s+cs if i < nprocesses-1 else ntasks
         wl = tasks[s:e]
-        if wl:  #could be 0, e.g., getWorkloads(range(12),7,1)
+        if wl:  # could be 0, e.g., getWorkloads(range(12),7,1)
             wloads.append(wl)
 
-    return wloads        
+    return wloads
 
 
 def runMP(taskname, tasks, wprocess, chunksiz, doMP):
@@ -64,30 +58,36 @@ def runMP(taskname, tasks, wprocess, chunksiz, doMP):
     """
     if doMP:
         from multiprocessing import (Process, Queue, cpu_count)
-        Q=Queue()
+        Q = Queue()
         wloads = getWorkloads(
             tasks, maxProcessces=cpu_count(), chunksiz=chunksiz)
 
         mlog.debug("workloads '{}' {}: {}"
-                   .format(taskname, len(wloads), map(len,wloads)))
+                   .format(taskname, len(wloads), list(map(len, wloads))))
 
-        workers = [Process(target=wprocess, args=(wl,Q)) for wl in wloads]
-                   
-        for w in workers: w.start()
+        workers = [Process(target=wprocess, args=(wl, Q)) for wl in wloads]
+
+        for w in workers:
+            w.start()
         wrs = []
-        for _ in workers: wrs.extend(Q.get())
+        for _ in workers:
+            wrs.extend(Q.get())
     else:
         wrs = wprocess(tasks, Q=None)
-                        
+
     return wrs
-    
+
+
+# Data Structures
+def is_cov(cov): return (isinstance(cov, (set, frozenset)) and
+                         all(isinstance(c, str) for c in cov))
 
 
 def str_of_cov(cov):
     """
     >>> assert str_of_cov(set("L2 L1 L3".split())) == '(3) L1,L2,L3'
     """
-    assert is_cov(cov),cov
+    assert is_cov(cov), cov
 
     s = "({})".format(len(cov))
     if settings.show_cov:
@@ -95,19 +95,25 @@ def str_of_cov(cov):
     return s
 
 
-is_setting = lambda (k, v): isinstance(k, str) and isinstance(v, str)
-def str_of_setting((k, v)):
+def is_setting(kv):
+    k, v = kv
+    return isinstance(k, str) and isinstance(v, str)
+
+
+def str_of_setting(kv):
     """
     >>> print str_of_setting(('x','1'))
     x=1
     """
+    k, v = kv
     assert is_setting((k, v)), (k, v)
-        
+
     return '{}={}'.format(k, v)
 
 
-is_valset = lambda vs: (isinstance(vs, frozenset) and vs and
-                        all(isinstance(v, str) for v in vs))
+def is_valset(vs): return (isinstance(vs, frozenset) and vs and
+                           all(isinstance(v, str) for v in vs))
+
 
 def str_of_valset(s):
     """
@@ -116,17 +122,22 @@ def str_of_valset(s):
     """
     return ','.join(sorted(s))
 
-is_csetting = lambda (k,vs): isinstance(k, str) and is_valset(vs)
 
-def str_of_csetting((k,vs)):
+def is_csetting(kvs):
+    k, vs = kvs
+    return isinstance(k, str) and is_valset(vs)
+
+
+def str_of_csetting(kvs):
     """
     >>> print str_of_csetting(('x', frozenset(['1'])))
     x=1
     >>> print str_of_csetting(('x', frozenset(['3','1'])))
     x=1,3
     """
-    assert is_csetting((k, vs)), (k, vs)
-    
+    assert is_csetting(kvs), kvs
+
+    k, vs = kvs
     return '{}={}'.format(k, str_of_valset(vs))
 
 
@@ -148,7 +159,7 @@ class Dom(OrderedDict):
     >>> assert dom.siz == len(dom.gen_configs_full()) == 18
     >>> assert dom.max_fsiz ==  3
 
- 
+
     >>> random.seed(0)
     >>> configs = dom.gen_configs_rand(5)
     >>> print "\\n".join(map(str,configs))
@@ -197,129 +208,96 @@ class Dom(OrderedDict):
     >>> assert not configs
 
     """
-    def __init__(self, dom):
-        super(Dom, self).__init__(dom)
-        
-        assert self and all(is_csetting(s) for s in self.iteritems()), self
 
     def __str__(self):
         """
         """
-        s = "{} vars and {} pos configs".format(len(self),self.siz)
-        s_detail = '\n'.join("{}. {}: ({}) {}"
-                             .format(i+1, k, len(vs), str_of_valset(vs))
-                             for i, (k, vs) in enumerate(self.iteritems()))
+        s = "{} vars and {} pos configs".format(len(self), self.siz)
+        s_detail = '\n'.join("{}. {}: ({}) {}".format(
+            i+1, k, len(vs), str_of_valset(vs))
+            for i, (k, vs) in enumerate(self.items()))
         s = "{}\n{}".format(s, s_detail)
         return s
 
     @property
-    def siz(self): return CM.vmul(len(vs) for vs in self.itervalues())
+    def sortedself(self):
+        """
+        use sorted for deterministic behavior (Python 3)
+        """
+
+        return dict((k, list(sorted(set(self[k])))) for k in self)
+
+    @property
+    def siz(self): return CM.vmul(len(vs) for vs in self.values())
 
     @property
     def max_fsiz(self):
         """
         Size of the largest finite domain
         """
-        return max(len(vs) for vs in self.itervalues())
-    
-    #Methods to generate configurations
-    def gen_configs_full(self, config_cls=None):#TODO kconfig_contraint
+        return max(len(vs) for vs in self.values())
+
+    # Methods to generate configurations
+    def gen_configs_full(self, config_cls=None):  # TODO kconfig_contraint
         if config_cls is None:
             config_cls = Config
-        
-        ns,vs = itertools.izip(*self.iteritems())
+
+        ns, vs = zip(*self.items())
         configs = [config_cls(zip(ns, c)) for c in itertools.product(*vs)]
         return configs
-
-    # def gen_configs_tcover1(self, config_cls=None, z3db=None, constraints=True):
-    #     """
-    #     Return a set of tcover array of stren 1
-    #     """
-    #     if config_cls is None:
-    #         config_cls = Config
-            
-    #     dom_used = dict((k, set(self[k])) for k in self)
-        
-    #     def mk():
-    #         config = []
-    #         for k in self:
-    #             while True:
-    #                 if k in dom_used:
-    #                     v = random.choice(list(dom_used[k]))
-    #                     dom_used[k].remove(v)
-    #                     if not dom_used[k]:
-    #                         dom_used.pop(k)
-    #                 else:
-    #                     v = random.choice(list(self[k]))
-
-    #                 cc = z3.And(constraints, z3db[k][0] == z3db[k][1][v])
-    #                 if z3util.get_models(cc, 1):
-    #                     break
-                        
-    #             config.append((k,v))
-
-    #         return config_cls(config)
-
-    #     configs = []
-    #     while dom_used: configs.append(mk())
-    #     return configs    
-
-
 
     def gen_configs_tcover1(self, config_cls=None):
         """
         Return a set of tcover array of stren 1
         """
-        #assert isinstance(z3db, Z3DB), z3db
-        #assert kconstraint is None or z3.is_expr(kconstraint), kconstraint
-        
         if config_cls is None:
             config_cls = Config
-            
-        unused = dict((k, set(self[k])) for k in self)
-        
+
+        unused = dict((k, list(sorted(set(self[k])))) for k in self)
+
         def mk():
             config = []
             for k in self:
                 if k in unused:
-                    v = random.choice(list(unused[k]))
+                    v = random.choice(unused[k])
                     unused[k].remove(v)
                     if not unused[k]:
                         unused.pop(k)
                 else:
-                    v = random.choice(list(self[k]))
+                    v = random.choice(self.sortedself[k])
 
-                config.append((k,v))
+                config.append((k, v))
             return config_cls(config)
-                    
+
         configs = []
-        while unused: configs.append(mk())
+        while unused:
+            configs.append(mk())
         return configs
-            
-            
-    def gen_configs_rand(self, rand_n, config_cls=None):#TODO kconfig_contraint
+
+    def gen_configs_rand(self, rand_n, config_cls=None):  # TODO kconfig_contraint
         assert 0 < rand_n <= self.siz, (rand_n, self.siz)
 
         if config_cls is None:
             config_cls = Config
-            
-        rgen = lambda: [(k,random.choice(list(self[k]))) for k in self]
+
+        def rgen(): return [(k, random.choice(self.sortedself[k]))
+                            for k in self]
         configs = list(set(config_cls(rgen()) for _ in range(rand_n)))
         return configs
 
-    #generate configs using an SMT solver
+    # generate configs using an SMT solver
     def config_of_model(self, model, config_cls):
         """
         Ret a config from a model
         """
         assert isinstance(model, dict), model
         assert config_cls, config_cls
-            
-        _f = lambda k: (model[k] if k in model
-                        else random.choice(list(self[k])))
-        config = config_cls((k,_f(k)) for k in self)
+
+        def _f(k): return (model[k] if k in model
+                           else random.choice(self.sortedself[k]))
+        config = config_cls((k, _f(k)) for k in self)
         return config
-    
+
     def gen_configs_expr(self, expr, k, config_cls):
         """
         Return at most k configs satisfying expr
@@ -327,26 +305,26 @@ class Dom(OrderedDict):
         assert z3.is_expr(expr), expr
         assert k > 0, k
         assert config_cls, config_cls
-        
+
         def _f(m):
             m = dict((str(v), str(m[v])) for v in m)
             return None if not m else self.config_of_model(m, config_cls)
 
         models = z3util.get_models(expr, k)
-        assert models is not None, models  #z3 cannot solve this
-        if not models:  #not satisfy
+        assert models is not None, models  # z3 cannot solve this
+        if not models:  # not satisfy
             return []
         else:
             assert len(models) >= 1, models
             configs = [_f(m) for m in models]
             return configs
-        
+
     def gen_configs_exprs(self, yexprs, nexprs, k, config_cls):
         """
         Return a config satisfying yexprs but not nexprs
         """
-        assert all(Z3DB.maybe_expr(e) for e in yexprs),yexprs
-        assert all(Z3DB.maybe_expr(e) for e in nexprs),nexprs
+        assert all(Z3DB.maybe_expr(e) for e in yexprs), yexprs
+        assert all(Z3DB.maybe_expr(e) for e in nexprs), nexprs
         assert k > 0, k
         assert config_cls, config_cls
 
@@ -357,23 +335,23 @@ class Dom(OrderedDict):
         exprs = yexprs + nexprs
         assert exprs, 'empty exprs'
 
-        expr = exprs[0] if len(exprs)==1 else z3util.myAnd(exprs)
+        expr = exprs[0] if len(exprs) == 1 else z3util.myAnd(exprs)
         return self.gen_configs_expr(expr, k, config_cls)
 
-
-    def gen_configs_rand_smt(self, rand_n, z3db, existing_configs=[], config_cls=None):
+    def gen_configs_rand_smt(self, rand_n, z3db, existing_configs=[],
+                             config_cls=None):
         """
         Create rand_n uniq configs
         """
         assert 0 < rand_n <= self.siz, (rand_n, self.siz)
         assert isinstance(z3db, Z3DB)
         assert isinstance(existing_configs, list), existing_configs
-            
+
         if config_cls is None:
             config_cls = Config
 
         exprs = []
-            
+
         existing_configs = set(existing_configs)
         if existing_configs:
             exprs = [c.z3expr(z3db) for c in existing_configs]
@@ -394,25 +372,24 @@ class Dom(OrderedDict):
             configs_ = self.gen_configs_exprs([], [nexpr], 1, config_cls)
             if not configs_:
                 break
-            config = configs_[0]            
+            config = configs_[0]
             configs.append(config)
-            
-        return configs    
-        
+
+        return configs
+
+
 class Z3DB(dict):
     def __init__(self, dom):
         assert isinstance(dom, Dom)
         db = {}
-        for k, vs in dom.iteritems():
+        for k, vs in dom.items():
             vs = sorted(list(vs))
-            ttyp, tvals=z3.EnumSort(k,vs)
+            ttyp, tvals = z3.EnumSort(k, vs)
             rs = [vv for vv in zip(vs, tvals)]
             rs.append(('typ', ttyp))
             db[k] = (z3.Const(k, ttyp), dict(rs))
-            #print k, db[k], db[k][0], db[k][1]
         dict.__init__(self, db)
-        
-        
+
     @property
     def cache(self):
         try:
@@ -431,33 +408,33 @@ class Z3DB(dict):
             return self._solver
 
     def add(self, k, v):
-        assert self.maybe_expr(v), v 
+        assert self.maybe_expr(v), v
         self.cache[k] = v
 
     def expr_of_dict(self, d):
-        #s=1 t=1 u=1 v=1 x=0 y=0 z=4
+        # s=1 t=1 u=1 v=1 x=0 y=0 z=4
         assert all(k in self for k in d), (d, self)
-        
+
         if d in self.cache:
             return self.cache[d]
 
-        rs = [self.get_eq_expr(k,v) for k,v in d.iteritems()]
+        rs = [self.get_eq_expr(k, v) for k, v in d.items()]
         expr = z3util.myAnd(rs)
         self.add(d, expr)
         return expr
-    
+
     def expr_of_dict_dict(self, d, is_and):
-        #s=0 t=0 u=0 v=0 x=1 y=1 z=0,1,2  =>  ... (z=0 or z=1 or z=2)
+        # s=0 t=0 u=0 v=0 x=1 y=1 z=0,1,2  =>  ... (z=0 or z=1 or z=2)
         assert all(k in self for k in d), (d, self)
-        
+
         key = (d, is_and)
         if key in self.cache:
             return self.cache[key]
 
-        myf =  z3util.myAnd if is_and else z3util.myOr        
-        rs = [self.get_eq_expr(k, vs) for k, vs in d.iteritems()]
+        myf = z3util.myAnd if is_and else z3util.myOr
+        rs = [self.get_eq_expr(k, vs) for k, vs in d.items()]
         expr = myf(rs)
-        
+
         self.add(key, expr)
         return expr
 
@@ -466,7 +443,7 @@ class Z3DB(dict):
         e.g., x == 0
         x == 0 or x == 1
         """
-        s, d = self[k]        
+        s, d = self[k]
         if isinstance(v, frozenset):
             return z3util.myOr([s == d[v_] for v_ in v])
         else:
@@ -474,19 +451,19 @@ class Z3DB(dict):
 
     @staticmethod
     def maybe_expr(expr):
-        #not None => z3expr
+        # not None => z3expr
         return expr is None or z3.is_expr(expr)
-    
+
 
 @total_ordering
 class HDict(OrderedDict):
     """
     Hashable dictionary
-    
+
     __eq__ and __lt__ + total_ordering is needed for __cmp__
     which is needed to compare or sort things
 
-       
+
     >>> c = HDict([('f', frozenset(['0'])), ('g', frozenset(['0']))]) 
     >>> d = HDict([('f', frozenset(['0'])), ('g', frozenset(['1']))])
     >>> _ = {'c':c,'d':d}
@@ -496,22 +473,22 @@ class HDict(OrderedDict):
 
     """
 
-    def __eq__(self,other):
+    def __eq__(self, other):
         return (other is self or
-                (isinstance(other,HDict) and
+                (isinstance(other, HDict) and
                  self.hcontent.__eq__(other.hcontent)))
 
-    def __lt__(self,other):
-        return isinstance(other,HDict) and self.hcontent.__lt__(other.hcontent)
+    def __lt__(self, other):
+        return isinstance(other, HDict) and self.hcontent.__lt__(other.hcontent)
 
     @property
     def hcontent(self):
         try:
             return self._hcontent
         except AttributeError:
-            self._hcontent = frozenset(self.iteritems())
+            self._hcontent = frozenset(self.items())
             return self._hcontent
-    
+
     def __hash__(self):
         try:
             return self._hash
@@ -519,7 +496,7 @@ class HDict(OrderedDict):
             self._hash = hash(self.hcontent)
             return self._hash
 
-    
+
 class Config(HDict):
     """
     Hashable dictionary
@@ -534,16 +511,16 @@ class Config(HDict):
     >>> c.z3expr(Z3DB(dom))
     And(a == 1, b == 0, c == 1)
     """
+
     def __init__(self, config=HDict()):
         super(Config, self).__init__(config)
-        
-        assert all(is_setting(s) for s in self.iteritems()), self
-        
-        
+
+        assert all(is_setting(s) for s in self.items()), self
+
     def __str__(self, cov=None):
         assert cov is None or is_cov(cov), cov
 
-        s =  ' '.join(map(str_of_setting, self.iteritems()))
+        s = ' '.join(map(str_of_setting, self.items()))
         if cov:
             s = "{}: {}".format(s, str_of_cov(cov))
         return s
@@ -559,7 +536,7 @@ class Config(HDict):
         """
         assert isinstance(n, int) and n > 0, n
         assert callable(f), f
-            
+
         pop = OrderedDict()
         for _ in range(n):
             c = f()
@@ -569,38 +546,14 @@ class Config(HDict):
                 c = f()
 
             if c not in pop:
-                pop[c]=None
-                
+                pop[c] = None
 
         assert len(pop) <= n, (len(pop), n)
         pop = pop.keys()
         return pop
-    
 
 
-class CustDict(MutableMapping):
-    """
-    MuttableMapping ex: https://stackoverflow.com/questions/21361106/how-would-i-implement-a-dict-with-abstract-base-classes-in-python
-    """
-    __metaclass__ = abc.ABCMeta
-    def __init__(self): self.__dict__ = {}
-    def __len__(self): return len(self.__dict__)
-    def __getitem__(self, key): return self.__dict__[key]
-    def __iter__(self): return iter(self.__dict__)    
-    def __setitem__(self, key, val): raise NotImplementedError("setitem")
-    def __delitem__(self, key): raise NotImplementedError("delitem")
-    def add_set(self, key, val):
-        """
-        For mapping from key to set
-        """
-        if key not in self.__dict__:
-            self.__dict__[key] = set()
-        self.__dict__[key].add(val)
-        
-    
-
-        
-class Covs_d(CustDict):
+class Covs_d(dict):
     """
     A mapping from sid -> {configs}
 
@@ -614,28 +567,31 @@ class Covs_d(CustDict):
     >>> assert covs_d['l1'] == set([c1,c2])
     """
 
-    def add(self,sid, config):
-        assert isinstance(sid, str),sid
-        assert isinstance(config, Config),config
-        
-        super(Covs_d, self).add_set(sid, config)
+    def add(self, sid, config):
+        assert isinstance(sid, str), sid
+        assert isinstance(config, Config), config
 
-class Configs_d(CustDict):
+        if sid not in self:
+            self[sid] = set()
+        self[sid].add(config)
+
+
+class Configs_d(dict):
     """
     A mapping from config -> {covs}
     """
+
     def __setitem__(self, config, cov):
         assert isinstance(config, Config), config
         assert is_cov(cov), cov
-        
-        self.__dict__[config] = cov
+
+        dict.__setitem__(self, config, cov)
 
     def __str__(self):
-        ss = (c.__str__(self[c]) for c in self.__dict__)
+        ss = (c.__str__(self[c]) for c in self)
         return '\n'.join("{}. {}".format(i+1, s) for i, s in enumerate(ss))
 
 
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-

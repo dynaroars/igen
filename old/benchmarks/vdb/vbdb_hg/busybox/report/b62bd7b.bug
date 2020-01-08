@@ -1,0 +1,31 @@
+
+type: UnusedVariable
+
+descr:
+
+    Unused variable if MDEV_CONF && MDEV_RENAME && !MDEV_RENAME_REGEXP.
+    
+    The pointer variable *p is unused when MDEV_CONF and MDEV_RENAME are set 
+    and MDEV_RENAME_REGEXP is not defined.
+
+keywords: 
+
+config: FEATURE_MDEV_CONF && FEATURE_MDEV_RENAME && !FEATURE_MDEV_RENAME_REGEXP
+
+C-features: PointerArithmetic
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: b62bd7b261bbfadcaeb7c5fcec8b4921bf5379a6
+
+  source: patterns "ENABLE_.+" "unused"
+
+  fix-in: mapping
+
+trace: !!trace |
+
+loc: util-linux/
+
+links: 

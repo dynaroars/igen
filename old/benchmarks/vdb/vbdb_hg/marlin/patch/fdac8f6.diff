@@ -1,0 +1,13 @@
+diff --git a/simple/fdac8f6.c b/simple/fdac8f6.c
+--- a/simple/fdac8f6.c
++++ b/simple/fdac8f6_fix.c
+@@ -6,7 +6,9 @@ float zprobe_zoffset;
+ 
+ void Config_ResetDefault()
+ {	
++#ifdef ENABLE_AUTO_BED_LEVELING
+ 	zprobe_zoffset = -Z_PROBE_OFFSET_FROM_EXTRUDER; // ERROR
++#endif
+ }
+ 
+ int main(int argc, char **argv)

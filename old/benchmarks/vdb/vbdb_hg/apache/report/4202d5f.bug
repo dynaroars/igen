@@ -1,0 +1,34 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+    "Misspelled struct field leads to compiler error
+    
+    The structure has a member const char * certtdb, but a pointer to
+    this struct tries to dereference certdb, which obviously does not exist."
+
+keywords: 
+
+config: "APR_HAS_LDAP && APR_HAS_LDAP_NETSCAPE_SSL"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 4202d5fee3e67e2e37c67ee50afe8622c32bc17d
+
+  source: patterns "fix" "compile"
+
+  fix-in: code
+
+trace: !!trace |
+    . include/util_ldap.h:92: typedef struct util_ldap_connection_t
+    . include/util_ldap.h:108: const char *certtdb; 
+    . call modules/experimental/util_ldap.c:241:util_ldap_connection_open()
+    . // certdb != certtdb
+    . ERROR  modules/experimental/util_ldap.c:281: if (!ldc->certdb)
+    
+loc:  modules/experimental/
+
+links:

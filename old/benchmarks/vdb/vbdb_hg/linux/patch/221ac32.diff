@@ -1,0 +1,12 @@
+diff --git a/simple/221ac32.c b/simple/221ac32.c
+--- a/simple/221ac32.c
++++ b/simple/221ac32.c
+@@ -10,7 +10,7 @@
+ 
+ char *buffer;
+ 
+-#if !defined(CONFIG_KGDB) && !defined(CONFIG_XMON) && !defined(CONFIG_BDI_SWITCH)
++#if !defined(CONFIG_KGDB) && !defined(CONFIG_XMON) && !defined(CONFIG_BDI_SWITCH) && !defined(CONFIG_KPROBES)
+ void allocate_buffer() {
+    int pagesize;
+ 

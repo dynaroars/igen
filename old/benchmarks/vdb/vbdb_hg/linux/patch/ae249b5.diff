@@ -1,0 +1,18 @@
+diff --git a/simple/ae249b5.c b/simple/ae249b5.c
+--- a/simple/ae249b5.c
++++ b/simple/ae249b5.c
+@@ -13,13 +13,8 @@
+ #ifdef CONFIG_DISCONTIGMEM
+ int pfn_to_nid(unsigned long pfn)
+ {
+-  unsigned char r;
+-
+   assert(pfn < PFNNID_MAP_MAX);
+-  r = pfnnid_map[pfn];
+-  assert(r != 0xff); // ERROR
+-
+-  return (int)r;
++  return (int)pfnnid_map[pfn];
+ }
+ 
+ int pfn_valid(int pfn)

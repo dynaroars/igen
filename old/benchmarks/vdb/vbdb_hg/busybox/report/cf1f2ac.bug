@@ -1,0 +1,34 @@
+
+type: UndefinedSymbol
+
+descr:
+
+    The function shutdown_signal is only defined when !DEBUG_INIT. However, it is 
+    used in a mandatory feature. Thus, all product with DEBUG_INIT enabled has 
+    compile failure.
+    
+keywords: compile, failure
+
+config: DEBUG_INIT
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: cf1f2ace391269655a80e42b692749da0c3d4047
+
+  source: patterns "CONFIG_.+" "fix" "failure"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . call init/init.c:1069:run_actions(int action)
+    .. 635:a->pid = run(a);
+    .. call init/init.c:1069:run(const struct init_action *a)
+    ... 444:open_new_terminal(a->terminal, 1);
+    ... call init/init.c:386:open_new_terminal(const char *device, char fail)
+    .... ERROR 398:shutdown_signal(SIGUSR1);
+
+loc: init/
+
+links: 

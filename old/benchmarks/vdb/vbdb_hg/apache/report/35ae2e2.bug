@@ -1,0 +1,35 @@
+
+type: MemoryLeak
+
+descr:
+
+    Pointer "eckey" is assigned, but there is no call to the free function.
+
+keywords:
+
+config: HAVE_ECC
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 35ae2e259e42540a782753feb6de5a6d8099784a
+
+  source: patterns "HAVE_+" "memory leak"
+
+  fix-in: code
+
+trace: !!trace |
+    . call modules/ssl/ssl_engine_init.c:141:ssl_init_Module()
+    . 310: ssl_init_ConfigureServer()
+    .. call modules/ssl/ssl_engine_init.c:1492:ssl_init_ConfigureServer()
+    .. 1505: ssl_init_server_ctx()
+    ... call modules/ssl/ssl_engine_init.c:1383:ssl_init_server_ctx()
+    ... 1410: ssl_init_server_certs()
+    ... call modules/ssl/ssl_engine_init.c:971:ssl_init_server_certs()
+    ... 1141: SSL_CTX_set_tmp_ecdh(mctx->ssl_ctx, eckey);
+    ... ERROR 1150: return APR_SUCCESS;
+
+loc: modules/ssl/
+
+links:

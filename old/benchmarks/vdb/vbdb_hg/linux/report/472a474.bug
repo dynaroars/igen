@@ -1,0 +1,39 @@
+
+type: DoubleOpOnResource
+
+descr:
+
+    Kernel panic due to double enable_IR_x2apic() call on non-SMP boards
+
+    If a single-core CPU boots an SMP kernel it will call
+    enable_IR_x2apic() first from native_smp_prepare_cpus(), and later
+    from APIC_init_uniprocessor(). This is not an idempotent operation
+    and such a double call causes a kernel panic.
+
+config: "X86 && SMP"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 472a474c6630efd195d3738339fd1bdc8aa3b1aa
+
+  source: patterns "kernel panic" "+#ifndef"
+
+  fix-in: mapping
+
+loc: arch/x86/kernel/
+
+trace: !!trace |
+    . call arch/x86/kernel/smpboot.c:1071:native_smp_prepare_cpus()
+    . 1095: enable_IR_x2apic();
+    . 1098: if (smp_sanity_check(max_cpus) < 0)
+    .. call arch/x86/kernel/smpboot.c:954:smp_sanity_check()
+    .. 997: if (!smp_found_config && !acpi_lapic) {
+    // do not find SMP configuration, i.e. non-SMP CPU
+    .. 1001: if (APIC_init_uniprocessor())
+    ... call arch/x86/kernel/apic/apic.c:1616:APIC_init_uniprocessor()
+    ... ERROR 1643: enable_IR_x2apic();
+
+links: !!md |
+    * [x2APIC](http://en.wikipedia.org/wiki/X2APIC)

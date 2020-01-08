@@ -1,0 +1,41 @@
+
+type: NullDereference
+
+descr:
+
+    Segmentation fault when APR_HAS_SHARED_MEMORY.
+
+    cache->rmm_addr can be uninitialized on calling apr_rmm_addr_get,
+    leading to a segfault.
+
+keywords:
+
+config: APR_HAS_SHARED_MEMORY
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 9327311d30f34811bb3fab2be81e310e3b6acb22
+
+  source: patterns "segfault"
+
+  fix-in: code
+
+trace: !!trace |
+    . call modules/experimental/util_ldap.c:458:util_ldap_cache_comparedn()
+    . 471: util_ldap_state_t *st = (util_ldap_state_t *)ap_get_module_config(r->server->module_config, &ldap_module);
+    . // st->cache_rmm may be NULL
+    . 482: curl = util_ald_create_caches(st, url);
+    .. call modules/experimental/util_ldap_cache_mgr.c:211:util_ald_create_caches()
+    .. 219: util_ald_create_cache()
+    ... call modules/experimental/util_ldap_cache_mgr.c:252:util_ald_create_cache()
+    ... // if APR_HAS_SHARED_MEMORY is enabled
+    ... // apr_rmm_addr_get will dereference its first argument
+    ... ERROR 267: apr_rmm_addr_get(st->cache_rmm, ...);
+
+loc: modules/experimental/
+
+links: !!links |
+
+    * [Relocatable Memory Management Routines](https://apr.apache.org/docs/apr/2.0/group___a_p_r___util___r_m_m.html)

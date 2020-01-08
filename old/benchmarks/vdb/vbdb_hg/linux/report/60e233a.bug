@@ -1,0 +1,59 @@
+
+type: BufferOverflow
+
+descr:
+
+    Failing to preserve invariant causes buffer overflow
+
+    Function add_uevent_var() shall guarantee that env->buflen > 0
+    when it succeeds (i.e. returns 0). However, if !HOTPLUG this
+    function behaves incorrectly, succeeding but not writing anything
+    to env->buf so env->buflen == 0. A subsequent call to
+    input_add_uevent_modalias_var() after the env was initialized 
+    executes env->buf[env->buflen - 1] = 'x'. The array index is -1,
+    since env->buflen == 0, and this statement overwrites env->envp_idx
+    which is located right before env->buf in the stack.
+
+config: "!HOTPLUG"
+
+C-features:
+
+    FollowFunctionPointers,
+    PointerArithmetic,
+    Structs,
+    FunctionPointerTables,
+    PointerToStructFields,
+    StructToStructCast,
+    FieldPointerToStructPointer,
+    ArgByReference,
+    HiddenMacroArgument
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 60e233a56609fd963c59e99bd75c663d63fa91b6
+
+  source: patterns "CONFIG_.+" "fix" "oops" "kernel panic"
+
+  fix-in: code
+
+loc: drivers/
+
+trace: !!trace |
+    . call drivers/base/core.c:310:show_uevent()
+    . 336: env = kzalloc(sizeof(struct kobj_uevent_env), GFP_KERNEL);
+    . 341: retval = kset->uevent_ops->uevent(kset, &dev->kobj, env);
+    .. dyn-call drivers/base/core.c:243:dev_uevent()
+    .. 246: struct device *dev = kobj_to_dev(kobj);
+    .. 294: retval = dev->type->uevent(dev, env);  
+    ... dyn-call drivers/input/input.c:1485:input_dev_uevent()
+    ... 1519: INPUT_ADD_HOTPLUG_MODALIAS_VAR(dev);
+    .... call drivers/input/input.c:1446:input_add_uevent_modalias_var()
+    .... 1451: if (add_uevent_var(env, "MODALIAS="))
+    ...... call include/linux/kobject.h:225:add_uevent_var()
+    ...... 227: return 0;
+    .... ERROR 1454: len = input_print_modalias(&env->buf[env->buflen - 1],
+
+links: !!links |
+  * [Kobjects](http://www.mjmwired.net/kernel/Documentation/kobject.txt)

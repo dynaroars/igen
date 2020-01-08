@@ -1,0 +1,34 @@
+
+type: FileDescriptorLeak
+
+descr:
+
+    File descriptor leak ("dbg") with DEBUG_CGI.
+
+    Return statement occurs before freeing the "dbg" pointer, so we have a leak.
+
+keywords:
+
+config: DEBUG_CGI
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 4945115b2e725a60fd4b042fda66c944562094f9
+
+  source: patterns "DEBUG_+" "leak"
+
+  fix-in: code
+
+trace: !!trace |
+    . call modules/generators/mod_cgi.c:743:cgi_handler()
+    . 826: run_cgi_child()
+    .. call modules/generators/mod_cgi.c:371:run_cgi_child()
+    .. // if DEBUG_CGI and OS2 are enabled
+    .. 395: FILE *dbg = fopen("con", "w");
+    .. ERROR 467: return APR_EBADF;
+
+loc: modules/generators/
+
+links:

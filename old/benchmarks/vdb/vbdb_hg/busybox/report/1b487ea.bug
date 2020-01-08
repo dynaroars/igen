@@ -1,0 +1,35 @@
+
+type: NullDereference
+
+descr:
+
+    NULL pointer dereferenced if SELINUX is enabled but not FEATURE_STAT_FORMAT
+    
+    If FEATURE_STAT_FORMAT is not set, busybox stat tries to print the selinux 
+    context (when SELINUX is enabled), even if it is not requested which leads
+    to a segmentation fault due to dereferencing a null-pointer.
+    
+keywords: null dereference
+
+config: SELINUX && !FEATURE_STAT_FORMAT
+
+C-features: Structs
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: 1b487ea8a69ac90b530e9ccd161a5b1b21e604c7
+
+  source: patterns "null dereference"
+
+  fix-in: code
+
+trace: !!trace |
+    . call coreutils/stat.c:720:do_stat()
+    .. [SELINUX] 550:scontext = NULL;
+    .. ERROR [!FEATURE_STAT_FORMAT && SELINUX] 658:printf(" %lc\n", *scontext);
+    
+loc: coreutils/
+
+links: 

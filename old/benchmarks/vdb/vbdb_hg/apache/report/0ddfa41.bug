@@ -1,0 +1,28 @@
+
+type: DeadCode
+
+descr:
+
+    Function ssl_array_index is unused when !HAVE_TLS_ALPN
+
+keywords: warning
+
+config: "!HAVE_TLS_ALPN"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 0ddfa412ee9cd815692c55f06e163c0044b60ee2
+
+  source: patterns "HAVE_.+" "unused"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . // if HAVE_TLS_ALPN is disabled
+    . ERROR modules/ssl/ssl_engine_kernel.c:2165:ssl_array_index()
+
+loc: modules/ssl/
+
+links:

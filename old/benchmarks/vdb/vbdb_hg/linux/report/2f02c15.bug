@@ -1,0 +1,20 @@
+
+type: UndefinedSymbol
+
+descr:
+
+    Build error due to missing dependency of BCM47XXX on EXTIF
+
+config: "BCM47XX && !SSB_DRIVER_EXTIF"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 2f02c15a5d963007bd721d76f644c9491f6fec06
+
+  source: patterns "when .* enabled"
+
+  fix-in: model
+
+loc: arch/mips/

@@ -1,0 +1,11 @@
+diff --git a/simple/7c6048b.c b/simple/7c6048b.c
+--- a/simple/7c6048b.c
++++ b/simple/7c6048b.c
+@@ -1,6 +1,7 @@
+ 
+ #if defined(CONFIG_ACPI) && defined(CONFIG_STUB_POULSBO)
+ #define CONFIG_ACPI_VIDEO
++#define CONFIG_BACKLIGHT_CLASS_DEVICE
+ #endif
+ 
+ #ifdef CONFIG_BACKLIGHT_CLASS_DEVICE

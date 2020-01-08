@@ -1,0 +1,28 @@
+
+type: DeadCode
+
+descr:
+
+    Prototype for function sendfile_nonblocking is not used when !APR_HAS_SENDFILE.
+
+keywords:
+
+config: "!APR_HAS_SENDFILE"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 56d9881993f6e51eafa2e93409fa891d7f7aad9d
+
+  source: patterns ".*_HAS_.+"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . // if APR_HAS_SENDFILE is disabled
+    . ERROR server/core_filters.c:331:static apr_status_t sendfile_nonblocking();
+
+loc: server/
+
+links:

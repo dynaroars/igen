@@ -1,0 +1,11 @@
+diff --git a/simple/f7ab9b4.c b/simple/f7ab9b4.c
+--- a/simple/f7ab9b4.c
++++ b/simple/f7ab9b4.c
+@@ -1,5 +1,6 @@
+ 
+-#ifdef CONFIG_TMPFS
++#ifdef CONFIG_DRM_I915
++#define CONFIG_TMPFS
+ #define CONFIG_SHMEM
+ #endif
+ 

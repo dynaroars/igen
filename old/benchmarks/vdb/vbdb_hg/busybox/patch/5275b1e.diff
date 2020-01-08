@@ -1,0 +1,13 @@
+diff --git a/simple/5275b1e.c b/simple/5275b1e.c
+--- a/simple/5275b1e.c
++++ b/simple/5275b1e.c
+@@ -8,9 +8,7 @@
+   int exit_status = -1;
+   int someInt = 1;
+   
+-#ifdef CONFIG_FEATURE_INSMOD_VERSION_CHECKING
+   int k_crcs;
+-#endif
+ 
+   if (r)
+     m_has_modinfo = 0;

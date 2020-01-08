@@ -1,0 +1,51 @@
+diff --git a/simple/63878ac.c b/simple/63878ac.c
+--- a/simple/63878ac.c
++++ b/simple/63878ac.c
+@@ -12,14 +12,12 @@
+ 	return *_omap3_sram_configure_core_dpll;
+ }
+ 
+-#ifdef CONFIG_PM
+ static int some_int = 1;
+ 
+ void omap3_sram_restore_context(void)
+ {
+ 	_omap3_sram_configure_core_dpll = &some_int;
+ }
+-#endif /* CONFIG_PM */
+ 
+ int omap3_core_dpll_m2_set_rate()
+ {
+@@ -35,16 +33,21 @@
+ 
+ 	return v;
+ }
+-#endif /* CONFIG_ARCH_OMAP3 */
+ 
+ static inline int omap34xx_sram_init(void)
+ {
+-#if defined(CONFIG_ARCH_OMAP3) && defined(CONFIG_PM)
+ 	omap3_sram_restore_context();
+-#endif
+ 	return 0;
+ }
+ 
++#else
++
++static inline int omap34xx_sram_init(void)
++{
++	return 0;
++}
++#endif /* CONFIG_ARCH_OMAP3 */
++
+ int omap_sram_init(void)
+ {
+ 	if (rand() % 2)
+@@ -73,5 +76,4 @@
+ {
+   omap3pandora_init();
+   return 0;
+-}
+-
++}
+\ No newline at end of file

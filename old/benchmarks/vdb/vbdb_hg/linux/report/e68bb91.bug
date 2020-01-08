@@ -1,0 +1,37 @@
+
+type: MultipleDefinitions
+
+descr:
+
+    Module `i2c-designware-core' gets linked twice causing a linker error
+
+    Both I2C_DESIGNWARE_PLATFORM and I2C_DESIGNWARE_PCI will add
+    `i2c-designware-core.o' to the list of object files to be linked
+    against the respective module. When these features are compiled
+    built-in in the kernel, both modules are part of a `built-in.o'
+    object. The linker fails because both `i2c-designware-platform.o'
+    and `i2c-designware-pci.o' contain duplicate definitions coming
+    from `i2c-designware-core'.
+
+
+config: "I2C_DESIGNWARE_PLATFORM && I2C_DESIGNWARE_PCI"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: e68bb91baa0bb9817567bd45d560919e8e26373b
+
+  source: patterns "if CONFIG_.+ is not set" "BUG"
+
+  fix-in: model, mapping, code
+
+loc: drivers/
+
+links: !!links |
+  * [Linux Kernel Makefiles](https://www.kernel.org/doc/Documentation/kbuild/makefiles.txt)
+
+credits:
+
+  - Nicolas Dintzner <N.J.R.Dintzner@tudelft.nl> reported the commit.
+  - Iago Abal <mail@iagoabal.eu> created the bug report and simplified bug.

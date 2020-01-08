@@ -1,0 +1,36 @@
+
+type: BehaviorViolation
+
+descr:
+
+    "httpd: don't send error messages with gzip encoding
+
+    If CONFIG_FEATURE_HTTPD_GZIP is enabled and request contained
+    'Accept-Encoding: gzip', then errors were sent with 'Content-Encoding: gzip'
+    even though they aren't."
+    
+keywords:
+
+config: BB_MMU && FEATURE_HTTPD_GZIP && FEATURE_HTTPD_BASIC_AUTH
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: 95755181b828cccaa833d7b8d1d47174b7b360b7
+
+  source: patterns "if.*is enabled" "fix"
+
+  fix-in: code
+
+trace: !!trace |
+    . [BB_MMU] call networking/httpd.c:2458:mini_httpd()
+    .. call 2242:handle_incoming_and_exit()
+    ... [FEATURE_HTTPD_GZIP] 2095:content_gzip = 1;
+    ... [FEATURE_HTTPD_BASIC_AUTH] call 2117:send_headers_and_exit()
+    .... call 1068:send_headers()
+    .... 1044:if(content_gzip){...}
+
+loc: networking/
+
+links: 

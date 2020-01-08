@@ -1,0 +1,16 @@
+diff --git a/simple/b7ebc61.c b/simple/b7ebc61.c
+--- a/simple/b7ebc61.c
++++ b/simple/b7ebc61.c
+@@ -13,9 +13,11 @@
+ {
+   all_fmt = LIST_FILENAME;
+   
++#ifdef CONFIG_FEATURE_LS_TIMESTAMPS
+   if (rand() % 2) {
+     all_fmt &= ~TIME_MASK;
+   }
++#endif
+   
+   return 0;
+ }
+\ No newline at end of file

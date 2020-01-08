@@ -1,0 +1,12 @@
+diff --git a/simple/f3d83e2.c b/simple/f3d83e2.c
+--- a/simple/f3d83e2.c
++++ b/simple/f3d83e2.c
+@@ -6,7 +6,7 @@
+ 
+ void wmi_query_block()
+ {
+-  char method[4]; // (4) just four bytes long
++  char method[5]; // (4) just four bytes long
+ 
+   strcpy(method, "WQ"); // (5) writes two bytes plus '\0'
+   strncat(method, block_object_id, 2); // (6) ERROR: no space for the final '\0'

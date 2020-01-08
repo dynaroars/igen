@@ -1,0 +1,59 @@
+
+type: UseAfterFree
+
+descr:
+
+    module_core is referenced after being freed during error cleanup
+
+    load_module() allocates memory for the core executable (module_core)
+    and the initialization code (module_init) of the new module, then
+    copies the image of the module object included in the module text
+    segment to module_core. A pointer `mod' to the module object is 
+    mantained across the function. If an error occurs, it may happen that 
+    load_module() frees module_core and then dereferences `mod', but 
+    since `mod' points to the area allocated for module_core, it
+    dereferences already freed memory.
+
+config: "MODULE_UNLOAD && SMP"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 6e2b75740bed35df98b8113300579e13ed2ce848
+
+  source: patterns "CONFIG_.+" "fix" "kernel panic" "+if"
+
+  fix-in: code
+
+loc: kernel/
+
+trace: !!trace |
+    . call kernel/module.c:1861:load_module()
+    . 1888: if (len > 64 * 1024 * 1024 || (hdr = vmalloc(len)) == NULL)
+    // allocates temporary memory area in hdr
+    . 1897: if (copy_from_user(hdr, umod, len) != 0) {
+    // copies module's object code from umod (user mode buffer)
+    . 1942: modindex = find_sec(hdr, sechdrs, secstrings,
+    // find the index of the '.gnu.linkonce.this_module' section, which contains an image of the module structure
+    . 1950: mod = (void *)sechdrs[modindex].sh_addr;
+    // and make mod point to it
+    . 2019: mod->refptr = percpu_modalloc(sizeof(local_t), __alignof__(local_t),
+    . 2045: ptr = module_alloc_update_bounds(mod->core_size);
+    . 2051: mod->module_core = ptr;
+    . 2053: ptr = module_alloc_update_bounds(mod->init_size);
+    . 2059: mod->module_init = ptr;
+    . 2063: for (i = 0; i < hdr->e_shnum; i++) {
+    // transfer sections to module_core and module_init
+    // mod is set to point to the modindex section.
+    // an init section is identified by INIT_OFFSET_MASK.
+    // .gnu.linkonce.this_module belongs to core.
+    . 2091: goto free_unload;
+    . 2291: module_free(mod, mod->module_init);
+    . 2293: module_free(mod, mod->module_core);
+    // mod was pointing to module_core, which is now freed
+    . ERROR 2298: percpu_modfree(mod->refptr);
+
+links: !!md |
+   * [Anatomy of Linux loadable kernel modules](http://www.ibm.com/developerworks/library/l-lkm/)
+   * _Linking and unlinking modules_. Understanding the Linux kernel. pp. 847 (pdf pp. 863)

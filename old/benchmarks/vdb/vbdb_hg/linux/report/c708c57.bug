@@ -1,0 +1,35 @@
+
+type: OutOfBoundsRead
+
+descr:
+
+    Memory access beyond buffer limits 
+
+    In the second iteration of the while loop, when i==8, the memory being
+    accessed buf+64/sizeof(__u64) is out of the bounds of the buf array.
+
+config: "S390 && S390_PRNG"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: c708c57e247775928b9a6bce7b4d8d14883bf39b
+
+  source: patterns "CONFIG_<fid>" "kernel panic"
+
+  fix-in: code
+
+C-features: PointerArithmetic
+
+loc: arch/s390/crypto
+
+trace: !!trace |
+    . call arch/s390/crypto/prng.c:164:prng_init()
+    . 187: prng_seed(16);
+    .. call arch/s390/crypto/prng.c:69:prng_seed()
+    .. ERROR 79: *((__u64 *)parm_block) ^= *((__u64 *)buf+i*8);
+
+links: !!md |
+    * [IBM S390](http://en.wikipedia.org/wiki/IBM_ESA/390#S.2F390_computers)
+    * [PRNG](http://en.wikipedia.org/wiki/PRNG)

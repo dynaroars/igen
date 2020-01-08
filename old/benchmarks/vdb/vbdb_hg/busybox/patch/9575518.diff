@@ -1,0 +1,13 @@
+diff --git a/simple/9575518.c b/simple/9575518.c
+--- a/simple/9575518.c
++++ b/simple/9575518.c
+@@ -41,6 +41,9 @@
+ 
+ void send_headers_and_exit(int responseNum)
+ {
++#ifdef ENABLE_FEATURE_HTTPD_GZIP
++  content_gzip = 0;
++#endif
+   send_headers(responseNum);
+ }
+ 

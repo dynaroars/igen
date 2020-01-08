@@ -1,0 +1,34 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+    "Undefined reference to macro when AUTO_BED_LEVELING && !AUTO_BED_LEVELING_GRID
+
+    Macros *_PROBE_BED_POSITION are conditionally defined in Configuration.h, only
+    when (AUTO_BED_LEVELING &&) AUTO_BED_LEVELING_GRID is enabled. This macro is referenced in
+	Marlin/Marlin_main.cpp (which uses Configuration.h at compilation time) in a context
+	where the presence of AUTO_BED_LEVELING_GRID is not absolutely necessary.
+    is not guaranteed. Thus, if AUTO_BED_LEVELING is forcefully disabled, the compiler cannot
+    find any definition for *_PROBE_BED_POSITION.
+
+	Issue 1547: https://github.com/MarlinFirmware/Marlin/issues/1547"
+
+config: "AUTO_BED_LEVELING && !AUTO_BED_LEVELING_GRID"
+
+bugfix:
+
+  repo: https://github.com/MarlinFirmware/Marlin.git
+
+  hash: e30bfedce4d3565e880cd76589665f322c6ef788
+
+  source: patterns "fix" "undefined" "error"
+
+  fix-in: code
+
+loc: main/
+
+trace: !!trace |
+
+    . call Marlin_main.cpp:1414: void process_commands()
+    . ERROR 1737: int left_probe_bed_position=LEFT_PROBE_BED_POSITION;

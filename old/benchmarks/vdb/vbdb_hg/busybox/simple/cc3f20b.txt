@@ -1,0 +1,38 @@
+#
+# For a description of the syntax of this configuration file,
+# see scripts/kbuild/config-language.txt.
+#
+
+mainmenu "BusyBox Configuration"
+
+menu "General Configuration"
+
+config FEATURE_PREFER_APPLETS
+	bool "exec prefers applets"
+	default n
+
+endmenu
+
+menu 'Build Options'
+
+config STATIC
+	bool "Build BusyBox as a static binary (no shared libs)"
+	default n
+
+config PIE
+	bool "Build BusyBox as a position independent executable"
+	default n
+	depends on !STATIC
+
+config BUILD_LIBBUSYBOX
+	bool "Build shared libbusybox"
+	default n
+	depends on !FEATURE_PREFER_APPLETS
+	help
+	  Build a shared library libbusybox.so.N.N.N which contains all
+	  busybox code.
+	  This feature allows every applet to be built as a tiny
+	  separate executable. Enabling it for "one big busybox binary"
+	  approach serves no purpose and increases code size.
+
+endmenu

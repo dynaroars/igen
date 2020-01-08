@@ -1,0 +1,37 @@
+
+type: UninitializedVariable
+
+descr:
+
+    "Dereference of uninitialized pointer variable
+
+    Function apr_rmm_init takes a pointer to a lock, and will
+    dereference it this is not NULL. Pointer variable rmm_lock
+    is passed to this function before initialization, causing
+    apr_rmm_init to dereference an arbitrary address."
+
+keywords: memory error
+
+config: "APU_HAS_LDAP && APR_HAS_SHARED_MEMORY "
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: 1b48bb3c1af572fe256473db502663cc2442cf29
+
+  source: patterns "fix" "uninitialized pointer" 
+
+  fix-in: code
+
+trace: !!trace |
+    . call modules/experimental/util_ldap_cache.c:293: apr_status_t util_ldap_cache_init(...)
+    . modules/experimental/util_ldap_cache.c:295: apr_anylock_t rmm_lock;
+    . // rmm_lock is not initialized ...
+    . ERROR modules/experimental/util_ldap_cache.c:306 apr_rmm_init(&util_ldap_rmm, &rmm_lock, ...);
+    
+loc: modules/experimental/
+
+links: !!links |
+
+    * [Relocatable Memory Management Routines: apr_rmm_init](https://apr.apache.org/docs/apr-util/0.9/group__APR__Util__RMM.html#g65ebaca1a86f0667156592f40b81b681)

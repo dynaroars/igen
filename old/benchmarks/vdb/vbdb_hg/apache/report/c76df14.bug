@@ -1,0 +1,38 @@
+
+type: OSCommandInjection
+
+descr:
+
+    "WIN32/OS2 shell characters not escaped correctly when cross-compiling
+
+    The define NEED_ENHANCED_ESCAPES needs to be used for WIN32 or OS2
+    operating systems, regardless if the whole apache httpd is
+    cross-compiled or not. The utility gen_test_char generates the header
+    file test_char.h, which defines a table test_char_table that is used
+    to escape special characters, for instance, in shell command strings.
+    If the special WIN32/OS2 characters \r and % are not escaped correctly,
+    this could potentially be exploited."
+
+keywords: 
+
+config: "CROSS_COMPILE && (WIN32 || OS2)"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: c76df14dfb451981f66ad47af26574faac980db5
+
+  source: patterns "fix" "defined"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . server/gen_test_char.c:17: #ifdef CROSS_COMPILE
+    . // NEED_ENHANCED_ESCAPES will not be defined by server/gen_test_char.c:35
+    . // Special WIN32/OS2 shell characters will not be escaped !!!
+    . ERROR server/gen_test_char.c:101: if (c && strchr("&;`'\"|*?~<>^()[]{}$\\\n", c)) {
+
+loc: server/
+
+links:

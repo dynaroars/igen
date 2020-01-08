@@ -1,0 +1,27 @@
+
+type: IncompatibleType
+
+descr:
+
+    "The variable is defined as a scalar but initialized with an array of values.
+
+    Issue 1800: https://github.com/MarlinFirmware/Marlin/issues/1800"
+
+config: "HAS_BED_THERMAL_PROTECTION"
+
+bugfix:
+
+  repo: https://github.com/MarlinFirmware/Marlin.git
+
+  hash: fc3c76fc1641370ee76a564299592e283cbcd0c0
+
+  source: patterns "compile" "error"
+
+  fix-in: code
+
+loc: temperature/
+
+trace: !!trace |
+
+    . ERROR temperature.cpp:87: static TRState thermal_runaway_bed_state_machine = { TRInactive, TRInactive, TRInactive, TRInactive };
+    // static scalar object thermal_runaway_bed_state_machine needs one element in initializer

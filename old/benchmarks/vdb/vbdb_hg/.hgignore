@@ -1,0 +1,10 @@
+a.out
+.bug~
+.c~
+
+tools/vbdb/.cabal-sandbox
+tools/vbdb/dist
+tools/vbdb/cabal.sandbox.config
+tools/vbdb/.*~
+
+trash/

@@ -1,0 +1,36 @@
+
+type: StackBasedBufferOverflow
+
+descr:
+
+    "Stack buffer overflow is empty string
+
+    If SDSUPPORT is enabled, an error occurs due to the omission of allocating space 
+    for / character for the full path of the item that it is read.  
+    
+    Issue 2434: https://github.com/MarlinFirmware/Marlin/issues/2434"
+
+config: "SDSUPPORT"
+
+bugfix:
+
+  repo: https://github.com/MarlinFirmware/Marlin.git
+
+  hash: a7fc1f83c81273fd03c2ca576f936a08b53a0e01
+
+  source: patterns "stack" "overrun" "buffer overflow"
+
+  fix-in: mapping
+
+loc: cardreader/
+
+trace: !!trace |
+
+    . call  cardreader.cpp:49:  void CardReader::lsDive()
+    . 59: // Allocate enough stack space for the full path to a folder
+    . 60:  int len = strlen(prepend) + FILENAME_LENGTH + 1; 
+          //This does not consider the last appended trailing slash (line 74) in the allocation of memory, resulting in a stack buffer overflow
+    . 71: if (prepend[0] == '\0') strcat(path, "/"); // a root slash if prepend is empty
+    . 72: strcat(path, prepend);
+    . 73: strcat(path, lfilename);
+    . ERROR: cardreader.cpp: 74  strcat(path, "/");

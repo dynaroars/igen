@@ -1,0 +1,12 @@
+diff --git a/simple/2d22902.c b/simple/2d22902.c
+--- a/simple/2d22902.c
++++ b/simple/2d22902.c
+@@ -8,7 +8,7 @@ void process_commands()
+ #ifdef SDSUPPORT
+ 	starpos = (strchr(strchr_pointer + 4,'*'));
+ 	if(starpos!=NULL)
+-		*(starpos-1)='\0'; //ERROR
++		*(starpos)='\0';
+ #endif
+ }
+ 

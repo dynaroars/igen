@@ -1,0 +1,30 @@
+
+type: DeadCode
+
+descr:
+    
+    Function do_sect_fault defined but not used if ARM_LPAE is enabled
+
+    Apparently, at some point do_page_fault replaced do_sect_fault in
+    ARM_LPAE configurations, but do_page_fault remained defined. Thus,
+    if ARM_LPAE is enabled, do_page_fault is defined but never used.
+
+
+config: "ARM_LPAE"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 809e660f438fc5a69bf57630a85bcd8112263f37
+
+  source: patterns "CONFIG_" "fix" "+#ifndef" "+#endif"
+
+  fix-in: mapping
+
+loc: arch/arm/
+
+trace: !!trace |
+
+    . ERROR arch/arm/mm/fault.c:494:do_sect_fault()
+

@@ -1,0 +1,18 @@
+diff --git a/simple/061fd0a.c b/simple/061fd0a.c
+--- a/simple/061fd0a.c
++++ b/simple/061fd0a.c
+@@ -27,12 +27,11 @@
+     case 'R':
+       if(!p)
+         goto expected_hwif_error;
+-
++#endif /* CONFIG_FEATURE_HDPARM_HDIO_SCAN_HWIF */
+ 
+ expected_hwif_error:
+   printf("expected hwif value");
+ 
+-#endif /* CONFIG_FEATURE_HDPARM_HDIO_SCAN_HWIF */
+   }
+   return 0;
+ }
+\ No newline at end of file

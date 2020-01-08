@@ -1,0 +1,12 @@
+diff --git a/simple/ee3f34e.c b/simple/ee3f34e.c
+--- a/simple/ee3f34e.c
++++ b/simple/ee3f34e.c
+@@ -41,7 +41,7 @@
+   if (!IS_ERR(dst)) {
+     dst = NULL;
+   }
+-  if (!IS_ERR(dst)) {
++  if (!IS_ERR_OR_NULL(dst)) {
+     char *rt =(char *) dst;
+     SCTP_DEBUG_PRINTK(rt); // ERROR
+   }

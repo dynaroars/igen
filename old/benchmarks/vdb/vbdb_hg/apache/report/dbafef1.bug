@@ -1,0 +1,33 @@
+
+type: BufferOverflow
+
+descr:
+
+    BufferOverflow when HAS_APACHE_REGEX_LIB.
+
+    feature HAS_APACHE_REGEX_LIB makes a copy using the strncpy function.
+    The size of characters copied is sizeof(newuri)-1, but the \0 character
+    has been assigned to newuri[sizeof(newuri-1)] instead.
+
+keywords:
+
+config: "HAS_APACHE_REGEX_LIB"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: dbafef17dd1a6f697b4a12758af0b1b838160fa9
+
+  source: patterns "buffer overflow"
+
+  fix-in: code
+
+trace: !!trace |
+    . call modules/standard/mod_rewrite.c:1376:apply_rewrite_rule()
+    . // if HAS_APACHE_REGEX_LIB is enabled
+    . ERROR 1547: newuri[sizeof(newuri-1)] = '\0';
+
+loc: modules/standard/
+
+links:

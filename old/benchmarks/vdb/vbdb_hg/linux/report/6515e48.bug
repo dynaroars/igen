@@ -1,0 +1,23 @@
+
+type: UndefinedSymbol
+
+descr:
+
+  Undefined references to OMAP2420 functions
+
+  Weaker generic dependencies on ARCH_OMAP2 were allowing, for instance,
+  to make use of omap24xx_* functions without enabling support for OMAP2420.
+
+config: "MACH_OMAP_H4 && !ARCH_OMAP2420"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 6515e48932c8bf04227f9dd638c8ac634f89ba24
+
+  source: patterns "config option" "fix"
+
+  fix-in: model
+
+loc: arch/arm/

@@ -1,0 +1,32 @@
+
+type: IncompatibleType
+
+descr:
+
+    "Macro function fails due to wrong parameter type.
+
+    SERIAL_ECHOPAIR macro is defined to take two parameters, a string and a float, double or unsigned long.
+    The macro is invoked giving it as a second parameter an integer, thus the error.
+
+    Issue 2004: https://github.com/MarlinFirmware/Marlin/issues/2004 "
+
+config: "!DISABLE_M503 && MESH_BED_LEVELING"
+
+bugfix:
+
+  repo: https://github.com/MarlinFirmware/Marlin.git
+
+  hash: 2db384a21d680a9c8708f1675594732bcf46655d
+
+  source: patterns "fix" "compile" "error"
+
+  fix-in: code
+
+loc: configuration
+
+trace: !!trace |
+
+    . call  Marlin/configuration_store.cpp:592: void Config_PrintSettings(bool forReplay)
+    . 680:  SERIAL_ECHOPAIR(" X", MESH_NUM_X_POINTS);
+    . 681:  SERIAL_ECHOPAIR(" Y", MESH_NUM_Y_POINTS);
+    // SERIAL_ECHOPAIR takes a float, double or unsigned long as second param. MESH_NUM_X_POINTS and MESH_NUM_Y_POINTS are declared as INTs.

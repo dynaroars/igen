@@ -1,0 +1,32 @@
+
+type: UninitializedVariable
+
+descr:
+
+    If BusyBox is compiled with FEATURE_CLEAN_UP dmesg command segfaults if 
+    invoked with the "-n" option because a free() of an uninitialized pointer.
+
+keywords: segfaults, uninitialized, pointer
+
+config: FEATURE_CLEAN_UP
+
+C-features: PointerArithmetic
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: eef2317b9f5bdd362a7b8a0169c688245374f0f5
+
+  source: patterns "CONFIG_.+" "uninit"
+
+  fix-in: code
+
+trace: !!trace |
+    . call util-linux/dmesg.c:29:dmesg_main();
+    . goto:65:all_done;
+    . ERROR [FEATURE_CLEAN_UP] 89:free(buf);
+
+loc: util-linux/
+
+links: 

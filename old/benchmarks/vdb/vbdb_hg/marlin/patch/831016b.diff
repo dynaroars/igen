@@ -1,0 +1,12 @@
+diff --git a/simple/831016b.c b/simple/831016b.c
+--- a/simple/831016b.c
++++ b/simple/831016b.c
+@@ -7,7 +7,7 @@
+  void lcd_setstatus(const char* message, const bool persist) {};
+  // more functions
+ #else
+- void lcd_setstatus(const char* message) {};
++ void lcd_setstatus(const char* message, const bool persist) {};
+  // more functions
+ #endif
+ #endif

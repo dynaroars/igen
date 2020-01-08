@@ -1,0 +1,39 @@
+
+type: UninitializedVariable
+
+descr:
+    Use of variable before initialization when !SECURITY
+
+    reiserfs_security_init() assumes that `length' will be
+    initialized by security_old_inode_init_security(), if
+    this succeeds. But the mockup implementation of
+    security_old_inode_init_security() for !SECURITY
+    succeeds and lefts `length' uninitialized.
+
+    Note that `length' is a local variable hence, prior to
+    initialization, it can hold any value.
+
+config: "REISERFS_FS_SECURITY && !SECURITY"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 30e053248da178cf6154bb7e950dc8713567e3fa
+
+  source: patterns "CONFIG_.+ is not set"
+
+  fix-in: code
+
+loc: fs/reiserfs/
+
+trace: !!trace |
+    . call fs/reiserfs/namei.c:575:reiserfs_create()
+    . 586: struct reiserfs_security_handle security;
+    . 596: retval = reiserfs_security_init(dir, inode, &dentry->d_name, &security);
+    .. call fs/reiserfs/xattr_security.c:56:reiserfs_security_init()
+    .. 69: error = security_old_inode_init_security(inode, dir, qstr, &sec->name, &sec->value, &sec->length);
+    .. 79: }
+    .. ERROR 81: if (sec->length && reiserfs_xattrs_initialized(inode->i_sb))
+
+

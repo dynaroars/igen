@@ -1,0 +1,42 @@
+
+type: MemoryLeak
+
+descr:
+
+    "Memory leak freeing an array of pointers
+
+    There is an array of pointers, the elements of which pointers are all in a 
+    linked list. To free the elements, instead of freeing all the elements in the 
+    array, array[0..nelements], it frees by iterating the linked list starting at 
+    array[0], which it assumes is the head of the list. Unfortunately, if 
+    FEATURE_LS_SORTFILES is enabled, then the array is sorted. This way, array[0] 
+    is no longer the head, but somewhere in the middle of the linked list."
+    
+keywords:
+
+config: FEATURE_LS_SORTFILES && FEATURE_LS_RECURSIVE
+
+C-features: Structs
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: 2631486f1bfac59f9217350effcda627da7be875
+
+  source: patterns "CONFIG_+" "fix"
+
+  fix-in: code
+
+trace: !!trace |
+    . 1132:dnp = dnalloc(nfiles);
+    . [FEATURE_LS_SORTFILES] 1157:shellsort(dnp, nfiles);
+    . 1159:showdirs(dnd, dndirs, dnfiles == 0);
+    . call coreutils/ls.c:523:showdirs(struct dnode **dn, int ndirs, int first)
+    .. [FEATURE_LS_RECURSIVE] 564:dfree(subdnp);
+    .. call coreutils/ls.c:341:dfree(struct dnode **dnp)
+    ... ERROR 348:cur = dnp[0];
+
+loc: coreutils/
+
+links: 

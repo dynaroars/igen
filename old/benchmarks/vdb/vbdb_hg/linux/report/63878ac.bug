@@ -1,0 +1,51 @@
+
+type: FatalAssertionViolation
+
+descr:
+
+    Function pointer left uninitialized when power management is disabled
+
+    Initialization procedure omap_sram_init() left
+    _omap3_sram_configure_core_dpll uninitialized (set to NULL by
+    default, according to ANSI C), if PM is disabled. When
+    omap3_configure_core_dpll() is called, also as part of the
+    initialization procedure, we reach an assertion requiring this
+    function pointer to be non-null.
+
+config: "ARCH_OMAP3 && !PM"
+
+C-features: FunctionPointers, Structs
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+  
+  hash: 63878acfafbc7a6ff90a2f8b3e31f0889bc61af6
+
+  source: patterns "CONFIG_.+" "BUG"
+
+  fix-in: mapping, code
+
+loc: arch/arm
+
+trace: !!trace |
+    . call arch/arm/mach-omap2/board-omap3pandora.c:510:omap3pandora_init()
+    . 603:omap_sdrc_init(mt46h32m32lf6_sdrc_params,
+    .. call arch/arm/mach-omap2/io.c:487:omap_sdrc_init()
+    .. 490: omap_sram_init();
+    ... call arch/arm/plat-omap/sram.c:378:omap_sram_init()
+    ... 392:omap34xx_sram_init();
+    .... call arch/arm/plat-omap/sram.c:365:omap34xx_sram_init()
+    // if !PM this function will not initialize _omap3_sram_configure_core_dpll
+    .. 494: _omap2_init_reprogram_sdrc();
+    ... call arch/arm/mach-omap2/io.c:320:_omap2_init_reprogram_sdrc()
+    ... 335: v = clk_set_rate(dpll3_m2_ck, rate);
+    .... dyn-call arch/arm/mach-omap2/clock.c:375:omap2_clk_set_rate()
+    ..... dyn-call arch/arm/mach-omap2/clkt34xx_dpll3m2.c:50:omap3_core_dpll_m2_set_rate()
+    ..... 106: omap3_configure_core_dpll(
+    ...... call arch/arm/plat-omap/sram.c:336:omap3_configure_core_dpll()
+    ...... ERROR 342: BUG_ON(!_omap3_sram_configure_core_dpll);
+
+links: !!md |
+  * [OMAP3](http://en.wikipedia.org/wiki/OMAP)
+

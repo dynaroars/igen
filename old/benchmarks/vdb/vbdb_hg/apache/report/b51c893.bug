@@ -1,0 +1,28 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+    Pointer "ap_scoreboard_shm" is not declared when !APR_HAS_SHARED_MEMORY.
+
+keywords:
+
+config: "!APR_HAS_SHARED_MEMORY"
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: b51c893983726b6c055b71845fe44126b375b6d5
+
+  source: patterns "*_HAS_.+"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . // if APR_HAS_SHARED_MEMORY is disabled
+    . ERROR server/scoreboard.c:235:if (*shm)
+
+loc: server/
+
+links:

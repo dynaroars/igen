@@ -1,0 +1,17 @@
+diff --git a/simple/30e0532.c b/simple/30e0532.c
+--- a/simple/30e0532.c
++++ b/simple/30e0532.c
+@@ -1,3 +1,5 @@
++
++#define EOPNOTSUPP      95      /* Operation not supported on transport endpoint */
+
+ __attribute__ ((noinline)) int nondet() { return 42; }
+
+@@ -14,7 +16,7 @@
+ #else
+ int security_old_inode_init_security(int *len)
+ {
+-  return 0;
++  return -EOPNOTSUPP;
+ }
+ #endif

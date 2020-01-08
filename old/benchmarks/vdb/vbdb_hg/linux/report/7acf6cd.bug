@@ -1,0 +1,68 @@
+
+type: UninitializedVariable
+
+descr:
+
+    "Dereferencing uninitialized pointer causes Kernel crash
+
+    During the initialization of a UNIX98 pseudo-terminal by ptmx_open,
+    a tty_struct structure is allocated. But before its pointer field
+    link->driver_data is properly initialized, ptmx_open will try to
+    allocate an inode structure for the PTY slave. If this allocation
+    fails, some cleanup code must be executed to free the already
+    allocated resources. Namely, pty_close will be called to release
+    the previously opened tty, and this eventually dereferences
+    tty->link->driver_data, which is assumed to have been already
+    initialized."
+
+config: "UNIX98_PTYS && DEVPTS_MULTIPLE_INSTANCES"
+
+C-features: FunctionPointers
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: 7acf6cd80b201f77371a5374a786144153629be8
+
+  source: patterns "fix" "bug" "end trace" "#ifdef" "#endif"
+
+  fix-in: code
+
+loc: drivers/tty/
+
+trace: !!trace |
+
+    . // setup
+    . call drivers/tty/pty.c:807:pty_init()
+    .. call drivers/tty/pty.c:739:unix98_pty_init()
+    .. 785: tty_set_operations(pts_driver, &pty_unix98_ops);
+
+    . call drivers/tty/pty.c:669:ptmx_open()
+    . 671: struct tty_struct *tty;
+    . // 694: tty = tty_init_dev(ptm_driver, index);
+    . // will not set tty->link->driver_data
+    . 707: tty_add_file(tty, filp);
+    . // now filp->private_data->tty points to tty
+    . 709: slave_inode = devpts_pty_new(inode, ..., tty->link);
+    . // now inode->i_private points to tty->link
+    . 712: if (IS_ERR(slave_inode)) {
+    . 714: goto err_release;
+    . // tty->link->driver_data is not set, remains undefined
+    . 727: tty_release(inode, filp);
+    .. call drivers/tty/tty_io.c:1625:tty_release()
+    .. 1627: struct tty_struct *tty = file_tty(filp);
+    .. // tty_release.tty points to ptmx_open.tty
+    .. 1658: tty->ops->close(tty, filp);
+    ... dyn-call drivers/tty/pty.c:35:pty_close()
+    ... 58: devpts_pty_kill(tty->link->driver_data);
+    .... call fs/devpts/inode.c:629:devpts_pty_kill()
+    .... // inode points to ptmx_open.tty->link->driver_data
+    .... 631: struct super_block *sb = pts_sb_from_inode(inode);
+    ..... call fs/devpts/inode.c:137:pts_sb_from_inode()
+    ..... ERROR 140: if (inode->i_sb->s_magic == DEVPTS_SUPER_MAGIC)
+    ..... // tty->link->driver_data, holding an undefined value, is dereferenced
+
+links: !!md |
+    * [UNIX98 PTYS](http://kernel.xc.net/html/linux-2.6.0-test4/s390/UNIX98_PTYS)
+    * [Linux Character Drivers](http://www.linuxforu.com/2011/02/linux-character-drivers/)

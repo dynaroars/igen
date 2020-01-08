@@ -1,0 +1,12 @@
+diff --git a/simple/b8e79dc.c b/simple/b8e79dc.c
+--- a/simple/b8e79dc.c
++++ b/simple/b8e79dc.c
+@@ -15,7 +15,7 @@
+ #ifdef ENCODER_RATE_MULTIPLIER
+ #define MENU_MULTIPLIER_ITEM_EDIT(type, label, args...) MENU_MULTIPLIER_ITEM(setting_edit_ ## type, label, ## args )
+ #else
+-#define MENU_ITEM_EDIT(type, label, args...) MENU_ITEM(setting_edit_ ## type, label, ## args )
++#define MENU_MULTIPLIER_ITEM_EDIT(type, label, args...) MENU_ITEM(setting_edit_ ## type, label, ## args )
+ #endif
+ 
+ #endif

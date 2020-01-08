@@ -1,0 +1,15 @@
+diff --git a/simple/cf1f2ac.c b/simple/cf1f2ac.c
+--- a/simple/cf1f2ac.c
++++ b/simple/cf1f2ac.c
+@@ -24,7 +24,11 @@
+ 
+ void open_new_terminal() 
+ {
++#ifndef ENABLE_DEBUG_INIT
+   shutdown_signal(SIGUSR1); //ERROR
++#else
++  _exit(2);
++#endif 
+ }
+ 
+ void run()

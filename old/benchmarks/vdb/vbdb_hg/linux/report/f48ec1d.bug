@@ -1,0 +1,31 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+    "Undefined reference to macro when !BLK_CGROUP
+    
+    Macro CFQ_WEIGHT_DEFAULT is conditionally defined in blk-cgroup.h, only
+    when BLK_CGROUP is enabled. This macro is referenced in block/cfq-iosched.c
+    (which #include blk-cgroup.h) in a context where the presence of BLK_CGROUP
+    is not guaranteed. Thus, if BLK_CGROUP is disabled, the compiler cannot
+    find any definition for CFQ_WEIGHT_DEFAULT."
+
+config: "IOSCHED_CFQ && !BLK_CGROUP"
+
+bugfix:
+
+  repo: git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git
+
+  hash: f48ec1d7885281a9c6cd7779d61f321d1b1fd741
+
+  source: patterns "CONFIG_" "fix" "break" "warning" "-#ifdef" "+#ifdef"
+
+  fix-in: mapping
+
+loc: block/
+
+trace: !!trace |
+
+    . block/cfq-iosched.c:841: d = d * CFQ_WEIGHT_DEFAULT;
+

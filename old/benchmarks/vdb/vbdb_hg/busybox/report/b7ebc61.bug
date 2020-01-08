@@ -1,0 +1,28 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+    The symbol TIME_MASK is only define when FEATURE_LS_TIMESTAMPS is enabled.
+    
+keywords: 
+
+config: !FEATURE_LS_TIMESTAMPS
+
+bugfix:
+
+  repo: git://git.busybox.net/busybox
+
+  hash: b7ebc61b54ff542935ff4216f80ea53103e8dcf2
+
+  source: patterns "when.*is enabled"
+
+  fix-in: mapping
+
+trace: !!trace |
+    . [FEATURE_LS_TIMESTAMPS] coreutils/ls.c:144:#define TIME_MASK (3U<<23)
+    . ERROR coreutils/ls.c:977:all_fmt &= ~TIME_MASK;
+
+loc: coreutils/
+
+links: 

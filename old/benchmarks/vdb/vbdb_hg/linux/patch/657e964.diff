@@ -1,0 +1,12 @@
+diff --git a/simple/657e964.c b/simple/657e964.c
+--- a/simple/657e964.c
++++ b/simple/657e964.c
+@@ -37,7 +37,7 @@
+ {
+ #ifdef CONFIG_TCP_MD5SIG
+   if (unk())
+-    tcp_put_md5sig_pool();
++    tcp_free_md5sig_pool();
+ #endif
+ }
+ 

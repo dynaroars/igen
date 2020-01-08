@@ -1,0 +1,38 @@
+__main__:WARNING:DEBUG MODE ON. Can be slow !
+ds:INFO:Using contraint from /home/tnguyen/Dropbox/git/igen/examples/igen/fake_constraint/ex.dimacs
+ds:INFO:Using run_script from /home/tnguyen/Dropbox/git/igen/examples/igen/fake_constraint/ex.run
+__main__:INFO:dom:
+12 vars and 10240 pos configs
+1. s: (2) 0,1
+2. t: (2) 0,1
+3. u: (2) 0,1
+4. v: (2) 0,1
+5. x: (2) 0,1
+6. y: (2) 0,1
+7. z: (5) 0,1,2,3,4
+8. c1: (2) 0,1
+9. c2: (2) 0,1
+10. c3: (2) 0,1
+11. c4: (2) 0,1
+12. c5: (2) 0,1
+__main__:INFO:* benchmark 'noname', 1 runs, seed 0.0, results '/var/tmp/igen_1_normal_noname_cib0Eq'
+__main__:INFO:*run 1/1
+alg:INFO:seed: 0.0, tmpdir: /var/tmp/igen_1_normal_noname_cib0Eq/run0_cpSvdt
+alg:INFO:existing configs 0 evaled, 2 not evaled
+alg:INFO:gen 5 configs using tcover 1
+Traceback (most recent call last):
+  File "/home/tnguyen/Dropbox/git/igen/src/igen.py", line 298, in <module>
+    _ = run_f(seed_, tdir_)  #start running
+  File "/home/tnguyen/Dropbox/git/igen/src/igen.py", line 94, in <lambda>
+    run_f = lambda seed, tdir: igen.go(seed=seed, econfigs=econfigs, tmpdir=tdir)
+  File "/home/tnguyen/Dropbox/git/igen/src/alg.py", line 85, in go
+    cconfigs_d_, xtime = self.eval_configs(configs)
+  File "/home/tnguyen/Dropbox/git/igen/src/alg.py", line 177, in eval_configs
+    self.z3db)
+  File "/home/tnguyen/Dropbox/git/igen/src/ds.py", line 382, in eval
+    chunksiz=1, doMP=settings.doMP and len(tasks) >= 2)
+  File "/home/tnguyen/Dropbox/git/igen/config/vcommon.py", line 139, in runMP
+    tasks, maxProcessces=cpu_count(), chunksiz=chunksiz)
+  File "/home/tnguyen/Dropbox/git/igen/config/vcommon.py", line 124, in getWorkloads
+    wl = tasks[s:e]
+TypeError: 'set' object has no attribute '__getitem__'

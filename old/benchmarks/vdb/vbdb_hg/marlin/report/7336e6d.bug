@@ -1,0 +1,33 @@
+
+type: UndeclaredIdentifier
+
+descr:
+
+    "If Z_MAX is set to a negative value, and Z_DUAL_STEPPER_DRIVERS is enabled, 
+    the compiler complains about undeclared variable.
+
+    The user do not wants to use Z_MAX, but instead
+    uses two Z_MIN endstops.In this situation, enabling
+    Z_DUAL_STEPPER_DRIVERS which by default enables Z_DUAL_ENDSTOPS leads
+    to a compiler error due to two variables that are uninitialized.
+
+    Issue 1911: https://github.com/MarlinFirmware/Marlin/issues/1911"
+
+config: "Z_DUAL_STEPPER_DRIVERS"
+
+bugfix:
+
+  repo: https://github.com/MarlinFirmware/Marlin.git
+
+  hash: 7336e6df070a2f20e5f2cb9b3ac2d40c9da0c8c4
+
+  source: patterns "error "
+
+  fix-in: mapping
+
+loc: movement/
+
+trace: !!trace |
+
+    . call  stepper.cpp:701:  AXIS ##_APPLY_STEP(!INVERT_## AXIS ##_STEP_PIN,0); // Function macro
+    . 166: ERROR: if (!(old_z_max_endstop && (count_direction[Z_AXIS] > 0)) && !locked_z_motor) Z_STEP_WRITE(v); \

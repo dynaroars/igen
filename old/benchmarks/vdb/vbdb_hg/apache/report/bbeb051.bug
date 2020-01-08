@@ -1,0 +1,35 @@
+
+type: UseAfterFree
+
+descr:
+
+    Use of already freed subrequest data could lead to segmentation fault.
+
+    Function cgi_handler may create a CGI bucket using a subrequest. Subrequests
+    may last shorter than the main request, and thus the bucket may end up
+    dereferencing already freed data.
+
+keywords:
+
+config: APR_FILES_AS_SOCKETS
+
+bugfix:
+
+  repo: git://git.apache.org/httpd.git
+
+  hash: bbeb0516cf06e118c27aa5953983c8171ba2777b
+
+  source: patterns "segfault"
+
+  fix-in: code
+
+trace: !!trace |
+    . call modules/generators/mod_cgi.c:724:cgi_handler()
+    . // if APR_FILES_AS_SOCKETS is enabled
+    . 908: b = cgi_bucket_create(r, ...);
+    .. call modules/generators/mod_cgi.c:571:cgi_bucket_create()
+    .. ERROR 604: data->r = r;
+
+loc: modules/generators/
+
+links:
