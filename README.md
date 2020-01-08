@@ -1,5 +1,6 @@
 Run example 
 ```
+$ cd src
 $  ./igen2.py -domain ../examples/mbuild2/ex1/
 
 inferred results (5):
