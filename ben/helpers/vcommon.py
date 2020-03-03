@@ -77,14 +77,12 @@ def file_basename(filename): return os.path.splitext(filename)[0]
 
 def getLogger(name, level):
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+    logger.setLevel(logging.DEBUG)
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
     formatter = logging.Formatter("%(name)s:%(levelname)s:%(message)s")
-    logger.setFormatter(formatter)
-    #logger.setLevel(logging.DEBUG)
-    #ch = logging.StreamHandler()
-    #ch.setLevel(level)
-    #ch.setFormatter(formatter)
-    #logger.addHandler(ch)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
     return logger
 
 

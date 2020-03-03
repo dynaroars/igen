@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 
 """
 Simple run_script example that runs a program call "prog.[Linux|Darwin].exe" , which 
@@ -13,7 +13,8 @@ e.g.,
 import argparse
 import os.path
 import subprocess as sp
-
+import platform
+import sys
 
 def vcmd(cmd, inp=None, shell=True):
     proc = sp.Popen(cmd, shell=shell, stdin=sp.PIPE,
@@ -34,7 +35,6 @@ if __name__ == "__main__":
     varnames, varvals = zip(*parts)
     assert len(varnames) == len(varvals)
 
-    import platform
     prog_exe = os.path.join(me_dir, "prog.{}.exe".format(platform.system()))
     prog_inp = ' '.join(varvals)  # "0 1 0"
     hashv = hash(prog_inp)
@@ -44,9 +44,10 @@ if __name__ == "__main__":
 
     cmd = "{} {} > {}".format(prog_exe, prog_inp, prog_out)
     try:
-        _, rs_err = vcmd(cmd)
+        _, rs_err = vcmd
         assert not rs_err, rs_err
     except:
-        print("cmd '{}' failed".format(cmd))
+        e = sys.exc_info()[0]
+        print("cmd '{}' failed: {}".format(cmd, e))
 
-    print prog_out
+    print(prog_out)
